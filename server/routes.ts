@@ -2,14 +2,132 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { authenticateAdmin } from "./middleware/auth";
-import { insertBatchSchema } from "@shared/schema";
+import { insertBatchSchema, setupActivateSchema } from "@shared/schema";
 import { nanoid } from "nanoid";
 import QRCode from "qrcode";
 import { createObjectCsvWriter } from "csv-writer";
 import path from "path";
 import fs from "fs";
+import { getClimateZone, generateCoreSchedule } from "./lib/climate";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Setup Routes - Public
+
+  // POST /api/setup/activate - Activate household setup
+  app.post("/api/setup/activate", async (req, res) => {
+    try {
+      const validatedData = setupActivateSchema.parse(req.body);
+      const { token, zip, home_type, sqft, hvac_type, water_heater, roof_age_years, email } = validatedData;
+
+      // Validate token exists in magnets
+      const magnet = await storage.getMagnetByToken(token);
+      if (!magnet) {
+        return res.status(404).json({ error: "Invalid or expired token" });
+      }
+
+      // Check if household already exists (upsert behavior)
+      let household = await storage.getHouseholdByToken(token);
+      
+      if (household) {
+        // Update existing household
+        household = await storage.updateHousehold(household.id, {
+          zip,
+          homeType: home_type,
+          sqft,
+          hvacType: hvac_type,
+          waterHeater: water_heater,
+          roofAgeYears: roof_age_years,
+          email,
+          activatedAt: new Date(),
+        });
+      } else {
+        // Create new household
+        household = await storage.createHousehold({
+          token,
+          zip,
+          homeType: home_type,
+          sqft,
+          hvacType: hvac_type,
+          waterHeater: water_heater,
+          roofAgeYears: roof_age_years,
+          email,
+          activatedAt: new Date(),
+        });
+      }
+
+      if (!household) {
+        return res.status(500).json({ error: "Failed to create/update household" });
+      }
+
+      // Get climate zone and generate schedule
+      const climateZone = getClimateZone(zip);
+      const coreTasks = generateCoreSchedule(climateZone);
+
+      // Create schedules for core tasks
+      const schedules = [];
+      for (const task of coreTasks) {
+        const schedule = await storage.createSchedule({
+          householdId: household.id,
+          taskName: task.name,
+          description: task.description,
+          frequencyMonths: task.frequencyMonths,
+          climateZone,
+          priority: task.priority,
+        });
+        schedules.push(schedule);
+      }
+
+      // Create first reminders (within 24 hours)
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      
+      const firstTask = coreTasks.find(task => task.priority === 1) || coreTasks[0];
+      if (firstTask) {
+        await storage.createReminder({
+          householdId: household.id,
+          taskName: firstTask.name,
+          dueDate: tomorrow,
+        });
+      }
+
+      // Record activation event
+      await storage.createEvent({
+        householdId: household.id,
+        eventType: 'activated',
+        eventData: JSON.stringify({ 
+          zip, 
+          home_type, 
+          climate_zone: climateZone,
+          tasks_created: schedules.length 
+        }),
+      });
+
+      res.json({
+        success: true,
+        household: {
+          id: household.id,
+          zip: household.zip,
+          homeType: household.homeType,
+          climateZone,
+        },
+        schedules: schedules.map(s => ({
+          taskName: s.taskName,
+          description: s.description,
+          frequencyMonths: s.frequencyMonths,
+          priority: s.priority,
+        })),
+        firstTaskDue: tomorrow.toISOString(),
+      });
+    } catch (error: any) {
+      console.error("Error activating setup:", error);
+      if (error?.name === 'ZodError') {
+        res.status(400).json({ error: "Invalid input data", details: error.errors });
+      } else {
+        res.status(500).json({ error: "Failed to activate setup" });
+      }
+    }
+  });
+
   // Admin Routes - Protected with JWT
   
   // POST /api/admin/batches - Create a magnet batch
