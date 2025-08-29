@@ -100,6 +100,15 @@ export const setupActivateSchema = z.object({
   email: z.string().email().optional(),
 });
 
+export const setupPreviewSchema = z.object({
+  zip: z.string().regex(/^\d{5}$/, "ZIP code must be 5 digits"),
+  home_type: z.string().min(1),
+  sqft: z.number().positive().optional(),
+  hvac_type: z.string().optional(),
+  water_heater: z.string().optional(),
+  roof_age_years: z.number().min(0).max(100).optional(),
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type InsertBatch = z.infer<typeof insertBatchSchema>;
@@ -111,3 +120,4 @@ export type Schedule = typeof schedules.$inferSelect;
 export type Event = typeof events.$inferSelect;
 export type Reminder = typeof reminders.$inferSelect;
 export type SetupActivateRequest = z.infer<typeof setupActivateSchema>;
+export type SetupPreviewRequest = z.infer<typeof setupPreviewSchema>;

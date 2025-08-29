@@ -2,13 +2,13 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { authenticateAdmin } from "./middleware/auth";
-import { insertBatchSchema, setupActivateSchema } from "@shared/schema";
+import { insertBatchSchema, setupActivateSchema, setupPreviewSchema } from "@shared/schema";
 import { nanoid } from "nanoid";
 import QRCode from "qrcode";
 import { createObjectCsvWriter } from "csv-writer";
 import path from "path";
 import fs from "fs";
-import { getClimateZone, generateCoreSchedule } from "./lib/climate";
+import { getClimateZone, generateCoreSchedule, buildInitialSchedule, type Household as ClimateHousehold } from "./lib/climate";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup Routes - Public
@@ -63,30 +63,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const climateZone = getClimateZone(zip);
       const coreTasks = generateCoreSchedule(climateZone);
 
-      // Create schedules for core tasks
+      // Build initial schedule with proper due dates
+      const climateHousehold: ClimateHousehold = {
+        id: household.id,
+        zip: household.zip,
+        homeType: household.homeType,
+        climateZone,
+      };
+      const scheduledTasks = buildInitialSchedule(climateHousehold, coreTasks);
+
+      // Create schedules for core tasks with calculated due dates
       const schedules = [];
-      for (const task of coreTasks) {
+      for (const scheduled of scheduledTasks) {
         const schedule = await storage.createSchedule({
           householdId: household.id,
-          taskName: task.name,
-          description: task.description,
-          frequencyMonths: task.frequencyMonths,
+          taskName: scheduled.task.name,
+          description: scheduled.task.description,
+          frequencyMonths: scheduled.task.frequencyMonths,
           climateZone,
-          priority: task.priority,
+          priority: scheduled.task.priority,
         });
         schedules.push(schedule);
-      }
 
-      // Create first reminders (within 24 hours)
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      
-      const firstTask = coreTasks.find(task => task.priority === 1) || coreTasks[0];
-      if (firstTask) {
+        // Queue email reminder 7 days before due date
+        const reminderDate = new Date(scheduled.next_due_date);
+        reminderDate.setDate(reminderDate.getDate() - 7);
+        
         await storage.createReminder({
           householdId: household.id,
-          taskName: firstTask.name,
-          dueDate: tomorrow,
+          taskName: scheduled.task.name,
+          dueDate: reminderDate,
         });
       }
 
@@ -116,7 +122,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           frequencyMonths: s.frequencyMonths,
           priority: s.priority,
         })),
-        firstTaskDue: tomorrow.toISOString(),
+        firstTaskDue: scheduledTasks.length > 0 
+          ? scheduledTasks.sort((a, b) => a.next_due_date.getTime() - b.next_due_date.getTime())[0].next_due_date.toISOString()
+          : new Date().toISOString(),
       });
     } catch (error: any) {
       console.error("Error activating setup:", error);
@@ -124,6 +132,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.status(400).json({ error: "Invalid input data", details: error.errors });
       } else {
         res.status(500).json({ error: "Failed to activate setup" });
+      }
+    }
+  });
+
+  // POST /api/setup/preview - Preview tasks without persistence
+  app.post("/api/setup/preview", async (req, res) => {
+    try {
+      const validatedData = setupPreviewSchema.parse(req.body);
+      const { zip, home_type } = validatedData;
+
+      // Get climate zone and generate schedule
+      const climateZone = getClimateZone(zip);
+      const coreTasks = generateCoreSchedule(climateZone);
+
+      // Build initial schedule with proper due dates (no persistence)
+      const previewHousehold: ClimateHousehold = {
+        id: 'preview',
+        zip,
+        homeType: home_type,
+        climateZone,
+      };
+      const scheduledTasks = buildInitialSchedule(previewHousehold, coreTasks);
+
+      // Return the first 6 tasks with dates
+      const taskPreviews = scheduledTasks
+        .slice(0, 6)
+        .sort((a, b) => a.task.priority - b.task.priority)
+        .map(scheduled => ({
+          taskName: scheduled.task.name,
+          description: scheduled.task.description,
+          frequencyMonths: scheduled.task.frequencyMonths,
+          priority: scheduled.task.priority,
+          nextDueDate: scheduled.next_due_date.toISOString(),
+          taskCode: scheduled.task_code,
+        }));
+
+      res.json({
+        success: true,
+        climateZone,
+        tasks: taskPreviews,
+        totalTasks: coreTasks.length,
+      });
+    } catch (error: any) {
+      console.error("Error generating preview:", error);
+      if (error?.name === 'ZodError') {
+        res.status(400).json({ error: "Invalid input data", details: error.errors });
+      } else {
+        res.status(500).json({ error: "Failed to generate preview" });
       }
     }
   });
