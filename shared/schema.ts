@@ -68,6 +68,31 @@ export const reminders = pgTable("reminders", {
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
 });
 
+export const reminderQueue = pgTable("reminder_queue", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  householdId: varchar("household_id").notNull().references(() => households.id),
+  scheduleId: varchar("schedule_id").references(() => schedules.id),
+  taskName: text("task_name").notNull(),
+  taskDescription: text("task_description"),
+  dueDate: timestamp("due_date").notNull(),
+  runAt: timestamp("run_at").notNull(), // When to send the reminder (due_date - 7 days)
+  status: text("status").notNull().default("pending"), // pending, sent, failed
+  reminderType: text("reminder_type").notNull().default("email"), // email, sms, etc.
+  message: text("message"),
+  sentAt: timestamp("sent_at"),
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+});
+
+export const taskCompletions = pgTable("task_completions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  householdId: varchar("household_id").notNull().references(() => households.id),
+  scheduleId: varchar("schedule_id").notNull().references(() => schedules.id),
+  taskCode: text("task_code").notNull(),
+  completedAt: timestamp("completed_at").notNull(),
+  nextDueDate: timestamp("next_due_date").notNull(),
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+});
+
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
@@ -109,6 +134,11 @@ export const setupPreviewSchema = z.object({
   roof_age_years: z.number().min(0).max(100).optional(),
 });
 
+export const taskCompleteSchema = z.object({
+  householdToken: z.string().min(1),
+  task_code: z.string().min(1),
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type InsertBatch = z.infer<typeof insertBatchSchema>;
@@ -119,5 +149,8 @@ export type InsertHousehold = z.infer<typeof insertHouseholdSchema>;
 export type Schedule = typeof schedules.$inferSelect;
 export type Event = typeof events.$inferSelect;
 export type Reminder = typeof reminders.$inferSelect;
+export type ReminderQueue = typeof reminderQueue.$inferSelect;
+export type TaskCompletion = typeof taskCompletions.$inferSelect;
 export type SetupActivateRequest = z.infer<typeof setupActivateSchema>;
 export type SetupPreviewRequest = z.infer<typeof setupPreviewSchema>;
+export type TaskCompleteRequest = z.infer<typeof taskCompleteSchema>;

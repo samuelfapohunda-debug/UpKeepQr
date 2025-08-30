@@ -2,13 +2,14 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { authenticateAdmin } from "./middleware/auth";
-import { insertBatchSchema, setupActivateSchema, setupPreviewSchema } from "@shared/schema";
+import { insertBatchSchema, setupActivateSchema, setupPreviewSchema, taskCompleteSchema } from "@shared/schema";
 import { nanoid } from "nanoid";
 import QRCode from "qrcode";
 import { createObjectCsvWriter } from "csv-writer";
 import path from "path";
 import fs from "fs";
 import { getClimateZone, generateCoreSchedule, buildInitialSchedule, type Household as ClimateHousehold } from "./lib/climate";
+import { sendWelcomeEmail } from "./lib/mail";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup Routes - Public
@@ -89,11 +90,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const reminderDate = new Date(scheduled.next_due_date);
         reminderDate.setDate(reminderDate.getDate() - 7);
         
-        await storage.createReminder({
+        await storage.createReminderQueue({
           householdId: household.id,
+          scheduleId: schedule.id,
           taskName: scheduled.task.name,
-          dueDate: reminderDate,
+          taskDescription: scheduled.task.description,
+          dueDate: scheduled.next_due_date,
+          runAt: reminderDate,
+          reminderType: 'email',
+          message: `Reminder: ${scheduled.task.name} is due in 7 days`,
         });
+      }
+
+      // Send welcome email if email provided
+      if (household.email) {
+        try {
+          const dashboardUrl = process.env.PUBLIC_BASE_URL 
+            ? `${process.env.PUBLIC_BASE_URL}/agent`
+            : "http://localhost:5000/agent";
+            
+          await sendWelcomeEmail({
+            email: household.email,
+            homeType: household.homeType,
+            climateZone,
+            taskCount: schedules.length,
+            dashboardUrl,
+          });
+        } catch (emailError) {
+          console.error("Failed to send welcome email:", emailError);
+          // Don't fail the activation if email fails
+        }
       }
 
       // Record activation event
@@ -104,7 +130,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           zip, 
           home_type, 
           climate_zone: climateZone,
-          tasks_created: schedules.length 
+          tasks_created: schedules.length,
+          welcome_email_sent: !!household.email
         }),
       });
 
@@ -180,6 +207,81 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.status(400).json({ error: "Invalid input data", details: error.errors });
       } else {
         res.status(500).json({ error: "Failed to generate preview" });
+      }
+    }
+  });
+
+  // POST /api/tasks/complete - Mark task as completed and schedule next occurrence
+  app.post("/api/tasks/complete", async (req, res) => {
+    try {
+      const validatedData = taskCompleteSchema.parse(req.body);
+      const { householdToken, task_code } = validatedData;
+
+      // Get household by token
+      const household = await storage.getHouseholdByToken(householdToken);
+      if (!household) {
+        return res.status(404).json({ error: "Household not found" });
+      }
+
+      // Find the schedule for this task
+      const schedule = await storage.getScheduleByHouseholdAndTask(household.id, task_code);
+      if (!schedule) {
+        return res.status(404).json({ error: "Task not found" });
+      }
+
+      // Calculate next due date based on frequency
+      const now = new Date();
+      const nextDueDate = new Date(now);
+      nextDueDate.setMonth(nextDueDate.getMonth() + schedule.frequencyMonths);
+
+      // Record task completion
+      await storage.createTaskCompletion({
+        householdId: household.id,
+        scheduleId: schedule.id,
+        taskCode: task_code,
+        completedAt: now,
+        nextDueDate,
+      });
+
+      // Queue next reminder (7 days before next due date)
+      const nextReminderDate = new Date(nextDueDate);
+      nextReminderDate.setDate(nextReminderDate.getDate() - 7);
+
+      await storage.createReminderQueue({
+        householdId: household.id,
+        scheduleId: schedule.id,
+        taskName: schedule.taskName,
+        taskDescription: schedule.description || undefined,
+        dueDate: nextDueDate,
+        runAt: nextReminderDate,
+        reminderType: 'email',
+        message: `Reminder: ${schedule.taskName} is due in 7 days`,
+      });
+
+      // Create completion event
+      await storage.createEvent({
+        householdId: household.id,
+        eventType: 'task_completed',
+        eventData: JSON.stringify({
+          taskCode: task_code,
+          taskName: schedule.taskName,
+          completedAt: now.toISOString(),
+          nextDueDate: nextDueDate.toISOString(),
+        }),
+      });
+
+      res.json({
+        success: true,
+        message: `Task "${schedule.taskName}" marked as completed`,
+        nextDueDate: nextDueDate.toISOString(),
+        reminderScheduled: nextReminderDate.toISOString(),
+      });
+    } catch (error: any) {
+      console.error("Error completing task:", error);
+      if (error?.name === 'ZodError') {
+        res.status(400).json({ error: "Invalid input data", details: error.errors });
+      } else {
+        res.status(500).json({ error: "Failed to complete task" });
       }
     }
   });

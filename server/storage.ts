@@ -1,4 +1,4 @@
-import { type User, type InsertUser, type Batch, type InsertBatch, type Magnet, type Household, type Schedule, type Event, type Reminder } from "@shared/schema";
+import { type User, type InsertUser, type Batch, type InsertBatch, type Magnet, type Household, type Schedule, type Event, type Reminder, type ReminderQueue, type TaskCompletion } from "@shared/schema";
 import { randomUUID } from "crypto";
 
 // modify the interface with any CRUD methods
@@ -14,12 +14,18 @@ export interface IStorage {
   getMagnetById(id: string): Promise<Magnet | undefined>;
   getMagnetByToken(token: string): Promise<Magnet | undefined>;
   getHouseholdByToken(token: string): Promise<Household | undefined>;
+  getHouseholdById(id: string): Promise<Household | undefined>;
   createHousehold(household: { token: string; zip: string; homeType: string; sqft?: number; hvacType?: string; waterHeater?: string; roofAgeYears?: number; email?: string; activatedAt?: Date }): Promise<Household>;
   updateHousehold(id: string, updates: Partial<Household>): Promise<Household | undefined>;
   createSchedule(schedule: { householdId: string; taskName: string; description?: string; frequencyMonths: number; climateZone: string; priority?: number }): Promise<Schedule>;
   getSchedulesByHouseholdId(householdId: string): Promise<Schedule[]>;
+  getScheduleByHouseholdAndTask(householdId: string, taskCode: string): Promise<Schedule | undefined>;
   createEvent(event: { householdId: string; eventType: string; eventData?: string }): Promise<Event>;
   createReminder(reminder: { householdId: string; scheduleId?: string; taskName: string; dueDate: Date }): Promise<Reminder>;
+  createReminderQueue(reminder: { householdId: string; scheduleId?: string; taskName: string; taskDescription?: string; dueDate: Date; runAt: Date; reminderType?: string; message?: string }): Promise<ReminderQueue>;
+  getPendingReminders(beforeDate: Date): Promise<ReminderQueue[]>;
+  updateReminderStatus(id: string, status: string): Promise<void>;
+  createTaskCompletion(completion: { householdId: string; scheduleId: string; taskCode: string; completedAt: Date; nextDueDate: Date }): Promise<TaskCompletion>;
 }
 
 export class MemStorage implements IStorage {
@@ -30,6 +36,8 @@ export class MemStorage implements IStorage {
   private schedules: Map<string, Schedule>;
   private events: Map<string, Event>;
   private reminders: Map<string, Reminder>;
+  private reminderQueue: Map<string, ReminderQueue>;
+  private taskCompletions: Map<string, TaskCompletion>;
 
   constructor() {
     this.users = new Map();
@@ -39,6 +47,8 @@ export class MemStorage implements IStorage {
     this.schedules = new Map();
     this.events = new Map();
     this.reminders = new Map();
+    this.reminderQueue = new Map();
+    this.taskCompletions = new Map();
   }
 
   async getUser(id: string): Promise<User | undefined> {
@@ -181,6 +191,84 @@ export class MemStorage implements IStorage {
     };
     this.reminders.set(id, reminder);
     return reminder;
+  }
+
+  async getHouseholdById(id: string): Promise<Household | undefined> {
+    return this.households.get(id);
+  }
+
+  async getScheduleByHouseholdAndTask(householdId: string, taskCode: string): Promise<Schedule | undefined> {
+    return Array.from(this.schedules.values()).find(
+      (schedule) => schedule.householdId === householdId && 
+      schedule.taskName.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z_]/g, '') === taskCode
+    );
+  }
+
+  async createReminderQueue(reminderData: { 
+    householdId: string; 
+    scheduleId?: string; 
+    taskName: string; 
+    taskDescription?: string; 
+    dueDate: Date; 
+    runAt: Date; 
+    reminderType?: string; 
+    message?: string 
+  }): Promise<ReminderQueue> {
+    const id = randomUUID();
+    const reminder: ReminderQueue = {
+      id,
+      householdId: reminderData.householdId,
+      scheduleId: reminderData.scheduleId || null,
+      taskName: reminderData.taskName,
+      taskDescription: reminderData.taskDescription || null,
+      dueDate: reminderData.dueDate,
+      runAt: reminderData.runAt,
+      status: 'pending',
+      reminderType: reminderData.reminderType || 'email',
+      message: reminderData.message || null,
+      sentAt: null,
+      createdAt: new Date()
+    };
+    this.reminderQueue.set(id, reminder);
+    return reminder;
+  }
+
+  async getPendingReminders(beforeDate: Date): Promise<ReminderQueue[]> {
+    return Array.from(this.reminderQueue.values()).filter(
+      (reminder) => reminder.status === 'pending' && reminder.runAt <= beforeDate
+    );
+  }
+
+  async updateReminderStatus(id: string, status: string): Promise<void> {
+    const reminder = this.reminderQueue.get(id);
+    if (reminder) {
+      reminder.status = status;
+      if (status === 'sent') {
+        reminder.sentAt = new Date();
+      }
+      this.reminderQueue.set(id, reminder);
+    }
+  }
+
+  async createTaskCompletion(completionData: { 
+    householdId: string; 
+    scheduleId: string; 
+    taskCode: string; 
+    completedAt: Date; 
+    nextDueDate: Date 
+  }): Promise<TaskCompletion> {
+    const id = randomUUID();
+    const completion: TaskCompletion = {
+      id,
+      householdId: completionData.householdId,
+      scheduleId: completionData.scheduleId,
+      taskCode: completionData.taskCode,
+      completedAt: completionData.completedAt,
+      nextDueDate: completionData.nextDueDate,
+      createdAt: new Date()
+    };
+    this.taskCompletions.set(id, completion);
+    return completion;
   }
 }
 
