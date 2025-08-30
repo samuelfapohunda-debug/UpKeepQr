@@ -1,8 +1,8 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { authenticateAdmin } from "./middleware/auth";
-import { insertBatchSchema, setupActivateSchema, setupPreviewSchema, taskCompleteSchema } from "@shared/schema";
+import { authenticateAdmin, authenticateAgent } from "./middleware/auth";
+import { insertBatchSchema, setupActivateSchema, setupPreviewSchema, taskCompleteSchema, agentLoginSchema } from "@shared/schema";
 import { nanoid } from "nanoid";
 import QRCode from "qrcode";
 import { createObjectCsvWriter } from "csv-writer";
@@ -10,6 +10,7 @@ import path from "path";
 import fs from "fs";
 import { getClimateZone, generateCoreSchedule, buildInitialSchedule, type Household as ClimateHousehold } from "./lib/climate";
 import { sendWelcomeEmail } from "./lib/mail";
+import jwt from "jsonwebtoken";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup Routes - Public
@@ -283,6 +284,100 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         res.status(500).json({ error: "Failed to complete task" });
       }
+    }
+  });
+
+  // Agent Routes - Authentication and Dashboard
+  
+  // POST /api/agent/login - Mock agent login
+  app.post("/api/agent/login", async (req, res) => {
+    try {
+      const validatedData = agentLoginSchema.parse(req.body);
+      const { email } = validatedData;
+
+      if (!process.env.JWT_SECRET) {
+        return res.status(500).json({ error: "JWT_SECRET not configured" });
+      }
+
+      // Mock agent ID generation (in real app, validate against agent database)
+      const agentId = email.split('@')[0]; // Simple mock: use email prefix as agent ID
+      
+      // Generate JWT token
+      const token = jwt.sign(
+        { agentId, email },
+        process.env.JWT_SECRET,
+        { expiresIn: '24h' }
+      );
+
+      res.json({
+        success: true,
+        token,
+        agent: {
+          id: agentId,
+          email
+        }
+      });
+    } catch (error: any) {
+      console.error("Agent login error:", error);
+      if (error?.name === 'ZodError') {
+        res.status(400).json({ error: "Invalid email format", details: error.errors });
+      } else {
+        res.status(500).json({ error: "Login failed" });
+      }
+    }
+  });
+
+  // GET /api/agent/metrics - Agent dashboard metrics
+  app.get("/api/agent/metrics", authenticateAgent, async (req, res) => {
+    try {
+      const agentId = (req as any).agentId;
+      
+      const metrics = await storage.getAgentMetrics(agentId);
+      
+      res.json(metrics);
+    } catch (error: any) {
+      console.error("Error fetching agent metrics:", error);
+      res.status(500).json({ error: "Failed to fetch metrics" });
+    }
+  });
+
+  // GET /api/agent/households - Agent households list
+  app.get("/api/agent/households", authenticateAgent, async (req, res) => {
+    try {
+      const agentId = (req as any).agentId;
+      
+      const households = await storage.getActivatedHouseholdsByAgentId(agentId);
+      
+      res.json(households.map(household => ({
+        id: household.id,
+        zip: household.zip,
+        city: household.city,
+        homeType: household.homeType,
+        email: household.email,
+        activatedAt: household.activatedAt,
+        lastReminder: household.lastReminder
+      })));
+    } catch (error: any) {
+      console.error("Error fetching agent households:", error);
+      res.status(500).json({ error: "Failed to fetch households" });
+    }
+  });
+
+  // GET /api/agent/batches - Agent batches list
+  app.get("/api/agent/batches", authenticateAgent, async (req, res) => {
+    try {
+      const agentId = (req as any).agentId;
+      
+      const batches = await storage.getBatchesByAgentId(agentId);
+      
+      res.json(batches.map(batch => ({
+        id: batch.id,
+        qty: batch.qty,
+        createdAt: batch.createdAt
+      })));
+    } catch (error: any) {
+      console.error("Error fetching agent batches:", error);
+      res.status(500).json({ error: "Failed to fetch batches" });
     }
   });
 

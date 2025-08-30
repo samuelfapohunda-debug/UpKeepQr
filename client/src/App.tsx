@@ -8,6 +8,8 @@ import Home from "@/pages/Home";
 import Onboarding from "@/pages/Onboarding";
 import SetupSuccess from "@/pages/SetupSuccess";
 import Dashboard from "@/pages/Dashboard";
+import AgentLogin from "@/pages/AgentLogin";
+import AgentDashboard from "@/pages/AgentDashboard";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -18,7 +20,9 @@ function Router() {
         <Route path="/" component={Home} />
         <Route path="/setup/:token" component={Onboarding} />
         <Route path="/setup/success" component={SetupSuccess} />
-        <Route path="/agent" component={Dashboard} />
+        <Route path="/admin" component={Dashboard} />
+        <Route path="/agent" component={AgentLogin} />
+        <Route path="/agent/dashboard" component={AgentDashboard} />
         {/* Fallback to 404 */}
         <Route component={NotFound} />
       </Switch>

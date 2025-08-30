@@ -26,6 +26,15 @@ export interface IStorage {
   getPendingReminders(beforeDate: Date): Promise<ReminderQueue[]>;
   updateReminderStatus(id: string, status: string): Promise<void>;
   createTaskCompletion(completion: { householdId: string; scheduleId: string; taskCode: string; completedAt: Date; nextDueDate: Date }): Promise<TaskCompletion>;
+  // Agent methods
+  getBatchesByAgentId(agentId: string): Promise<Batch[]>;
+  getActivatedHouseholdsByAgentId(agentId: string): Promise<(Household & { lastReminder?: Date | null; city?: string })[]>;
+  getAgentMetrics(agentId: string): Promise<{
+    totalMagnets: number;
+    scans: number;
+    activations: number;
+    last30DayActive: number;
+  }>;
 }
 
 export class MemStorage implements IStorage {
@@ -269,6 +278,109 @@ export class MemStorage implements IStorage {
     };
     this.taskCompletions.set(id, completion);
     return completion;
+  }
+
+  async getBatchesByAgentId(agentId: string): Promise<Batch[]> {
+    return Array.from(this.batches.values()).filter(
+      (batch) => batch.agentId === agentId
+    );
+  }
+
+  async getActivatedHouseholdsByAgentId(agentId: string): Promise<(Household & { lastReminder?: Date | null; city?: string })[]> {
+    // Get all batches for this agent
+    const agentBatches = await this.getBatchesByAgentId(agentId);
+    const agentBatchIds = agentBatches.map(b => b.id);
+    
+    // Get all magnets from these batches
+    const agentMagnets = Array.from(this.magnets.values()).filter(
+      (magnet) => agentBatchIds.includes(magnet.batchId)
+    );
+    const agentTokens = agentMagnets.map(m => m.token);
+    
+    // Get activated households using these tokens
+    const households = Array.from(this.households.values()).filter(
+      (household) => household.activatedAt && agentTokens.includes(household.token)
+    );
+
+    // Add last reminder date and mock city for each household
+    return households.map(household => {
+      // Find the most recent reminder for this household
+      const householdReminders = Array.from(this.reminderQueue.values()).filter(
+        r => r.householdId === household.id && r.sentAt
+      );
+      const lastReminder = householdReminders.length > 0 
+        ? householdReminders.sort((a, b) => (b.sentAt?.getTime() || 0) - (a.sentAt?.getTime() || 0))[0].sentAt 
+        : null;
+
+      // Mock city based on ZIP (simple mapping for demo)
+      const cityMap: { [key: string]: string } = {
+        '10001': 'New York',
+        '90210': 'Beverly Hills',
+        '02101': 'Boston',
+        '60601': 'Chicago',
+        '33101': 'Miami'
+      };
+      const city = cityMap[household.zip] || 'Unknown City';
+
+      return {
+        ...household,
+        lastReminder,
+        city
+      };
+    });
+  }
+
+  async getAgentMetrics(agentId: string): Promise<{
+    totalMagnets: number;
+    scans: number;
+    activations: number;
+    last30DayActive: number;
+  }> {
+    // Get all batches for this agent
+    const agentBatches = await this.getBatchesByAgentId(agentId);
+    const agentBatchIds = agentBatches.map(b => b.id);
+    
+    // Count total magnets
+    const totalMagnets = Array.from(this.magnets.values()).filter(
+      (magnet) => agentBatchIds.includes(magnet.batchId)
+    ).length;
+
+    // Get agent tokens
+    const agentMagnets = Array.from(this.magnets.values()).filter(
+      (magnet) => agentBatchIds.includes(magnet.batchId)
+    );
+    const agentTokens = agentMagnets.map(m => m.token);
+
+    // Count households that accessed setup (scans)
+    const scans = Array.from(this.households.values()).filter(
+      (household) => agentTokens.includes(household.token)
+    ).length;
+
+    // Count activated households
+    const activations = Array.from(this.households.values()).filter(
+      (household) => household.activatedAt && agentTokens.includes(household.token)
+    ).length;
+
+    // Count households active in last 30 days (with events)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    const activatedHouseholds = Array.from(this.households.values()).filter(
+      (household) => household.activatedAt && agentTokens.includes(household.token)
+    );
+    const activeHouseholdIds = activatedHouseholds.map(h => h.id);
+    
+    const last30DayActive = Array.from(this.events.values()).filter(
+      (event) => activeHouseholdIds.includes(event.householdId) && 
+                 event.createdAt >= thirtyDaysAgo
+    ).map(e => e.householdId).filter((id, index, arr) => arr.indexOf(id) === index).length;
+
+    return {
+      totalMagnets,
+      scans,
+      activations,
+      last30DayActive
+    };
   }
 }
 

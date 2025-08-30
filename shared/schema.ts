@@ -139,6 +139,11 @@ export const taskCompleteSchema = z.object({
   task_code: z.string().min(1),
 });
 
+// Agent login schema
+export const agentLoginSchema = z.object({
+  email: z.string().email(),
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type InsertBatch = z.infer<typeof insertBatchSchema>;
