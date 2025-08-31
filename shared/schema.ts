@@ -144,6 +144,12 @@ export const agentLoginSchema = z.object({
   email: z.string().email(),
 });
 
+// Checkout schema
+export const checkoutSchema = z.object({
+  sku: z.enum(['100pack', '500pack', 'single', 'twopack']),
+  agentId: z.string().optional(),
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type InsertBatch = z.infer<typeof insertBatchSchema>;

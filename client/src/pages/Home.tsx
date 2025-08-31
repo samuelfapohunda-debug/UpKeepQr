@@ -1,135 +1,405 @@
-import { Link } from 'wouter';
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { CheckCircle, Users, BarChart3, Calendar, Package, Star, Mail, Phone, MapPin } from "lucide-react";
+import CheckoutModal from "@/components/CheckoutModal";
 
 export default function Home() {
+  const [checkoutSku, setCheckoutSku] = useState<string | null>(null);
+
+  const openCheckout = (sku: string) => {
+    setCheckoutSku(sku);
+  };
+
   return (
-    <div className="pt-16">
-      {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-primary to-blue-600 text-primary-foreground">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div>
-              <h1 className="text-4xl lg:text-6xl font-bold mb-6" data-testid="hero-title">
-                Streamline Your 
-                <span className="text-yellow-300"> Agent Operations</span>
-              </h1>
-              <p className="text-xl mb-8 text-blue-100" data-testid="hero-description">
-                Powerful scheduling, QR code generation, and workflow automation for modern business agents. Get set up in minutes.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Link 
-                  href="/setup/demo-token"
-                  className="bg-white text-primary px-8 py-4 rounded-lg font-semibold hover:bg-gray-100 transition-colors text-center"
-                  data-testid="button-get-started"
-                >
-                  Get Started Free
-                </Link>
-                <button className="border-2 border-white text-white px-8 py-4 rounded-lg font-semibold hover:bg-white hover:text-primary transition-colors" data-testid="button-watch-demo">
-                  Watch Demo
-                </button>
+    <div className="flex flex-col min-h-screen">
+      <main className="flex-1">
+        {/* Hero Section */}
+        <section className="w-full py-12 md:py-24 lg:py-32 xl:py-48 bg-gradient-to-br from-blue-50 to-indigo-100">
+          <div className="container px-4 md:px-6 mx-auto">
+            <div className="flex flex-col items-center space-y-4 text-center">
+              <div className="space-y-2">
+                <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl">
+                  Smart Home Maintenance Management
+                </h1>
+                <p className="mx-auto max-w-[700px] text-gray-500 md:text-xl">
+                  Transform your home maintenance with QR-powered scheduling, automated reminders, and climate-based task management.
+                </p>
+              </div>
+              <div className="space-x-4">
+                <Button size="lg" onClick={() => openCheckout('single')} data-testid="button-get-started">
+                  Get Started
+                </Button>
+                <Button variant="outline" size="lg" onClick={() => document.getElementById('how-it-works')?.scrollIntoView()}>
+                  Learn More
+                </Button>
               </div>
             </div>
-            <div className="relative">
-              <img 
-                src="https://images.unsplash.com/photo-1551434678-e076c223a692?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=600" 
-                alt="Dashboard analytics interface" 
-                className="rounded-xl shadow-2xl"
-                data-testid="hero-image"
-              />
-            </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Features Section */}
-      <section className="py-24 bg-background">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-4xl font-bold mb-4" data-testid="features-title">Everything You Need to Manage Agents</h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto" data-testid="features-description">
-              Comprehensive tools for scheduling, communication, and workflow automation.
-            </p>
-          </div>
-          
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <div className="bg-card p-8 rounded-xl border border-border hover:shadow-lg transition-shadow" data-testid="feature-qr">
-              <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
-                <i className="fas fa-qrcode text-primary text-xl"></i>
+        {/* How It Works Section */}
+        <section id="how-it-works" className="w-full py-12 md:py-24 lg:py-32 bg-gray-50">
+          <div className="container px-4 md:px-6 mx-auto">
+            <div className="flex flex-col items-center justify-center space-y-4 text-center">
+              <div className="space-y-2">
+                <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">How It Works</h2>
+                <p className="max-w-[900px] text-gray-500 md:text-xl/relaxed">
+                  Get your home maintenance on autopilot in four simple steps
+                </p>
               </div>
-              <h3 className="text-xl font-semibold mb-3">QR Code Generation</h3>
-              <p className="text-muted-foreground">
-                Instantly generate QR codes for agent onboarding, event registration, and quick access links.
-              </p>
             </div>
-            
-            <div className="bg-card p-8 rounded-xl border border-border hover:shadow-lg transition-shadow" data-testid="feature-calendar">
-              <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
-                <i className="fas fa-calendar-alt text-primary text-xl"></i>
-              </div>
-              <h3 className="text-xl font-semibold mb-3">Calendar Integration</h3>
-              <p className="text-muted-foreground">
-                Seamless ICS calendar support with automated scheduling and event management.
-              </p>
-            </div>
-            
-            <div className="bg-card p-8 rounded-xl border border-border hover:shadow-lg transition-shadow" data-testid="feature-automation">
-              <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
-                <i className="fas fa-cog text-primary text-xl"></i>
-              </div>
-              <h3 className="text-xl font-semibold mb-3">Automated Jobs</h3>
-              <p className="text-muted-foreground">
-                Set up recurring tasks and automated workflows to streamline operations.
-              </p>
-            </div>
-            
-            <div className="bg-card p-8 rounded-xl border border-border hover:shadow-lg transition-shadow" data-testid="feature-data">
-              <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
-                <i className="fas fa-database text-primary text-xl"></i>
-              </div>
-              <h3 className="text-xl font-semibold mb-3">Data Management</h3>
-              <p className="text-muted-foreground">
-                Robust PostgreSQL integration with secure data handling and validation.
-              </p>
-            </div>
-            
-            <div className="bg-card p-8 rounded-xl border border-border hover:shadow-lg transition-shadow" data-testid="feature-security">
-              <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
-                <i className="fas fa-shield-alt text-primary text-xl"></i>
-              </div>
-              <h3 className="text-xl font-semibold mb-3">Secure Tokens</h3>
-              <p className="text-muted-foreground">
-                Unique token-based authentication and secure access management for all agents.
-              </p>
-            </div>
-            
-            <div className="bg-card p-8 rounded-xl border border-border hover:shadow-lg transition-shadow" data-testid="feature-email">
-              <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
-                <i className="fas fa-envelope text-primary text-xl"></i>
-              </div>
-              <h3 className="text-xl font-semibold mb-3">Email Integration</h3>
-              <p className="text-muted-foreground">
-                Automated email notifications and communication tools for agent coordination.
-              </p>
+            <div className="mx-auto grid max-w-6xl items-center gap-6 py-12 lg:grid-cols-4">
+              <Card className="text-center">
+                <CardHeader>
+                  <div className="mx-auto bg-blue-100 rounded-full w-12 h-12 flex items-center justify-center mb-4">
+                    <span className="text-2xl font-bold text-blue-600">1</span>
+                  </div>
+                  <CardTitle>Get Your Magnet</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CardDescription>
+                    Order your QR code magnet pack and place it on your refrigerator or utility area
+                  </CardDescription>
+                </CardContent>
+              </Card>
+              
+              <Card className="text-center">
+                <CardHeader>
+                  <div className="mx-auto bg-green-100 rounded-full w-12 h-12 flex items-center justify-center mb-4">
+                    <span className="text-2xl font-bold text-green-600">2</span>
+                  </div>
+                  <CardTitle>Scan & Setup</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CardDescription>
+                    Scan the QR code and enter your home details to create a personalized maintenance schedule
+                  </CardDescription>
+                </CardContent>
+              </Card>
+              
+              <Card className="text-center">
+                <CardHeader>
+                  <div className="mx-auto bg-orange-100 rounded-full w-12 h-12 flex items-center justify-center mb-4">
+                    <span className="text-2xl font-bold text-orange-600">3</span>
+                  </div>
+                  <CardTitle>Climate-Based Scheduling</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CardDescription>
+                    Our system creates optimal maintenance schedules based on your local climate zone
+                  </CardDescription>
+                </CardContent>
+              </Card>
+              
+              <Card className="text-center">
+                <CardHeader>
+                  <div className="mx-auto bg-purple-100 rounded-full w-12 h-12 flex items-center justify-center mb-4">
+                    <span className="text-2xl font-bold text-purple-600">4</span>
+                  </div>
+                  <CardTitle>Get Reminders</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CardDescription>
+                    Receive timely email reminders with calendar events to keep your home in perfect condition
+                  </CardDescription>
+                </CardContent>
+              </Card>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* CTA Section */}
-      <section className="py-24 bg-muted">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl lg:text-4xl font-bold mb-4" data-testid="cta-title">Ready to Get Started?</h2>
-          <p className="text-lg text-muted-foreground mb-8" data-testid="cta-description">
-            Join thousands of businesses streamlining their agent operations with AgentHub.
-          </p>
-          <Link 
-            href="/setup/demo-token"
-            className="bg-primary text-primary-foreground px-8 py-4 rounded-lg font-semibold hover:bg-primary/90 transition-colors inline-block"
-            data-testid="button-start-trial"
-          >
-            Start Your Free Trial
-          </Link>
-        </div>
-      </section>
+        {/* Pricing Section */}
+        <section className="w-full py-12 md:py-24 lg:py-32">
+          <div className="container px-4 md:px-6 mx-auto">
+            <div className="flex flex-col items-center justify-center space-y-4 text-center">
+              <div className="space-y-2">
+                <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">Simple Pricing</h2>
+                <p className="max-w-[900px] text-gray-500 md:text-xl/relaxed">
+                  Choose the plan that fits your needs
+                </p>
+              </div>
+            </div>
+            <div className="mx-auto grid max-w-6xl items-center gap-6 py-12 lg:grid-cols-4">
+              {/* Single Pack */}
+              <Card className="relative">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Package className="h-5 w-5" />
+                    Single Pack
+                  </CardTitle>
+                  <CardDescription>Perfect for homeowners</CardDescription>
+                  <div className="text-3xl font-bold">$19</div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <ul className="space-y-2 text-sm">
+                    <li className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      1 QR Magnet
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      Lifetime Reminders
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      Climate-Based Scheduling
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      Email & Calendar Sync
+                    </li>
+                  </ul>
+                  <Button 
+                    className="w-full" 
+                    onClick={() => openCheckout('single')}
+                    data-testid="button-single-pack"
+                  >
+                    Get Started
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Two Pack */}
+              <Card className="relative">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Package className="h-5 w-5" />
+                    Two Pack
+                  </CardTitle>
+                  <CardDescription>Great for sharing</CardDescription>
+                  <div className="text-3xl font-bold">$35</div>
+                  <Badge className="absolute -top-2 -right-2 bg-green-500">Save $3</Badge>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <ul className="space-y-2 text-sm">
+                    <li className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      2 QR Magnets
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      Lifetime Reminders
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      Climate-Based Scheduling
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      Email & Calendar Sync
+                    </li>
+                  </ul>
+                  <Button 
+                    className="w-full" 
+                    onClick={() => openCheckout('twopack')}
+                    data-testid="button-two-pack"
+                  >
+                    Get Started
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* 100 Pack */}
+              <Card className="relative border-2 border-blue-500">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Users className="h-5 w-5" />
+                    Agent 100-Pack
+                  </CardTitle>
+                  <CardDescription>For real estate agents</CardDescription>
+                  <div className="text-3xl font-bold">$899</div>
+                  <Badge className="absolute -top-2 -right-2 bg-blue-500">Popular</Badge>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <ul className="space-y-2 text-sm">
+                    <li className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      100 QR Magnets
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      Agent Dashboard
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      Customer Analytics
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      CSV Download
+                    </li>
+                  </ul>
+                  <Button 
+                    className="w-full" 
+                    onClick={() => openCheckout('100pack')}
+                    data-testid="button-100-pack"
+                  >
+                    Get Started
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* 500 Pack */}
+              <Card className="relative">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Star className="h-5 w-5" />
+                    Agent 500-Pack
+                  </CardTitle>
+                  <CardDescription>For enterprise agents</CardDescription>
+                  <div className="text-3xl font-bold">$3,999</div>
+                  <Badge className="absolute -top-2 -right-2 bg-purple-500">Best Value</Badge>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <ul className="space-y-2 text-sm">
+                    <li className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      500 QR Magnets
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      Priority Support
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      Advanced Analytics
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      Bulk Management
+                    </li>
+                  </ul>
+                  <Button 
+                    className="w-full" 
+                    onClick={() => openCheckout('500pack')}
+                    data-testid="button-500-pack"
+                  >
+                    Get Started
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </section>
+
+        {/* FAQ Section */}
+        <section className="w-full py-12 md:py-24 lg:py-32 bg-gray-50">
+          <div className="container px-4 md:px-6 mx-auto">
+            <div className="flex flex-col items-center justify-center space-y-4 text-center mb-12">
+              <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">Frequently Asked Questions</h2>
+            </div>
+            <div className="mx-auto max-w-4xl grid gap-6 lg:grid-cols-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle>How does the QR magnet work?</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CardDescription>
+                    Simply scan the QR code with your phone camera to access the setup page. Enter your home details and we'll create a customized maintenance schedule based on your climate zone.
+                  </CardDescription>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle>What maintenance tasks are included?</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CardDescription>
+                    Our system includes HVAC filter changes, gutter cleaning, deck maintenance, sprinkler winterization, and many more tasks tailored to your specific home type and local climate.
+                  </CardDescription>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle>How often will I get reminders?</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CardDescription>
+                    Reminders are sent 7 days before each task is due. You'll receive an email with a calendar event you can add directly to your calendar app.
+                  </CardDescription>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle>Can I customize my maintenance schedule?</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CardDescription>
+                    Currently, our system automatically generates schedules based on proven best practices for your climate zone. Custom scheduling options will be available in future updates.
+                  </CardDescription>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </section>
+
+        {/* Contact Section */}
+        <section className="w-full py-12 md:py-24 lg:py-32">
+          <div className="container px-4 md:px-6 mx-auto">
+            <div className="flex flex-col items-center justify-center space-y-4 text-center">
+              <div className="space-y-2">
+                <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">Get In Touch</h2>
+                <p className="max-w-[900px] text-gray-500 md:text-xl/relaxed">
+                  Have questions? We're here to help you get the most out of your home maintenance system.
+                </p>
+              </div>
+              <div className="grid gap-6 lg:grid-cols-3 lg:gap-12 mt-12">
+                <Card className="text-center">
+                  <CardHeader>
+                    <Mail className="h-8 w-8 mx-auto text-blue-500" />
+                    <CardTitle>Email Support</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <CardDescription>
+                      support@agenthub.com
+                    </CardDescription>
+                  </CardContent>
+                </Card>
+                
+                <Card className="text-center">
+                  <CardHeader>
+                    <Phone className="h-8 w-8 mx-auto text-green-500" />
+                    <CardTitle>Phone Support</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <CardDescription>
+                      1-800-AGENTHUB<br />
+                      Mon-Fri 9AM-6PM EST
+                    </CardDescription>
+                  </CardContent>
+                </Card>
+                
+                <Card className="text-center">
+                  <CardHeader>
+                    <MapPin className="h-8 w-8 mx-auto text-purple-500" />
+                    <CardTitle>Address</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <CardDescription>
+                      123 Innovation Drive<br />
+                      Tech City, TC 12345
+                    </CardDescription>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      {/* Checkout Modal */}
+      {checkoutSku && (
+        <CheckoutModal 
+          sku={checkoutSku} 
+          isOpen={!!checkoutSku} 
+          onClose={() => setCheckoutSku(null)} 
+        />
+      )}
     </div>
   );
 }

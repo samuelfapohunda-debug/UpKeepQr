@@ -1,8 +1,9 @@
 import type { Express } from "express";
+import express from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { authenticateAdmin, authenticateAgent } from "./middleware/auth";
-import { insertBatchSchema, setupActivateSchema, setupPreviewSchema, taskCompleteSchema, agentLoginSchema } from "@shared/schema";
+import { insertBatchSchema, setupActivateSchema, setupPreviewSchema, taskCompleteSchema, agentLoginSchema, checkoutSchema } from "@shared/schema";
 import { nanoid } from "nanoid";
 import QRCode from "qrcode";
 import { createObjectCsvWriter } from "csv-writer";
@@ -11,6 +12,42 @@ import fs from "fs";
 import { getClimateZone, generateCoreSchedule, buildInitialSchedule, type Household as ClimateHousehold } from "./lib/climate";
 import { sendWelcomeEmail } from "./lib/mail";
 import jwt from "jsonwebtoken";
+import Stripe from "stripe";
+
+// Initialize Stripe
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  apiVersion: '2025-08-27.basil',
+});
+
+// SKU pricing configuration
+const SKU_CONFIG = {
+  single: { 
+    name: "Single Pack", 
+    price: 1900, // $19.00 in cents
+    description: "1 QR Magnet for homeowners",
+    quantity: 1
+  },
+  twopack: { 
+    name: "Two Pack", 
+    price: 3500, // $35.00 in cents
+    description: "2 QR Magnets - great for sharing",
+    quantity: 2
+  },
+  "100pack": { 
+    name: "Agent 100-Pack", 
+    price: 89900, // $899.00 in cents
+    description: "100 QR Magnets for real estate agents",
+    quantity: 100,
+    isAgentPack: true
+  },
+  "500pack": { 
+    name: "Agent 500-Pack", 
+    price: 399900, // $3999.00 in cents
+    description: "500 QR Magnets for enterprise agents",
+    quantity: 500,
+    isAgentPack: true
+  },
+};
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup Routes - Public
@@ -284,6 +321,183 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         res.status(500).json({ error: "Failed to complete task" });
       }
+    }
+  });
+
+  // POST /api/checkout - Create Stripe checkout session
+  app.post("/api/checkout", async (req, res) => {
+    try {
+      const validatedData = checkoutSchema.parse(req.body);
+      const { sku, agentId } = validatedData;
+
+      const skuConfig = SKU_CONFIG[sku as keyof typeof SKU_CONFIG];
+      if (!skuConfig) {
+        return res.status(400).json({ error: "Invalid SKU" });
+      }
+
+      // Create Stripe checkout session
+      const session = await stripe.checkout.sessions.create({
+        payment_method_types: ['card'],
+        line_items: [
+          {
+            price_data: {
+              currency: 'usd',
+              product_data: {
+                name: skuConfig.name,
+                description: skuConfig.description,
+              },
+              unit_amount: skuConfig.price,
+            },
+            quantity: 1,
+          },
+        ],
+        mode: 'payment',
+        success_url: `${req.headers.origin}/setup/success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${req.headers.origin}/?canceled=true`,
+        metadata: {
+          sku,
+          agentId: agentId || '',
+          quantity: skuConfig.quantity.toString(),
+          isAgentPack: (skuConfig as any).isAgentPack ? 'true' : 'false',
+        },
+      });
+
+      res.json({ sessionId: session.id });
+    } catch (error: any) {
+      console.error("Checkout error:", error);
+      if (error?.name === 'ZodError') {
+        res.status(400).json({ error: "Invalid checkout data", details: error.errors });
+      } else {
+        res.status(500).json({ error: "Failed to create checkout session" });
+      }
+    }
+  });
+
+  // POST /api/stripe/webhook - Stripe webhook handler
+  app.post("/api/stripe/webhook", express.raw({ type: 'application/json' }), async (req, res) => {
+    const sig = req.headers['stripe-signature'];
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+    if (!sig || !webhookSecret) {
+      return res.status(400).json({ error: "Missing webhook signature or secret" });
+    }
+
+    let event;
+
+    try {
+      event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
+    } catch (err: any) {
+      console.error("Webhook signature verification failed:", err.message);
+      return res.status(400).json({ error: "Invalid webhook signature" });
+    }
+
+    // Handle the checkout.session.completed event
+    if (event.type === 'checkout.session.completed') {
+      const session = event.data.object as Stripe.Checkout.Session;
+      const { sku, agentId, quantity, isAgentPack } = session.metadata || {};
+
+      console.log("Processing successful payment:", { sku, agentId, quantity, isAgentPack });
+
+      // If this is an agent pack, create batch and magnets
+      if (isAgentPack === 'true' && agentId && quantity) {
+        try {
+          // Create magnet batch
+          const batch = await storage.createBatch({
+            agentId,
+            qty: parseInt(quantity),
+          });
+
+          // Create individual magnets for the batch
+          const magnets = [];
+          for (let i = 0; i < parseInt(quantity); i++) {
+            const token = nanoid(12);
+            const baseUrl = process.env.PUBLIC_BASE_URL || 'http://localhost:5000';
+            const setupUrl = `${baseUrl}/setup/${token}`;
+            
+            const magnet = await storage.createMagnet({
+              batchId: batch.id,
+              token,
+              url: setupUrl,
+            });
+            magnets.push(magnet);
+          }
+
+          // Create CSV file for download
+          const csvFilePath = path.join(process.cwd(), 'exports', `batch-${batch.id}.csv`);
+          
+          // Ensure exports directory exists
+          const exportsDir = path.dirname(csvFilePath);
+          if (!fs.existsSync(exportsDir)) {
+            fs.mkdirSync(exportsDir, { recursive: true });
+          }
+
+          const csvWriter = createObjectCsvWriter({
+            path: csvFilePath,
+            header: [
+              { id: 'token', title: 'Token' },
+              { id: 'url', title: 'Setup URL' },
+              { id: 'qr_code_url', title: 'QR Code URL' },
+            ]
+          });
+
+          const csvData = magnets.map(magnet => ({
+            token: magnet.token,
+            url: magnet.url,
+            qr_code_url: `${process.env.PUBLIC_BASE_URL || 'http://localhost:5000'}/api/admin/qr/${magnet.token}`,
+          }));
+
+          await csvWriter.writeRecords(csvData);
+
+          console.log(`Created batch ${batch.id} with ${magnets.length} magnets`);
+          
+          // Store session info for success page
+          // In a real app, you'd store this in the database with the session ID
+          
+        } catch (error) {
+          console.error("Error creating agent pack:", error);
+        }
+      }
+
+      // Record the successful payment event
+      try {
+        await storage.createEvent({
+          householdId: 'system', // Use system for payment events
+          eventType: 'payment_completed',
+          eventData: JSON.stringify({
+            sessionId: session.id,
+            sku,
+            agentId,
+            amount: session.amount_total,
+            customerEmail: session.customer_details?.email,
+          }),
+        });
+      } catch (error) {
+        console.error("Error recording payment event:", error);
+      }
+    }
+
+    res.json({ received: true });
+  });
+
+  // GET /api/download/batch/:batchId - Download CSV for agent packs
+  app.get("/api/download/batch/:batchId", async (req, res) => {
+    try {
+      const { batchId } = req.params;
+      const csvFilePath = path.join(process.cwd(), 'exports', `batch-${batchId}.csv`);
+      
+      if (!fs.existsSync(csvFilePath)) {
+        return res.status(404).json({ error: "CSV file not found" });
+      }
+
+      res.download(csvFilePath, `magnet-batch-${batchId}.csv`, (err) => {
+        if (err) {
+          console.error("Error downloading file:", err);
+          res.status(500).json({ error: "Failed to download file" });
+        }
+      });
+    } catch (error: any) {
+      console.error("Download error:", error);
+      res.status(500).json({ error: "Failed to download file" });
     }
   });
 
