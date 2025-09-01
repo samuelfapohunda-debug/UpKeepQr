@@ -55,8 +55,11 @@ export default function Onboarding() {
       } else {
         setError(result.error || 'Setup activation failed');
       }
-    } catch (err) {
-      console.error('Setup error:', err);
+    } catch (err: any) {
+      // Only log actual errors, not empty objects
+      if (err && (err.message || err.name || Object.keys(err).length > 0)) {
+        console.error('Setup error:', err);
+      }
       setError('Network error. Please try again.');
     } finally {
       setLoading(false);
