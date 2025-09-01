@@ -39,8 +39,14 @@ export default function CheckoutModal({ sku, isOpen, onClose, agentId }: Checkou
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Checkout failed");
+        let errorMessage = "Checkout failed";
+        try {
+          const error = await response.json();
+          errorMessage = error.error || error.message || errorMessage;
+        } catch (e) {
+          // Failed to parse error response, use default message
+        }
+        throw new Error(errorMessage);
       }
 
       const { sessionId } = await response.json();
@@ -57,10 +63,13 @@ export default function CheckoutModal({ sku, isOpen, onClose, agentId }: Checkou
         throw new Error(error.message);
       }
     } catch (error: any) {
-      console.error("Checkout error:", error);
+      // Only log actual errors, not empty objects
+      if (error && (error.message || error.name || Object.keys(error).length > 0)) {
+        console.error("Checkout error:", error);
+      }
       toast({
         title: "Checkout Failed",
-        description: error.message || "Unable to process checkout. Please try again.",
+        description: error?.message || "Unable to process checkout. Please try again.",
         variant: "destructive",
       });
     } finally {
