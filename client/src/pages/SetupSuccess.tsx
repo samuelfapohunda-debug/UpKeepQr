@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useSearch } from "wouter";
-import { CheckCircle, Calendar, Bell, Home, Download, Package } from "lucide-react";
+import { CheckCircle, Calendar, Bell, Home, Download, Package, Wrench } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +9,7 @@ interface SetupResult {
   success: boolean;
   household: {
     id: string;
+    token: string;
     zip: string;
     homeType: string;
     climateZone: string;
@@ -256,13 +257,32 @@ export default function SetupSuccess() {
                       <p className="text-gray-600 mb-2" data-testid={`task-description-${index}`}>
                         {schedule.description}
                       </p>
-                      <div className="flex items-center space-x-4 text-sm">
-                        <Badge variant="secondary">
-                          Every {schedule.frequencyMonths} month{schedule.frequencyMonths > 1 ? 's' : ''}
-                        </Badge>
-                        <span className="text-gray-500">
-                          Priority {schedule.priority}
-                        </span>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-4 text-sm">
+                          <Badge variant="secondary">
+                            Every {schedule.frequencyMonths} month{schedule.frequencyMonths > 1 ? 's' : ''}
+                          </Badge>
+                          <span className="text-gray-500">
+                            Priority {schedule.priority}
+                          </span>
+                        </div>
+                        <div className="flex gap-2">
+                          <Link 
+                            href={`/task/${household.token}/${schedule.taskName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z-]/g, '')}`}
+                          >
+                            <Button variant="outline" size="sm" data-testid={`button-view-details-${index}`}>
+                              View Details
+                            </Button>
+                          </Link>
+                          <Link 
+                            href={`/task/${household.token}/${schedule.taskName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z-]/g, '')}`}
+                          >
+                            <Button variant="outline" size="sm" className="text-blue-600" data-testid={`button-book-pro-${index}`}>
+                              <Wrench className="mr-1 h-3 w-3" />
+                              Book a Pro
+                            </Button>
+                          </Link>
+                        </div>
                       </div>
                     </div>
                   </div>

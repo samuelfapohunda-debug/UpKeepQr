@@ -93,6 +93,15 @@ export const taskCompletions = pgTable("task_completions", {
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
 });
 
+export const leads = pgTable("leads", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  householdId: varchar("household_id").notNull().references(() => households.id),
+  service: text("service").notNull(),
+  status: text("status").notNull().default("pending"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+});
+
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
@@ -150,6 +159,19 @@ export const checkoutSchema = z.object({
   agentId: z.string().optional(),
 });
 
+// Leads schema
+export const leadsSchema = z.object({
+  householdToken: z.string().min(1),
+  service: z.enum(['hvac', 'gutter', 'plumbing', 'electrical', 'roofing', 'flooring', 'painting', 'landscaping']),
+  notes: z.string().optional(),
+});
+
+export const insertLeadsSchema = createInsertSchema(leads).pick({
+  householdId: true,
+  service: true,
+  notes: true,
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type InsertBatch = z.infer<typeof insertBatchSchema>;
@@ -162,6 +184,9 @@ export type Event = typeof events.$inferSelect;
 export type Reminder = typeof reminders.$inferSelect;
 export type ReminderQueue = typeof reminderQueue.$inferSelect;
 export type TaskCompletion = typeof taskCompletions.$inferSelect;
+export type Lead = typeof leads.$inferSelect;
+export type InsertLead = z.infer<typeof insertLeadsSchema>;
 export type SetupActivateRequest = z.infer<typeof setupActivateSchema>;
 export type SetupPreviewRequest = z.infer<typeof setupPreviewSchema>;
 export type TaskCompleteRequest = z.infer<typeof taskCompleteSchema>;
+export type LeadsRequest = z.infer<typeof leadsSchema>;

@@ -1,4 +1,4 @@
-import { type User, type InsertUser, type Batch, type InsertBatch, type Magnet, type Household, type Schedule, type Event, type Reminder, type ReminderQueue, type TaskCompletion } from "@shared/schema";
+import { type User, type InsertUser, type Batch, type InsertBatch, type Magnet, type Household, type Schedule, type Event, type Reminder, type ReminderQueue, type TaskCompletion, type Lead, type InsertLead } from "@shared/schema";
 import { randomUUID } from "crypto";
 
 // modify the interface with any CRUD methods
@@ -35,6 +35,9 @@ export interface IStorage {
     activations: number;
     last30DayActive: number;
   }>;
+  // Leads methods
+  createLead(lead: { householdId: string; service: string; notes?: string }): Promise<Lead>;
+  getLeadsByHouseholdId(householdId: string): Promise<Lead[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -47,6 +50,7 @@ export class MemStorage implements IStorage {
   private reminders: Map<string, Reminder>;
   private reminderQueue: Map<string, ReminderQueue>;
   private taskCompletions: Map<string, TaskCompletion>;
+  private leads: Map<string, Lead>;
 
   constructor() {
     this.users = new Map();
@@ -58,6 +62,7 @@ export class MemStorage implements IStorage {
     this.reminders = new Map();
     this.reminderQueue = new Map();
     this.taskCompletions = new Map();
+    this.leads = new Map();
   }
 
   async getUser(id: string): Promise<User | undefined> {
@@ -381,6 +386,26 @@ export class MemStorage implements IStorage {
       activations,
       last30DayActive
     };
+  }
+
+  async createLead(leadData: { householdId: string; service: string; notes?: string }): Promise<Lead> {
+    const id = randomUUID();
+    const lead: Lead = {
+      id,
+      householdId: leadData.householdId,
+      service: leadData.service,
+      status: 'pending',
+      notes: leadData.notes || null,
+      createdAt: new Date()
+    };
+    this.leads.set(id, lead);
+    return lead;
+  }
+
+  async getLeadsByHouseholdId(householdId: string): Promise<Lead[]> {
+    return Array.from(this.leads.values()).filter(
+      (lead) => lead.householdId === householdId
+    );
   }
 }
 

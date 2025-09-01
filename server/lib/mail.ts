@@ -25,6 +25,15 @@ export interface ReminderEmailData {
   icsAttachment?: Buffer;
 }
 
+export interface LeadNotificationData {
+  service: string;
+  householdZip: string;
+  homeType: string;
+  customerEmail: string;
+  notes: string;
+  leadId: string;
+}
+
 /**
  * Send welcome email with first tasks overview
  */
@@ -300,4 +309,107 @@ export function getTaskHowToSteps(taskName: string): string[] {
     'Complete the task safely and thoroughly',
     'Document completion and schedule the next occurrence'
   ];
+}
+
+/**
+ * Send lead notification email to partners
+ */
+export async function sendLeadNotificationEmail(
+  recipientEmail: string,
+  subject: string,
+  data: LeadNotificationData
+): Promise<void> {
+  const { service, householdZip, homeType, customerEmail, notes, leadId } = data;
+  
+  const htmlBody = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <style>
+        body { font-family: 'Segoe UI', Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: linear-gradient(135deg, #4caf50 0%, #45a049 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+        .content { background: #f8f9fa; padding: 30px; }
+        .lead-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin: 20px 0; }
+        .detail-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; }
+        .detail-label { font-weight: bold; color: #666; }
+        .footer { background: #6c757d; color: white; padding: 20px; text-align: center; border-radius: 0 0 8px 8px; font-size: 14px; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1>🔧 New Service Lead</h1>
+          <p>Professional service request from AgentHub</p>
+        </div>
+        
+        <div class="content">
+          <div class="lead-card">
+            <h3>Lead Details</h3>
+            <div class="detail-row">
+              <span class="detail-label">Service Type:</span>
+              <span>${service.toUpperCase()}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Location:</span>
+              <span>${householdZip}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Home Type:</span>
+              <span>${homeType}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Customer Email:</span>
+              <span>${customerEmail}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Lead ID:</span>
+              <span>${leadId}</span>
+            </div>
+            ${notes ? `
+            <div style="margin-top: 15px;">
+              <div class="detail-label">Additional Notes:</div>
+              <div style="background: #f0f0f0; padding: 10px; border-radius: 4px; margin-top: 5px;">
+                ${notes}
+              </div>
+            </div>
+            ` : ''}
+          </div>
+          
+          <p><strong>Next Steps:</strong> Please contact the customer within 24 hours to schedule a consultation.</p>
+        </div>
+        
+        <div class="footer">
+          <p>🏠 AgentHub Lead Management</p>
+          <p>This lead was generated from our home maintenance platform.</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+  
+  const textBody = `
+New Service Lead - AgentHub
+
+Service Type: ${service.toUpperCase()}
+Location: ${householdZip}
+Home Type: ${homeType}
+Customer Email: ${customerEmail}
+Lead ID: ${leadId}
+
+${notes ? `Additional Notes: ${notes}` : ''}
+
+Next Steps: Please contact the customer within 24 hours to schedule a consultation.
+
+AgentHub Lead Management
+This lead was generated from our home maintenance platform.
+  `;
+
+  await postmarkClient.sendEmail({
+    From: "leads@agenthub.com",
+    To: recipientEmail,
+    Subject: subject,
+    HtmlBody: htmlBody,
+    TextBody: textBody,
+  });
 }

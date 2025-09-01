@@ -10,6 +10,7 @@ import SetupSuccess from "@/pages/SetupSuccess";
 import Dashboard from "@/pages/Dashboard";
 import AgentLogin from "@/pages/AgentLogin";
 import AgentDashboard from "@/pages/AgentDashboard";
+import TaskDetail from "@/pages/TaskDetail";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -23,6 +24,7 @@ function Router() {
         <Route path="/admin" component={Dashboard} />
         <Route path="/agent" component={AgentLogin} />
         <Route path="/agent/dashboard" component={AgentDashboard} />
+        <Route path="/task/:token/:taskId" component={TaskDetail} />
         {/* Fallback to 404 */}
         <Route component={NotFound} />
       </Switch>

@@ -3,7 +3,7 @@ import express from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { authenticateAdmin, authenticateAgent } from "./middleware/auth";
-import { insertBatchSchema, setupActivateSchema, setupPreviewSchema, taskCompleteSchema, agentLoginSchema, checkoutSchema } from "@shared/schema";
+import { insertBatchSchema, setupActivateSchema, setupPreviewSchema, taskCompleteSchema, agentLoginSchema, checkoutSchema, leadsSchema } from "@shared/schema";
 import { nanoid } from "nanoid";
 import QRCode from "qrcode";
 import { createObjectCsvWriter } from "csv-writer";
@@ -177,6 +177,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success: true,
         household: {
           id: household.id,
+          token: household.token,
           zip: household.zip,
           homeType: household.homeType,
           climateZone,
@@ -477,6 +478,88 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     res.json({ received: true });
+  });
+
+  // POST /api/leads - Create lead for professional services
+  app.post("/api/leads", async (req, res) => {
+    try {
+      const validatedData = leadsSchema.parse(req.body);
+      const { householdToken, service, notes } = validatedData;
+
+      // Get household by token
+      const household = await storage.getHouseholdByToken(householdToken);
+      if (!household) {
+        return res.status(404).json({ error: "Household not found" });
+      }
+
+      // Create the lead
+      const lead = await storage.createLead({
+        householdId: household.id,
+        service,
+        notes,
+      });
+
+      // Record lead created event
+      await storage.createEvent({
+        householdId: household.id,
+        eventType: 'lead_created',
+        eventData: JSON.stringify({
+          leadId: lead.id,
+          service,
+          notes,
+        }),
+      });
+
+      // Send email notifications
+      try {
+        const mailModule = await import('./lib/mail');
+        const { sendLeadNotificationEmail } = mailModule;
+        
+        // Send to partner (example partner email)
+        await sendLeadNotificationEmail(
+          'partner@agenthub.com',
+          'New Service Lead',
+          {
+            service,
+            householdZip: household.zip,
+            homeType: household.homeType,
+            customerEmail: household.email || 'Not provided',
+            notes: notes || 'No additional notes',
+            leadId: lead.id,
+          }
+        );
+
+        // Send to tracking email
+        await sendLeadNotificationEmail(
+          'leads@agenthub.com',
+          'Lead Tracking - New Service Request',
+          {
+            service,
+            householdZip: household.zip,
+            homeType: household.homeType,
+            customerEmail: household.email || 'Not provided',
+            notes: notes || 'No additional notes',
+            leadId: lead.id,
+          }
+        );
+      } catch (emailError) {
+        console.error("Error sending lead notification emails:", emailError);
+        // Don't fail the API call if email fails
+      }
+
+      res.json({ 
+        success: true, 
+        leadId: lead.id,
+        message: "Lead created successfully. A professional will contact you soon."
+      });
+    } catch (error: any) {
+      console.error("Lead creation error:", error);
+      if (error?.name === 'ZodError') {
+        res.status(400).json({ error: "Invalid lead data", details: error.errors });
+      } else {
+        res.status(500).json({ error: "Failed to create lead" });
+      }
+    }
   });
 
   // GET /api/download/batch/:batchId - Download CSV for agent packs
