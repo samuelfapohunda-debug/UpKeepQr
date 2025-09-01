@@ -34,6 +34,8 @@ export const households = pgTable("households", {
   waterHeater: text("water_heater"),
   roofAgeYears: integer("roof_age_years"),
   email: text("email"),
+  phone: text("phone"),
+  smsOptIn: boolean("sms_opt_in").default(false),
   activatedAt: timestamp("activated_at"),
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
 });
@@ -164,6 +166,18 @@ export const leadsSchema = z.object({
   householdToken: z.string().min(1),
   service: z.enum(['hvac', 'gutter', 'plumbing', 'electrical', 'roofing', 'flooring', 'painting', 'landscaping']),
   notes: z.string().optional(),
+});
+
+// SMS opt-in schema
+export const smsOptInSchema = z.object({
+  token: z.string().min(1),
+  phone: z.string().regex(/^\+?[1-9]\d{1,14}$/, "Invalid phone number format"),
+});
+
+// SMS verification schema
+export const smsVerifySchema = z.object({
+  token: z.string().min(1),
+  code: z.string().length(6, "Verification code must be 6 digits"),
 });
 
 export const insertLeadsSchema = createInsertSchema(leads).pick({
