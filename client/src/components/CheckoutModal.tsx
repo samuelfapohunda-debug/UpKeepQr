@@ -51,22 +51,28 @@ export default function CheckoutModal({ sku, isOpen, onClose, agentId }: Checkou
 
       const { sessionId } = await response.json();
       
-      // Redirect to Stripe checkout
+      // Check if sessionId is valid
+      if (!sessionId || !sessionId.startsWith('cs_')) {
+        throw new Error("Invalid session ID received from server");
+      }
+      
+      // Get Stripe instance
       const stripe = await stripePromise;
       if (!stripe) {
-        throw new Error("Stripe failed to load");
+        throw new Error("Stripe failed to load - check your internet connection");
       }
 
-      const { error } = await stripe.redirectToCheckout({ sessionId });
+      // Use a more explicit redirect approach
+      const result = await stripe.redirectToCheckout({ 
+        sessionId: sessionId.trim()
+      });
       
-      if (error) {
-        throw new Error(error.message);
+      if (result.error) {
+        // This should not execute if redirect is successful
+        throw new Error(result.error.message || 'Failed to redirect to checkout');
       }
     } catch (error: any) {
-      // Only log actual errors, not empty objects
-      if (error && (error.message || error.name || Object.keys(error).length > 0)) {
-        console.error("Checkout error:", error);
-      }
+      console.error("Checkout error:", error);
       toast({
         title: "Checkout Failed",
         description: error?.message || "Unable to process checkout. Please try again.",
