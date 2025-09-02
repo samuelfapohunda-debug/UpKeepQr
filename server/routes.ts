@@ -13,11 +13,75 @@ import { getClimateZone, generateCoreSchedule, buildInitialSchedule, type Househ
 import { sendWelcomeEmail } from "./lib/mail";
 import jwt from "jsonwebtoken";
 import Stripe from "stripe";
+import rateLimit from 'express-rate-limit';
+import morgan from 'morgan';
 
 // Initialize Stripe
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2025-08-27.basil',
 });
+
+// Rate limiters
+const publicApiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per windowMs
+  message: { error: "Too many requests, please try again later." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const authApiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // Limit login attempts
+  message: { error: "Too many login attempts, please try again later." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const smsApiLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 3, // Limit SMS requests
+  message: { error: "Too many SMS requests, please try again in a minute." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Audit logging helper
+async function createAuditLog(req: any, action: string) {
+  try {
+    const actor = req.ip || 'unknown';
+    const meta = {
+      method: req.method,
+      url: req.url,
+      userAgent: req.get('user-agent'),
+      timestamp: new Date().toISOString()
+    };
+    await storage.createAuditLog({ actor, action: `${req.method} ${action}`, meta });
+  } catch (error) {
+    console.error('Audit logging error:', error);
+  }
+}
+
+// Generic error handler
+function handleError(error: any, action: string, res: any) {
+  console.error(`Error in ${action}:`, {
+    message: error.message,
+    stack: error.stack,
+    name: error.name,
+    timestamp: new Date().toISOString()
+  });
+
+  if (error?.name === 'ZodError') {
+    return res.status(400).json({ 
+      error: "Invalid input data",
+      fields: error.errors?.map((e: any) => e.path[0]).filter(Boolean) || []
+    });
+  }
+
+  return res.status(500).json({ 
+    error: "An error occurred processing your request" 
+  });
+}
 
 // SKU pricing configuration
 const SKU_CONFIG = {
@@ -50,10 +114,17 @@ const SKU_CONFIG = {
 };
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Add morgan logging for all requests
+  app.use(morgan('combined', {
+    stream: {
+      write: (message: string) => console.log(message.trim())
+    }
+  }));
   // Setup Routes - Public
 
   // POST /api/setup/activate - Activate household setup
-  app.post("/api/setup/activate", async (req, res) => {
+  app.post("/api/setup/activate", publicApiLimiter, async (req, res) => {
+    await createAuditLog(req, '/api/setup/activate');
     try {
       const validatedData = setupActivateSchema.parse(req.body);
       const { token, zip, home_type, sqft, hvac_type, water_heater, roof_age_years, email } = validatedData;
@@ -193,17 +264,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           : new Date().toISOString(),
       });
     } catch (error: any) {
-      console.error("Error activating setup:", error);
-      if (error?.name === 'ZodError') {
-        res.status(400).json({ error: "Invalid input data", details: error.errors });
-      } else {
-        res.status(500).json({ error: "Failed to activate setup" });
-      }
+      return handleError(error, 'setup/activate', res);
     }
   });
 
   // POST /api/setup/preview - Preview tasks without persistence
-  app.post("/api/setup/preview", async (req, res) => {
+  app.post("/api/setup/preview", publicApiLimiter, async (req, res) => {
+    await createAuditLog(req, '/api/setup/preview');
     try {
       const validatedData = setupPreviewSchema.parse(req.body);
       const { zip, home_type } = validatedData;
@@ -241,12 +308,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         totalTasks: coreTasks.length,
       });
     } catch (error: any) {
-      console.error("Error generating preview:", error);
-      if (error?.name === 'ZodError') {
-        res.status(400).json({ error: "Invalid input data", details: error.errors });
-      } else {
-        res.status(500).json({ error: "Failed to generate preview" });
-      }
+      return handleError(error, 'setup/preview', res);
     }
   });
 
@@ -488,7 +550,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // POST /api/leads - Create lead for professional services
-  app.post("/api/leads", async (req, res) => {
+  app.post("/api/leads", publicApiLimiter, async (req, res) => {
+    await createAuditLog(req, '/api/leads');
     try {
       const validatedData = leadsSchema.parse(req.body);
       const { householdToken, service, notes } = validatedData;
@@ -570,7 +633,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // POST /api/setup/optin-sms - SMS opt-in with verification
-  app.post("/api/setup/optin-sms", async (req, res) => {
+  app.post("/api/setup/optin-sms", smsApiLimiter, async (req, res) => {
+    await createAuditLog(req, '/api/setup/optin-sms');
     try {
       const validatedData = smsOptInSchema.parse(req.body);
       const { token, phone } = validatedData;
@@ -688,7 +752,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Agent Routes - Authentication and Dashboard
   
   // POST /api/agent/login - Mock agent login
-  app.post("/api/agent/login", async (req, res) => {
+  app.post("/api/agent/login", authApiLimiter, async (req, res) => {
+    await createAuditLog(req, '/api/agent/login');
     try {
       const validatedData = agentLoginSchema.parse(req.body);
       const { email } = validatedData;

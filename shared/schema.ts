@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, timestamp, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, timestamp, boolean, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -104,6 +104,15 @@ export const leads = pgTable("leads", {
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
 });
 
+export const audit = pgTable("audit", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  timestamp: timestamp("timestamp").notNull().default(sql`now()`),
+  actor: text("actor").notNull(), // IP address, user ID, or 'system'
+  action: text("action").notNull(), // API endpoint or action taken
+  meta: jsonb("meta"), // Additional context (sanitized)
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+});
+
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
@@ -186,6 +195,12 @@ export const insertLeadsSchema = createInsertSchema(leads).pick({
   notes: true,
 });
 
+export const insertAuditSchema = createInsertSchema(audit).pick({
+  actor: true,
+  action: true,
+  meta: true,
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type InsertBatch = z.infer<typeof insertBatchSchema>;
@@ -206,3 +221,5 @@ export type TaskCompleteRequest = z.infer<typeof taskCompleteSchema>;
 export type LeadsRequest = z.infer<typeof leadsSchema>;
 export type SmsOptInRequest = z.infer<typeof smsOptInSchema>;
 export type SmsVerifyRequest = z.infer<typeof smsVerifySchema>;
+export type Audit = typeof audit.$inferSelect;
+export type InsertAudit = z.infer<typeof insertAuditSchema>;

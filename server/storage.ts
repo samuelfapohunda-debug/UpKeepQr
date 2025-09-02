@@ -1,4 +1,4 @@
-import { type User, type InsertUser, type Batch, type InsertBatch, type Magnet, type Household, type Schedule, type Event, type Reminder, type ReminderQueue, type TaskCompletion, type Lead, type InsertLead } from "@shared/schema";
+import { type User, type InsertUser, type Batch, type InsertBatch, type Magnet, type Household, type Schedule, type Event, type Reminder, type ReminderQueue, type TaskCompletion, type Lead, type InsertLead, type Audit, type InsertAudit } from "@shared/schema";
 import { randomUUID } from "crypto";
 
 // modify the interface with any CRUD methods
@@ -39,6 +39,8 @@ export interface IStorage {
   // Leads methods
   createLead(lead: { householdId: string; service: string; notes?: string }): Promise<Lead>;
   getLeadsByHouseholdId(householdId: string): Promise<Lead[]>;
+  // Audit methods
+  createAuditLog(audit: { actor: string; action: string; meta?: any }): Promise<Audit>;
 }
 
 export class MemStorage implements IStorage {
@@ -52,6 +54,7 @@ export class MemStorage implements IStorage {
   private reminderQueue: Map<string, ReminderQueue>;
   private taskCompletions: Map<string, TaskCompletion>;
   private leads: Map<string, Lead>;
+  private auditLogs: Map<string, Audit>;
 
   constructor() {
     this.users = new Map();
@@ -64,6 +67,7 @@ export class MemStorage implements IStorage {
     this.reminderQueue = new Map();
     this.taskCompletions = new Map();
     this.leads = new Map();
+    this.auditLogs = new Map();
   }
 
   async getUser(id: string): Promise<User | undefined> {
@@ -413,6 +417,20 @@ export class MemStorage implements IStorage {
     return Array.from(this.leads.values()).filter(
       (lead) => lead.householdId === householdId
     );
+  }
+
+  async createAuditLog(auditData: { actor: string; action: string; meta?: any }): Promise<Audit> {
+    const id = randomUUID();
+    const auditLog: Audit = {
+      id,
+      timestamp: new Date(),
+      actor: auditData.actor,
+      action: auditData.action,
+      meta: auditData.meta || null,
+      createdAt: new Date()
+    };
+    this.auditLogs.set(id, auditLog);
+    return auditLog;
   }
 }
 
