@@ -901,6 +901,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // GET /api/admin/batches/:id/sheet.pdf - Generate proof sheet PDF
+  app.get("/api/admin/batches/:id/sheet.pdf", async (req, res) => {
+    try {
+      const batchId = req.params.id;
+      
+      const { generateBatchProofSheet } = await import('./lib/pdf');
+      const pdfBuffer = await generateBatchProofSheet(batchId);
+      
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `inline; filename="batch-${batchId}-proof.pdf"`);
+      res.send(pdfBuffer);
+      
+    } catch (error: any) {
+      console.error("Error generating proof sheet:", error);
+      if (error.message === 'Batch not found' || error.message === 'No magnets found for this batch') {
+        res.status(404).json({ error: error.message });
+      } else {
+        res.status(500).json({ error: "Failed to generate proof sheet" });
+      }
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;

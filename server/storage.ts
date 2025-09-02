@@ -28,6 +28,7 @@ export interface IStorage {
   createTaskCompletion(completion: { householdId: string; scheduleId: string; taskCode: string; completedAt: Date; nextDueDate: Date }): Promise<TaskCompletion>;
   // Agent methods
   getBatchesByAgentId(agentId: string): Promise<Batch[]>;
+  getBatchById(id: string): Promise<Batch | undefined>;
   getActivatedHouseholdsByAgentId(agentId: string): Promise<(Household & { lastReminder?: Date | null; city?: string })[]>;
   getAgentMetrics(agentId: string): Promise<{
     totalMagnets: number;
@@ -140,6 +141,8 @@ export class MemStorage implements IStorage {
       waterHeater: householdData.waterHeater || null,
       roofAgeYears: householdData.roofAgeYears || null,
       email: householdData.email || null,
+      phone: null,
+      smsOptIn: false,
       activatedAt: householdData.activatedAt || null,
       createdAt: new Date()
     };
@@ -289,6 +292,10 @@ export class MemStorage implements IStorage {
     return Array.from(this.batches.values()).filter(
       (batch) => batch.agentId === agentId
     );
+  }
+
+  async getBatchById(id: string): Promise<Batch | undefined> {
+    return this.batches.get(id);
   }
 
   async getActivatedHouseholdsByAgentId(agentId: string): Promise<(Household & { lastReminder?: Date | null; city?: string })[]> {
