@@ -5,6 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
+if (!import.meta.env.VITE_STRIPE_PUBLIC_KEY) {
+  throw new Error('Missing Stripe public key');
+}
+
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
 
 interface CheckoutModalProps {
@@ -62,9 +66,16 @@ export default function CheckoutModal({ sku, isOpen, onClose, agentId }: Checkou
         throw new Error("Stripe failed to load - check your internet connection");
       }
 
-      // Direct window redirect approach - more reliable in hosted environments
-      const checkoutUrl = `https://checkout.stripe.com/c/pay/${sessionId.trim()}`;
-      window.location.href = checkoutUrl;
+      // Open Stripe checkout in new window to avoid navigation issues
+      const checkoutUrl = `https://checkout.stripe.com/pay/${sessionId.trim()}`;
+      const checkoutWindow = window.open(checkoutUrl, '_blank');
+      
+      if (!checkoutWindow) {
+        throw new Error('Please allow popups for this site to complete your purchase');
+      }
+      
+      // Close the modal since checkout is opening in new tab
+      onClose();
     } catch (error: any) {
       console.error("Checkout error:", error);
       toast({
