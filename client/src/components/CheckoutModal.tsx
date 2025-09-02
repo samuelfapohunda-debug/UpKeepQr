@@ -53,33 +53,15 @@ export default function CheckoutModal({ sku, isOpen, onClose, agentId }: Checkou
         throw new Error(errorMessage);
       }
 
-      const { sessionId } = await response.json();
+      const { sessionId, checkoutUrl } = await response.json();
       
-      // Check if sessionId is valid
-      if (!sessionId || !sessionId.startsWith('cs_')) {
-        throw new Error("Invalid session ID received from server");
+      // Check if we have a valid checkout URL
+      if (!checkoutUrl) {
+        throw new Error("No checkout URL received from server");
       }
       
-      // Get Stripe instance
-      const stripe = await stripePromise;
-      if (!stripe) {
-        throw new Error("Stripe failed to load - check your internet connection");
-      }
-
-      // Add timeout to prevent hanging
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Checkout redirect timed out')), 10000);
-      });
-
-      const redirectPromise = stripe.redirectToCheckout({ 
-        sessionId: sessionId.trim()
-      });
-
-      const result = await Promise.race([redirectPromise, timeoutPromise]);
-      
-      if (result && (result as any).error) {
-        throw new Error((result as any).error.message || 'Checkout failed');
-      }
+      // Simply redirect to the Stripe checkout URL
+      window.location.href = checkoutUrl;
     } catch (error: any) {
       console.error("Checkout error:", error);
       toast({

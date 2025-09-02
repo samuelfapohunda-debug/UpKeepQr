@@ -367,7 +367,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         },
       });
 
-      res.json({ sessionId: session.id });
+      res.json({ 
+        sessionId: session.id,
+        checkoutUrl: session.url 
+      });
     } catch (error: any) {
       console.error("Checkout error:", error);
       if (error?.name === 'ZodError') {
