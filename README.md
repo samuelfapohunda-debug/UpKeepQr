@@ -1,48 +1,46 @@
-# Monorepo Agent Management Platform
+# AgentHub Platform
 
-A full-stack TypeScript application built with Yarn workspaces, featuring a Node.js/Express server and React web application.
+A comprehensive home maintenance management platform using physical magnets with unique tokens for customer onboarding.
 
 ## 🚀 Quick Start
 
 ### Prerequisites
 - Node.js 18+ 
-- Yarn 4+
+- Yarn or npm
 
 ### Installation & Setup
 
 1. **Install dependencies**
    ```bash
-   yarn install
+   npm install
    ```
 
-2. **Set up environment variables**
+2. **Start development server**
    ```bash
-   # The following environment variables are already configured in Replit:
-   # DATABASE_URL, PGHOST, PGPORT, PGDATABASE, PGUSER, PGPASSWORD
-   ```
-
-3. **Development - Run both apps**
-   ```bash
-   yarn dev
-   ```
-
-4. **Individual app development**
-   ```bash
-   # Server only (runs on port 3001)
-   yarn server:dev
-   
-   # Web only (runs on port 5173) 
-   yarn web:dev
+   npm run dev
    ```
 
 ### Production Build & Deploy
 
 ```bash
-# Build both applications
-yarn build
+# Build application
+npm run build
 
 # Start production server
-yarn start
+npm start
+```
+
+## 🧪 Smoke Testing
+
+Run the comprehensive smoke test script to validate all core functionality:
+
+```bash
+./scripts/smoke.sh [BASE_URL]
+```
+
+Example:
+```bash
+./scripts/smoke.sh http://localhost:5000
 ```
 
 ## 📁 Project Structure
@@ -128,32 +126,133 @@ yarn start
 - ✅ TailwindCSS configured
 - ✅ Shared constants file for API base URL
 
-## 🌐 API Endpoints
+## 🌐 API Testing with cURL
 
-### Health Check
-- `GET /health` - Server health status
+### 1. Agent Authentication
 
-### Authentication
-- `POST /api/auth/login` - User login
-- `POST /api/auth/register` - User registration
+```bash
+# Login as agent
+curl -X POST http://localhost:5000/api/agent/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test-agent@example.com"}'
 
-### QR Code Generation
-- `POST /api/qr/generate` - Generate QR code for any data
-- `GET /api/qr/token/:token` - Generate QR code for setup tokens
+# Response includes token for authenticated requests
+```
 
-### Calendar Integration
-- `POST /api/calendar/event` - Create downloadable ICS calendar event
-- `GET /api/calendar/events/:agentId` - Get agent events
+### 2. Admin Operations
+
+```bash
+# Create magnet batch (requires admin token)
+curl -X POST http://localhost:5000/api/admin/batches \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_ADMIN_TOKEN" \
+  -d '{"agentId":"test-agent","qty":10}'
+
+# Download batch CSV
+curl -X GET http://localhost:5000/api/download/batch/BATCH_ID \
+  -o batch-magnets.csv
+
+# Generate PDF proof sheet
+curl -X GET http://localhost:5000/api/admin/batches/BATCH_ID/sheet.pdf \
+  -H "Authorization: Bearer YOUR_ADMIN_TOKEN" \
+  -o proof-sheet.pdf
+
+# Trigger reminder processing
+curl -X POST http://localhost:5000/api/admin/trigger-reminders \
+  -H "Authorization: Bearer YOUR_ADMIN_TOKEN"
+```
+
+### 3. Customer Onboarding
+
+```bash
+# Preview maintenance schedule
+curl -X POST http://localhost:5000/api/setup/preview \
+  -H "Content-Type: application/json" \
+  -d '{"zip":"10001","home_type":"single_family"}'
+
+# Activate household with token
+curl -X POST http://localhost:5000/api/setup/activate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "token":"YOUR_MAGNET_TOKEN",
+    "zip":"10001",
+    "home_type":"single_family",
+    "sqft":2500,
+    "hvac_type":"central_air",
+    "water_heater":"gas",
+    "roof_age_years":10,
+    "email":"homeowner@example.com"
+  }'
+```
+
+### 4. Task Management
+
+```bash
+# Complete a maintenance task
+curl -X POST http://localhost:5000/api/tasks/complete \
+  -H "Content-Type: application/json" \
+  -d '{"householdToken":"HOUSEHOLD_TOKEN","task_code":"HVAC_FILTER"}'
+```
+
+### 5. Professional Services
+
+```bash
+# Create service lead
+curl -X POST http://localhost:5000/api/leads \
+  -H "Content-Type: application/json" \
+  -d '{
+    "householdToken":"HOUSEHOLD_TOKEN",
+    "service":"HVAC Maintenance",
+    "notes":"Customer requested quote for system tune-up"
+  }'
+```
+
+### 6. E-commerce
+
+```bash
+# Create Stripe checkout session
+curl -X POST http://localhost:5000/api/checkout \
+  -H "Content-Type: application/json" \
+  -d '{
+    "sku":"single",
+    "success_url":"http://localhost:5000/success",
+    "cancel_url":"http://localhost:5000/cancel"
+  }'
+```
+
+### 7. SMS Integration
+
+```bash
+# SMS opt-in
+curl -X POST http://localhost:5000/api/setup/optin-sms \
+  -H "Content-Type: application/json" \
+  -d '{"token":"HOUSEHOLD_TOKEN","phone":"+1234567890"}'
+
+# Verify SMS code
+curl -X POST http://localhost:5000/api/setup/verify-sms \
+  -H "Content-Type: application/json" \
+  -d '{"token":"HOUSEHOLD_TOKEN","code":"123456"}'
+```
+
+### 8. QR Code Generation
+
+```bash
+# Get QR code for magnet token
+curl -X GET http://localhost:5000/api/qr/YOUR_MAGNET_TOKEN \
+  -o magnet-qr.png
+```
+
+## 🔒 Security Features
+
+- **Rate Limiting**: All public endpoints are protected with appropriate rate limits
+- **Audit Logging**: All user actions are tracked with detailed metadata
+- **Input Validation**: Zod schemas validate all request data
+- **Generic Error Responses**: Security-focused error handling prevents information leakage
+- **Request Logging**: Comprehensive logging with Morgan for monitoring
 
 ## 🗄 Database
 
-The application uses PostgreSQL with the following environment variables automatically configured in Replit:
-- `DATABASE_URL` - Full connection string
-- `PGHOST` - Database host
-- `PGPORT` - Database port
-- `PGDATABASE` - Database name
-- `PGUSER` - Database user
-- `PGPASSWORD` - Database password
+The application uses PostgreSQL with environment variables automatically configured in Replit.
 
 ## 🎨 UI & Styling
 
@@ -201,15 +300,40 @@ The server includes automated cron jobs for:
 - Welcome email automation for new agents
 - Configurable for SendGrid, AWS SES, or other providers
 
-## 🚢 For Replit Deployment
+## 🚢 Development
 
-This monorepo is optimized for Replit with:
-- Automatic dependency installation
-- Environment variable integration
-- Hot reloading in development
-- Production-ready build process
-- Single command startup
+```bash
+# Start development server
+npm run dev
 
-**Replit Start Commands:**
-- Development: `yarn dev`
-- Production: `yarn build && yarn start`
+# Run smoke tests
+./scripts/smoke.sh
+
+# Check database status
+npm run db:push
+```
+
+## 📱 Features
+
+### Core Platform
+- Agent management dashboard with analytics
+- QR magnet batch creation and CSV export
+- PDF proof sheet generation for quality control
+- Climate-based maintenance scheduling
+- Task completion tracking and automation
+
+### Customer Experience
+- QR code-based household onboarding
+- Automated maintenance reminders via email and SMS
+- Professional service booking system
+- Calendar integration for scheduling
+
+### E-commerce Integration
+- Stripe-powered magnet sales
+- Multiple SKU support (single, 2-pack, 100-pack, 500-pack)
+- Automated batch fulfillment
+
+### Communication Systems
+- Email notifications (Postmark integration)
+- SMS reminders and verification (Twilio integration)
+- Calendar event generation (ICS format)

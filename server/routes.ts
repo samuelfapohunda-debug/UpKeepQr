@@ -988,6 +988,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // POST /api/admin/trigger-reminders - Manual reminder processing
+  app.post("/api/admin/trigger-reminders", authenticateAdmin, async (req, res) => {
+    try {
+      const { triggerReminderProcessing } = await import('./lib/cron');
+      await triggerReminderProcessing();
+      res.json({ success: true, message: "Reminder processing triggered" });
+    } catch (error: any) {
+      return handleError(error, 'admin/trigger-reminders', res);
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;
