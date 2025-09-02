@@ -19,8 +19,8 @@ function Router() {
       <Navigation />
       <Switch>
         <Route path="/" component={Home} />
-        <Route path="/setup/:token" component={Onboarding} />
         <Route path="/setup/success" component={SetupSuccess} />
+        <Route path="/setup/:token" component={Onboarding} />
         <Route path="/admin" component={Dashboard} />
         <Route path="/agent" component={AgentLogin} />
         <Route path="/agent/dashboard" component={AgentDashboard} />
