@@ -62,15 +62,9 @@ export default function CheckoutModal({ sku, isOpen, onClose, agentId }: Checkou
         throw new Error("Stripe failed to load - check your internet connection");
       }
 
-      // Use a more explicit redirect approach
-      const result = await stripe.redirectToCheckout({ 
-        sessionId: sessionId.trim()
-      });
-      
-      if (result.error) {
-        // This should not execute if redirect is successful
-        throw new Error(result.error.message || 'Failed to redirect to checkout');
-      }
+      // Direct window redirect approach - more reliable in hosted environments
+      const checkoutUrl = `https://checkout.stripe.com/c/pay/${sessionId.trim()}`;
+      window.location.href = checkoutUrl;
     } catch (error: any) {
       console.error("Checkout error:", error);
       toast({
