@@ -66,16 +66,20 @@ export default function CheckoutModal({ sku, isOpen, onClose, agentId }: Checkou
         throw new Error("Stripe failed to load - check your internet connection");
       }
 
-      // Open Stripe checkout in new window to avoid navigation issues
-      const checkoutUrl = `https://checkout.stripe.com/pay/${sessionId.trim()}`;
-      const checkoutWindow = window.open(checkoutUrl, '_blank');
+      // Add timeout to prevent hanging
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Checkout redirect timed out')), 10000);
+      });
+
+      const redirectPromise = stripe.redirectToCheckout({ 
+        sessionId: sessionId.trim()
+      });
+
+      const result = await Promise.race([redirectPromise, timeoutPromise]);
       
-      if (!checkoutWindow) {
-        throw new Error('Please allow popups for this site to complete your purchase');
+      if (result && (result as any).error) {
+        throw new Error((result as any).error.message || 'Checkout failed');
       }
-      
-      // Close the modal since checkout is opening in new tab
-      onClose();
     } catch (error: any) {
       console.error("Checkout error:", error);
       toast({
