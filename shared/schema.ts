@@ -204,3 +204,5 @@ export type SetupActivateRequest = z.infer<typeof setupActivateSchema>;
 export type SetupPreviewRequest = z.infer<typeof setupPreviewSchema>;
 export type TaskCompleteRequest = z.infer<typeof taskCompleteSchema>;
 export type LeadsRequest = z.infer<typeof leadsSchema>;
+export type SmsOptInRequest = z.infer<typeof smsOptInSchema>;
+export type SmsVerifyRequest = z.infer<typeof smsVerifySchema>;

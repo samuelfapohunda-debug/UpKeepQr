@@ -3,7 +3,7 @@ import express from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { authenticateAdmin, authenticateAgent } from "./middleware/auth";
-import { insertBatchSchema, setupActivateSchema, setupPreviewSchema, taskCompleteSchema, agentLoginSchema, checkoutSchema, leadsSchema } from "@shared/schema";
+import { insertBatchSchema, setupActivateSchema, setupPreviewSchema, taskCompleteSchema, agentLoginSchema, checkoutSchema, leadsSchema, smsOptInSchema, smsVerifySchema } from "@shared/schema";
 import { nanoid } from "nanoid";
 import QRCode from "qrcode";
 import { createObjectCsvWriter } from "csv-writer";
@@ -558,6 +558,100 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.status(400).json({ error: "Invalid lead data", details: error.errors });
       } else {
         res.status(500).json({ error: "Failed to create lead" });
+      }
+    }
+  });
+
+  // POST /api/setup/optin-sms - SMS opt-in with verification
+  app.post("/api/setup/optin-sms", async (req, res) => {
+    try {
+      const validatedData = smsOptInSchema.parse(req.body);
+      const { token, phone } = validatedData;
+
+      // Get household by token
+      const household = await storage.getHouseholdByToken(token);
+      if (!household) {
+        return res.status(404).json({ error: "Household not found" });
+      }
+
+      // Send verification code
+      try {
+        const { sendVerificationCode } = await import('./lib/sms');
+        await sendVerificationCode(phone, token);
+        
+        res.json({ 
+          success: true, 
+          message: "Verification code sent to your phone" 
+        });
+      } catch (smsError) {
+        console.error("SMS sending error:", smsError);
+        res.status(500).json({ error: "Failed to send verification code" });
+      }
+    } catch (error: any) {
+      console.error("SMS opt-in error:", error);
+      if (error?.name === 'ZodError') {
+        res.status(400).json({ error: "Invalid phone number or token", details: error.errors });
+      } else {
+        res.status(500).json({ error: "Failed to process SMS opt-in" });
+      }
+    }
+  });
+
+  // POST /api/setup/verify-sms - Verify SMS code and complete opt-in
+  app.post("/api/setup/verify-sms", async (req, res) => {
+    try {
+      const validatedData = smsVerifySchema.parse(req.body);
+      const { token, code } = validatedData;
+
+      // Get household by token
+      const household = await storage.getHouseholdByToken(token);
+      if (!household) {
+        return res.status(404).json({ error: "Household not found" });
+      }
+
+      // Verify code
+      try {
+        const { verifyCode } = await import('./lib/sms');
+        const isValid = verifyCode(token, code);
+        
+        if (!isValid) {
+          return res.status(400).json({ error: "Invalid or expired verification code" });
+        }
+
+        // Update household with SMS opt-in
+        const updatedHousehold = await storage.updateHousehold(household.id, {
+          smsOptIn: true,
+          phone: req.body.phone || household.phone // Allow phone update during verification
+        });
+
+        if (!updatedHousehold) {
+          return res.status(500).json({ error: "Failed to update household" });
+        }
+
+        // Record SMS opt-in event
+        await storage.createEvent({
+          householdId: household.id,
+          eventType: 'sms_opted_in',
+          eventData: JSON.stringify({
+            phone: updatedHousehold.phone,
+            timestamp: new Date().toISOString()
+          }),
+        });
+
+        res.json({ 
+          success: true, 
+          message: "SMS notifications enabled successfully" 
+        });
+      } catch (smsError) {
+        console.error("SMS verification error:", smsError);
+        res.status(500).json({ error: "Failed to verify code" });
+      }
+    } catch (error: any) {
+      console.error("SMS verification error:", error);
+      if (error?.name === 'ZodError') {
+        res.status(400).json({ error: "Invalid verification code or token", details: error.errors });
+      } else {
+        res.status(500).json({ error: "Failed to verify SMS code" });
       }
     }
   });
