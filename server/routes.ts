@@ -336,6 +336,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid SKU" });
       }
 
+      // Get base URL for redirect URLs
+      const baseUrl = req.headers.origin || `${req.protocol}://${req.get('host')}` || 'http://localhost:5000';
+      console.log('Base URL for checkout:', baseUrl);
+
       // Create Stripe checkout session
       const session = await stripe.checkout.sessions.create({
         payment_method_types: ['card'],
@@ -353,8 +357,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           },
         ],
         mode: 'payment',
-        success_url: `${req.headers.origin || 'http://localhost:5000'}/setup/success?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${req.headers.origin || 'http://localhost:5000'}/?canceled=true`,
+        success_url: `${baseUrl}/setup/success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${baseUrl}/?canceled=true`,
         metadata: {
           sku,
           agentId: agentId || '',

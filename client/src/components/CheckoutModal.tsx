@@ -5,9 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-// Debug: Log the public key to identify the issue
-console.log('Stripe public key:', import.meta.env.VITE_STRIPE_PUBLIC_KEY);
-
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
 
 interface CheckoutModalProps {
@@ -52,9 +49,7 @@ export default function CheckoutModal({ sku, isOpen, onClose, agentId }: Checkou
         throw new Error(errorMessage);
       }
 
-      const responseData = await response.json();
-      console.log('Checkout API response:', responseData);
-      const { sessionId } = responseData;
+      const { sessionId } = await response.json();
       
       // Redirect to Stripe checkout
       const stripe = await stripePromise;
@@ -62,11 +57,9 @@ export default function CheckoutModal({ sku, isOpen, onClose, agentId }: Checkou
         throw new Error("Stripe failed to load");
       }
 
-      console.log('About to redirect to checkout with sessionId:', sessionId);
       const { error } = await stripe.redirectToCheckout({ sessionId });
       
       if (error) {
-        console.error('Stripe redirect error:', error);
         throw new Error(error.message);
       }
     } catch (error: any) {
