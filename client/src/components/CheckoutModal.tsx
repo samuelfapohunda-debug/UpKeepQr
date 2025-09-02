@@ -53,13 +53,16 @@ export default function CheckoutModal({ sku, isOpen, onClose, agentId }: Checkou
         throw new Error(errorMessage);
       }
 
-      const { sessionId, checkoutUrl } = await response.json();
+      const responseData = await response.json();
+      console.log("Checkout response:", responseData);
+      const { sessionId, checkoutUrl } = responseData;
       
       // Check if we have a valid checkout URL
       if (!checkoutUrl) {
         throw new Error("No checkout URL received from server");
       }
       
+      console.log("Redirecting to:", checkoutUrl);
       // Simply redirect to the Stripe checkout URL
       window.location.href = checkoutUrl;
     } catch (error: any) {
