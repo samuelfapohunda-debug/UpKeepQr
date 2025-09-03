@@ -10,7 +10,7 @@ import { createObjectCsvWriter } from "csv-writer";
 import path from "path";
 import fs from "fs";
 import { getClimateZone, generateCoreSchedule, buildInitialSchedule, type Household as ClimateHousehold } from "./lib/climate";
-import { sendWelcomeEmail } from "./lib/mail";
+import { sendWelcomeEmail, sendOrderConfirmationEmail } from "./lib/mail";
 import jwt from "jsonwebtoken";
 import Stripe from "stripe";
 import rateLimit from 'express-rate-limit';
@@ -520,8 +520,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           console.log(`Created batch ${batch.id} with ${magnets.length} magnets`);
           
-          // Store session info for success page
-          // In a real app, you'd store this in the database with the session ID
+          // Send order confirmation email
+          if (session.customer_details?.email) {
+            try {
+              await sendOrderConfirmationEmail({
+                email: session.customer_details.email,
+                customerName: session.customer_details.name || undefined,
+                orderId: session.id,
+                amount: session.amount_total || 0,
+                quantity: parseInt(quantity),
+                agentId,
+              });
+              console.log(`Order confirmation email sent to ${session.customer_details.email}`);
+            } catch (emailError) {
+              console.error("Error sending order confirmation email:", emailError);
+            }
+          }
           
         } catch (error) {
           console.error("Error creating agent pack:", error);

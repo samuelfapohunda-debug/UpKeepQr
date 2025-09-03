@@ -34,6 +34,16 @@ export interface LeadNotificationData {
   leadId: string;
 }
 
+export interface OrderConfirmationData {
+  email: string;
+  customerName?: string;
+  orderId: string;
+  amount: number;
+  quantity: number;
+  agentId: string;
+  downloadUrl?: string;
+}
+
 /**
  * Send welcome email with first tasks overview
  */
@@ -408,6 +418,130 @@ This lead was generated from our home maintenance platform.
   await postmarkClient.sendEmail({
     From: "leads@agenthub.com",
     To: recipientEmail,
+    Subject: subject,
+    HtmlBody: htmlBody,
+    TextBody: textBody,
+  });
+}
+
+/**
+ * Send order confirmation email
+ */
+export async function sendOrderConfirmationEmail(data: OrderConfirmationData): Promise<void> {
+  const { email, customerName, orderId, amount, quantity, agentId, downloadUrl } = data;
+  
+  const subject = `Order Confirmation - Your AgentHub Magnet Pack is Ready!`;
+  
+  const htmlBody = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <style>
+        body { font-family: 'Segoe UI', Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: linear-gradient(135deg, #4caf50 0%, #45a049 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+        .content { background: #f8f9fa; padding: 30px; }
+        .order-summary { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin: 20px 0; }
+        .detail-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; }
+        .detail-label { font-weight: bold; color: #666; }
+        .total-row { font-size: 18px; font-weight: bold; color: #4caf50; border-top: 2px solid #4caf50; margin-top: 10px; padding-top: 10px; }
+        .cta-button { display: inline-block; background: #4caf50; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; margin: 20px 0; }
+        .footer { background: #6c757d; color: white; padding: 20px; text-align: center; border-radius: 0 0 8px 8px; font-size: 14px; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1>✅ Order Confirmed!</h1>
+          <p>Your AgentHub magnet pack is ready for download</p>
+        </div>
+        
+        <div class="content">
+          <h2>Thank you${customerName ? ` ${customerName}` : ''} for your order! 🎉</h2>
+          
+          <p>Your magnet pack has been successfully created and is ready for download. Each magnet includes a unique QR code that will guide your customers through the home setup process.</p>
+          
+          <div class="order-summary">
+            <h3>Order Summary</h3>
+            <div class="detail-row">
+              <span class="detail-label">Order ID:</span>
+              <span>${orderId}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Agent ID:</span>
+              <span>${agentId}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Quantity:</span>
+              <span>${quantity} magnets</span>
+            </div>
+            <div class="detail-row total-row">
+              <span>Total Paid:</span>
+              <span>$${(amount / 100).toFixed(2)}</span>
+            </div>
+          </div>
+          
+          <div style="text-align: center;">
+            <h3>🔗 Next Steps</h3>
+            <p>Access your agent dashboard to download your magnet pack CSV file with all QR codes and setup links:</p>
+            <a href="${process.env.PUBLIC_BASE_URL || 'http://localhost:5000'}/agent" class="cta-button">📱 Access Agent Dashboard</a>
+          </div>
+          
+          <div style="background: #e3f2fd; padding: 15px; border-radius: 6px; margin: 20px 0;">
+            <h4>📋 What's Included:</h4>
+            <ul>
+              <li><strong>CSV File:</strong> All magnet tokens and setup URLs for easy reference</li>
+              <li><strong>QR Codes:</strong> Individual QR codes for each magnet (generated on-demand)</li>
+              <li><strong>PDF Proof Sheet:</strong> Professional layout for printing verification</li>
+              <li><strong>Setup Links:</strong> Direct URLs for customers who prefer manual entry</li>
+            </ul>
+          </div>
+          
+          <p><strong>Important:</strong> Keep your CSV file secure as it contains unique tokens for your customers. You can regenerate QR codes anytime from your agent dashboard.</p>
+        </div>
+        
+        <div class="footer">
+          <p>🔧 AgentHub - Smart Home Maintenance Solutions</p>
+          <p>Questions? Reply to this email or contact support.</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+  
+  const textBody = `
+Order Confirmed!
+
+Thank you${customerName ? ` ${customerName}` : ''} for your order!
+
+Your AgentHub magnet pack has been successfully created and is ready for download. Each magnet includes a unique QR code that will guide your customers through the home setup process.
+
+Order Summary:
+- Order ID: ${orderId}
+- Agent ID: ${agentId}
+- Quantity: ${quantity} magnets
+- Total Paid: $${(amount / 100).toFixed(2)}
+
+Next Steps:
+Access your agent dashboard to download your magnet pack CSV file with all QR codes and setup links:
+${process.env.PUBLIC_BASE_URL || 'http://localhost:5000'}/agent
+
+What's Included:
+- CSV File: All magnet tokens and setup URLs for easy reference
+- QR Codes: Individual QR codes for each magnet (generated on-demand)
+- PDF Proof Sheet: Professional layout for printing verification
+- Setup Links: Direct URLs for customers who prefer manual entry
+
+Important: Keep your CSV file secure as it contains unique tokens for your customers. You can regenerate QR codes anytime from your agent dashboard.
+
+Questions? Reply to this email or contact support.
+
+AgentHub - Smart Home Maintenance Solutions
+  `;
+
+  await postmarkClient.sendEmail({
+    From: "noreply@agenthub.com",
+    To: email,
     Subject: subject,
     HtmlBody: htmlBody,
     TextBody: textBody,
