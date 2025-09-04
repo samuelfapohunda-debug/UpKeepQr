@@ -1,139 +1,152 @@
-import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, timestamp, boolean, jsonb } from "drizzle-orm/pg-core";
-import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-export const users = pgTable("users", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
+// Firebase Timestamp type
+export interface FirebaseTimestamp {
+  seconds: number;
+  nanoseconds: number;
+}
+
+// Agent schema for Firebase
+export const agentSchema = z.object({
+  id: z.string(),
+  email: z.string().email(),
+  password: z.string().optional(), // Not stored in Firestore, handled by Firebase Auth
+  createdAt: z.date().optional(),
+  updatedAt: z.date().optional(),
 });
 
-export const batches = pgTable("batches", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  agentId: text("agent_id").notNull(),
-  qty: integer("qty").notNull(),
-  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+export type Agent = z.infer<typeof agentSchema>;
+export type InsertAgent = z.infer<typeof agentSchema>;
+
+// Magnet schema for Firebase
+export const magnetSchema = z.object({
+  id: z.string(), // UUID
+  batchId: z.string(),
+  agentId: z.string(),
+  token: z.string(),
+  isUsed: z.boolean().default(false),
+  setupUrl: z.string().optional(),
+  createdAt: z.date().optional(),
+  updatedAt: z.date().optional(),
 });
 
-export const magnets = pgTable("magnets", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  batchId: varchar("batch_id").notNull().references(() => batches.id),
-  token: text("token").notNull().unique(),
-  url: text("url").notNull(),
-  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+export type Magnet = z.infer<typeof magnetSchema>;
+export type InsertMagnet = z.infer<typeof magnetSchema>;
+
+// Magnet batch schema for Firebase
+export const magnetBatchSchema = z.object({
+  id: z.string(), // UUID
+  agentId: z.string(),
+  qty: z.number(),
+  csvPath: z.string().optional(),
+  createdAt: z.date().optional(),
+  updatedAt: z.date().optional(),
 });
 
-export const households = pgTable("households", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  token: text("token").notNull().unique().references(() => magnets.token),
-  zip: text("zip").notNull(),
-  homeType: text("home_type").notNull(),
-  sqft: integer("sqft"),
-  hvacType: text("hvac_type"),
-  waterHeater: text("water_heater"),
-  roofAgeYears: integer("roof_age_years"),
-  email: text("email"),
-  phone: text("phone"),
-  smsOptIn: boolean("sms_opt_in").default(false),
-  activatedAt: timestamp("activated_at"),
-  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+export type MagnetBatch = z.infer<typeof magnetBatchSchema>;
+export type InsertMagnetBatch = z.infer<typeof magnetBatchSchema>;
+
+// Household schema for Firebase
+export const householdSchema = z.object({
+  id: z.string(), // UUID
+  magnetToken: z.string(),
+  agentId: z.string(),
+  name: z.string(),
+  email: z.string().email(),
+  address: z.string(),
+  city: z.string(),
+  state: z.string(),
+  zip: z.string(),
+  homeType: z.enum(['single_family', 'condo', 'townhouse', 'apartment', 'mobile', 'other']),
+  climateZone: z.string().optional(),
+  createdAt: z.date().optional(),
+  updatedAt: z.date().optional(),
 });
 
-export const schedules = pgTable("schedules", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  householdId: varchar("household_id").notNull().references(() => households.id),
-  taskName: text("task_name").notNull(),
-  description: text("description"),
-  frequencyMonths: integer("frequency_months").notNull(),
-  climateZone: text("climate_zone").notNull(),
-  priority: integer("priority").default(1),
-  isActive: boolean("is_active").default(true),
-  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+export type Household = z.infer<typeof householdSchema>;
+export type InsertHousehold = z.infer<typeof householdSchema>;
+
+// Task schema for Firebase
+export const taskSchema = z.object({
+  id: z.string(), // UUID
+  householdId: z.string(),
+  agentId: z.string(),
+  title: z.string(),
+  description: z.string().optional(),
+  category: z.enum(['hvac', 'plumbing', 'electrical', 'roofing', 'gutters', 'windows', 'doors', 'flooring', 'exterior', 'interior', 'appliances', 'other']),
+  frequency: z.enum(['once', 'monthly', 'quarterly', 'biannually', 'annually', 'custom']),
+  priority: z.enum(['low', 'medium', 'high', 'critical']).default('medium'),
+  status: z.enum(['pending', 'completed', 'skipped', 'overdue']).default('pending'),
+  scheduledDate: z.date(),
+  completedAt: z.date().optional(),
+  notes: z.string().optional(),
+  reminderSent: z.boolean().default(false),
+  createdAt: z.date().optional(),
+  updatedAt: z.date().optional(),
 });
 
-export const events = pgTable("events", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  householdId: varchar("household_id").notNull().references(() => households.id),
-  eventType: text("event_type").notNull(),
-  eventData: text("event_data"),
-  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+export type Task = z.infer<typeof taskSchema>;
+export type InsertTask = z.infer<typeof taskSchema>;
+
+// Lead schema for Firebase
+export const leadSchema = z.object({
+  id: z.string(), // UUID
+  agentId: z.string(),
+  householdId: z.string().optional(),
+  name: z.string(),
+  email: z.string().email(),
+  phone: z.string().optional(),
+  address: z.string().optional(),
+  city: z.string().optional(),
+  state: z.string().optional(),
+  zip: z.string().optional(),
+  homeType: z.enum(['single_family', 'condo', 'townhouse', 'apartment', 'mobile', 'other']).optional(),
+  serviceInterest: z.enum(['hvac', 'plumbing', 'electrical', 'roofing', 'gutters', 'windows', 'doors', 'flooring', 'exterior', 'interior', 'appliances', 'general']).optional(),
+  status: z.enum(['new', 'contacted', 'qualified', 'proposal_sent', 'won', 'lost']).default('new'),
+  source: z.enum(['magnet_setup', 'referral', 'website', 'social', 'advertising', 'other']).default('magnet_setup'),
+  notes: z.string().optional(),
+  estimatedValue: z.number().optional(),
+  followUpDate: z.date().optional(),
+  createdAt: z.date().optional(),
+  updatedAt: z.date().optional(),
 });
 
-export const reminders = pgTable("reminders", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  householdId: varchar("household_id").notNull().references(() => households.id),
-  scheduleId: varchar("schedule_id").references(() => schedules.id),
-  taskName: text("task_name").notNull(),
-  dueDate: timestamp("due_date").notNull(),
-  isCompleted: boolean("is_completed").default(false),
-  createdAt: timestamp("created_at").notNull().default(sql`now()`),
-});
+export type Lead = z.infer<typeof leadSchema>;
+export type InsertLead = z.infer<typeof leadSchema>;
 
-export const reminderQueue = pgTable("reminder_queue", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  householdId: varchar("household_id").notNull().references(() => households.id),
-  scheduleId: varchar("schedule_id").references(() => schedules.id),
-  taskName: text("task_name").notNull(),
-  taskDescription: text("task_description"),
-  dueDate: timestamp("due_date").notNull(),
-  runAt: timestamp("run_at").notNull(), // When to send the reminder (due_date - 7 days)
-  status: text("status").notNull().default("pending"), // pending, sent, failed
-  reminderType: text("reminder_type").notNull().default("email"), // email, sms, etc.
-  message: text("message"),
-  sentAt: timestamp("sent_at"),
-  createdAt: timestamp("created_at").notNull().default(sql`now()`),
-});
+// Helper functions for Firebase Timestamp conversion
+export function timestampToDate(timestamp: FirebaseTimestamp | Date | undefined): Date | undefined {
+  if (!timestamp) return undefined;
+  if (timestamp instanceof Date) return timestamp;
+  return new Date(timestamp.seconds * 1000 + timestamp.nanoseconds / 1000000);
+}
 
-export const taskCompletions = pgTable("task_completions", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  householdId: varchar("household_id").notNull().references(() => households.id),
-  scheduleId: varchar("schedule_id").notNull().references(() => schedules.id),
-  taskCode: text("task_code").notNull(),
-  completedAt: timestamp("completed_at").notNull(),
-  nextDueDate: timestamp("next_due_date").notNull(),
-  createdAt: timestamp("created_at").notNull().default(sql`now()`),
-});
+export function dateToTimestamp(date: Date | undefined): FirebaseTimestamp | undefined {
+  if (!date) return undefined;
+  const seconds = Math.floor(date.getTime() / 1000);
+  const nanoseconds = (date.getTime() % 1000) * 1000000;
+  return { seconds, nanoseconds };
+}
 
-export const leads = pgTable("leads", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  householdId: varchar("household_id").notNull().references(() => households.id),
-  service: text("service").notNull(),
-  status: text("status").notNull().default("pending"),
-  notes: text("notes"),
-  createdAt: timestamp("created_at").notNull().default(sql`now()`),
-});
+// Collection names for Firebase
+export const COLLECTIONS = {
+  AGENTS: 'agents',
+  MAGNETS: 'magnets', 
+  MAGNET_BATCHES: 'magnetBatches',
+  HOUSEHOLDS: 'households',
+  TASKS: 'tasks',
+  LEADS: 'leads'
+} as const;
 
-export const audit = pgTable("audit", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  timestamp: timestamp("timestamp").notNull().default(sql`now()`),
-  actor: text("actor").notNull(), // IP address, user ID, or 'system'
-  action: text("action").notNull(), // API endpoint or action taken
-  meta: jsonb("meta"), // Additional context (sanitized)
-  createdAt: timestamp("created_at").notNull().default(sql`now()`),
-});
+// Insert schemas
+export const insertAgentSchema = agentSchema.omit({ createdAt: true, updatedAt: true });
+export const insertMagnetBatchSchema = magnetBatchSchema.omit({ createdAt: true, updatedAt: true });
+export const insertMagnetSchema = magnetSchema.omit({ createdAt: true, updatedAt: true });
+export const insertHouseholdSchema = householdSchema.omit({ createdAt: true, updatedAt: true });
+export const insertTaskSchema = taskSchema.omit({ createdAt: true, updatedAt: true });
+export const insertLeadSchema = leadSchema.omit({ createdAt: true, updatedAt: true });
 
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
-});
-
-export const insertBatchSchema = createInsertSchema(batches).pick({
-  agentId: true,
-  qty: true,
-});
-
-export const insertHouseholdSchema = createInsertSchema(households).pick({
-  token: true,
-  zip: true,
-  homeType: true,
-  sqft: true,
-  hvacType: true,
-  waterHeater: true,
-  roofAgeYears: true,
-  email: true,
-});
-
+// Setup and API schemas
 export const setupActivateSchema = z.object({
   token: z.string().min(1),
   zip: z.string().regex(/^\d{5}$/, "ZIP code must be 5 digits"),
@@ -159,67 +172,36 @@ export const taskCompleteSchema = z.object({
   task_code: z.string().min(1),
 });
 
-// Agent login schema
 export const agentLoginSchema = z.object({
   email: z.string().email(),
+  password: z.string().min(1),
 });
 
-// Checkout schema
 export const checkoutSchema = z.object({
   sku: z.enum(['100pack', '500pack', 'single', 'twopack']),
   agentId: z.string().optional(),
 });
 
-// Leads schema
 export const leadsSchema = z.object({
   householdToken: z.string().min(1),
   service: z.enum(['hvac', 'gutter', 'plumbing', 'electrical', 'roofing', 'flooring', 'painting', 'landscaping']),
   notes: z.string().optional(),
 });
 
-// SMS opt-in schema
 export const smsOptInSchema = z.object({
   token: z.string().min(1),
   phone: z.string().regex(/^\+?[1-9]\d{1,14}$/, "Invalid phone number format"),
 });
 
-// SMS verification schema
 export const smsVerifySchema = z.object({
   token: z.string().min(1),
   code: z.string().length(6, "Verification code must be 6 digits"),
 });
 
-export const insertLeadsSchema = createInsertSchema(leads).pick({
-  householdId: true,
-  service: true,
-  notes: true,
-});
-
-export const insertAuditSchema = createInsertSchema(audit).pick({
-  actor: true,
-  action: true,
-  meta: true,
-});
-
-export type InsertUser = z.infer<typeof insertUserSchema>;
-export type User = typeof users.$inferSelect;
-export type InsertBatch = z.infer<typeof insertBatchSchema>;
-export type Batch = typeof batches.$inferSelect;
-export type Magnet = typeof magnets.$inferSelect;
-export type Household = typeof households.$inferSelect;
-export type InsertHousehold = z.infer<typeof insertHouseholdSchema>;
-export type Schedule = typeof schedules.$inferSelect;
-export type Event = typeof events.$inferSelect;
-export type Reminder = typeof reminders.$inferSelect;
-export type ReminderQueue = typeof reminderQueue.$inferSelect;
-export type TaskCompletion = typeof taskCompletions.$inferSelect;
-export type Lead = typeof leads.$inferSelect;
-export type InsertLead = z.infer<typeof insertLeadsSchema>;
+// Type exports
 export type SetupActivateRequest = z.infer<typeof setupActivateSchema>;
 export type SetupPreviewRequest = z.infer<typeof setupPreviewSchema>;
 export type TaskCompleteRequest = z.infer<typeof taskCompleteSchema>;
 export type LeadsRequest = z.infer<typeof leadsSchema>;
 export type SmsOptInRequest = z.infer<typeof smsOptInSchema>;
 export type SmsVerifyRequest = z.infer<typeof smsVerifySchema>;
-export type Audit = typeof audit.$inferSelect;
-export type InsertAudit = z.infer<typeof insertAuditSchema>;
