@@ -5,6 +5,7 @@ import { storage } from "./storage";
 import { authenticateAdmin, authenticateAgent } from "./middleware/auth";
 import { insertMagnetBatchSchema, setupActivateSchema, setupPreviewSchema, taskCompleteSchema, agentLoginSchema, checkoutSchema, leadsSchema, smsOptInSchema, smsVerifySchema } from "@shared/schema";
 import { nanoid } from "nanoid";
+import { v4 as uuidv4 } from "uuid";
 import QRCode from "qrcode";
 import { createObjectCsvWriter } from "csv-writer";
 import path from "path";
@@ -550,11 +551,105 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log("Processing successful payment:", { sku, agentId, quantity, isAgentPack });
 
-      // TODO: Re-implement after fixing storage interface
-      console.log("Webhook received but processing disabled due to storage interface issues");
+      try {
+        // Process agent pack purchases
+        if (isAgentPack === 'true' && agentId && quantity) {
+          const qty = parseInt(quantity);
+          
+          // Create batch record
+          const batch = await storage.createBatch({
+            agentId,
+            qty
+          });
 
-      // TODO: Record payment event after fixing storage interface
-      console.log("Payment event recording disabled due to storage interface issues");
+          // Create individual magnets and CSV data
+          const csvData = [];
+          const baseUrl = process.env.PUBLIC_BASE_URL || `https://${req.get('host')}`;
+          
+          for (let i = 0; i < qty; i++) {
+            const token = nanoid(12);
+            const setupUrl = `${baseUrl}/setup/${token}`;
+            
+            // Create magnet record
+            const magnet = await storage.createMagnet({
+              id: uuidv4(),
+              batchId: batch.id,
+              agentId,
+              token,
+              setupUrl,
+              isUsed: false
+            });
+
+            csvData.push({
+              token: token,
+              url: setupUrl,
+              qr_code_url: `${baseUrl}/api/admin/qr/${token}`,
+            });
+          }
+
+          // Generate CSV file
+          const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+          const csvFilePath = path.join(process.cwd(), 'exports', `magnets-${agentId}-${timestamp}.csv`);
+          
+          // Ensure exports directory exists
+          const exportsDir = path.dirname(csvFilePath);
+          if (!fs.existsSync(exportsDir)) {
+            fs.mkdirSync(exportsDir, { recursive: true });
+          }
+
+          const csvWriter = createObjectCsvWriter({
+            path: csvFilePath,
+            header: [
+              { id: 'token', title: 'Token' },
+              { id: 'url', title: 'Setup URL' },
+              { id: 'qr_code_url', title: 'QR Code URL' },
+            ]
+          });
+
+          await csvWriter.writeRecords(csvData);
+
+          // Update batch with CSV path
+          await storage.updateMagnetBatch(batch.id, { csvPath: csvFilePath });
+
+          console.log(`Created batch ${batch.id} with ${qty} magnets`);
+          
+          // Send order confirmation email
+          if (session.customer_details?.email) {
+            try {
+              const downloadUrl = `${baseUrl}/api/download/batch/${batch.id}`;
+              
+              await sendOrderConfirmationEmail({
+                email: session.customer_details.email,
+                customerName: session.customer_details.name || undefined,
+                orderId: session.id,
+                amount: session.amount_total || 0,
+                quantity: qty,
+                agentId,
+                downloadUrl,
+              });
+              console.log(`Order confirmation email sent to ${session.customer_details.email}`);
+            } catch (emailError) {
+              console.error("Error sending order confirmation email:", emailError);
+            }
+          }
+
+          // Create audit log
+          await storage.createAuditLog({
+            eventType: 'payment_completed',
+            agentId,
+            eventData: JSON.stringify({
+              sessionId: session.id,
+              batchId: batch.id,
+              quantity: qty,
+              amount: session.amount_total
+            })
+          });
+        }
+      } catch (error) {
+        console.error("Error processing payment webhook:", error);
+        // Don't return error to Stripe - we don't want them to retry
+        // Just log the issue for manual investigation
+      }
     }
 
     res.json({ received: true });

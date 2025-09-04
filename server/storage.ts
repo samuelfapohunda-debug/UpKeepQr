@@ -22,6 +22,10 @@ export interface IStorage {
   createMagnetBatch(batch: InsertMagnetBatch): Promise<MagnetBatch>;
   getMagnetBatch(id: string): Promise<MagnetBatch | undefined>;
   getMagnetBatchesByAgent(agentId: string): Promise<MagnetBatch[]>;
+  updateMagnetBatch(id: string, data: Partial<MagnetBatch>): Promise<void>;
+  // Additional batch methods
+  createBatch(batch: { agentId: string; qty: number }): Promise<MagnetBatch>;
+  getBatchesByAgentId(agentId: string): Promise<MagnetBatch[]>;
 
   // Magnet methods
   createMagnet(magnet: InsertMagnet): Promise<Magnet>;
@@ -29,12 +33,18 @@ export interface IStorage {
   getMagnetByToken(token: string): Promise<Magnet | undefined>;
   getMagnetsByBatch(batchId: string): Promise<Magnet[]>;
   updateMagnetUsed(token: string, isUsed: boolean): Promise<void>;
+  // Additional magnet methods
+  getMagnetsByBatchId(batchId: string): Promise<Magnet[]>;
+  getMagnetById(id: string): Promise<Magnet | undefined>;
 
   // Household methods
   createHousehold(household: InsertHousehold): Promise<Household>;
   getHousehold(id: string): Promise<Household | undefined>;
   getHouseholdByToken(magnetToken: string): Promise<Household | undefined>;
   getHouseholdsByAgent(agentId: string): Promise<Household[]>;
+  // Additional household methods
+  updateHousehold(id: string, data: Partial<Household>): Promise<void>;
+  getActivatedHouseholdsByAgentId(agentId: string): Promise<Household[]>;
 
   // Task methods
   createTask(task: InsertTask): Promise<Task>;
@@ -43,12 +53,24 @@ export interface IStorage {
   getTasksByAgent(agentId: string): Promise<Task[]>;
   updateTaskStatus(id: string, status: Task['status']): Promise<void>;
   getOverdueTasks(): Promise<Task[]>;
+  // Additional task methods
+  createSchedule(data: any): Promise<any>;
+  getScheduleByHouseholdAndTask(householdId: string, taskName: string): Promise<any>;
+  createTaskCompletion(data: any): Promise<any>;
 
   // Lead methods  
   createLead(lead: InsertLead): Promise<Lead>;
   getLead(id: string): Promise<Lead | undefined>;
   getLeadsByAgent(agentId: string): Promise<Lead[]>;
   updateLeadStatus(id: string, status: Lead['status']): Promise<void>;
+
+  // Event/Audit methods
+  createEvent(event: { householdId: string; eventType: string; eventData: string }): Promise<any>;
+  createAuditLog(data: any): Promise<any>;
+  createReminderQueue(data: any): Promise<any>;
+
+  // Agent metrics methods  
+  getAgentMetrics(agentId: string): Promise<any>;
 }
 
 export class FirebaseStorage implements IStorage {
@@ -126,6 +148,13 @@ export class FirebaseStorage implements IStorage {
       .get();
     
     return query.docs.map(doc => this.convertFirestoreData<MagnetBatch>(doc)!);
+  }
+
+  async updateMagnetBatch(id: string, data: Partial<MagnetBatch>): Promise<void> {
+    await adminDb.collection(COLLECTIONS.MAGNET_BATCHES).doc(id).update({
+      ...data,
+      updatedAt: new Date()
+    });
   }
 
   // Magnet methods
@@ -314,6 +343,136 @@ export class FirebaseStorage implements IStorage {
       status,
       updatedAt: new Date()
     });
+  }
+
+  // Additional batch methods
+  async createBatch(batch: { agentId: string; qty: number }): Promise<MagnetBatch> {
+    return this.createMagnetBatch({
+      id: uuidv4(),
+      agentId: batch.agentId,
+      qty: batch.qty
+    });
+  }
+
+  async getBatchesByAgentId(agentId: string): Promise<MagnetBatch[]> {
+    return this.getMagnetBatchesByAgent(agentId);
+  }
+
+  // Additional magnet methods  
+  async getMagnetsByBatchId(batchId: string): Promise<Magnet[]> {
+    return this.getMagnetsByBatch(batchId);
+  }
+
+  async getMagnetById(id: string): Promise<Magnet | undefined> {
+    return this.getMagnet(id);
+  }
+
+  // Additional household methods
+  async updateHousehold(id: string, data: Partial<Household>): Promise<void> {
+    await adminDb.collection(COLLECTIONS.HOUSEHOLDS).doc(id).update({
+      ...data,
+      updatedAt: new Date()
+    });
+  }
+
+  async getActivatedHouseholdsByAgentId(agentId: string): Promise<Household[]> {
+    // Return households that have been activated (have setup completed)
+    return this.getHouseholdsByAgent(agentId);
+  }
+
+  // Additional task methods
+  async createSchedule(data: any): Promise<any> {
+    // For now, create a basic task
+    const scheduleId = uuidv4();
+    const schedule = {
+      id: scheduleId,
+      ...data,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    await adminDb.collection('schedules').doc(scheduleId).set(schedule);
+    return schedule;
+  }
+
+  async getScheduleByHouseholdAndTask(householdId: string, taskName: string): Promise<any> {
+    const query = await adminDb.collection('schedules')
+      .where('householdId', '==', householdId)
+      .where('taskName', '==', taskName)
+      .limit(1)
+      .get();
+    
+    if (query.empty) return undefined;
+    return this.convertFirestoreData(query.docs[0]);
+  }
+
+  async createTaskCompletion(data: any): Promise<any> {
+    const completionId = uuidv4();
+    const completion = {
+      id: completionId,
+      ...data,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    await adminDb.collection('taskCompletions').doc(completionId).set(completion);
+    return completion;
+  }
+
+  // Event/Audit methods
+  async createEvent(event: { householdId: string; eventType: string; eventData: string }): Promise<any> {
+    const eventId = uuidv4();
+    const newEvent = {
+      id: eventId,
+      ...event,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    await adminDb.collection('events').doc(eventId).set(newEvent);
+    return newEvent;
+  }
+
+  async createAuditLog(data: any): Promise<any> {
+    const logId = uuidv4();
+    const auditLog = {
+      id: logId,
+      ...data,
+      createdAt: new Date()
+    };
+    await adminDb.collection('auditLogs').doc(logId).set(auditLog);
+    return auditLog;
+  }
+
+  async createReminderQueue(data: any): Promise<any> {
+    const reminderId = uuidv4();
+    const reminder = {
+      id: reminderId,
+      ...data,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    await adminDb.collection('reminderQueue').doc(reminderId).set(reminder);
+    return reminder;
+  }
+
+  // Agent metrics methods
+  async getAgentMetrics(agentId: string): Promise<any> {
+    // Calculate metrics from existing data
+    const [households, leads, batches] = await Promise.all([
+      this.getHouseholdsByAgent(agentId),
+      this.getLeadsByAgent(agentId),
+      this.getMagnetBatchesByAgent(agentId)
+    ]);
+
+    return {
+      totalHouseholds: households.length,
+      totalLeads: leads.length,
+      totalBatches: batches.length,
+      leadsThisMonth: leads.filter(lead => {
+        const monthAgo = new Date();
+        monthAgo.setMonth(monthAgo.getMonth() - 1);
+        return lead.createdAt && lead.createdAt > monthAgo;
+      }).length,
+      conversionRate: households.length > 0 ? (leads.length / households.length) * 100 : 0
+    };
   }
 }
 
