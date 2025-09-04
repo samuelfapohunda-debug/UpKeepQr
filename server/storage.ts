@@ -43,7 +43,7 @@ export interface IStorage {
   getHouseholdByToken(magnetToken: string): Promise<Household | undefined>;
   getHouseholdsByAgent(agentId: string): Promise<Household[]>;
   // Additional household methods
-  updateHousehold(id: string, data: Partial<Household>): Promise<void>;
+  updateHousehold(id: string, data: Partial<Household>): Promise<Household | undefined>;
   getActivatedHouseholdsByAgentId(agentId: string): Promise<Household[]>;
 
   // Task methods
@@ -368,11 +368,14 @@ export class FirebaseStorage implements IStorage {
   }
 
   // Additional household methods
-  async updateHousehold(id: string, data: Partial<Household>): Promise<void> {
+  async updateHousehold(id: string, data: Partial<Household>): Promise<Household | undefined> {
     await adminDb.collection(COLLECTIONS.HOUSEHOLDS).doc(id).update({
       ...data,
       updatedAt: new Date()
     });
+    
+    // Return the updated household
+    return this.getHousehold(id);
   }
 
   async getActivatedHouseholdsByAgentId(agentId: string): Promise<Household[]> {

@@ -3,7 +3,7 @@ import express from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { authenticateAdmin, authenticateAgent } from "./middleware/auth";
-import { insertMagnetBatchSchema, setupActivateSchema, setupPreviewSchema, taskCompleteSchema, agentLoginSchema, checkoutSchema, leadsSchema, smsOptInSchema, smsVerifySchema } from "@shared/schema";
+import { insertMagnetBatchSchema, insertBatchSchema, setupActivateSchema, setupPreviewSchema, taskCompleteSchema, agentLoginSchema, checkoutSchema, leadsSchema, smsOptInSchema, smsVerifySchema } from "@shared/schema";
 import { nanoid } from "nanoid";
 import { v4 as uuidv4 } from "uuid";
 import QRCode from "qrcode";
@@ -143,25 +143,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Update existing household
         household = await storage.updateHousehold(household.id, {
           zip,
-          homeType: home_type,
-          sqft,
-          hvacType: hvac_type,
-          waterHeater: water_heater,
-          roofAgeYears: roof_age_years,
-          email,
+          homeType: home_type as any,
           activatedAt: new Date(),
         });
       } else {
         // Create new household
         household = await storage.createHousehold({
-          token,
+          id: uuidv4(),
+          magnetToken: token,
+          agentId: magnet.agentId,
+          name: email?.split('@')[0] || 'User',
+          email: email || '',
+          address: '',
+          city: '',
+          state: '',
           zip,
-          homeType: home_type,
-          sqft,
-          hvacType: hvac_type,
-          waterHeater: water_heater,
-          roofAgeYears: roof_age_years,
-          email,
+          homeType: home_type as any,
+          smsOptIn: false,
           activatedAt: new Date(),
         });
       }
@@ -249,7 +247,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success: true,
         household: {
           id: household.id,
-          token: household.token,
+          token: household.magnetToken,
           zip: household.zip,
           homeType: household.homeType,
           climateZone,

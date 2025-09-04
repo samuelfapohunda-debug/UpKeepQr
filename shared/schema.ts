@@ -28,6 +28,7 @@ export const magnetSchema = z.object({
   token: z.string(),
   isUsed: z.boolean().default(false),
   setupUrl: z.string().optional(),
+  url: z.string().optional(), // Legacy support for some routes
   createdAt: z.date().optional(),
   updatedAt: z.date().optional(),
 });
@@ -61,6 +62,10 @@ export const householdSchema = z.object({
   zip: z.string(),
   homeType: z.enum(['single_family', 'condo', 'townhouse', 'apartment', 'mobile', 'other']),
   climateZone: z.string().optional(),
+  phone: z.string().optional(),
+  smsOptIn: z.boolean().optional().default(false),
+  activatedAt: z.date().optional(),
+  lastReminder: z.date().optional(),
   createdAt: z.date().optional(),
   updatedAt: z.date().optional(),
 });
@@ -104,6 +109,7 @@ export const leadSchema = z.object({
   zip: z.string().optional(),
   homeType: z.enum(['single_family', 'condo', 'townhouse', 'apartment', 'mobile', 'other']).optional(),
   serviceInterest: z.enum(['hvac', 'plumbing', 'electrical', 'roofing', 'gutters', 'windows', 'doors', 'flooring', 'exterior', 'interior', 'appliances', 'general']).optional(),
+  service: z.string().optional(), // Legacy support
   status: z.enum(['new', 'contacted', 'qualified', 'proposal_sent', 'won', 'lost']).default('new'),
   source: z.enum(['magnet_setup', 'referral', 'website', 'social', 'advertising', 'other']).default('magnet_setup'),
   notes: z.string().optional(),
@@ -147,6 +153,12 @@ export const insertMagnetSchema = magnetSchema.omit({ createdAt: true, updatedAt
 export const insertHouseholdSchema = householdSchema.omit({ createdAt: true, updatedAt: true });
 export const insertTaskSchema = taskSchema.omit({ createdAt: true, updatedAt: true });
 export const insertLeadSchema = leadSchema.omit({ createdAt: true, updatedAt: true });
+
+// Batch creation schema for admin API
+export const insertBatchSchema = z.object({
+  agentId: z.string().min(1),
+  qty: z.number().positive().max(1000),
+});
 
 // Setup and API schemas
 export const setupActivateSchema = z.object({
