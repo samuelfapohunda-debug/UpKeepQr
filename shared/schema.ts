@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { pgTable, serial, varchar, text, integer, boolean, timestamp } from "drizzle-orm/pg-core";
+import { createInsertSchema } from "drizzle-zod";
 
 // Firebase Timestamp type
 export interface FirebaseTimestamp {
@@ -197,6 +199,68 @@ export const smsVerifySchema = z.object({
   token: z.string().min(1),
   code: z.string().length(6, "Verification code must be 6 digits"),
 });
+
+// Home Maintenance Task schema for PostgreSQL
+export const homeMaintenanceTaskSchema = z.object({
+  id: z.number(),
+  taskCode: z.string(),
+  category: z.string(),
+  taskName: z.string(),
+  baseFrequency: z.string(),
+  monthsHotHumid: z.string().nullable(),
+  monthsColdSnow: z.string().nullable(),
+  monthsMixed: z.string().nullable(),
+  monthsAridMountain: z.string().nullable(),
+  seasonalTag: z.string().nullable(),
+  howTo: z.string(),
+  whyItMatters: z.string(),
+  estMinutes: z.number(),
+  materials: z.string().nullable(),
+  safetyNote: z.string().nullable(),
+  appliesIfFreeze: z.boolean(),
+  appliesIfHurricane: z.boolean(),
+  appliesIfWildfire: z.boolean(),
+  appliesIfHardWater: z.boolean(),
+  appliesIfHasSprinklers: z.boolean(),
+  proServiceRecommended: z.boolean(),
+  diyOk: z.boolean(),
+  createdAt: z.date().optional(),
+  updatedAt: z.date().optional(),
+});
+
+export type HomeMaintenanceTask = z.infer<typeof homeMaintenanceTaskSchema>;
+
+// Drizzle table definitions for PostgreSQL
+export const homeMaintenanceTasksTable = pgTable("home_maintenance_tasks", {
+  id: serial("id").primaryKey(),
+  taskCode: varchar("task_code", { length: 100 }).notNull(),
+  category: varchar("category", { length: 100 }).notNull(),
+  taskName: varchar("task_name", { length: 255 }).notNull(),
+  baseFrequency: varchar("base_frequency", { length: 50 }).notNull(),
+  monthsHotHumid: varchar("months_hot_humid", { length: 50 }),
+  monthsColdSnow: varchar("months_cold_snow", { length: 50 }),
+  monthsMixed: varchar("months_mixed", { length: 50 }),
+  monthsAridMountain: varchar("months_arid_mountain", { length: 50 }),
+  seasonalTag: varchar("seasonal_tag", { length: 50 }),
+  howTo: text("how_to").notNull(),
+  whyItMatters: text("why_it_matters").notNull(),
+  estMinutes: integer("est_minutes").notNull(),
+  materials: text("materials"),
+  safetyNote: text("safety_note"),
+  appliesIfFreeze: boolean("applies_if_freeze").notNull().default(false),
+  appliesIfHurricane: boolean("applies_if_hurricane").notNull().default(false),
+  appliesIfWildfire: boolean("applies_if_wildfire").notNull().default(false),
+  appliesIfHardWater: boolean("applies_if_hard_water").notNull().default(false),
+  appliesIfHasSprinklers: boolean("applies_if_has_sprinklers").notNull().default(false),
+  proServiceRecommended: boolean("pro_service_recommended").notNull().default(false),
+  diyOk: boolean("diy_ok").notNull().default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Create insert schema using drizzle-zod
+export const insertHomeMaintenanceTaskSchema = createInsertSchema(homeMaintenanceTasksTable);
+export type InsertHomeMaintenanceTask = z.infer<typeof insertHomeMaintenanceTaskSchema>;
 
 // Type exports
 export type SetupActivateRequest = z.infer<typeof setupActivateSchema>;
