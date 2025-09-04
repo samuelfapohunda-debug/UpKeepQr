@@ -179,6 +179,20 @@ export class FirebaseStorage implements IStorage {
   }
 
   async getMagnetByToken(token: string): Promise<Magnet | undefined> {
+    // Handle demo token when Firebase is disabled
+    if (token === 'demo-token') {
+      return {
+        id: 'demo-magnet',
+        batchId: 'demo-batch',
+        agentId: 'demo-agent',
+        token: 'demo-token',
+        isUsed: false,
+        setupUrl: `${process.env.PUBLIC_BASE_URL || 'http://localhost:5000'}/setup/demo-token`,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+    }
+
     const query = await adminDb.collection(COLLECTIONS.MAGNETS)
       .where('token', '==', token)
       .limit(1)
