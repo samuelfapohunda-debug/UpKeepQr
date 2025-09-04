@@ -144,10 +144,11 @@ export class FirebaseStorage implements IStorage {
   async getMagnetBatchesByAgent(agentId: string): Promise<MagnetBatch[]> {
     const query = await adminDb.collection(COLLECTIONS.MAGNET_BATCHES)
       .where('agentId', '==', agentId)
-      .orderBy('createdAt', 'desc')
       .get();
     
-    return query.docs.map(doc => this.convertFirestoreData<MagnetBatch>(doc)!);
+    const batches = query.docs.map(doc => this.convertFirestoreData<MagnetBatch>(doc)!);
+    // Sort in memory instead of using orderBy to avoid index requirement
+    return batches.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   }
 
   async updateMagnetBatch(id: string, data: Partial<MagnetBatch>): Promise<void> {
@@ -259,10 +260,11 @@ export class FirebaseStorage implements IStorage {
   async getHouseholdsByAgent(agentId: string): Promise<Household[]> {
     const query = await adminDb.collection(COLLECTIONS.HOUSEHOLDS)
       .where('agentId', '==', agentId)
-      .orderBy('createdAt', 'desc')
       .get();
     
-    return query.docs.map(doc => this.convertFirestoreData<Household>(doc)!);
+    const households = query.docs.map(doc => this.convertFirestoreData<Household>(doc)!);
+    // Sort in memory instead of using orderBy to avoid index requirement
+    return households.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   }
 
   // Task methods
@@ -346,10 +348,11 @@ export class FirebaseStorage implements IStorage {
   async getLeadsByAgent(agentId: string): Promise<Lead[]> {
     const query = await adminDb.collection(COLLECTIONS.LEADS)
       .where('agentId', '==', agentId)
-      .orderBy('createdAt', 'desc')
       .get();
     
-    return query.docs.map(doc => this.convertFirestoreData<Lead>(doc)!);
+    const leads = query.docs.map(doc => this.convertFirestoreData<Lead>(doc)!);
+    // Sort in memory instead of using orderBy to avoid index requirement
+    return leads.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   }
 
   async updateLeadStatus(id: string, status: Lead['status']): Promise<void> {
