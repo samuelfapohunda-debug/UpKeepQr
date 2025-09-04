@@ -1,25 +1,28 @@
 import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
+import { getDatabase } from 'firebase/database';
 import admin from 'firebase-admin';
 
 // Firebase configuration (client-side)
 const firebaseConfig = {
   apiKey: process.env.VITE_FIREBASE_API_KEY,
-  authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.VITE_FIREBASE_APP_ID
+  authDomain: "georgia-top-roofer.firebaseapp.com",
+  databaseURL: "https://georgia-top-roofer-default-rtdb.firebaseio.com",
+  projectId: "georgia-top-roofer",
+  storageBucket: "georgia-top-roofer.firebasestorage.app",
+  messagingSenderId: "948307135034",
+  appId: "1:948307135034:web:7a7f85b811367f43ebc303"
 };
 
 // Initialize Firebase client app
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
+export const realtimeDb = getDatabase(app);
 
 // Initialize Firebase Admin SDK for server operations
 if (admin.apps.length === 0) {
   // Check if we have Firebase credentials before trying to initialize
-  const projectId = process.env.VITE_FIREBASE_PROJECT_ID;
+  const projectId = "georgia-top-roofer";
   
   if (!projectId) {
     console.warn('Firebase configuration is missing. Firebase features will be disabled.');
@@ -65,7 +68,8 @@ if (admin.apps.length === 0) {
     if (serviceAccount.project_id && (serviceAccount.private_key || process.env.FIREBASE_SERVICE_ACCOUNT_KEY)) {
       admin.initializeApp({
         credential: admin.credential.cert(serviceAccount as admin.ServiceAccount),
-        projectId: projectId
+        projectId: projectId,
+        databaseURL: "https://georgia-top-roofer-default-rtdb.firebaseio.com"
       });
     } else {
       console.warn('Firebase service account credentials are incomplete. Firebase features will be disabled.');
@@ -98,4 +102,5 @@ if (admin.apps.length === 0) {
 
 // Export adminDb - use placeholder if Firebase is not initialized properly
 export const adminDb = admin.apps.length > 0 ? admin.firestore() : (global as any).adminDb;
+export const adminRealtimeDb = admin.apps.length > 0 ? admin.database() : null;
 export { admin };
