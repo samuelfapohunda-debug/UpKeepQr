@@ -1,0 +1,170 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+---
+
+<Layout title="UpkeepQR - Simple scans. Smart reminders.">
+  <Header />
+  
+  <!-- Hero Section -->
+  <section class="bg-gradient-to-br from-navy via-navy to-gray-900 text-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+      <div class="text-center">
+        <h1 class="text-5xl md:text-6xl font-poppins font-bold mb-6">
+          Simple scans.<br>
+          <span class="text-bright-green">Smart reminders.</span>
+        </h1>
+        <p class="text-xl md:text-2xl text-gray-300 mb-8 max-w-3xl mx-auto">
+          A fridge magnet that remembers home maintenance for you. Scan once, answer a few questions, and we'll nudge you when it's time.
+        </p>
+        
+        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+          <a 
+            href="https://buy.stripe.com/test_8x29AV0Q0cQB0KJbu5gIo00" 
+            class="bg-bright-green text-white px-8 py-4 text-lg font-semibold rounded-lg hover:bg-green-500 transition-all transform hover:scale-105 inline-block"
+            onclick="gtag('event', 'cta_click', { 'cta_location': 'hero', 'cta_text': 'Order Magnets' });"
+          >
+            Order Magnets
+          </a>
+          <a 
+            href="#demo" 
+            class="border-2 border-bright-green text-bright-green px-8 py-4 text-lg font-semibold rounded-lg hover:bg-bright-green hover:text-white transition-all inline-block"
+            onclick="gtag('event', 'cta_click', { 'cta_location': 'hero', 'cta_text': 'See Demo' });"
+          >
+            See a 2-minute demo
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section class="py-20 bg-light-gray">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center mb-16">
+        <h2 class="text-4xl font-poppins font-bold text-navy mb-4">
+          How it works
+        </h2>
+        <p class="text-xl text-gray-600 max-w-2xl mx-auto">
+          Four simple steps to never forget home maintenance again
+        </p>
+      </div>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-16">
+        <div class="text-center">
+          <div class="w-16 h-16 bg-bright-green rounded-full flex items-center justify-center mx-auto mb-4">
+            <span class="text-white font-bold text-xl">1</span>
+          </div>
+          <h3 class="font-poppins font-semibold text-lg mb-2">Scan the QR on your fridge</h3>
+          <p class="text-gray-600">Quick scan with your phone camera</p>
+        </div>
+        
+        <div class="text-center">
+          <div class="w-16 h-16 bg-bright-green rounded-full flex items-center justify-center mx-auto mb-4">
+            <span class="text-white font-bold text-xl">2</span>
+          </div>
+          <h3 class="font-poppins font-semibold text-lg mb-2">Answer a 60-second setup</h3>
+          <p class="text-gray-600">Tell us about your home details</p>
+        </div>
+        
+        <div class="text-center">
+          <div class="w-16 h-16 bg-bright-green rounded-full flex items-center justify-center mx-auto mb-4">
+            <span class="text-white font-bold text-xl">3</span>
+          </div>
+          <h3 class="font-poppins font-semibold text-lg mb-2">Get email/calendar reminders</h3>
+          <p class="text-gray-600">Optional SMS notifications too</p>
+        </div>
+        
+        <div class="text-center">
+          <div class="w-16 h-16 bg-bright-green rounded-full flex items-center justify-center mx-auto mb-4">
+            <span class="text-white font-bold text-xl">4</span>
+          </div>
+          <h3 class="font-poppins font-semibold text-lg mb-2">One-tap "Book a Pro"</h3>
+          <p class="text-gray-600">When you'd rather not DIY</p>
+        </div>
+      </div>
+      
+      <!-- Features Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div class="bg-white p-6 rounded-lg shadow-sm hover:shadow-md transition-shadow">
+          <div class="text-3xl mb-4">📅</div>
+          <h3 class="font-poppins font-semibold text-lg mb-2">Automated Reminders</h3>
+          <p class="text-gray-600">"Never forget an AC filter or smoke alarm check."</p>
+        </div>
+        
+        <div class="bg-white p-6 rounded-lg shadow-sm hover:shadow-md transition-shadow">
+          <div class="text-3xl mb-4">🛠️</div>
+          <h3 class="font-poppins font-semibold text-lg mb-2">Book a Pro</h3>
+          <p class="text-gray-600">"Tap once to connect with trusted local pros."</p>
+        </div>
+        
+        <div class="bg-white p-6 rounded-lg shadow-sm hover:shadow-md transition-shadow">
+          <div class="text-3xl mb-4">🏠</div>
+          <h3 class="font-poppins font-semibold text-lg mb-2">Property Listings</h3>
+          <p class="text-gray-600">"List and showcase your property with ease."</p>
+        </div>
+        
+        <div class="bg-white p-6 rounded-lg shadow-sm hover:shadow-md transition-shadow">
+          <div class="text-3xl mb-4">🔒</div>
+          <h3 class="font-poppins font-semibold text-lg mb-2">Secure & Simple</h3>
+          <p class="text-gray-600">"Your info is private, and reminders just work."</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Demo Section -->
+  <section id="demo" class="py-20 bg-white">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      <h2 class="text-4xl font-poppins font-bold text-navy mb-8">
+        See it in action
+      </h2>
+      <div class="bg-gray-200 rounded-lg p-12 mb-8">
+        <p class="text-gray-600 text-lg">
+          [Demo video placeholder - 2-minute walkthrough]
+        </p>
+      </div>
+      <a 
+        href="/order" 
+        class="bg-bright-green text-white px-8 py-4 text-lg font-semibold rounded-lg hover:bg-green-500 transition-colors inline-block"
+        onclick="gtag('event', 'cta_click', { 'cta_location': 'demo', 'cta_text': 'Get Started Now' });"
+      >
+        Get Started Now
+      </a>
+    </div>
+  </section>
+
+  <!-- Testimonials Section -->
+  <section class="py-20 bg-light-gray">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center mb-16">
+        <h2 class="text-4xl font-poppins font-bold text-navy mb-4">
+          What homeowners are saying
+        </h2>
+      </div>
+      
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div class="bg-white p-6 rounded-lg shadow-sm">
+          <p class="text-gray-600 mb-4">"Finally, I don't have to remember when to change my AC filter. The reminders are perfectly timed!"</p>
+          <div class="font-semibold">Sarah M.</div>
+          <div class="text-sm text-gray-500">Atlanta, GA</div>
+        </div>
+        
+        <div class="bg-white p-6 rounded-lg shadow-sm">
+          <p class="text-gray-600 mb-4">"The pro booking feature saved me hours of research. One tap and I had a reliable contractor at my door."</p>
+          <div class="font-semibold">Mike D.</div>
+          <div class="text-sm text-gray-500">Nashville, TN</div>
+        </div>
+        
+        <div class="bg-white p-6 rounded-lg shadow-sm">
+          <p class="text-gray-600 mb-4">"Such a simple concept, but it's made home ownership so much less stressful. Highly recommend!"</p>
+          <div class="font-semibold">Jennifer L.</div>
+          <div class="text-sm text-gray-500">Charlotte, NC</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <Footer />
+</Layout>
