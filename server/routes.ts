@@ -1103,6 +1103,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Serve UpkeepQR website static files
+  const websitePath = path.join(process.cwd(), 'website', 'dist');
+  if (fs.existsSync(websitePath)) {
+    app.use('/upkeepqr', express.static(websitePath));
+    console.log('✅ UpkeepQR website served at /upkeepqr');
+  }
+
   const httpServer = createServer(app);
 
   return httpServer;
