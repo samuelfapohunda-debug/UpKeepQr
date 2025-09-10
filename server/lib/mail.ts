@@ -430,7 +430,7 @@ This lead was generated from our home maintenance platform.
 export async function sendOrderConfirmationEmail(data: OrderConfirmationData): Promise<void> {
   const { email, customerName, orderId, amount, quantity, agentId, downloadUrl } = data;
   
-  const subject = `Order Confirmation - Your AgentHub Magnet Pack is Ready!`;
+  const subject = `Order Confirmation - Your UpKeepQR Magnet Pack is Ready!`;
   
   const htmlBody = `
     <!DOCTYPE html>
@@ -439,27 +439,35 @@ export async function sendOrderConfirmationEmail(data: OrderConfirmationData): P
       <style>
         body { font-family: 'Segoe UI', Arial, sans-serif; line-height: 1.6; color: #333; }
         .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background: linear-gradient(135deg, #4caf50 0%, #45a049 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+        .header { background: linear-gradient(135deg, #1E2A38 0%, #2A3F4F 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
         .content { background: #f8f9fa; padding: 30px; }
         .order-summary { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin: 20px 0; }
         .detail-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; }
         .detail-label { font-weight: bold; color: #666; }
-        .total-row { font-size: 18px; font-weight: bold; color: #4caf50; border-top: 2px solid #4caf50; margin-top: 10px; padding-top: 10px; }
-        .cta-button { display: inline-block; background: #4caf50; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; margin: 20px 0; }
-        .footer { background: #6c757d; color: white; padding: 20px; text-align: center; border-radius: 0 0 8px 8px; font-size: 14px; }
+        .total-row { font-size: 18px; font-weight: bold; color: #A6E22E; border-top: 2px solid #A6E22E; margin-top: 10px; padding-top: 10px; }
+        .cta-button { display: inline-block; background: #A6E22E; color: #1E2A38; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; margin: 20px 0; }
+        .footer { background: #1E2A38; color: white; padding: 20px; text-align: center; border-radius: 0 0 8px 8px; font-size: 14px; }
       </style>
     </head>
     <body>
       <div class="container">
         <div class="header">
+          <div style="display: inline-block; background: #A6E22E; padding: 8px 16px; border-radius: 4px; margin-bottom: 15px;">
+            <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align: middle;">
+              <rect width="32" height="32" rx="6" fill="#A6E22E"/>
+              <path d="M16 6L8 12H10V20H14V16H18V20H22V12H24L16 6Z" fill="white"/>
+              <path d="M12 18L14 20L20 14" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span style="color: #1E2A38; font-weight: bold; margin-left: 8px; font-size: 18px; vertical-align: middle;">UpKeepQR</span>
+          </div>
           <h1>✅ Order Confirmed!</h1>
-          <p>Your AgentHub magnet pack is ready for download</p>
+          <p>Your UpKeepQR magnet pack is ready for download</p>
         </div>
         
         <div class="content">
           <h2>Thank you${customerName ? ` ${customerName}` : ''} for your order! 🎉</h2>
           
-          <p>Your magnet pack has been successfully created and is ready for download. Each magnet includes a unique QR code that will guide your customers through the home setup process.</p>
+          <p>Your QR code magnet pack has been successfully created and is ready for download. Each magnet includes a unique QR code that will guide your customers through the home maintenance setup process.</p>
           
           <div class="order-summary">
             <h3>Order Summary</h3>
@@ -501,7 +509,7 @@ export async function sendOrderConfirmationEmail(data: OrderConfirmationData): P
         </div>
         
         <div class="footer">
-          <p>🔧 AgentHub - Smart Home Maintenance Solutions</p>
+          <p>🏠 UpKeepQR - Smart Home Maintenance QR Solutions</p>
           <p>Questions? Reply to this email or contact support.</p>
         </div>
       </div>
@@ -514,7 +522,7 @@ Order Confirmed!
 
 Thank you${customerName ? ` ${customerName}` : ''} for your order!
 
-Your AgentHub magnet pack has been successfully created and is ready for download. Each magnet includes a unique QR code that will guide your customers through the home setup process.
+Your UpKeepQR magnet pack has been successfully created and is ready for download. Each magnet includes a unique QR code that will guide your customers through the home maintenance setup process.
 
 Order Summary:
 - Order ID: ${orderId}
@@ -536,11 +544,11 @@ Important: Keep your CSV file secure as it contains unique tokens for your custo
 
 Questions? Reply to this email or contact support.
 
-AgentHub - Smart Home Maintenance Solutions
+UpKeepQR - Smart Home Maintenance QR Solutions
   `;
 
   await postmarkClient.sendEmail({
-    From: "noreply@agenthub.com",
+    From: "support@upkeepqr.com",
     To: email,
     Subject: subject,
     HtmlBody: htmlBody,
