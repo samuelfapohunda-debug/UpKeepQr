@@ -11,8 +11,12 @@ export default function Navigation() {
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">
-              <i className="fas fa-user-tie text-primary text-xl" data-testid="logo-icon"></i>
-              <span className="font-semibold text-lg" data-testid="logo-text">AgentHub</span>
+              <svg width="24" height="24" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" data-testid="logo-icon">
+                <rect width="32" height="32" rx="6" fill="#A6E22E"/>
+                <path d="M16 6L8 12H10V20H14V16H18V20H22V12H24L16 6Z" fill="white"/>
+                <path d="M12 18L14 20L20 14" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              <span className="font-semibold text-lg" data-testid="logo-text">UpKeepQR</span>
             </div>
           </div>
           <div className="flex items-center space-x-4">
