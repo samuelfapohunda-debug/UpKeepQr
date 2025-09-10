@@ -1,0 +1,61 @@
+Best practice: trigger the email on the server when payment/setup completes (e.g., Stripe checkout.session.completed webhook). Don’t rely on the browser page to send it—users close tabs and ad-blockers break client calls.
+
+Minimal Express webhook (Stripe ➜ Postmark)
+// server/webhooks/stripe.ts
+import Stripe from "stripe";
+import express from "express";
+import postmark from "postmark";
+
+const app = express();
+app.use(express.raw({ type: "application/json" })); // important for Stripe
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2024-06-20" });
+const client = new postmark.ServerClient(process.env.POSTMARK_SERVER_TOKEN!);
+
+app.post("/webhooks/stripe", async (req, res) => {
+  const sig = req.headers["stripe-signature"]!;
+  let event: Stripe.Event;
+
+  try {
+    event = stripe.webhooks.constructEvent(
+      req.body,
+      sig,
+      process.env.STRIPE_WEBHOOK_SECRET!
+    );
+  } catch (err: any) {
+    console.error("Webhook signature verification failed.", err.message);
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
+
+  if (event.type === "checkout.session.completed") {
+    const session = event.data.object as Stripe.Checkout.Session;
+
+    try {
+      // 1) Fetch details you need to build the QR download link(s)
+      const email = session.customer_details?.email || session.customer_email;
+      const batchId = session.metadata?.batchId; // you set this when creating the Checkout Session
+      const downloadUrl = `https://yourapp.com/api/download/batch/${batchId}`; // or a signed URL
+
+      // 2) Send the email via Postmark
+      await client.sendEmail({
+        From: process.env.POSTMARK_FROM_EMAIL!, // e.g., "UpKeepQR <hello@yourdomain.com>"
+        To: email!,
+        MessageStream: "outbound",             // or "broadcast" if you set it up
+        Subject: "Your QR Magnet Download Link",
+        TextBody: `Your CSV is ready: ${downloadUrl}`,
+        HtmlBody: `<p>Your CSV is ready:</p><p><a href="${downloadUrl}">${downloadUrl}</a></p>`,
+        TrackOpens: true,
+      });
+
+      // 3) Mark event processed (idempotency)—e.g., store event.id in DB
+      return res.json({ received: true });
+    } catch (e) {
+      console.error("Email send failed:", e);
+      return res.status(500).json({ error: "Email dispatch failed" });
+    }
+  }
+
+  res.json({ received: true });
+});
+
+export default app;
