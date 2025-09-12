@@ -1,4 +1,4 @@
-import * as functions from 'firebase-functions';
+import { onRequest } from 'firebase-functions/v2/https';
 import * as admin from 'firebase-admin';
 import { Client } from 'postmark';
 import * as cors from 'cors';
@@ -53,7 +53,7 @@ async function sendSupportNotification(subject: string, htmlBody: string) {
 }
 
 // Main form submission handler
-export const submitForm = functions.https.onRequest((req, res) => {
+export const submitForm = onRequest((req: any, res: any) => {
   corsHandler(req, res, async () => {
     if (req.method !== 'POST') {
       res.status(405).json({ success: false, message: 'Method not allowed' });
@@ -89,6 +89,50 @@ export const submitForm = functions.https.onRequest((req, res) => {
     } catch (error) {
       console.error('Form submission error:', error);
       res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+  });
+});
+
+// Contact form handler with redirect support
+export const contact = onRequest((req: any, res: any) => {
+  corsHandler(req, res, async () => {
+    if (req.method !== 'POST') {
+      res.redirect('/contact?error=1');
+      return;
+    }
+
+    try {
+      // Check honeypot field
+      if (req.body.website) {
+        console.log('Spam detected: honeypot field filled');
+        res.redirect('/contact?error=1');
+        return;
+      }
+
+      const { name, email, phone, topic, zip, message, consent } = req.body;
+
+      // Validate required fields
+      if (!name || !email || !topic || !message || !consent) {
+        console.log('Missing required fields');
+        res.redirect('/contact?error=1');
+        return;
+      }
+
+      // Handle the enhanced contact form
+      await handleEnhancedContactForm({
+        name,
+        email,
+        phone: phone || '',
+        topic,
+        zip: zip || '',
+        message,
+        consent
+      });
+
+      res.redirect('/contact?sent=1');
+    } catch (error) {
+      console.error('Contact form submission error:', error);
+      res.redirect('/contact?error=1');
     }
   });
 });
@@ -218,4 +262,55 @@ async function handleFeeListingForm(data: FormData) {
   `;
 
   await sendSupportNotification('New Property Listing Submission', supportHtml);
+}
+
+async function handleEnhancedContactForm(data: {
+  name: string;
+  email: string;
+  phone: string;
+  topic: string;
+  zip: string;
+  message: string;
+  consent: string;
+}) {
+  const { name, email, phone, topic, zip, message } = data;
+
+  // Send auto-reply to customer
+  const autoReplyHtml = `
+    <h2>Thank you for contacting UpkeepQR!</h2>
+    <p>Hi ${name},</p>
+    <p>Thanks for reaching out about <strong>${topic}</strong>! We've received your message and will get back to you within 24 hours.</p>
+    <p><strong>Your message:</strong><br>${message}</p>
+    <p>We'll send you a copy of this confirmation for your records.</p>
+    <p>Best regards,<br>The UpkeepQR Team<br>support@upkeepqr.com</p>
+  `;
+
+  try {
+    await postmarkClient.sendEmail({
+      From: 'support@upkeepqr.com',
+      To: email,
+      Subject: `Re: ${topic} - Thanks for contacting UpkeepQR!`,
+      HtmlBody: autoReplyHtml,
+      TextBody: `Hi ${name},\n\nThanks for reaching out about ${topic}! We've received your message and will get back to you within 24 hours.\n\nYour message: ${message}\n\nWe'll send you a copy of this confirmation for your records.\n\nBest regards,\nThe UpkeepQR Team\nsupport@upkeepqr.com`
+    });
+  } catch (error) {
+    console.error('Error sending enhanced contact auto-reply:', error);
+  }
+
+  // Send notification to support team
+  const supportHtml = `
+    <h2>New Contact Form Submission</h2>
+    <p><strong>Name:</strong> ${name}</p>
+    <p><strong>Email:</strong> ${email}</p>
+    <p><strong>Phone:</strong> ${phone || 'Not provided'}</p>
+    <p><strong>Subject:</strong> ${topic}</p>
+    <p><strong>ZIP Code:</strong> ${zip || 'Not provided'}</p>
+    <p><strong>Message:</strong></p>
+    <div style="background: #f5f5f5; padding: 15px; border-left: 4px solid #A6E22E; margin: 10px 0;">
+      ${message}
+    </div>
+    <p><em>Consent given: Customer agreed to be contacted about their enquiry.</em></p>
+  `;
+
+  await sendSupportNotification(`New Contact: ${topic}`, supportHtml);
 }

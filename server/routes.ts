@@ -11,7 +11,7 @@ import { createObjectCsvWriter } from "csv-writer";
 import path from "path";
 import fs from "fs";
 import { getClimateZone, generateCoreSchedule, buildInitialSchedule, type Household as ClimateHousehold } from "./lib/climate";
-import { sendWelcomeEmail, sendOrderConfirmationEmail } from "./lib/mail";
+import { sendWelcomeEmail, sendOrderConfirmationEmail, sendContactFormEmails } from "./lib/mail";
 import jwt from "jsonwebtoken";
 import { createRequire } from 'module';
 import rateLimit from 'express-rate-limit';
@@ -1117,6 +1117,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Contact form handler with redirect support
+  app.post("/api/contact", publicApiLimiter, express.urlencoded({ extended: true }), async (req, res) => {
+    try {
+      // Check honeypot field for spam protection
+      if (req.body.website) {
+        console.log('Spam detected: honeypot field filled');
+        return res.redirect('/contact?error=1');
+      }
+
+      const { name, email, phone, topic, zip, message, consent } = req.body;
+
+      // Validate required fields
+      if (!name || !email || !topic || !message || !consent) {
+        console.log('Missing required fields in contact form');
+        return res.redirect('/contact?error=1');
+      }
+
+      // Handle the enhanced contact form submission
+      await handleContactFormSubmission({
+        name: name.trim(),
+        email: email.trim(),
+        phone: phone?.trim() || '',
+        topic: topic.trim(),
+        zip: zip?.trim() || '',
+        message: message.trim(),
+        consent: consent === 'on' || consent === 'true'
+      });
+
+      await createAuditLog(req, 'contact form submission');
+      console.log(`✅ Contact form submitted by ${email} (${topic})`);
+      
+      res.redirect('/contact?sent=1');
+    } catch (error: any) {
+      console.error('Contact form submission error:', error);
+      await createAuditLog(req, `contact form error: ${error.message}`);
+      res.redirect('/contact?error=1');
+    }
+  });
+
   // Serve UpkeepQR website static files
   const websitePath = path.join(process.cwd(), 'website', 'dist');
   if (fs.existsSync(websitePath)) {
@@ -1127,4 +1166,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
 
   return httpServer;
+}
+
+// Helper function to handle enhanced contact form submissions
+async function handleContactFormSubmission(data: {
+  name: string;
+  email: string;
+  phone: string;
+  topic: string;
+  zip: string;
+  message: string;
+  consent: boolean;
+}) {
+  const { name, email, phone, topic, zip, message } = data;
+
+  try {
+    // Send contact form emails (customer confirmation + support notification)
+    await sendContactFormEmails({
+      name,
+      email,
+      phone,
+      topic,
+      zip,
+      message
+    });
+    
+    console.log(`✅ Contact form emails sent for ${email} (${topic})`);
+  } catch (error) {
+    console.error('Error sending contact form emails:', error);
+    throw new Error('Failed to send confirmation emails');
+  }
 }

@@ -555,3 +555,121 @@ UpKeepQR - Smart Home Maintenance QR Solutions
     TextBody: textBody,
   });
 }
+
+export interface ContactFormData {
+  name: string;
+  email: string;
+  phone: string;
+  topic: string;
+  zip: string;
+  message: string;
+}
+
+/**
+ * Send contact form emails (customer confirmation + support notification)
+ */
+export async function sendContactFormEmails(data: ContactFormData): Promise<void> {
+  const { name, email, phone, topic, zip, message } = data;
+
+  try {
+    // Send auto-reply to customer
+    const autoReplyHtml = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: 'Segoe UI', Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: #1E2A38; color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+          .content { background: #f8f9fa; padding: 30px; }
+          .highlight { background: #e8f5e8; padding: 15px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #A6E22E; }
+          .footer { background: #6c757d; color: white; padding: 20px; text-align: center; border-radius: 0 0 8px 8px; font-size: 14px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>🏠 Thank you for contacting UpkeepQR!</h1>
+            <p>We've received your message</p>
+          </div>
+          <div class="content">
+            <p>Hi ${name},</p>
+            <p>Thanks for reaching out about <strong>${topic}</strong>! We've received your message and will get back to you within 24 hours.</p>
+            
+            <div class="highlight">
+              <h3>Your message:</h3>
+              <p>${message}</p>
+            </div>
+            
+            <p>We'll send you a copy of this confirmation for your records.</p>
+            <p>Best regards,<br>The UpkeepQR Team<br>support@upkeepqr.com</p>
+          </div>
+          <div class="footer">
+            <p>This is an automated confirmation. You can reply directly to this email if you have additional questions.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    await postmarkClient.sendEmail({
+      From: "support@upkeepqr.com",
+      To: email,
+      Subject: `Re: ${topic} - Thanks for contacting UpkeepQR!`,
+      HtmlBody: autoReplyHtml,
+      TextBody: `Hi ${name},\n\nThanks for reaching out about ${topic}! We've received your message and will get back to you within 24 hours.\n\nYour message: ${message}\n\nWe'll send you a copy of this confirmation for your records.\n\nBest regards,\nThe UpkeepQR Team\nsupport@upkeepqr.com`
+    });
+
+    // Send notification to support team
+    const supportHtml = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: 'Segoe UI', Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: #A6E22E; color: #1E2A38; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+          .content { background: #f8f9fa; padding: 30px; }
+          .field { margin: 10px 0; }
+          .label { font-weight: bold; color: #1E2A38; }
+          .message-box { background: #ffffff; padding: 15px; border-radius: 6px; margin: 10px 0; border-left: 4px solid #A6E22E; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h2>🆕 New Contact Form Submission</h2>
+          </div>
+          <div class="content">
+            <div class="field"><span class="label">Name:</span> ${name}</div>
+            <div class="field"><span class="label">Email:</span> ${email}</div>
+            <div class="field"><span class="label">Phone:</span> ${phone || 'Not provided'}</div>
+            <div class="field"><span class="label">Subject:</span> ${topic}</div>
+            <div class="field"><span class="label">ZIP Code:</span> ${zip || 'Not provided'}</div>
+            
+            <div class="field">
+              <span class="label">Message:</span>
+              <div class="message-box">${message}</div>
+            </div>
+            
+            <p><em>Consent given: Customer agreed to be contacted about their enquiry.</em></p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    await postmarkClient.sendEmail({
+      From: "noreply@upkeepqr.com",
+      To: "support@upkeepqr.com",
+      Subject: `New Contact: ${topic}`,
+      HtmlBody: supportHtml,
+      TextBody: `New Contact Form Submission\n\nName: ${name}\nEmail: ${email}\nPhone: ${phone || 'Not provided'}\nSubject: ${topic}\nZIP: ${zip || 'Not provided'}\n\nMessage:\n${message}\n\nConsent given: Customer agreed to be contacted about their enquiry.`
+    });
+
+    console.log(`✅ Contact form emails sent: confirmation to ${email}, notification to support`);
+  } catch (error) {
+    console.error("Error sending contact form emails:", error);
+    throw error;
+  }
+}
