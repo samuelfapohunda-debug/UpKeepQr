@@ -24,8 +24,127 @@ const { title, description = "Simple scans. Smart reminders." } = Astro.props;
                 <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
                 <meta name="generator" content={Astro.generator} />
                 <title>{title}</title>
+                
+                <!-- Improved Global Styles -->
+                <style>
+                        :root {
+                                --navy: #1E2A38;
+                                --bright-green: #A6E22E;
+                                --light-gray: #f8fafc;
+                                --text-gray: #64748b;
+                        }
+                        
+                        * {
+                                margin: 0;
+                                padding: 0;
+                                box-sizing: border-box;
+                        }
+                        
+                        body {
+                                font-family: 'Inter', sans-serif;
+                                line-height: 1.6;
+                                color: var(--navy);
+                        }
+                        
+                        .font-poppins {
+                                font-family: 'Poppins', sans-serif;
+                        }
+                        
+                        .bg-navy { background-color: var(--navy); }
+                        .bg-bright-green { background-color: var(--bright-green); }
+                        .bg-light-gray { background-color: var(--light-gray); }
+                        .text-navy { color: var(--navy); }
+                        .text-bright-green { color: var(--bright-green); }
+                        .text-gray-600 { color: var(--text-gray); }
+                        .text-gray-300 { color: #d1d5db; }
+                        .text-white { color: white; }
+                        
+                        .container {
+                                max-width: 1200px;
+                                margin: 0 auto;
+                                padding: 0 1rem;
+                        }
+                        
+                        .btn {
+                                display: inline-flex;
+                                align-items: center;
+                                justify-content: center;
+                                padding: 0.75rem 2rem;
+                                border-radius: 0.5rem;
+                                font-weight: 600;
+                                text-decoration: none;
+                                transition: all 0.3s ease;
+                                border: 2px solid transparent;
+                        }
+                        
+                        .btn-primary {
+                                background-color: var(--bright-green);
+                                color: var(--navy);
+                        }
+                        
+                        .btn-primary:hover {
+                                background-color: #8BC34A;
+                                transform: translateY(-2px);
+                        }
+                        
+                        .btn-outline {
+                                color: var(--navy);
+                                border-color: var(--navy);
+                                background-color: transparent;
+                        }
+                        
+                        .btn-outline:hover {
+                                background-color: var(--navy);
+                                color: white;
+                        }
+                        
+                        .btn-outline-white {
+                                color: white;
+                                border: 2px solid rgba(255, 255, 255, 0.3);
+                                background-color: transparent;
+                                padding: 0.75rem 2rem;
+                                border-radius: 0.5rem;
+                                font-weight: 600;
+                                text-decoration: none;
+                                transition: all 0.3s ease;
+                                display: inline-flex;
+                                align-items: center;
+                                justify-content: center;
+                        }
+                        
+                        .btn-outline-white:hover {
+                                background-color: rgba(255, 255, 255, 0.1);
+                                border-color: rgba(255, 255, 255, 0.6);
+                        }
+                        
+                        /* Layout utilities */
+                        .py-20 { padding-top: 5rem; padding-bottom: 5rem; }
+                        .py-16 { padding-top: 4rem; padding-bottom: 4rem; }
+                        .mb-6 { margin-bottom: 1.5rem; }
+                        .mb-10 { margin-bottom: 2.5rem; }
+                        .text-4xl { font-size: 2.25rem; line-height: 2.5rem; }
+                        .text-xl { font-size: 1.25rem; line-height: 1.75rem; }
+                        .text-lg { font-size: 1.125rem; line-height: 1.75rem; }
+                        .max-w-4xl { max-width: 56rem; }
+                        .max-w-3xl { max-width: 48rem; }
+                        .mx-auto { margin-left: auto; margin-right: auto; }
+                        .text-center { text-align: center; }
+                        .gap-6 { gap: 1.5rem; }
+                        .justify-center { justify-content: center; }
+                        .items-center { align-items: center; }
+                        .flex-col { flex-direction: column; }
+                        
+                        @media (min-width: 640px) {
+                                .sm\:flex-row { flex-direction: row; }
+                        }
+                        
+                        @media (min-width: 768px) {
+                                .md\:text-6xl { font-size: 3.75rem; line-height: 1; }
+                                .md\:text-2xl { font-size: 1.5rem; line-height: 2rem; }
+                        }
+                </style>
         </head>
-        <body class="font-inter">
+        <body>
                 <Analytics />
                 <slot />
         </body>

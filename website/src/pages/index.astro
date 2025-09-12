@@ -8,31 +8,31 @@ import Footer from '../components/Footer.astro';
   <Header />
   
   <!-- Hero Section -->
-  <section class="bg-gradient-to-br from-navy via-navy to-gray-900 text-white">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-      <div class="text-center">
-        <h1 class="text-5xl md:text-6xl font-poppins font-bold mb-6">
+  <section class="bg-navy text-white">
+    <div class="container py-20">
+      <div class="max-w-4xl mx-auto text-center">
+        <h1 class="text-4xl md:text-6xl font-poppins font-bold mb-6">
           Simple scans.<br>
           <span class="text-bright-green">Smart reminders.</span>
         </h1>
-        <p class="text-xl md:text-2xl text-gray-300 mb-8 max-w-3xl mx-auto">
+        <p class="text-xl md:text-2xl text-gray-300 mb-10 max-w-3xl mx-auto">
           A fridge magnet that remembers home maintenance for you. Scan once, answer a few questions, and we'll nudge you when it's time.
         </p>
         
-        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+        <div class="flex flex-col sm:flex-row gap-6 justify-center items-center">
           <a 
             href="https://buy.stripe.com/test_8x29AV0Q0cQB0KJbu5gIo00" 
-            class="bg-bright-green text-white px-8 py-4 text-lg font-semibold rounded-lg hover:bg-green-500 transition-all transform hover:scale-105 inline-block"
+            class="btn btn-primary text-lg"
             onclick="gtag('event', 'cta_click', { 'cta_location': 'hero', 'cta_text': 'Order Magnets' });"
           >
-            Order Magnets
+            Order Magnets - $12.99
           </a>
           <a 
             href="#demo" 
-            class="border-2 border-bright-green text-bright-green px-8 py-4 text-lg font-semibold rounded-lg hover:bg-bright-green hover:text-white transition-all inline-block"
+            class="btn-outline-white"
             onclick="gtag('event', 'cta_click', { 'cta_location': 'hero', 'cta_text': 'See Demo' });"
           >
-            See a 2-minute demo
+            Watch Demo
           </a>
         </div>
       </div>
@@ -41,7 +41,7 @@ import Footer from '../components/Footer.astro';
 
   <!-- Features Section -->
   <section class="py-20 bg-light-gray">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="container">
       <div class="text-center mb-16">
         <h2 class="text-4xl font-poppins font-bold text-navy mb-4">
           How it works

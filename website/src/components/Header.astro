@@ -1,209 +1,114 @@
 ---
 const links = [
   { href: '/', label: 'Home' },
-  { href: '/order', label: 'Order magnet' },
-  { href: '/request-a-pro', label: 'Request a Pro' },
-  { href: '/fee-listing', label: 'Fee Listing' },
+  { href: '/order', label: 'Order Magnets' },
   { href: '/faq', label: 'FAQ' },
+  { href: '/contact', label: 'Contact' },
 ];
 const STRIPE_1 = import.meta.env.PUBLIC_STRIPE_LINK_1 || 'https://buy.stripe.com/test_8x29AV0Q0cQB0KJbu5gIo00';
 ---
 
-<header class="border-b border-white/10">
-  <div class="container flex items-center justify-between h-16">
-    <a href="/" class="flex items-center gap-3 no-underline">
-      <img src="/favicon.svg" alt="UpkeepQR" class="h-8 w-8" />
-      <span class="font-heading text-2xl font-extrabold">Upkeep<span class="text-lime">QR</span></span>
-    </a>
+<header class="bg-white shadow-sm sticky top-0 z-50">
+  <div class="container">
+    <div class="flex items-center justify-between h-16">
+      <a href="/" class="flex items-center gap-3 no-underline">
+        <img src="/favicon.svg" alt="UpkeepQR" class="h-10 w-10" />
+        <span class="font-poppins text-2xl font-bold text-navy">
+          UpKeep<span class="text-bright-green">QR</span>
+        </span>
+      </a>
 
-    <nav class="hidden md:flex items-center gap-6">
-      {links.map(l => <a class="nav-link" href={l.href}>{l.label}</a>)}
-      <a class="btn btn-outline no-underline" href="/contact" aria-label="Contact Us">Contact Us</a>
-      <a class="btn btn-primary no-underline" href={STRIPE_1} aria-label="Order magnets">Order magnets</a>
-    </nav>
+      <nav class="hidden md:flex items-center gap-8">
+        {links.map(link => (
+          <a href={link.href} class="nav-link">{link.label}</a>
+        ))}
+        <a href={STRIPE_1} class="btn btn-primary">
+          Order Now
+        </a>
+      </nav>
+
+      <!-- Mobile menu button -->
+      <button class="md:hidden" id="mobile-menu-btn">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Mobile menu -->
+    <div class="md:hidden hidden" id="mobile-menu">
+      <div class="px-2 pt-2 pb-3 space-y-1 bg-white border-t">
+        {links.map(link => (
+          <a href={link.href} class="block px-3 py-2 nav-link">{link.label}</a>
+        ))}
+        <a href={STRIPE_1} class="block mt-4 btn btn-primary text-center">
+          Order Now
+        </a>
+      </div>
+    </div>
   </div>
 </header>
 
 <style>
-  .container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 1rem;
-  }
-  
-  .font-heading {
-    font-family: 'Poppins', sans-serif;
-  }
-  
-  .text-lime {
-    color: #A6E22E;
-  }
-  
   .nav-link {
-    color: #6b7280;
+    color: var(--text-gray);
     text-decoration: none;
-    transition: color 0.2s ease;
+    font-weight: 500;
+    transition: color 0.3s ease;
   }
   
   .nav-link:hover {
-    color: #1E2A38;
-  }
-  
-  .btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0.5rem 1.5rem;
-    border-radius: 0.5rem;
-    font-weight: 500;
-    text-decoration: none;
-    transition: all 0.2s ease;
-    border: 1px solid transparent;
-  }
-  
-  .btn-outline {
-    color: #1E2A38;
-    border-color: #1E2A38;
-    background-color: transparent;
-  }
-  
-  .btn-outline:hover {
-    background-color: #1E2A38;
-    color: white;
-  }
-  
-  .btn-primary {
-    background-color: #A6E22E;
-    color: #1E2A38;
-  }
-  
-  .btn-primary:hover {
-    background-color: #8BC34A;
+    color: var(--navy);
   }
   
   .no-underline {
     text-decoration: none;
   }
   
-  .card {
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 0.5rem;
-    padding: 1rem;
-  }
-  
-  input, select, textarea {
-    width: 100%;
-    padding: 0.75rem;
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    border-radius: 0.375rem;
-    background: rgba(255, 255, 255, 0.1);
-    color: white;
-  }
-  
-  input::placeholder, textarea::placeholder {
-    color: rgba(255, 255, 255, 0.6);
-  }
-  
-  label {
-    display: block;
-    margin-bottom: 0.5rem;
-    font-weight: 500;
-    color: white;
-  }
-  
-  .space-y-4 > * + * {
-    margin-top: 1rem;
-  }
-  
-  .grid {
-    display: grid;
-  }
-  
-  .md\:grid-cols-2 {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1rem;
-  }
-  
-  .gap-4 {
-    gap: 1rem;
-  }
-  
-  .gap-2 {
-    gap: 0.5rem;
-  }
-  
-  .flex {
-    display: flex;
-  }
-  
-  .items-start {
-    align-items: flex-start;
-  }
-  
-  .hidden {
-    display: none;
-  }
-  
-  .mt-1 {
-    margin-top: 0.25rem;
-  }
-  
-  .mt-6 {
-    margin-top: 1.5rem;
-  }
-  
-  .mb-2 {
-    margin-bottom: 0.5rem;
-  }
-  
-  .mb-6 {
-    margin-bottom: 1.5rem;
-  }
-  
-  .max-w-3xl {
-    max-width: 48rem;
-  }
-  
-  .py-16 {
-    padding-top: 4rem;
-    padding-bottom: 4rem;
-  }
-  
-  .text-sm {
-    font-size: 0.875rem;
-  }
-  
-  .font-extrabold {
-    font-weight: 800;
-  }
-  
-  .text-4xl {
-    font-size: 2.25rem;
-  }
-  
-  .text-white\/70 {
-    color: rgba(255, 255, 255, 0.7);
-  }
-  
-  .text-white\/80 {
-    color: rgba(255, 255, 255, 0.8);
-  }
-  
-  .text-white\/60 {
-    color: rgba(255, 255, 255, 0.6);
-  }
-  
-  .border-lime {
-    border-color: #A6E22E;
-  }
-  
-  .border-red-400 {
-    border-color: #f87171;
-  }
-  
+  .flex { display: flex; }
+  .items-center { align-items: center; }
+  .justify-between { justify-content: space-between; }
+  .gap-3 { gap: 0.75rem; }
+  .gap-8 { gap: 2rem; }
+  .h-16 { height: 4rem; }
+  .h-10 { height: 2.5rem; }
+  .w-10 { width: 2.5rem; }
+  .w-6 { width: 1.5rem; }
+  .h-6 { height: 1.5rem; }
+  .text-2xl { font-size: 1.5rem; }
+  .font-bold { font-weight: 700; }
+  .hidden { display: none; }
+  .block { display: block; }
+  .px-2 { padding-left: 0.5rem; padding-right: 0.5rem; }
+  .px-3 { padding-left: 0.75rem; padding-right: 0.75rem; }
+  .pt-2 { padding-top: 0.5rem; }
+  .pb-3 { padding-bottom: 0.75rem; }
+  .py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+  .mt-4 { margin-top: 1rem; }
+  .space-y-1 > * + * { margin-top: 0.25rem; }
+  .bg-white { background-color: white; }
+  .border-t { border-top: 1px solid #e5e7eb; }
+  .shadow-sm { box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); }
+  .sticky { position: sticky; }
+  .top-0 { top: 0; }
+  .z-50 { z-index: 50; }
+  .text-center { text-align: center; }
+
   @media (min-width: 768px) {
-    .md\:grid-cols-2 {
-      grid-template-columns: repeat(2, 1fr);
-    }
+    .md\:flex { display: flex; }
+    .md\:hidden { display: none; }
   }
 </style>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+    const mobileMenu = document.getElementById('mobile-menu');
+    
+    if (mobileMenuBtn && mobileMenu) {
+      mobileMenuBtn.addEventListener('click', function() {
+        mobileMenu.classList.toggle('hidden');
+      });
+    }
+  });
+</script>
