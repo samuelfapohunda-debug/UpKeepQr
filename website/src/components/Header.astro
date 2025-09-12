@@ -84,4 +84,126 @@ const STRIPE_1 = import.meta.env.PUBLIC_STRIPE_LINK_1 || 'https://buy.stripe.com
   .no-underline {
     text-decoration: none;
   }
+  
+  .card {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 0.5rem;
+    padding: 1rem;
+  }
+  
+  input, select, textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 0.375rem;
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+  }
+  
+  input::placeholder, textarea::placeholder {
+    color: rgba(255, 255, 255, 0.6);
+  }
+  
+  label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: white;
+  }
+  
+  .space-y-4 > * + * {
+    margin-top: 1rem;
+  }
+  
+  .grid {
+    display: grid;
+  }
+  
+  .md\:grid-cols-2 {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+  
+  .gap-4 {
+    gap: 1rem;
+  }
+  
+  .gap-2 {
+    gap: 0.5rem;
+  }
+  
+  .flex {
+    display: flex;
+  }
+  
+  .items-start {
+    align-items: flex-start;
+  }
+  
+  .hidden {
+    display: none;
+  }
+  
+  .mt-1 {
+    margin-top: 0.25rem;
+  }
+  
+  .mt-6 {
+    margin-top: 1.5rem;
+  }
+  
+  .mb-2 {
+    margin-bottom: 0.5rem;
+  }
+  
+  .mb-6 {
+    margin-bottom: 1.5rem;
+  }
+  
+  .max-w-3xl {
+    max-width: 48rem;
+  }
+  
+  .py-16 {
+    padding-top: 4rem;
+    padding-bottom: 4rem;
+  }
+  
+  .text-sm {
+    font-size: 0.875rem;
+  }
+  
+  .font-extrabold {
+    font-weight: 800;
+  }
+  
+  .text-4xl {
+    font-size: 2.25rem;
+  }
+  
+  .text-white\/70 {
+    color: rgba(255, 255, 255, 0.7);
+  }
+  
+  .text-white\/80 {
+    color: rgba(255, 255, 255, 0.8);
+  }
+  
+  .text-white\/60 {
+    color: rgba(255, 255, 255, 0.6);
+  }
+  
+  .border-lime {
+    border-color: #A6E22E;
+  }
+  
+  .border-red-400 {
+    border-color: #f87171;
+  }
+  
+  @media (min-width: 768px) {
+    .md\:grid-cols-2 {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
 </style>
