@@ -1,71 +1,87 @@
 ---
-import Logo from './Logo.astro';
+const links = [
+  { href: '/', label: 'Home' },
+  { href: '/order', label: 'Order magnet' },
+  { href: '/request-a-pro', label: 'Request a Pro' },
+  { href: '/fee-listing', label: 'Fee Listing' },
+  { href: '/faq', label: 'FAQ' },
+];
+const STRIPE_1 = import.meta.env.PUBLIC_STRIPE_LINK_1 || 'https://buy.stripe.com/test_8x29AV0Q0cQB0KJbu5gIo00';
 ---
 
-<header class="bg-white shadow-sm">
-  <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="flex justify-between items-center py-4">
-      <div class="flex items-center">
-        <a href="/" class="flex items-center space-x-3">
-          <Logo />
-          <span class="text-2xl font-poppins font-bold text-navy">
-            Upkeep<span class="text-bright-green">QR</span>
-          </span>
-        </a>
-      </div>
-      
-      <div class="hidden md:flex space-x-8">
-        <a href="/" class="text-gray-600 hover:text-navy transition-colors">Home</a>
-        <a href="/order" class="text-gray-600 hover:text-navy transition-colors">Order Magnets</a>
-        <a href="/request-pro" class="text-gray-600 hover:text-navy transition-colors">Request a Pro</a>
-        <a href="/fee-listing" class="text-gray-600 hover:text-navy transition-colors">Fee Listing</a>
-        <a href="/faq" class="text-gray-600 hover:text-navy transition-colors">FAQ</a>
-        <a href="/contact" class="text-gray-600 hover:text-navy transition-colors">Contact</a>
-      </div>
-      
-      <div class="flex items-center space-x-4">
-        <a 
-          href="/order" 
-          class="bg-bright-green text-white px-6 py-2 rounded-lg font-medium hover:bg-green-500 transition-colors"
-          onclick="gtag('event', 'cta_click', { 'cta_location': 'header', 'cta_text': 'Order Magnets' });"
-        >
-          Order Magnets
-        </a>
-      </div>
-      
-      <!-- Mobile menu button -->
-      <div class="md:hidden">
-        <button 
-          type="button" 
-          class="text-gray-600 hover:text-navy"
-          id="mobile-menu-button"
-        >
-          <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
-          </svg>
-        </button>
-      </div>
-    </div>
-    
-    <!-- Mobile menu -->
-    <div class="md:hidden hidden" id="mobile-menu">
-      <div class="py-2 space-y-2">
-        <a href="/" class="block text-gray-600 hover:text-navy py-2">Home</a>
-        <a href="/order" class="block text-gray-600 hover:text-navy py-2">Order Magnets</a>
-        <a href="/request-pro" class="block text-gray-600 hover:text-navy py-2">Request a Pro</a>
-        <a href="/fee-listing" class="block text-gray-600 hover:text-navy py-2">Fee Listing</a>
-        <a href="/faq" class="block text-gray-600 hover:text-navy py-2">FAQ</a>
-        <a href="/contact" class="block text-gray-600 hover:text-navy py-2">Contact</a>
-      </div>
-    </div>
-  </nav>
+<header class="border-b border-white/10">
+  <div class="container flex items-center justify-between h-16">
+    <a href="/" class="flex items-center gap-3 no-underline">
+      <img src="/favicon.svg" alt="UpkeepQR" class="h-8 w-8" />
+      <span class="font-heading text-2xl font-extrabold">Upkeep<span class="text-lime">QR</span></span>
+    </a>
+
+    <nav class="hidden md:flex items-center gap-6">
+      {links.map(l => <a class="nav-link" href={l.href}>{l.label}</a>)}
+      <a class="btn btn-outline no-underline" href="/contact" aria-label="Contact Us">Contact Us</a>
+      <a class="btn btn-primary no-underline" href={STRIPE_1} aria-label="Order magnets">Order magnets</a>
+    </nav>
+  </div>
 </header>
 
-<script>
-  const mobileMenuButton = document.getElementById('mobile-menu-button');
-  const mobileMenu = document.getElementById('mobile-menu');
+<style>
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1rem;
+  }
   
-  mobileMenuButton?.addEventListener('click', () => {
-    mobileMenu?.classList.toggle('hidden');
-  });
-</script>
+  .font-heading {
+    font-family: 'Poppins', sans-serif;
+  }
+  
+  .text-lime {
+    color: #A6E22E;
+  }
+  
+  .nav-link {
+    color: #6b7280;
+    text-decoration: none;
+    transition: color 0.2s ease;
+  }
+  
+  .nav-link:hover {
+    color: #1E2A38;
+  }
+  
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 1.5rem;
+    border-radius: 0.5rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+  }
+  
+  .btn-outline {
+    color: #1E2A38;
+    border-color: #1E2A38;
+    background-color: transparent;
+  }
+  
+  .btn-outline:hover {
+    background-color: #1E2A38;
+    color: white;
+  }
+  
+  .btn-primary {
+    background-color: #A6E22E;
+    color: #1E2A38;
+  }
+  
+  .btn-primary:hover {
+    background-color: #8BC34A;
+  }
+  
+  .no-underline {
+    text-decoration: none;
+  }
+</style>
