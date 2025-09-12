@@ -1156,12 +1156,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Serve UpkeepQR website static files
+  // Redirect customer-facing routes to /upkeepqr subdirectory
+  const customerRoutes = ['/', '/contact', '/order', '/faq', '/about', '/pricing'];
+  customerRoutes.forEach(route => {
+    app.get(route, (req, res) => {
+      const targetPath = route === '/' ? '/upkeepqr/' : `/upkeepqr${route}`;
+      res.redirect(301, targetPath);
+    });
+  });
+
+  // Serve UpkeepQR website static files at /upkeepqr
   const websitePath = path.join(process.cwd(), 'website', 'dist');
   if (fs.existsSync(websitePath)) {
     app.use('/upkeepqr', express.static(websitePath));
     console.log('✅ UpkeepQR website served at /upkeepqr');
   }
+
+  // Serve React app at /app for agent management
+  app.get('/app*', (req, res, next) => {
+    // Let the React app handle /app routes
+    next();
+  });
 
   const httpServer = createServer(app);
 
