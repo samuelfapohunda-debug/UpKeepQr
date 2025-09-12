@@ -1,0 +1,116 @@
+---
+import type { HTMLAttributes } from 'astro/types';
+
+export interface Props extends HTMLAttributes<'section'> {
+  title?: string;
+  subtitle?: string;
+  tagline?: string;
+  faqs?: Array<{
+    question: string;
+    answer: string;
+  }>;
+}
+
+const {
+  title = await Astro.slots.render('title'),
+  subtitle = await Astro.slots.render('subtitle'),
+  tagline,
+  faqs = [],
+  ...rest
+} = Astro.props;
+---
+
+<section class="bg-light-gray dark:bg-slate-800" {...rest}>
+  <div class="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8 lg:py-20">
+    {(title || subtitle || tagline) && (
+      <div class="mb-8 text-center md:mx-auto md:mb-12 max-w-3xl">
+        {tagline && (
+          <p
+            class="text-base text-secondary-600 dark:text-secondary-400 font-semibold tracking-wide uppercase"
+            set:html={tagline}
+          />
+        )}
+        {title && (
+          <h2
+            class="text-4xl md:text-5xl font-bold leading-tighter tracking-tighter mb-4 font-heading text-primary-900 dark:text-slate-200"
+            set:html={title}
+          />
+        )}
+        {subtitle && (
+          <p
+            class="max-w-3xl mx-auto sm:text-center text-xl text-muted dark:text-slate-400"
+            set:html={subtitle}
+          />
+        )}
+      </div>
+    )}
+    
+    <div class="max-w-4xl mx-auto">
+      <div class="space-y-4">
+        {
+          faqs.map(({ question, answer }, index) => (
+            <div class="bg-white dark:bg-slate-700 rounded-lg shadow-sm border border-slate-200 dark:border-slate-600">
+              <button 
+                class="faq-button w-full px-6 py-4 text-left font-semibold text-lg flex justify-between items-center hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors rounded-lg"
+                data-target={`faq-${index + 1}`}
+                data-testid={`button-faq-${index + 1}`}
+                aria-expanded="false"
+              >
+                <span class="text-primary-900 dark:text-slate-200">{question}</span>
+                <span class="faq-icon text-accent-400 text-xl font-bold flex-shrink-0 ml-4">+</span>
+              </button>
+              <div 
+                id={`faq-${index + 1}`} 
+                class="faq-content hidden px-6 pb-4"
+                data-testid={`content-faq-${index + 1}`}
+              >
+                <p class="text-slate-600 dark:text-slate-300 leading-relaxed">
+                  {answer}
+                </p>
+              </div>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const faqButtons = document.querySelectorAll('.faq-button');
+    
+    faqButtons.forEach(button => {
+      button.addEventListener('click', function() {
+        const targetId = this.dataset.target;
+        const content = document.getElementById(targetId);
+        const icon = this.querySelector('.faq-icon');
+        const isExpanded = this.getAttribute('aria-expanded') === 'true';
+        
+        // Close all other FAQ items
+        faqButtons.forEach(otherButton => {
+          if (otherButton !== this) {
+            const otherId = otherButton.dataset.target;
+            const otherContent = document.getElementById(otherId);
+            const otherIcon = otherButton.querySelector('.faq-icon');
+            
+            otherContent.classList.add('hidden');
+            otherIcon.textContent = '+';
+            otherButton.setAttribute('aria-expanded', 'false');
+          }
+        });
+        
+        // Toggle current FAQ item
+        if (!isExpanded) {
+          content.classList.remove('hidden');
+          icon.textContent = '−';
+          this.setAttribute('aria-expanded', 'true');
+        } else {
+          content.classList.add('hidden');
+          icon.textContent = '+';
+          this.setAttribute('aria-expanded', 'false');
+        }
+      });
+    });
+  });
+</script>

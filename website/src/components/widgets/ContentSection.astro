@@ -1,0 +1,57 @@
+---
+import type { HTMLAttributes } from 'astro/types';
+
+export interface Props extends HTMLAttributes<'section'> {
+  title?: string;
+  subtitle?: string;
+  tagline?: string;
+  lastUpdated?: string;
+}
+
+const {
+  title = await Astro.slots.render('title'),
+  subtitle = await Astro.slots.render('subtitle'),
+  tagline,
+  lastUpdated,
+  ...rest
+} = Astro.props;
+---
+
+<section class="bg-white dark:bg-slate-900" {...rest}>
+  <div class="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8 lg:py-20">
+    {(title || subtitle || tagline) && (
+      <div class="mb-8 text-center md:mx-auto md:mb-12 max-w-3xl">
+        {tagline && (
+          <p
+            class="text-base text-secondary-600 dark:text-secondary-400 font-semibold tracking-wide uppercase"
+            set:html={tagline}
+          />
+        )}
+        {title && (
+          <h1
+            class="text-4xl md:text-5xl font-bold leading-tighter tracking-tighter mb-4 font-heading text-primary-900 dark:text-slate-200"
+            set:html={title}
+          />
+        )}
+        {subtitle && (
+          <p
+            class="max-w-3xl mx-auto sm:text-center text-xl text-muted dark:text-slate-400"
+            set:html={subtitle}
+          />
+        )}
+      </div>
+    )}
+    
+    <div class="max-w-4xl mx-auto">
+      {lastUpdated && (
+        <p class="text-slate-500 dark:text-slate-400 mb-8 text-sm">
+          Last updated: {lastUpdated}
+        </p>
+      )}
+      
+      <div class="prose prose-lg prose-slate dark:prose-invert max-w-none">
+        <slot />
+      </div>
+    </div>
+  </div>
+</section>

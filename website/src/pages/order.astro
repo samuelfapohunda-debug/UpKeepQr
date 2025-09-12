@@ -2,124 +2,111 @@
 import Layout from '../layouts/Layout.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
+import Hero from '../components/widgets/Hero.astro';
+import Pricing from '../components/widgets/Pricing.astro';
+import Features from '../components/widgets/Features.astro';
+
+// Get environment variable for Stripe link
+const stripeOrderLink = import.meta.env.PUBLIC_STRIPE_LINK_1 || 'https://buy.stripe.com/test_8wMcOcbNy0kN8Ks5kk';
 ---
 
-<Layout title="Order Magnets - UpkeepQR">
-  <Header />
+<Layout 
+  title="Order Magnets - UpkeepQR"
+  description="Choose the perfect quantity for your needs. Each magnet includes a unique QR code for easy home maintenance tracking."
+>
+  <Header showToggleTheme={true} />
   
   <!-- Hero Section -->
-  <section class="bg-navy text-white py-16">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-      <h1 class="text-4xl md:text-5xl font-poppins font-bold mb-4">
-        Order Your <span class="text-bright-green">UpkeepQR</span> Magnets
-      </h1>
-      <p class="text-xl text-gray-300 max-w-2xl mx-auto">
-        Choose the perfect quantity for your needs. Each magnet includes a unique QR code for easy home maintenance tracking.
-      </p>
-    </div>
-  </section>
+  <Hero
+    title="Order Your <span class='text-accent-400'>UpkeepQR</span> Magnets"
+    subtitle="Choose the perfect quantity for your needs. Each magnet includes a unique QR code for easy home maintenance tracking."
+    class="bg-primary-900"
+  />
 
-  <!-- Pricing Cards -->
-  <section class="py-20 bg-light-gray">
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-        
-        <!-- Single Magnet -->
-        <div class="bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow p-8 text-center">
-          <h3 class="text-2xl font-poppins font-bold mb-4">Single Magnet</h3>
-          <div class="text-4xl font-bold text-navy mb-2">$12</div>
-          <p class="text-gray-600 mb-6">Perfect for trying it out</p>
-          <ul class="text-left mb-8 space-y-2">
-            <li class="flex items-center"><span class="text-bright-green mr-2">✓</span> 1 QR code magnet</li>
-            <li class="flex items-center"><span class="text-bright-green mr-2">✓</span> Automated reminders</li>
-            <li class="flex items-center"><span class="text-bright-green mr-2">✓</span> Email & calendar sync</li>
-            <li class="flex items-center"><span class="text-bright-green mr-2">✓</span> Pro booking feature</li>
-          </ul>
-          <a 
-            href="https://buy.stripe.com/test_8x29AV0Q0cQB0KJbu5gIo00"
-            class="block bg-bright-green text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-500 transition-colors"
-            onclick="gtag('event', 'purchase', { 'transaction_id': '1-magnet', 'value': 12, 'currency': 'USD' });"
-          >
-            Order Now
-          </a>
-        </div>
+  <!-- Pricing Section -->
+  <Pricing 
+    plans={[
+      {
+        name: 'Single Magnet',
+        price: '$12',
+        description: 'Perfect for trying it out',
+        features: [
+          '1 QR code magnet',
+          'Automated reminders',
+          'Email & calendar sync',
+          'Pro booking feature'
+        ],
+        cta: {
+          text: 'Order Now',
+          href: stripeOrderLink,
+          analytics: "typeof gtag !== 'undefined' && gtag('event', 'purchase', { 'transaction_id': '1-magnet', 'value': 12, 'currency': 'USD' });"
+        }
+      },
+      {
+        name: '100 Pack',
+        price: '$299',
+        description: 'Great for real estate agents',
+        features: [
+          '100 QR code magnets',
+          'Bulk discount applied',
+          'All features included',
+          'Priority support'
+        ],
+        cta: {
+          text: 'Order Now',
+          href: '/contact',
+          analytics: "typeof gtag !== 'undefined' && gtag('event', 'purchase', { 'transaction_id': '100-pack', 'value': 299, 'currency': 'USD' });"
+        },
+        popular: true
+      },
+      {
+        name: '300 Pack',
+        price: '$749',
+        description: 'For large agencies',
+        features: [
+          '300 QR code magnets',
+          'Maximum bulk discount',
+          'All features included',
+          'Dedicated account manager'
+        ],
+        cta: {
+          text: 'Order Now',
+          href: '/contact',
+          analytics: "typeof gtag !== 'undefined' && gtag('event', 'purchase', { 'transaction_id': '300-pack', 'value': 749, 'currency': 'USD' });"
+        }
+      }
+    ]}
+  />
 
-        <!-- 100 Pack - Most Popular -->
-        <div class="bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow p-8 text-center border-4 border-bright-green relative">
-          <div class="absolute -top-4 left-1/2 transform -translate-x-1/2 bg-bright-green text-white px-4 py-1 rounded-full text-sm font-semibold">
-            Most Popular
-          </div>
-          <h3 class="text-2xl font-poppins font-bold mb-4">100 Pack</h3>
-          <div class="text-4xl font-bold text-navy mb-2">$299</div>
-          <p class="text-gray-600 mb-6">Great for real estate agents</p>
-          <ul class="text-left mb-8 space-y-2">
-            <li class="flex items-center"><span class="text-bright-green mr-2">✓</span> 100 QR code magnets</li>
-            <li class="flex items-center"><span class="text-bright-green mr-2">✓</span> Bulk discount applied</li>
-            <li class="flex items-center"><span class="text-bright-green mr-2">✓</span> All features included</li>
-            <li class="flex items-center"><span class="text-bright-green mr-2">✓</span> Priority support</li>
-          </ul>
-          <a 
-            href="#"
-            class="block bg-bright-green text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-500 transition-colors"
-            onclick="gtag('event', 'purchase', { 'transaction_id': '100-pack', 'value': 299, 'currency': 'USD' });"
-          >
-            Order Now
-          </a>
-        </div>
-
-        <!-- 300 Pack -->
-        <div class="bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow p-8 text-center">
-          <h3 class="text-2xl font-poppins font-bold mb-4">300 Pack</h3>
-          <div class="text-4xl font-bold text-navy mb-2">$749</div>
-          <p class="text-gray-600 mb-6">For large agencies</p>
-          <ul class="text-left mb-8 space-y-2">
-            <li class="flex items-center"><span class="text-bright-green mr-2">✓</span> 300 QR code magnets</li>
-            <li class="flex items-center"><span class="text-bright-green mr-2">✓</span> Maximum bulk discount</li>
-            <li class="flex items-center"><span class="text-bright-green mr-2">✓</span> All features included</li>
-            <li class="flex items-center"><span class="text-bright-green mr-2">✓</span> Dedicated account manager</li>
-          </ul>
-          <a 
-            href="#"
-            class="block bg-bright-green text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-500 transition-colors"
-            onclick="gtag('event', 'purchase', { 'transaction_id': '300-pack', 'value': 749, 'currency': 'USD' });"
-          >
-            Order Now
-          </a>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- FAQ Section -->
-  <section class="py-20 bg-white">
-    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-      <h2 class="text-3xl font-poppins font-bold text-center text-navy mb-12">
-        Frequently Asked Questions
-      </h2>
-      
-      <div class="space-y-6">
-        <div class="border-b border-gray-200 pb-6">
-          <h3 class="font-semibold text-lg mb-2">What's included with my order?</h3>
-          <p class="text-gray-600">Each magnet comes with a unique QR code, weatherproof design, and access to our full reminder system including email, calendar sync, and pro booking features.</p>
-        </div>
-        
-        <div class="border-b border-gray-200 pb-6">
-          <h3 class="font-semibold text-lg mb-2">How does shipping work?</h3>
-          <p class="text-gray-600">We offer free shipping on all orders within the continental US. Orders typically arrive within 5-7 business days via USPS.</p>
-        </div>
-        
-        <div class="border-b border-gray-200 pb-6">
-          <h3 class="font-semibold text-lg mb-2">Can I get a refund?</h3>
-          <p class="text-gray-600">We offer a 30-day money-back guarantee. If you're not satisfied with your purchase, contact us for a full refund.</p>
-        </div>
-        
-        <div class="border-b border-gray-200 pb-6">
-          <h3 class="font-semibold text-lg mb-2">Do you offer volume discounts?</h3>
-          <p class="text-gray-600">Yes! Our 100-pack and 300-pack options include significant bulk discounts. Contact us for custom pricing on orders over 300 units.</p>
-        </div>
-      </div>
-    </div>
-  </section>
+  <!-- Order FAQ Section -->
+  <Features
+    title="Frequently Asked Questions"
+    subtitle="Everything you need to know about ordering"
+    items={[
+      {
+        title: "What's included with my order?",
+        description: 'Each magnet comes with a unique QR code, weatherproof design, and access to our full reminder system including email, calendar sync, and pro booking features.',
+        icon: '📦'
+      },
+      {
+        title: 'How does shipping work?',
+        description: 'We offer free shipping on all orders within the continental US. Orders typically arrive within 5-7 business days via USPS.',
+        icon: '🚚'
+      },
+      {
+        title: 'Can I get a refund?',
+        description: 'We offer a 30-day money-back guarantee. If you\'re not satisfied with your purchase, contact us for a full refund.',
+        icon: '💰'
+      },
+      {
+        title: 'Do you offer volume discounts?',
+        description: 'Yes! Our 100-pack and 300-pack options include significant bulk discounts. Contact us for custom pricing on orders over 300 units.',
+        icon: '🏢'
+      }
+    ]}
+    columns={2}
+    class="bg-white"
+  />
 
   <Footer />
 </Layout>

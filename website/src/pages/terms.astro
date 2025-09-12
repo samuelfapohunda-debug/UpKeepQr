@@ -2,28 +2,27 @@
 import Layout from '../layouts/Layout.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
+import Hero from '../components/widgets/Hero.astro';
+import ContentSection from '../components/widgets/ContentSection.astro';
 ---
 
-<Layout title="Terms of Service - UpkeepQR">
-  <Header />
+<Layout 
+  title="Terms of Service - UpkeepQR"
+  description="Terms and conditions for using UpkeepQR - our service agreement and user responsibilities."
+>
+  <Header showToggleTheme={true} />
   
   <!-- Hero Section -->
-  <section class="bg-navy text-white py-16">
-    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-      <h1 class="text-4xl md:text-5xl font-poppins font-bold mb-4">
-        Terms of Service
-      </h1>
-      <p class="text-xl text-gray-300">
-        Terms and conditions for using UpkeepQR
-      </p>
-    </div>
-  </section>
+  <Hero
+    title="Terms of Service"
+    subtitle="Terms and conditions for using UpkeepQR"
+    class="bg-primary-900"
+  />
 
   <!-- Terms Content -->
-  <section class="py-20 bg-white">
-    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="prose prose-lg max-w-none">
-        <p class="text-gray-600 mb-8">Last updated: September 2024</p>
+  <ContentSection
+    lastUpdated="September 2024"
+  >
         
         <h2 class="text-2xl font-poppins font-bold mb-4">Acceptance of Terms</h2>
         <p class="mb-6">By accessing and using UpkeepQR services, you accept and agree to be bound by the terms and provision of this agreement.</p>
@@ -58,9 +57,7 @@ import Footer from '../components/Footer.astro';
           Email: <a href="mailto:legal@upkeepqr.com" class="text-bright-green">legal@upkeepqr.com</a><br>
           Support: <a href="mailto:support@upkeepqr.com" class="text-bright-green">support@upkeepqr.com</a>
         </p>
-      </div>
-    </div>
-  </section>
+  </ContentSection>
 
   <Footer />
 </Layout>

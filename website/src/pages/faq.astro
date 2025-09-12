@@ -2,196 +2,71 @@
 import Layout from '../layouts/Layout.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
+import Hero from '../components/widgets/Hero.astro';
+import FAQAccordion from '../components/widgets/FAQAccordion.astro';
+import CallToAction from '../components/widgets/CallToAction.astro';
 ---
 
-<Layout title="FAQ - UpkeepQR">
-  <Header />
+<Layout 
+  title="FAQ - UpkeepQR"
+  description="Everything you need to know about UpkeepQR - answers to frequently asked questions about our home maintenance reminder system."
+>
+  <Header showToggleTheme={true} />
   
   <!-- Hero Section -->
-  <section class="bg-navy text-white py-16">
-    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-      <h1 class="text-4xl md:text-5xl font-poppins font-bold mb-4">
-        Frequently Asked Questions
-      </h1>
-      <p class="text-xl text-gray-300">
-        Everything you need to know about UpkeepQR
-      </p>
-    </div>
-  </section>
+  <Hero
+    title="Frequently Asked Questions"
+    subtitle="Everything you need to know about UpkeepQR"
+    class="bg-primary-900"
+  />
 
   <!-- FAQ Section -->
-  <section class="py-20 bg-light-gray">
-    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="space-y-4">
-        
-        <!-- FAQ Item 1 -->
-        <div class="bg-white rounded-lg shadow-sm">
-          <button 
-            class="faq-button w-full px-6 py-4 text-left font-semibold text-lg flex justify-between items-center hover:bg-gray-50 transition-colors"
-            data-target="faq-1"
-          >
-            How do QR magnets work?
-            <span class="faq-icon text-bright-green">+</span>
-          </button>
-          <div id="faq-1" class="faq-content hidden px-6 pb-4">
-            <p class="text-gray-600">
-              Each UpkeepQR magnet contains a unique QR code that links to a personalized maintenance dashboard for your home. Simply scan the code with your phone camera, complete a quick 60-second setup about your home's details, and we'll automatically send you reminders for maintenance tasks like changing AC filters, checking smoke alarms, and seasonal home care.
-            </p>
-          </div>
-        </div>
+  <FAQAccordion
+    faqs={[
+      {
+        question: 'How do QR magnets work?',
+        answer: 'Each UpkeepQR magnet contains a unique QR code that links to a personalized maintenance dashboard for your home. Simply scan the code with your phone camera, complete a quick 60-second setup about your home\'s details, and we\'ll automatically send you reminders for maintenance tasks like changing AC filters, checking smoke alarms, and seasonal home care.'
+      },
+      {
+        question: 'What happens when I scan the magnet?',
+        answer: 'When you scan the QR code, you\'ll be taken to a mobile-friendly setup page where you\'ll answer questions about your home (HVAC system, square footage, etc.). Based on your responses, we create a customized maintenance schedule and start sending you timely reminders via email, calendar invites, or optional SMS notifications.'
+      },
+      {
+        question: 'Is my data safe and private?',
+        answer: 'Absolutely! We take your privacy seriously. We only collect the information necessary to send you maintenance reminders (like your HVAC system type and preferred contact method). We never sell your data, and you can update your preferences or delete your account at any time. All data is encrypted and stored securely.'
+      },
+      {
+        question: 'What\'s the cost of requesting a professional?',
+        answer: 'The "Request a Pro" service is completely free! We connect you with qualified local professionals in your area. You only pay the contractor directly for their services. We pre-screen all professionals in our network to ensure they\'re licensed, insured, and have good customer reviews.'
+      },
+      {
+        question: 'How do I list my property on UpkeepQR?',
+        answer: 'Use our Fee Listing form to submit your property details. Each listed property gets its own UpkeepQR magnet, which helps future owners or tenants easily access maintenance schedules and local service providers. This is especially valuable for real estate agents looking to add value for their clients.'
+      },
+      {
+        question: 'Can I customize my maintenance schedule?',
+        answer: 'Yes! After your initial setup, you can log into your account to adjust reminder frequencies, add custom maintenance tasks, or turn off reminders for tasks you handle differently. The system learns from your preferences to provide more personalized recommendations over time.'
+      },
+      {
+        question: 'What if I move to a new home?',
+        answer: 'Your UpkeepQR account travels with you! When you move, you can update your home details in your account settings. If you leave the magnet behind for the new owners, they can scan it to set up their own maintenance schedule. You can also order a new magnet for your new home at a discount.'
+      }
+    ]}
+  />
 
-        <!-- FAQ Item 2 -->
-        <div class="bg-white rounded-lg shadow-sm">
-          <button 
-            class="faq-button w-full px-6 py-4 text-left font-semibold text-lg flex justify-between items-center hover:bg-gray-50 transition-colors"
-            data-target="faq-2"
-          >
-            What happens when I scan the magnet?
-            <span class="faq-icon text-bright-green">+</span>
-          </button>
-          <div id="faq-2" class="faq-content hidden px-6 pb-4">
-            <p class="text-gray-600">
-              When you scan the QR code, you'll be taken to a mobile-friendly setup page where you'll answer questions about your home (HVAC system, square footage, etc.). Based on your responses, we create a customized maintenance schedule and start sending you timely reminders via email, calendar invites, or optional SMS notifications.
-            </p>
-          </div>
-        </div>
-
-        <!-- FAQ Item 3 -->
-        <div class="bg-white rounded-lg shadow-sm">
-          <button 
-            class="faq-button w-full px-6 py-4 text-left font-semibold text-lg flex justify-between items-center hover:bg-gray-50 transition-colors"
-            data-target="faq-3"
-          >
-            Is my data safe and private?
-            <span class="faq-icon text-bright-green">+</span>
-          </button>
-          <div id="faq-3" class="faq-content hidden px-6 pb-4">
-            <p class="text-gray-600">
-              Absolutely! We take your privacy seriously. We only collect the information necessary to send you maintenance reminders (like your HVAC system type and preferred contact method). We never sell your data, and you can update your preferences or delete your account at any time. All data is encrypted and stored securely.
-            </p>
-          </div>
-        </div>
-
-        <!-- FAQ Item 4 -->
-        <div class="bg-white rounded-lg shadow-sm">
-          <button 
-            class="faq-button w-full px-6 py-4 text-left font-semibold text-lg flex justify-between items-center hover:bg-gray-50 transition-colors"
-            data-target="faq-4"
-          >
-            What's the cost of requesting a professional?
-            <span class="faq-icon text-bright-green">+</span>
-          </button>
-          <div id="faq-4" class="faq-content hidden px-6 pb-4">
-            <p class="text-gray-600">
-              The "Request a Pro" service is completely free! We connect you with qualified local professionals in your area. You only pay the contractor directly for their services. We pre-screen all professionals in our network to ensure they're licensed, insured, and have good customer reviews.
-            </p>
-          </div>
-        </div>
-
-        <!-- FAQ Item 5 -->
-        <div class="bg-white rounded-lg shadow-sm">
-          <button 
-            class="faq-button w-full px-6 py-4 text-left font-semibold text-lg flex justify-between items-center hover:bg-gray-50 transition-colors"
-            data-target="faq-5"
-          >
-            How do I list my property on UpkeepQR?
-            <span class="faq-icon text-bright-green">+</span>
-          </button>
-          <div id="faq-5" class="faq-content hidden px-6 pb-4">
-            <p class="text-gray-600">
-              Use our Fee Listing form to submit your property details. Each listed property gets its own UpkeepQR magnet, which helps future owners or tenants easily access maintenance schedules and local service providers. This is especially valuable for real estate agents looking to add value for their clients.
-            </p>
-          </div>
-        </div>
-
-        <!-- FAQ Item 6 -->
-        <div class="bg-white rounded-lg shadow-sm">
-          <button 
-            class="faq-button w-full px-6 py-4 text-left font-semibold text-lg flex justify-between items-center hover:bg-gray-50 transition-colors"
-            data-target="faq-6"
-          >
-            Can I customize my maintenance schedule?
-            <span class="faq-icon text-bright-green">+</span>
-          </button>
-          <div id="faq-6" class="faq-content hidden px-6 pb-4">
-            <p class="text-gray-600">
-              Yes! After your initial setup, you can log into your account to adjust reminder frequencies, add custom maintenance tasks, or turn off reminders for tasks you handle differently. The system learns from your preferences to provide more personalized recommendations over time.
-            </p>
-          </div>
-        </div>
-
-        <!-- FAQ Item 7 -->
-        <div class="bg-white rounded-lg shadow-sm">
-          <button 
-            class="faq-button w-full px-6 py-4 text-left font-semibold text-lg flex justify-between items-center hover:bg-gray-50 transition-colors"
-            data-target="faq-7"
-          >
-            What if I move to a new home?
-            <span class="faq-icon text-bright-green">+</span>
-          </button>
-          <div id="faq-7" class="faq-content hidden px-6 pb-4">
-            <p class="text-gray-600">
-              Your UpkeepQR account travels with you! When you move, you can update your home details in your account settings. If you leave the magnet behind for the new owners, they can scan it to set up their own maintenance schedule. You can also order a new magnet for your new home at a discount.
-            </p>
-          </div>
-        </div>
-
-      </div>
-    </div>
-  </section>
-
-  <!-- Still have questions? -->
-  <section class="py-16 bg-white text-center">
-    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-      <h2 class="text-2xl font-poppins font-bold mb-4">
-        Still have questions?
-      </h2>
-      <p class="text-gray-600 mb-8">
-        Our team is here to help! Reach out and we'll get back to you within 24 hours.
-      </p>
-      <a 
-        href="/contact" 
-        class="bg-bright-green text-white px-8 py-3 rounded-lg font-semibold hover:bg-green-500 transition-colors inline-block"
-      >
-        Contact Us
-      </a>
-    </div>
-  </section>
+  <!-- Still have questions CTA -->
+  <CallToAction
+    title="Still have questions?"
+    subtitle="Our team is here to help! Reach out and we'll get back to you within 24 hours."
+    actions={[
+      {
+        variant: 'primary',
+        text: 'Contact Us',
+        href: '/contact'
+      }
+    ]}
+    class="bg-white"
+  />
 
   <Footer />
 </Layout>
-
-<script>
-  document.addEventListener('DOMContentLoaded', function() {
-    const faqButtons = document.querySelectorAll('.faq-button');
-    
-    faqButtons.forEach(button => {
-      button.addEventListener('click', function() {
-        const targetId = this.dataset.target;
-        const content = document.getElementById(targetId);
-        const icon = this.querySelector('.faq-icon');
-        
-        // Close all other FAQ items
-        faqButtons.forEach(otherButton => {
-          if (otherButton !== this) {
-            const otherId = otherButton.dataset.target;
-            const otherContent = document.getElementById(otherId);
-            const otherIcon = otherButton.querySelector('.faq-icon');
-            
-            otherContent.classList.add('hidden');
-            otherIcon.textContent = '+';
-          }
-        });
-        
-        // Toggle current FAQ item
-        if (content.classList.contains('hidden')) {
-          content.classList.remove('hidden');
-          icon.textContent = '−';
-        } else {
-          content.classList.add('hidden');
-          icon.textContent = '+';
-        }
-      });
-    });
-  });
-</script>
