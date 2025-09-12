@@ -1,0 +1,78 @@
+---
+import type { HTMLAttributes } from 'astro/types';
+
+export interface Props extends HTMLAttributes<'section'> {
+  title?: string;
+  subtitle?: string;
+  tagline?: string;
+  items?: Array<{
+    title?: string;
+    description?: string;
+    icon?: string;
+  }>;
+  columns?: number;
+}
+
+const {
+  title = await Astro.slots.render('title'),
+  subtitle = await Astro.slots.render('subtitle'),
+  tagline,
+  items = [],
+  columns = 3,
+  ...rest
+} = Astro.props;
+---
+
+<section class="scroll-mt-16" {...rest}>
+  <div class="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8 lg:py-20">
+    {(title || subtitle || tagline) && (
+      <div class="mb-8 text-center md:mx-auto md:mb-12 max-w-3xl">
+        {tagline && (
+          <p
+            class="text-base text-secondary-600 dark:text-secondary-400 font-semibold tracking-wide uppercase"
+            set:html={tagline}
+          />
+        )}
+        {title && (
+          <h2
+            class="text-4xl md:text-5xl font-bold leading-tighter tracking-tighter mb-4 font-heading text-primary-900 dark:text-slate-200"
+            set:html={title}
+          />
+        )}
+        {subtitle && (
+          <p
+            class="max-w-3xl mx-auto sm:text-center text-xl text-muted dark:text-slate-400"
+            set:html={subtitle}
+          />
+        )}
+      </div>
+    )}
+    <div
+      class:list={[
+        'grid gap-6 md:gap-8',
+        {
+          'md:grid-cols-1': columns === 1,
+          'md:grid-cols-2': columns === 2,
+          'md:grid-cols-3': columns === 3,
+          'md:grid-cols-4': columns === 4,
+        },
+      ]}
+    >
+      {
+        items.map(({ title: itemTitle, description, icon }) => (
+          <div class="relative flex flex-col p-6 bg-white dark:bg-slate-800 rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-200">
+            {icon && (
+              <div class="flex items-center justify-center w-12 h-12 mb-4 rounded-full bg-accent-400 text-white">
+                <Fragment set:html={icon} />
+              </div>
+            )}
+            {itemTitle && <h3 class="mb-3 text-xl font-bold text-primary-900 dark:text-slate-200" set:html={itemTitle} />}
+            {description && (
+              <p class="text-muted dark:text-slate-400 text-md" set:html={description} />
+            )}
+          </div>
+        ))
+      }
+    </div>
+  </div>
+</section>
