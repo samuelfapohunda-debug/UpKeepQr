@@ -1,114 +1,236 @@
 ---
+import Logo from './Logo.astro';
+
+// Navigation links configuration
 const links = [
   { href: '/', label: 'Home' },
-  { href: '/order', label: 'Order Magnets' },
+  { href: '/order', label: 'Order' },
   { href: '/faq', label: 'FAQ' },
   { href: '/contact', label: 'Contact' },
 ];
-const STRIPE_1 = import.meta.env.PUBLIC_STRIPE_LINK_1 || 'https://buy.stripe.com/test_8x29AV0Q0cQB0KJbu5gIo00';
+
+// Get environment variable for Stripe link
+const stripeOrderLink = import.meta.env.PUBLIC_STRIPE_LINK_1 || 'https://buy.stripe.com/test_8wMcOcbNy0kN8Ks5kk';
+
+export interface Props {
+  isTransparent?: boolean;
+  showToggleTheme?: boolean;
+  position?: 'center' | 'right' | 'left';
+}
+
+const { 
+  isTransparent = false, 
+  showToggleTheme = false, 
+  position = 'center' 
+} = Astro.props;
 ---
 
-<header class="bg-white shadow-sm sticky top-0 z-50">
-  <div class="container">
-    <div class="flex items-center justify-between h-16">
-      <a href="/" class="flex items-center gap-3 no-underline">
-        <img src="/favicon.svg" alt="UpkeepQR" class="h-10 w-10" />
-        <span class="font-poppins text-2xl font-bold text-navy">
-          UpKeep<span class="text-bright-green">QR</span>
-        </span>
-      </a>
-
-      <nav class="hidden md:flex items-center gap-8">
-        {links.map(link => (
-          <a href={link.href} class="nav-link">{link.label}</a>
-        ))}
-        <a href={STRIPE_1} class="btn btn-primary">
-          Order Now
-        </a>
-      </nav>
-
-      <!-- Mobile menu button -->
-      <button class="md:hidden" id="mobile-menu-btn">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
-        </svg>
-      </button>
-    </div>
-
-    <!-- Mobile menu -->
-    <div class="md:hidden hidden" id="mobile-menu">
-      <div class="px-2 pt-2 pb-3 space-y-1 bg-white border-t">
-        {links.map(link => (
-          <a href={link.href} class="block px-3 py-2 nav-link">{link.label}</a>
-        ))}
-        <a href={STRIPE_1} class="block mt-4 btn btn-primary text-center">
-          Order Now
+<header 
+  class:list={[
+    'sticky top-0 z-50 w-full transition-all duration-300',
+    {
+      'bg-white/90 backdrop-blur-md shadow-sm border-b border-slate-200/50': !isTransparent,
+      'bg-transparent': isTransparent,
+    }
+  ]}
+>
+  <div class="mx-auto max-w-7xl px-4 sm:px-6">
+    <div 
+      class:list={[
+        'flex h-16 items-center',
+        {
+          'justify-center': position === 'center',
+          'justify-between': position === 'right',
+          'justify-start': position === 'left',
+        }
+      ]}
+    >
+      <!-- Logo and Brand -->
+      <div class="flex items-center">
+        <a href="/" class="flex items-center space-x-3 no-underline group">
+          <Logo class="h-8 w-8 transition-transform group-hover:scale-110" />
+          <span class="text-xl font-bold text-primary-900 font-poppins">
+            UpKeep<span class="text-accent-400">QR</span>
+          </span>
         </a>
       </div>
+      
+      <!-- Desktop Navigation -->
+      <nav class="hidden md:flex items-center space-x-8 ml-10">
+        {links.map((link) => (
+          <a 
+            href={link.href} 
+            class="text-slate-600 hover:text-primary-900 dark:text-slate-400 dark:hover:text-white transition-colors font-medium relative group"
+            data-testid={`link-${link.label.toLowerCase()}`}
+          >
+            {link.label}
+            <span class="absolute -bottom-1 left-0 h-0.5 w-0 bg-accent-400 transition-all group-hover:w-full"></span>
+          </a>
+        ))}
+      </nav>
+      
+      <!-- Right side actions -->
+      <div class="flex items-center justify-end flex-1 md:flex-none">
+        <div class="flex items-center space-x-4">
+          <!-- Theme toggle -->
+          {showToggleTheme && (
+            <button
+              type="button"
+              class="text-slate-600 dark:text-slate-400 hover:text-primary-900 dark:hover:text-white transition-colors p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
+              aria-label="Toggle dark mode"
+              data-testid="button-theme-toggle"
+              id="theme-toggle"
+            >
+              <!-- Sun icon -->
+              <svg class="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+              </svg>
+              <!-- Moon icon -->
+              <svg class="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+              </svg>
+            </button>
+          )}
+          
+          <!-- CTA Button -->
+          <a 
+            href={stripeOrderLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="btn btn-primary shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200"
+            data-testid="button-order"
+          >
+            Order Now
+          </a>
+          
+          <!-- Mobile menu button -->
+          <button 
+            type="button"
+            class="md:hidden p-2 text-slate-600 dark:text-slate-400 hover:text-primary-900 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            aria-label="Toggle menu"
+            data-testid="button-mobile-menu"
+            id="mobile-menu-button"
+          >
+            <!-- Hamburger icon -->
+            <svg class="w-6 h-6 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" id="hamburger-icon">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+            </svg>
+            <!-- Close icon -->
+            <svg class="w-6 h-6 transition-transform hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" id="close-icon">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Mobile Navigation -->
+    <div 
+      class="md:hidden border-t border-slate-200 dark:border-slate-700 overflow-hidden transition-all duration-300 max-h-0" 
+      id="mobile-menu"
+    >
+      <nav class="py-4">
+        <div class="flex flex-col space-y-4">
+          {links.map((link) => (
+            <a 
+              href={link.href} 
+              class="text-slate-600 dark:text-slate-400 hover:text-primary-900 dark:hover:text-white transition-colors font-medium py-2 px-4 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
+              data-testid={`link-mobile-${link.label.toLowerCase()}`}
+            >
+              {link.label}
+            </a>
+          ))}
+          <a 
+            href={stripeOrderLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="btn btn-primary mt-4 mx-4"
+            data-testid="button-mobile-order"
+          >
+            Order Now
+          </a>
+        </div>
+      </nav>
     </div>
   </div>
 </header>
 
-<style>
-  .nav-link {
-    color: var(--text-gray);
-    text-decoration: none;
-    font-weight: 500;
-    transition: color 0.3s ease;
-  }
-  
-  .nav-link:hover {
-    color: var(--navy);
-  }
-  
-  .no-underline {
-    text-decoration: none;
-  }
-  
-  .flex { display: flex; }
-  .items-center { align-items: center; }
-  .justify-between { justify-content: space-between; }
-  .gap-3 { gap: 0.75rem; }
-  .gap-8 { gap: 2rem; }
-  .h-16 { height: 4rem; }
-  .h-10 { height: 2.5rem; }
-  .w-10 { width: 2.5rem; }
-  .w-6 { width: 1.5rem; }
-  .h-6 { height: 1.5rem; }
-  .text-2xl { font-size: 1.5rem; }
-  .font-bold { font-weight: 700; }
-  .hidden { display: none; }
-  .block { display: block; }
-  .px-2 { padding-left: 0.5rem; padding-right: 0.5rem; }
-  .px-3 { padding-left: 0.75rem; padding-right: 0.75rem; }
-  .pt-2 { padding-top: 0.5rem; }
-  .pb-3 { padding-bottom: 0.75rem; }
-  .py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
-  .mt-4 { margin-top: 1rem; }
-  .space-y-1 > * + * { margin-top: 0.25rem; }
-  .bg-white { background-color: white; }
-  .border-t { border-top: 1px solid #e5e7eb; }
-  .shadow-sm { box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); }
-  .sticky { position: sticky; }
-  .top-0 { top: 0; }
-  .z-50 { z-index: 50; }
-  .text-center { text-align: center; }
-
-  @media (min-width: 768px) {
-    .md\:flex { display: flex; }
-    .md\:hidden { display: none; }
-  }
-</style>
-
 <script>
+  // Mobile menu toggle functionality
   document.addEventListener('DOMContentLoaded', function() {
-    const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+    const menuButton = document.getElementById('mobile-menu-button');
     const mobileMenu = document.getElementById('mobile-menu');
+    const hamburgerIcon = document.getElementById('hamburger-icon');
+    const closeIcon = document.getElementById('close-icon');
     
-    if (mobileMenuBtn && mobileMenu) {
-      mobileMenuBtn.addEventListener('click', function() {
-        mobileMenu.classList.toggle('hidden');
+    if (menuButton && mobileMenu && hamburgerIcon && closeIcon) {
+      menuButton.addEventListener('click', function() {
+        const isOpen = mobileMenu.classList.contains('max-h-96');
+        
+        if (isOpen) {
+          // Close menu
+          mobileMenu.classList.remove('max-h-96');
+          mobileMenu.classList.add('max-h-0');
+          hamburgerIcon.classList.remove('hidden');
+          closeIcon.classList.add('hidden');
+          menuButton.setAttribute('aria-expanded', 'false');
+        } else {
+          // Open menu
+          mobileMenu.classList.remove('max-h-0');
+          mobileMenu.classList.add('max-h-96');
+          hamburgerIcon.classList.add('hidden');
+          closeIcon.classList.remove('hidden');
+          menuButton.setAttribute('aria-expanded', 'true');
+        }
       });
     }
+    
+    // Close mobile menu when clicking links
+    const mobileLinks = mobileMenu?.querySelectorAll('a');
+    mobileLinks?.forEach(link => {
+      link.addEventListener('click', () => {
+        mobileMenu?.classList.remove('max-h-96');
+        mobileMenu?.classList.add('max-h-0');
+        hamburgerIcon?.classList.remove('hidden');
+        closeIcon?.classList.add('hidden');
+        menuButton?.setAttribute('aria-expanded', 'false');
+      });
+    });
+  });
+  
+  // Theme toggle functionality
+  const themeToggle = document.getElementById('theme-toggle');
+  if (themeToggle) {
+    themeToggle.addEventListener('click', function() {
+      const isDark = document.documentElement.classList.contains('dark');
+      
+      if (isDark) {
+        document.documentElement.classList.remove('dark');
+        localStorage.setItem('theme', 'light');
+      } else {
+        document.documentElement.classList.add('dark');
+        localStorage.setItem('theme', 'dark');
+      }
+    });
+  }
+  
+  // Header scroll effect
+  let lastScrollY = window.scrollY;
+  const header = document.querySelector('header');
+  
+  window.addEventListener('scroll', () => {
+    const currentScrollY = window.scrollY;
+    
+    if (header) {
+      if (currentScrollY > lastScrollY && currentScrollY > 100) {
+        // Scrolling down
+        header.style.transform = 'translateY(-100%)';
+      } else {
+        // Scrolling up
+        header.style.transform = 'translateY(0)';
+      }
+    }
+    
+    lastScrollY = currentScrollY;
   });
 </script>
