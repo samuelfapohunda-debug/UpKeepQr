@@ -1123,7 +1123,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check honeypot field for spam protection
       if (req.body.website) {
         console.log('Spam detected: honeypot field filled');
-        return res.redirect('/contact?error=1');
+        return res.status(400).json({ message: 'Invalid submission' });
       }
 
       const { name, email, phone, topic, zip, message, consent } = req.body;
@@ -1131,7 +1131,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Validate required fields
       if (!name || !email || !topic || !message || !consent) {
         console.log('Missing required fields in contact form');
-        return res.redirect('/contact?error=1');
+        return res.status(400).json({ message: 'Missing required fields' });
       }
 
       // Handle the enhanced contact form submission
@@ -1148,29 +1148,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await createAuditLog(req, 'contact form submission');
       console.log(`✅ Contact form submitted by ${email} (${topic})`);
       
-      res.redirect('/contact?sent=1');
+      // Contact form endpoint maintained for potential integrations 
+      // Website moved to WordPress - redirect to WordPress contact success page
+      res.status(200).json({ message: 'Contact form submitted successfully' });
     } catch (error: any) {
       console.error('Contact form submission error:', error);
       await createAuditLog(req, `contact form error: ${error.message}`);
-      res.redirect('/contact?error=1');
+      res.status(500).json({ message: 'Contact form submission failed' });
     }
   });
 
-  // Redirect customer-facing routes to /upkeepqr subdirectory
-  const customerRoutes = ['/', '/contact', '/order', '/faq', '/about', '/pricing'];
-  customerRoutes.forEach(route => {
-    app.get(route, (req, res) => {
-      const targetPath = route === '/' ? '/upkeepqr/' : `/upkeepqr${route}`;
-      res.redirect(301, targetPath);
-    });
-  });
-
-  // Serve UpkeepQR website static files at /upkeepqr
-  const websitePath = path.join(process.cwd(), 'website', 'dist');
-  if (fs.existsSync(websitePath)) {
-    app.use('/upkeepqr', express.static(websitePath));
-    console.log('✅ UpkeepQR website served at /upkeepqr');
-  }
+  // Website removed - now using WordPress instead of Astro/Firebase hosting
 
   // Serve React app at /app for agent management
   app.get('/app*', (req, res, next) => {

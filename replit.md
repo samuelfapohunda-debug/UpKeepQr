@@ -1,6 +1,6 @@
 # Overview
 
-This is an UpKeepQR Agent Management Platform built as a monorepo TypeScript application. The platform provides tools for managing business agents with features including scheduling, QR code generation, onboarding workflows, and dashboard management. The application is structured as a full-stack solution with a React frontend and Express backend, designed to streamline agent operations and automate common workflows. Additionally, it includes a customer-facing Astro website for UpkeepQR (www.upkeepQR.com) with order functionality, contact forms, Stripe integration, and specific branding (Navy Blue #1E2A38, Bright Green #A6E22E).
+This is an UpKeepQR Agent Management Platform built as a monorepo TypeScript application. The platform provides tools for managing business agents with features including scheduling, QR code generation, onboarding workflows, and dashboard management. The application is structured as a full-stack solution with a React frontend and Express backend, designed to streamline agent operations and automate common workflows. The customer-facing website has been moved to WordPress hosting instead of the previous Astro/Firebase setup.
 
 # User Preferences
 
