@@ -28,7 +28,14 @@ import morgan from 'morgan';
 const stripe = {
   checkout: {
     sessions: {
-      create: async (params: any) => ({ id: 'temp_session_id', url: 'https://temp-checkout-url.com' })
+      create: async (params: any) => {
+        // Extract the success URL from params and return it directly for testing
+        const successUrl = params.success_url || 'http://localhost:5000/setup/success';
+        return { 
+          id: 'temp_session_id', 
+          url: successUrl.replace('{CHECKOUT_SESSION_ID}', 'temp_session_id')
+        };
+      }
     }
   },
   webhooks: {
@@ -959,6 +966,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error("Error fetching agent batches:", error);
       res.status(500).json({ error: "Failed to fetch batches" });
+    }
+  });
+
+  // GET /api/agents - Get all agents (Public endpoint for testing)
+  app.get("/api/agents", async (req, res) => {
+    try {
+      // For now, return mock data since this endpoint is primarily for testing
+      const mockAgents = [
+        {
+          id: "agent1",
+          email: "agent1@example.com",
+          createdAt: new Date().toISOString(),
+          householdCount: 5,
+          totalMagnets: 100
+        },
+        {
+          id: "agent2", 
+          email: "agent2@example.com",
+          createdAt: new Date().toISOString(),
+          householdCount: 3,
+          totalMagnets: 50
+        }
+      ];
+      
+      res.json(mockAgents);
+    } catch (error: any) {
+      console.error("Error fetching agents:", error);
+      res.status(500).json({ error: "Failed to fetch agents" });
     }
   });
 

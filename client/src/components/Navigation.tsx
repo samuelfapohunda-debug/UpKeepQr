@@ -43,9 +43,9 @@ export default function Navigation() {
               Setup
             </Link>
             <Link 
-              href="/agent" 
+              href="/admin" 
               className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                isActive('/agent') 
+                isActive('/admin') 
                   ? 'bg-primary text-primary-foreground' 
                   : 'hover:bg-accent hover:text-accent-foreground'
               }`}
