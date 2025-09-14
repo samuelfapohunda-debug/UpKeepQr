@@ -235,8 +235,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (household.email) {
         try {
           const dashboardUrl = process.env.PUBLIC_BASE_URL 
-            ? `${process.env.PUBLIC_BASE_URL}/agent`
-            : "http://localhost:5000/agent";
+            ? `${process.env.PUBLIC_BASE_URL}/admin`
+            : "http://localhost:5000/admin";
             
           await sendWelcomeEmail({
             email: household.email,
