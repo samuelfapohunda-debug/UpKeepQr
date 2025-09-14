@@ -17,6 +17,12 @@ const postmark = require('postmark');
 // v2 https function + logger
 const {onRequest} = require('firebase-functions/v2/https');
 const logger = require('firebase-functions/logger');
+const twilio = require('twilio');
+
+const twilioClient = new twilio(
+  process.env.TWILIO_ACCOUNT_SID,
+  process.env.TWILIO_AUTH_TOKEN
+);
 
 // Optional: use legacy config() for smooth transition
 let legacyConfig = {};
@@ -56,6 +62,18 @@ async function sendMail({to, subject, html, stream = 'outbound'}) {
     MessageStream: stream,
   });
 }
+// Reusable SMS helper
+async function sendSMS({to, body}) {
+  if (!process.env.TWILIO_PHONE_NUMBER) {
+    throw new Error('Twilio phone number is not configured.');
+  }
+
+  return twilioClient.messages.create({
+    body: body,
+    from: process.env.TWILIO_PHONE_NUMBER,
+    to: to,
+  });
+}
 
 // ---- Express app ----
 const app = express();
@@ -85,6 +103,10 @@ app.post('/contact', async (req, res) => {
         `<p><b>Message:</b> ${message}</p>`,
       stream: 'transactional',
     });
+    await sendSMS({
+      to: data.phone || '+14048886739',  // fallback test number
+      body: `Reminder: Your request has been received. – UpKeepQR`,
+    });
 
     // Auto-acknowledge the user if provided
     if (email) {
@@ -95,6 +117,10 @@ app.post('/contact', async (req, res) => {
         stream: 'transactional',
       });
     }
+    await sendSMS({
+      to: data.phone || '+14048886739',  // fallback test number
+      body: `Reminder: Your request has been received. – UpKeepQR`,
+    });
 
     res.json({ok: true});
   } catch (err) {
@@ -151,6 +177,40 @@ app.post('/fee-listing', async (req, res) => {
         stream: 'transactional',
       });
     }
+    // Unified notification helper
+    async function sendNotification({email, phone, subject, message, html}) {
+      const results = {};
+
+      // Send Email if available
+      if (email) {
+        try {
+          const emailResult = await sendMail({
+            to: email,
+            subject: subject || 'Notification — UpKeepQR',
+            html: html || `<p>${message}</p>`,
+          });
+          results.email = emailResult;
+        } catch (err) {
+          results.emailError = err.message;
+        }
+      }
+
+      // Send SMS if available
+      if (phone) {
+        try {
+          const smsResult = await sendSMS({
+            to: phone,
+            body: message || subject || 'UpKeepQR Notification',
+          });
+          results.sms = smsResult;
+        } catch (err) {
+          results.smsError = err.message;
+        }
+      }
+
+      // Return results so caller can log/inspect
+      return results;
+    }
 
     res.json({ok: true});
   } catch (err) {
@@ -163,3 +223,5 @@ app.post('/fee-listing', async (req, res) => {
 // Region can be adjusted if you prefer another.
 // Keep cors on the Express layer (already added above).
 exports.api = onRequest({region: 'us-central1'}, app);
+
+
