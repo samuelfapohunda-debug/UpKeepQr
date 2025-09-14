@@ -856,13 +856,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/download/batch/:batchId", async (req, res) => {
     try {
       const { batchId } = req.params;
-      const csvFilePath = path.join(process.cwd(), 'exports', `batch-${batchId}.csv`);
+      
+      // Handle "demo" as a special case - serve the test file
+      let csvFilePath: string;
+      let downloadFileName: string;
+      
+      if (batchId === 'demo') {
+        csvFilePath = path.join(process.cwd(), 'exports', 'batch-test.csv');
+        downloadFileName = 'magnet-batch-demo.csv';
+      } else {
+        csvFilePath = path.join(process.cwd(), 'exports', `batch-${batchId}.csv`);
+        downloadFileName = `magnet-batch-${batchId}.csv`;
+      }
       
       if (!fs.existsSync(csvFilePath)) {
         return res.status(404).json({ error: "CSV file not found" });
       }
 
-      res.download(csvFilePath, `magnet-batch-${batchId}.csv`, (err) => {
+      res.download(csvFilePath, downloadFileName, (err) => {
         if (err) {
           console.error("Error downloading file:", err);
           res.status(500).json({ error: "Failed to download file" });
