@@ -1194,7 +1194,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Contact form handler with redirect support
-  app.post("/api/contact", publicApiLimiter, express.urlencoded({ extended: true }), async (req, res) => {
+  app.post("/api/contact", publicApiLimiter, express.json(), express.urlencoded({ extended: true }), async (req, res) => {
     try {
       // Check honeypot field for spam protection
       if (req.body.website) {
@@ -1202,30 +1202,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Invalid submission' });
       }
 
-      const { name, email, phone, topic, zip, message, consent } = req.body;
+      const { name, email, phone, topic, subject, zip, message, consent, to } = req.body;
 
-      // Validate required fields
-      if (!name || !email || !topic || !message || !consent) {
+      // Handle both old WordPress format and new Contact page format
+      const formSubject = subject || topic || 'Contact Form Submission';
+      const recipient = to || 'Support@UpKeepQr.Com';
+
+      // Validate required fields (more flexible for both formats)
+      if (!name || !email || !message) {
         console.log('Missing required fields in contact form');
         return res.status(400).json({ message: 'Missing required fields' });
       }
 
-      // Handle the enhanced contact form submission
-      await handleContactFormSubmission({
-        name: name.trim(),
-        email: email.trim(),
-        phone: phone?.trim() || '',
-        topic: topic.trim(),
-        zip: zip?.trim() || '',
-        message: message.trim(),
-        consent: consent === 'on' || consent === 'true'
-      });
+      // Send email using SendGrid
+      try {
+        const { sendEmail: sendGridEmail } = await import('./sendgrid');
+        
+        const emailSent = await sendGridEmail({
+          to: recipient,
+          from: 'Support@UpKeepQr.Com', // Must be a verified sender in SendGrid
+          subject: `Contact Form: ${formSubject}`,
+          html: `
+            <h2>New Contact Form Submission</h2>
+            <p><strong>Name:</strong> ${name}</p>
+            <p><strong>Email:</strong> ${email}</p>
+            ${phone ? `<p><strong>Phone:</strong> ${phone}</p>` : ''}
+            <p><strong>Subject:</strong> ${formSubject}</p>
+            <p><strong>Message:</strong></p>
+            <p>${message.replace(/\n/g, '<br>')}</p>
+          `,
+          text: `
+New Contact Form Submission
+
+Name: ${name}
+Email: ${email}
+${phone ? `Phone: ${phone}\n` : ''}Subject: ${formSubject}
+Message: ${message}
+          `
+        });
+
+        if (!emailSent) {
+          throw new Error('Failed to send email via SendGrid');
+        }
+
+        console.log(`✅ Contact form email sent to ${recipient} from ${email}`);
+      } catch (emailError) {
+        console.error('SendGrid email error:', emailError);
+        // Fall back to existing email system if SendGrid fails
+        if (topic && consent !== undefined) {
+          await handleContactFormSubmission({
+            name: name.trim(),
+            email: email.trim(),
+            phone: phone?.trim() || '',
+            topic: (topic || subject).trim(),
+            zip: zip?.trim() || '',
+            message: message.trim(),
+            consent: consent === 'on' || consent === 'true'
+          });
+        }
+      }
 
       await createAuditLog(req, 'contact form submission');
-      console.log(`✅ Contact form submitted by ${email} (${topic})`);
+      console.log(`✅ Contact form submitted by ${email} (${formSubject})`);
       
-      // Contact form endpoint maintained for potential integrations 
-      // Website moved to WordPress - redirect to WordPress contact success page
       res.status(200).json({ message: 'Contact form submitted successfully' });
     } catch (error: any) {
       console.error('Contact form submission error:', error);
