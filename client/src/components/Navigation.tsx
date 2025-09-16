@@ -11,14 +11,18 @@ export default function Navigation() {
         <div className="flex justify-between items-center h-14 sm:h-16">
           {/* Logo Section */}
           <div className="flex items-center space-x-2 min-w-0 flex-shrink-0">
-            <div className="flex items-center space-x-1 sm:space-x-2">
+            <Link 
+              href="/" 
+              className="flex items-center space-x-1 sm:space-x-2 hover:opacity-80 transition-opacity"
+              data-testid="logo-link"
+            >
               <svg width="20" height="20" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" data-testid="logo-icon" className="sm:w-6 sm:h-6">
                 <rect width="32" height="32" rx="6" fill="#A6E22E"/>
                 <path d="M16 6L8 12H10V20H14V16H18V20H22V12H24L16 6Z" fill="white"/>
                 <path d="M12 18L14 20L20 14" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
               <span className="font-semibold text-sm sm:text-base lg:text-lg truncate" data-testid="logo-text">UpKeepQR</span>
-            </div>
+            </Link>
           </div>
           
           {/* Navigation Links */}
