@@ -61,6 +61,17 @@ export default function Navigation() {
               Dashboard
             </Link>
             <Link 
+              href="/contact" 
+              className={`px-2 py-1.5 sm:px-3 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${
+                isActive('/contact') 
+                  ? 'bg-primary text-primary-foreground' 
+                  : 'hover:bg-accent hover:text-accent-foreground'
+              }`}
+              data-testid="link-contact"
+            >
+              Contact Us
+            </Link>
+            <Link 
               href="/pricing" 
               className="px-3 py-1.5 sm:px-4 sm:py-2 bg-primary text-primary-foreground rounded-md text-xs sm:text-sm font-medium transition-colors whitespace-nowrap hover:bg-primary/90"
               data-testid="button-order-magnet"
