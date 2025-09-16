@@ -61,7 +61,7 @@ export default function Navigation() {
               Dashboard
             </Link>
             <Link 
-              href="/#pricing" 
+              href="/pricing" 
               className="px-3 py-1.5 sm:px-4 sm:py-2 bg-primary text-primary-foreground rounded-md text-xs sm:text-sm font-medium transition-colors whitespace-nowrap hover:bg-primary/90"
               data-testid="button-order-magnet"
             >

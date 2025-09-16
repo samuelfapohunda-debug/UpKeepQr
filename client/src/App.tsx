@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Navigation from "@/components/Navigation";
 import Home from "@/pages/Home";
+import Pricing from "@/pages/Pricing";
 import Onboarding from "@/pages/Onboarding";
 import SetupSuccess from "@/pages/SetupSuccess";
 import Dashboard from "@/pages/Dashboard";
@@ -19,6 +20,7 @@ function Router() {
       <Navigation />
       <Switch>
         <Route path="/" component={Home} />
+        <Route path="/pricing" component={Pricing} />
         <Route path="/setup/success" component={SetupSuccess} />
         <Route path="/setup/:token" component={Onboarding} />
         <Route path="/admin" component={Dashboard} />
