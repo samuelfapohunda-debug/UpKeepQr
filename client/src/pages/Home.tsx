@@ -338,58 +338,6 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Contact Section */}
-        <section className="w-full py-12 md:py-24 lg:py-32">
-          <div className="container px-4 md:px-6 mx-auto">
-            <div className="flex flex-col items-center justify-center space-y-4 text-center">
-              <div className="space-y-2">
-                <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">Get In Touch</h2>
-                <p className="max-w-[900px] text-gray-500 md:text-xl/relaxed">
-                  Have questions? We're here to help you get the most out of your home maintenance system.
-                </p>
-              </div>
-              <div className="grid gap-6 lg:grid-cols-3 lg:gap-12 mt-12">
-                <Card className="text-center">
-                  <CardHeader>
-                    <Mail className="h-8 w-8 mx-auto text-blue-500" />
-                    <CardTitle>Email Support</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <CardDescription>
-                      support@agenthub.com
-                    </CardDescription>
-                  </CardContent>
-                </Card>
-                
-                <Card className="text-center">
-                  <CardHeader>
-                    <Phone className="h-8 w-8 mx-auto text-green-500" />
-                    <CardTitle>Phone Support</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <CardDescription>
-                      1-800-AGENTHUB<br />
-                      Mon-Fri 9AM-6PM EST
-                    </CardDescription>
-                  </CardContent>
-                </Card>
-                
-                <Card className="text-center">
-                  <CardHeader>
-                    <MapPin className="h-8 w-8 mx-auto text-purple-500" />
-                    <CardTitle>Address</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <CardDescription>
-                      123 Innovation Drive<br />
-                      Tech City, TC 12345
-                    </CardDescription>
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
-          </div>
-        </section>
       </main>
 
       {/* Checkout Modal */}
