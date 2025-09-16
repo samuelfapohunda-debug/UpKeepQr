@@ -3,7 +3,7 @@ import express from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { authenticateAdmin, authenticateAgent } from "./middleware/auth";
-import { insertMagnetBatchSchema, insertBatchSchema, setupActivateSchema, setupPreviewSchema, taskCompleteSchema, agentLoginSchema, checkoutSchema, leadsSchema, smsOptInSchema, smsVerifySchema } from "@shared/schema";
+import { insertMagnetBatchSchema, insertBatchSchema, setupActivateSchema, setupPreviewSchema, taskCompleteSchema, agentLoginSchema, checkoutSchema, leadsSchema, smsOptInSchema, smsVerifySchema } from "../shared/schema";
 import { nanoid } from "nanoid";
 import { v4 as uuidv4 } from "uuid";
 import QRCode from "qrcode";
@@ -1126,6 +1126,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
     } catch (error) {
       console.error("Error generating QR code:", error);
+      res.status(500).json({ error: "Failed to generate QR code" });
+    }
+  });
+
+  // GET /api/admin/qr/:token - Generate QR code PNG for setup token
+  app.get("/api/admin/qr/:token", async (req, res) => {
+    try {
+      const { token } = req.params;
+      
+      // Generate setup URL for the token
+      const baseUrl = req.protocol + '://' + req.get('host');
+      const setupUrl = `${baseUrl}/setup/${token}`;
+
+      // Generate QR code as PNG buffer
+      const qrBuffer = await QRCode.toBuffer(setupUrl, {
+        type: 'png',
+        width: 512,
+        margin: 2,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF'
+        }
+      });
+
+      res.setHeader('Content-Type', 'image/png');
+      res.setHeader('Content-Disposition', `inline; filename="qr-${token}.png"`);
+      res.send(qrBuffer);
+      
+    } catch (error) {
+      console.error("Error generating QR code for token:", error);
       res.status(500).json({ error: "Failed to generate QR code" });
     }
   });
