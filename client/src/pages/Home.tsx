@@ -334,6 +334,28 @@ export default function Home() {
                   </CardDescription>
                 </CardContent>
               </Card>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle>Do I need to download an app to use UpKeepQR?</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CardDescription>
+                    No. UpKeepQR works directly through your phone's camera. Just scan the magnet and set reminders instantly — no extra app required.
+                  </CardDescription>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle>Will my personal data be safe if I use UpKeepQR?</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CardDescription>
+                    Yes. UpKeepQR only collects the information needed to send you reminders. Your data is never sold or shared with third parties, and you have full control over your reminder settings.
+                  </CardDescription>
+                </CardContent>
+              </Card>
             </div>
           </div>
         </section>
