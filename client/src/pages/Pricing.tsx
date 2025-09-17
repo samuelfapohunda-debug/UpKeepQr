@@ -3,11 +3,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle, Users, Package } from "lucide-react";
 
-// Stripe Payment Links mapping - Replace these URLs with your actual Stripe Payment Links
+// Stripe Payment Links mapping
 const STRIPE_PAYMENT_LINKS = {
-  single: "https://buy.stripe.com/test_single_pack", // Replace with actual Stripe Payment Link
-  twopack: "https://buy.stripe.com/test_two_pack", // Replace with actual Stripe Payment Link  
-  "100pack": "https://buy.stripe.com/test_100_pack", // Replace with actual Stripe Payment Link
+  single: "https://buy.stripe.com/test_8x29AV0Q0cQB0KJbu5gIo00", // 1 QR Magnet - $19
+  twopack: "https://buy.stripe.com/test_two_pack", // 2 QR Magnets - $35 (pending URL)
+  "100pack": "https://buy.stripe.com/test_eVq00l42c5o98db69LgIo01", // 100 QR Magnets - $899
 };
 
 const openStripeCheckout = (sku: keyof typeof STRIPE_PAYMENT_LINKS) => {
