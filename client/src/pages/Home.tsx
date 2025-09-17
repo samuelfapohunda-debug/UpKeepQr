@@ -1,16 +1,23 @@
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle, Users, BarChart3, Calendar, Package, Star, Mail, Phone, MapPin } from "lucide-react";
-import CheckoutModal from "@/components/CheckoutModal";
+
+// Stripe Payment Links mapping - Replace these URLs with your actual Stripe Payment Links
+const STRIPE_PAYMENT_LINKS = {
+  single: "https://buy.stripe.com/test_single_pack", // Replace with actual Stripe Payment Link
+  twopack: "https://buy.stripe.com/test_two_pack", // Replace with actual Stripe Payment Link  
+  "100pack": "https://buy.stripe.com/test_100_pack", // Replace with actual Stripe Payment Link
+};
+
+const openStripeCheckout = (sku: keyof typeof STRIPE_PAYMENT_LINKS) => {
+  const paymentLink = STRIPE_PAYMENT_LINKS[sku];
+  if (paymentLink) {
+    window.open(paymentLink, '_blank');
+  }
+};
 
 export default function Home() {
-  const [checkoutSku, setCheckoutSku] = useState<string | null>(null);
-
-  const openCheckout = (sku: string) => {
-    setCheckoutSku(sku);
-  };
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -28,7 +35,7 @@ export default function Home() {
                 </p>
               </div>
               <div className="space-x-4">
-                <Button size="lg" onClick={() => openCheckout('single')} data-testid="button-get-started">
+                <Button size="lg" onClick={() => openStripeCheckout('single')} data-testid="button-get-started">
                   Get Started
                 </Button>
                 <Button variant="outline" size="lg" onClick={() => document.getElementById('how-it-works')?.scrollIntoView()}>
@@ -121,7 +128,7 @@ export default function Home() {
                 </p>
               </div>
             </div>
-            <div className="mx-auto grid max-w-6xl items-center gap-6 py-12 lg:grid-cols-4">
+            <div className="mx-auto grid max-w-6xl items-center gap-6 py-12 lg:grid-cols-3">
               {/* Single Pack */}
               <Card className="relative">
                 <CardHeader>
@@ -153,7 +160,7 @@ export default function Home() {
                   </ul>
                   <Button 
                     className="w-full" 
-                    onClick={() => openCheckout('single')}
+                    onClick={() => openStripeCheckout('single')}
                     data-testid="button-single-pack"
                   >
                     Get Started
@@ -193,7 +200,7 @@ export default function Home() {
                   </ul>
                   <Button 
                     className="w-full" 
-                    onClick={() => openCheckout('twopack')}
+                    onClick={() => openStripeCheckout('twopack')}
                     data-testid="button-two-pack"
                   >
                     Get Started
@@ -233,7 +240,7 @@ export default function Home() {
                   </ul>
                   <Button 
                     className="w-full" 
-                    onClick={() => openCheckout('100pack')}
+                    onClick={() => openStripeCheckout('100pack')}
                     data-testid="button-100-pack"
                   >
                     Get Started
@@ -241,45 +248,6 @@ export default function Home() {
                 </CardContent>
               </Card>
 
-              {/* 500 Pack */}
-              <Card className="relative">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Star className="h-5 w-5" />
-                    Agent 500-Pack
-                  </CardTitle>
-                  <CardDescription>For enterprise agents</CardDescription>
-                  <div className="text-3xl font-bold">$3,999</div>
-                  <Badge className="absolute -top-2 -right-2 bg-purple-500">Best Value</Badge>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <ul className="space-y-2 text-sm">
-                    <li className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-green-500" />
-                      500 QR Magnets
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-green-500" />
-                      Priority Support
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-green-500" />
-                      Advanced Analytics
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-green-500" />
-                      Bulk Management
-                    </li>
-                  </ul>
-                  <Button 
-                    className="w-full" 
-                    onClick={() => openCheckout('500pack')}
-                    data-testid="button-500-pack"
-                  >
-                    Get Started
-                  </Button>
-                </CardContent>
-              </Card>
             </div>
           </div>
         </section>
@@ -362,14 +330,6 @@ export default function Home() {
 
       </main>
 
-      {/* Checkout Modal */}
-      {checkoutSku && (
-        <CheckoutModal 
-          sku={checkoutSku} 
-          isOpen={!!checkoutSku} 
-          onClose={() => setCheckoutSku(null)} 
-        />
-      )}
     </div>
   );
 }

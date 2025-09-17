@@ -22,7 +22,6 @@ const SKU_DETAILS = {
   single: { name: "Single Pack", price: "$19", description: "1 QR Magnet for homeowners" },
   twopack: { name: "Two Pack", price: "$35", description: "2 QR Magnets - great for sharing" },
   "100pack": { name: "Agent 100-Pack", price: "$899", description: "100 QR Magnets for real estate agents" },
-  "500pack": { name: "Agent 500-Pack", price: "$3,999", description: "500 QR Magnets for enterprise agents" },
 };
 
 export default function CheckoutModal({ sku, isOpen, onClose, agentId }: CheckoutModalProps) {
