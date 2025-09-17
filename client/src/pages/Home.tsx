@@ -6,7 +6,7 @@ import { CheckCircle, Users, BarChart3, Calendar, Package, Star, Mail, Phone, Ma
 // Stripe Payment Links mapping
 const STRIPE_PAYMENT_LINKS = {
   single: "https://buy.stripe.com/test_8x29AV0Q0cQB0KJbu5gIo00", // 1 QR Magnet - $19
-  twopack: "https://buy.stripe.com/test_two_pack", // 2 QR Magnets - $35 (pending URL)
+  twopack: "https://buy.stripe.com/test_8x27sNdCM03P3WVdCdgIo03", // 2 QR Magnets - $35
   "100pack": "https://buy.stripe.com/test_eVq00l42c5o98db69LgIo01", // 100 QR Magnets - $899
 };
 
