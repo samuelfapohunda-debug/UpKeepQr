@@ -158,8 +158,8 @@ export default function AdminDashboard() {
       if (filters.status && filters.status.length > 0) {
         filters.status.forEach(s => params.append("status", s));
       }
-      if (filters.trade) params.set("trade", filters.trade);
-      if (filters.urgency) params.set("urgency", filters.urgency);
+      if (filters.trade && filters.trade !== "all") params.set("trade", filters.trade);
+      if (filters.urgency && filters.urgency !== "all") params.set("urgency", filters.urgency);
       if (filters.zip) params.set("zip", filters.zip);
       if (filters.providerAssigned) params.set("providerAssigned", filters.providerAssigned);
       if (filters.q) params.set("q", filters.q);
@@ -474,7 +474,7 @@ export default function AdminDashboard() {
                     <SelectValue placeholder="All trades" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All trades</SelectItem>
+                    <SelectItem value="all">All trades</SelectItem>
                     <SelectItem value="roofing">Roofing</SelectItem>
                     <SelectItem value="plumbing">Plumbing</SelectItem>
                     <SelectItem value="electrical">Electrical</SelectItem>
@@ -491,7 +491,7 @@ export default function AdminDashboard() {
                     <SelectValue placeholder="All urgencies" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All urgencies</SelectItem>
+                    <SelectItem value="all">All urgencies</SelectItem>
                     <SelectItem value="emergency">Emergency</SelectItem>
                     <SelectItem value="24h">Within 24h</SelectItem>
                     <SelectItem value="3days">Within 3 days</SelectItem>
