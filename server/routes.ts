@@ -4,7 +4,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { authenticateAdmin, authenticateAgent, authenticateProAdmin } from "./middleware/auth";
 import { sendUserConfirmationEmail, sendAdminAlertEmail, sendStatusUpdateEmail } from "./lib/email";
-import { insertMagnetBatchSchema, insertBatchSchema, setupActivateSchema, setupPreviewSchema, taskCompleteSchema, agentLoginSchema, checkoutSchema, leadsSchema, smsOptInSchema, smsVerifySchema, createProRequestSchema, updateProRequestStatusSchema, adminProRequestFiltersSchema, createNoteSchema } from "../shared/schema";
+import { insertMagnetBatchSchema, insertBatchSchema, setupActivateSchema, setupPreviewSchema, taskCompleteSchema, agentLoginSchema, checkoutSchema, leadsSchema, smsOptInSchema, smsVerifySchema, createProRequestSchema, updateProRequestStatusSchema, adminProRequestFiltersSchema, createNoteSchema, insertOrderMagnetOrderSchema, insertOrderMagnetItemSchema, insertOrderMagnetBatchSchema, insertOrderMagnetShipmentSchema, insertOrderMagnetAuditEventSchema } from "../shared/schema";
 import { nanoid } from "nanoid";
 import { v4 as uuidv4 } from "uuid";
 import QRCode from "qrcode";
@@ -952,6 +952,253 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(providers);
     } catch (error: any) {
       return handleError(error, 'admin providers search', res);
+    }
+  });
+
+  // Order Magnet Admin Routes
+  
+  // GET /api/admin/magnets/orders - Get all order magnet orders with filtering and pagination (admin)
+  app.get("/api/admin/magnets/orders", authenticateProAdmin, async (req, res) => {
+    try {
+      await createAuditLog(req, '/api/admin/magnets/orders');
+      
+      // Parse and validate query parameters
+      const { status, page = 1, pageSize = 25, sortBy = 'createdAt', sortDir = 'desc' } = req.query;
+      
+      let orders;
+      if (status && typeof status === 'string') {
+        orders = await storage.getOrderMagnetOrdersByStatus(status);
+      } else {
+        orders = await storage.getAllOrderMagnetOrders();
+      }
+      
+      // Simple pagination and sorting in memory for now
+      const startIndex = (Number(page) - 1) * Number(pageSize);
+      const endIndex = startIndex + Number(pageSize);
+      const sortedOrders = orders.sort((a, b) => {
+        if (sortDir === 'desc') {
+          return b.createdAt.getTime() - a.createdAt.getTime();
+        }
+        return a.createdAt.getTime() - b.createdAt.getTime();
+      });
+      
+      const paginatedOrders = sortedOrders.slice(startIndex, endIndex);
+      
+      const result = {
+        items: paginatedOrders,
+        total: orders.length,
+        page: Number(page),
+        pageSize: Number(pageSize)
+      };
+
+      res.json(result);
+    } catch (error: any) {
+      return handleError(error, 'admin magnets orders list', res);
+    }
+  });
+
+  // GET /api/admin/magnets/orders/:id - Get order magnet order by ID (admin - returns full data)
+  app.get("/api/admin/magnets/orders/:id", authenticateProAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      const order = await storage.getOrderMagnetOrder(id);
+      if (!order) {
+        return res.status(404).json({ error: "Order not found" });
+      }
+
+      // Get related items, shipments, and audit events
+      const [items, shipments, auditEvents] = await Promise.all([
+        storage.getOrderMagnetItemsByOrder(id),
+        storage.getOrderMagnetShipmentsByOrder(id),
+        storage.getOrderMagnetAuditEventsByOrder(id)
+      ]);
+
+      res.json({
+        ...order,
+        items,
+        shipments,
+        auditEvents
+      });
+    } catch (error: any) {
+      return handleError(error, 'admin magnets orders get', res);
+    }
+  });
+
+  // POST /api/admin/magnets/orders - Create a new order magnet order (admin)
+  app.post("/api/admin/magnets/orders", authenticateProAdmin, async (req, res) => {
+    try {
+      await createAuditLog(req, '/api/admin/magnets/orders POST');
+      
+      const validatedData = insertOrderMagnetOrderSchema.parse(req.body);
+      
+      const order = await storage.createOrderMagnetOrder(validatedData);
+      
+      // Create audit event for order creation
+      await storage.createOrderMagnetAuditEvent({
+        orderId: order.id,
+        actor: 'admin',
+        type: 'order_created',
+        data: { orderId: order.id }
+      });
+
+      res.status(201).json(order);
+    } catch (error: any) {
+      return handleError(error, 'admin magnets orders creation', res);
+    }
+  });
+
+  // PATCH /api/admin/magnets/orders/:id/status - Update order magnet order status (admin)
+  app.patch("/api/admin/magnets/orders/:id/status", authenticateProAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { status } = req.body;
+      
+      if (!status) {
+        return res.status(400).json({ error: "Status is required" });
+      }
+      
+      // Get current state for audit trail
+      const currentOrder = await storage.getOrderMagnetOrder(id);
+      if (!currentOrder) {
+        return res.status(404).json({ error: "Order not found" });
+      }
+      
+      const updatedOrder = await storage.updateOrderMagnetOrderStatus(id, status);
+      if (!updatedOrder) {
+        return res.status(404).json({ error: "Order not found" });
+      }
+
+      // Create audit event for status change
+      if (currentOrder.status !== status) {
+        await storage.createOrderMagnetAuditEvent({
+          orderId: id,
+          actor: 'admin',
+          type: 'status_change',
+          data: { 
+            oldStatus: currentOrder.status, 
+            newStatus: status 
+          }
+        });
+      }
+
+      res.json(updatedOrder);
+    } catch (error: any) {
+      return handleError(error, 'admin magnets orders status update', res);
+    }
+  });
+
+  // GET /api/admin/magnets/orders/:id/items - Get items for an order magnet order (admin)
+  app.get("/api/admin/magnets/orders/:id/items", authenticateProAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      // Check if order exists
+      const order = await storage.getOrderMagnetOrder(id);
+      if (!order) {
+        return res.status(404).json({ error: "Order not found" });
+      }
+
+      const items = await storage.getOrderMagnetItemsByOrder(id);
+      res.json(items);
+    } catch (error: any) {
+      return handleError(error, 'admin magnets orders items get', res);
+    }
+  });
+
+  // POST /api/admin/magnets/items - Create a new order magnet item (admin)
+  app.post("/api/admin/magnets/items", authenticateProAdmin, async (req, res) => {
+    try {
+      await createAuditLog(req, '/api/admin/magnets/items POST');
+      
+      const validatedData = insertOrderMagnetItemSchema.parse(req.body);
+      
+      const item = await storage.createOrderMagnetItem(validatedData);
+      
+      // Create audit event for item creation
+      await storage.createOrderMagnetAuditEvent({
+        orderId: item.orderId,
+        itemId: item.id,
+        actor: 'admin',
+        type: 'item_created',
+        data: { itemId: item.id, sku: item.sku }
+      });
+
+      res.status(201).json(item);
+    } catch (error: any) {
+      return handleError(error, 'admin magnets items creation', res);
+    }
+  });
+
+  // GET /api/admin/magnets/batches - Get all order magnet batches (admin)
+  app.get("/api/admin/magnets/batches", authenticateProAdmin, async (req, res) => {
+    try {
+      await createAuditLog(req, '/api/admin/magnets/batches');
+      
+      const batches = await storage.getAllOrderMagnetBatches();
+      res.json(batches);
+    } catch (error: any) {
+      return handleError(error, 'admin magnets batches list', res);
+    }
+  });
+
+  // POST /api/admin/magnets/batches - Create a new order magnet batch (admin)
+  app.post("/api/admin/magnets/batches", authenticateProAdmin, async (req, res) => {
+    try {
+      await createAuditLog(req, '/api/admin/magnets/batches POST');
+      
+      const validatedData = insertOrderMagnetBatchSchema.parse(req.body);
+      
+      const batch = await storage.createOrderMagnetBatch(validatedData);
+
+      res.status(201).json(batch);
+    } catch (error: any) {
+      return handleError(error, 'admin magnets batches creation', res);
+    }
+  });
+
+  // GET /api/admin/magnets/batches/:id/items - Get items for a specific batch (admin)
+  app.get("/api/admin/magnets/batches/:id/items", authenticateProAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      // Check if batch exists
+      const batch = await storage.getOrderMagnetBatch(id);
+      if (!batch) {
+        return res.status(404).json({ error: "Batch not found" });
+      }
+
+      const items = await storage.getOrderMagnetItemsByBatch(id);
+      res.json(items);
+    } catch (error: any) {
+      return handleError(error, 'admin magnets batches items get', res);
+    }
+  });
+
+  // POST /api/admin/magnets/shipments - Create a new order magnet shipment (admin)
+  app.post("/api/admin/magnets/shipments", authenticateProAdmin, async (req, res) => {
+    try {
+      await createAuditLog(req, '/api/admin/magnets/shipments POST');
+      
+      const validatedData = insertOrderMagnetShipmentSchema.parse(req.body);
+      
+      const shipment = await storage.createOrderMagnetShipment(validatedData);
+      
+      // Create audit event for shipment creation
+      await storage.createOrderMagnetAuditEvent({
+        orderId: shipment.orderId,
+        actor: 'admin',
+        type: 'shipment_created',
+        data: { 
+          shipmentId: shipment.id, 
+          trackingNumber: shipment.trackingNumber,
+          carrier: shipment.carrier
+        }
+      });
+
+      res.status(201).json(shipment);
+    } catch (error: any) {
+      return handleError(error, 'admin magnets shipments creation', res);
     }
   });
 
