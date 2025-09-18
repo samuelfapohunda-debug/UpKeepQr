@@ -1843,7 +1843,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Contact form handler with redirect support
+  // New Contact Us endpoint with database persistence and email notifications
   app.post("/api/contact", publicApiLimiter, express.json(), express.urlencoded({ extended: true }), async (req, res) => {
     try {
       // Check honeypot field for spam protection
@@ -1852,78 +1852,145 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Invalid submission' });
       }
 
-      const { name, email, phone, topic, subject, zip, message, consent, to } = req.body;
+      // Import validation and contact services
+      const { contactFormSchema } = await import('../shared/schema');
+      const { makeTicketId, sendContactAckEmail, sendContactOpsEmail, sendEmailWithRetry } = await import('./services/notifyContact');
 
-      // Handle both old WordPress format and new Contact page format
-      const formSubject = subject || topic || 'Contact Form Submission';
-      const recipient = to || 'Support@UpKeepQr.Com';
-
-      // Validate required fields (more flexible for both formats)
-      if (!name || !email || !message) {
-        console.log('Missing required fields in contact form');
-        return res.status(400).json({ message: 'Missing required fields' });
+      // Validate the form data using Zod schema
+      const validation = contactFormSchema.safeParse(req.body);
+      if (!validation.success) {
+        console.log('Contact form validation failed:', validation.error);
+        return res.status(400).json({ 
+          message: 'Validation failed', 
+          errors: validation.error.issues.map(issue => ({
+            field: issue.path.join('.'),
+            message: issue.message
+          }))
+        });
       }
 
-      // Send email using SendGrid
-      try {
-        const { sendEmail: sendGridEmail } = await import('./sendgrid');
-        
-        const emailSent = await sendGridEmail({
-          to: recipient,
-          from: 'Support@UpKeepQr.Com', // Must be a verified sender in SendGrid
-          subject: `Contact Form: ${formSubject}`,
-          html: `
-            <h2>New Contact Form Submission</h2>
-            <p><strong>Name:</strong> ${name}</p>
-            <p><strong>Email:</strong> ${email}</p>
-            ${phone ? `<p><strong>Phone:</strong> ${phone}</p>` : ''}
-            <p><strong>Subject:</strong> ${formSubject}</p>
-            <p><strong>Message:</strong></p>
-            <p>${message.replace(/\n/g, '<br>')}</p>
-          `,
-          text: `
-New Contact Form Submission
+      const { name, email, subject, message } = validation.data;
+      
+      // Generate ticket ID and get client IP
+      const ticketId = makeTicketId();
+      const sourceIp = req.ip || req.connection.remoteAddress || undefined;
 
-Name: ${name}
-Email: ${email}
-${phone ? `Phone: ${phone}\n` : ''}Subject: ${formSubject}
-Message: ${message}
-          `
+      // Create contact message in database
+      try {
+        const contactMessage = await storage.createContactMessage({
+          name,
+          email,
+          subject,
+          message,
+          ticketId,
+          sourceIp,
+          tags: []
         });
 
-        if (!emailSent) {
-          throw new Error('Failed to send email via SendGrid');
+        console.log(`✅ Contact message persisted with ticket ID: ${ticketId}`);
+
+        // Send emails with retry logic
+        const [ackSuccess, opsSuccess] = await Promise.all([
+          sendEmailWithRetry(sendContactAckEmail, {
+            name,
+            email,
+            subject,
+            message,
+            ticketId
+          }),
+          sendEmailWithRetry(sendContactOpsEmail, {
+            name,
+            email,
+            subject,
+            message,
+            ticketId,
+            createdAt: contactMessage.createdAt
+          })
+        ]);
+
+        // Log email results but don't fail the request if emails fail
+        if (!ackSuccess) {
+          console.error(`❌ Failed to send acknowledgment email for ticket ${ticketId}`);
+        }
+        if (!opsSuccess) {
+          console.error(`❌ Failed to send ops notification email for ticket ${ticketId}`);
         }
 
-        console.log(`✅ Contact form email sent to ${recipient} from ${email}`);
-      } catch (emailError) {
-        console.error('SendGrid email error:', emailError);
-        // Fall back to existing email system if SendGrid fails
-        if (topic && consent !== undefined) {
-          await handleContactFormSubmission({
-            name: name.trim(),
-            email: email.trim(),
-            phone: phone?.trim() || '',
-            topic: (topic || subject).trim(),
-            zip: zip?.trim() || '',
-            message: message.trim(),
-            consent: consent === 'on' || consent === 'true'
-          });
-        }
+        console.log(`✅ Contact form submitted by ${email} (Re: ${subject})`);
+
+        // Return success with ticket ID (don't leak full message content)
+        return res.status(201).json({ 
+          ticketId,
+          message: 'Contact form submitted successfully'
+        });
+
+      } catch (dbError) {
+        console.error('Database error creating contact message:', dbError);
+        // Don't expose database errors to client
+        return res.status(500).json({ message: 'Failed to save contact message' });
       }
 
-      await createAuditLog(req, 'contact form submission');
-      console.log(`✅ Contact form submitted by ${email} (${formSubject})`);
-      
-      res.status(200).json({ message: 'Contact form submitted successfully' });
     } catch (error: any) {
       console.error('Contact form submission error:', error);
-      await createAuditLog(req, `contact form error: ${error.message}`);
-      res.status(500).json({ message: 'Contact form submission failed' });
+      return res.status(500).json({ message: 'Contact form submission failed' });
     }
   });
 
   // Website removed - now using WordPress instead of Astro/Firebase hosting
+
+  // GET /api/admin/contact-messages - Admin endpoint to view contact messages
+  app.get("/api/admin/contact-messages", authenticateProAdmin, async (req, res) => {
+    try {
+      const { adminContactMessageFiltersSchema } = await import('../shared/schema');
+      
+      // Parse and validate query parameters
+      const validation = adminContactMessageFiltersSchema.safeParse({
+        ...req.query,
+        page: req.query.page ? parseInt(req.query.page as string) : undefined,
+        pageSize: req.query.pageSize ? parseInt(req.query.pageSize as string) : undefined,
+        status: req.query.status ? (req.query.status as string).split(',') : undefined,
+      });
+
+      if (!validation.success) {
+        return res.status(400).json({ 
+          message: 'Invalid query parameters',
+          errors: validation.error.issues 
+        });
+      }
+
+      const filters = validation.data;
+      const result = await storage.getContactMessages(filters);
+
+      return res.json(result);
+    } catch (error: any) {
+      console.error('Error fetching contact messages:', error);
+      return res.status(500).json({ message: 'Failed to fetch contact messages' });
+    }
+  });
+
+  // PATCH /api/admin/contact-messages/:id/status - Update contact message status
+  app.patch("/api/admin/contact-messages/:id/status", authenticateProAdmin, express.json(), async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { status } = req.body;
+
+      // Validate status
+      if (!['new', 'read', 'replied'].includes(status)) {
+        return res.status(400).json({ message: 'Invalid status. Must be one of: new, read, replied' });
+      }
+
+      const updatedMessage = await storage.updateContactMessageStatus(id, status);
+      
+      if (!updatedMessage) {
+        return res.status(404).json({ message: 'Contact message not found' });
+      }
+
+      return res.json(updatedMessage);
+    } catch (error: any) {
+      console.error('Error updating contact message status:', error);
+      return res.status(500).json({ message: 'Failed to update contact message status' });
+    }
+  });
 
   // Serve React app at /app for agent management
   app.get('/app*', (req, res, next) => {
