@@ -16,6 +16,7 @@ import TaskDetail from "@/pages/TaskDetail";
 import NotFound from "@/pages/not-found";
 import RequestPro from "@/pages/RequestPro";
 import AdminDashboard from "@/pages/AdminDashboard";
+import MagnetDashboard from "@/pages/MagnetDashboard";
 
 function Router() {
   return (
@@ -33,6 +34,7 @@ function Router() {
         <Route path="/task/:token/:taskId" component={TaskDetail} />
         <Route path="/request-pro" component={RequestPro} />
         <Route path="/admin/requests" component={AdminDashboard} />
+        <Route path="/admin/magnets" component={MagnetDashboard} />
         {/* Fallback to 404 */}
         <Route component={NotFound} />
       </Switch>

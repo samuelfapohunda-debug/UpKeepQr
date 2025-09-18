@@ -956,6 +956,92 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Order Magnet Admin Routes
+
+  // GET /api/admin/magnets/orders/metrics - Get order magnet metrics for KPIs (admin)
+  app.get("/api/admin/magnets/orders/metrics", authenticateProAdmin, async (req, res) => {
+    try {
+      await createAuditLog(req, '/api/admin/magnets/orders/metrics');
+      
+      // For now, get basic metrics from all orders
+      // In a real implementation, this would use more efficient aggregation queries
+      const orders = await storage.getAllOrderMagnetOrders();
+      
+      // Apply filters to match the frontend table filters
+      let filteredOrders = orders;
+      
+      // Filter by status array
+      if (req.query.status) {
+        const statusArray = Array.isArray(req.query.status) ? req.query.status : [req.query.status];
+        filteredOrders = filteredOrders.filter(o => statusArray.includes(o.status));
+      }
+      
+      // Filter by payment status array
+      if (req.query.paymentStatus) {
+        const paymentStatusArray = Array.isArray(req.query.paymentStatus) ? req.query.paymentStatus : [req.query.paymentStatus];
+        filteredOrders = filteredOrders.filter(o => paymentStatusArray.includes(o.paymentStatus));
+      }
+      
+      // Filter by SKU, ZIP, batchId, carrier, etc.
+      if (req.query.sku) {
+        // Note: SKU filtering would typically be done at item level, simplified for now
+        filteredOrders = filteredOrders.filter(o => 
+          o.customerEmail.toLowerCase().includes((req.query.sku as string).toLowerCase()) ||
+          o.customerName.toLowerCase().includes((req.query.sku as string).toLowerCase())
+        );
+      }
+      
+      if (req.query.zip) {
+        filteredOrders = filteredOrders.filter(o => o.shipZip?.includes(req.query.zip as string));
+      }
+      
+      if (req.query.carrier) {
+        filteredOrders = filteredOrders.filter(o => 
+          o.shippingCarrier?.toLowerCase().includes((req.query.carrier as string).toLowerCase())
+        );
+      }
+      
+      // Filter by date range
+      if (req.query.dateFrom || req.query.dateTo) {
+        const dateFrom = req.query.dateFrom ? new Date(req.query.dateFrom as string) : null;
+        const dateTo = req.query.dateTo ? new Date(req.query.dateTo as string) : null;
+        
+        filteredOrders = filteredOrders.filter(o => {
+          if (!o.createdAt) return false;
+          const orderDate = new Date(o.createdAt);
+          
+          if (dateFrom && orderDate < dateFrom) return false;
+          if (dateTo && orderDate > dateTo) return false;
+          
+          return true;
+        });
+      }
+      
+      // Filter by search query
+      if (req.query.q) {
+        const query = (req.query.q as string).toLowerCase();
+        filteredOrders = filteredOrders.filter(o => 
+          o.customerName.toLowerCase().includes(query) ||
+          o.customerEmail.toLowerCase().includes(query) ||
+          o.id.toLowerCase().includes(query)
+        );
+      }
+      
+      // Calculate metrics from filtered results
+      const metrics = {
+        totalOrders: filteredOrders.length,
+        pendingCount: filteredOrders.filter(o => o.status === 'new').length,
+        inProductionCount: filteredOrders.filter(o => o.status === 'in_production').length,
+        shippedCount: filteredOrders.filter(o => o.status === 'shipped').length,
+        deliveredCount: filteredOrders.filter(o => o.status === 'delivered').length,
+        activatedCount: filteredOrders.filter(o => o.status === 'activated').length,
+        totalRevenue: filteredOrders.reduce((sum, o) => sum + o.total, 0)
+      };
+
+      res.json(metrics);
+    } catch (error: any) {
+      return handleError(error, 'admin magnets orders metrics', res);
+    }
+  });
   
   // GET /api/admin/magnets/orders - Get all order magnet orders with filtering and pagination (admin)
   app.get("/api/admin/magnets/orders", authenticateProAdmin, async (req, res) => {

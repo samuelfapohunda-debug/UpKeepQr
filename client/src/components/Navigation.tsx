@@ -72,6 +72,17 @@ export default function Navigation() {
               Pro Dashboard
             </Link>
             <Link 
+              href="/admin/magnets" 
+              className={`px-2 py-1.5 sm:px-3 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${
+                isActive('/admin/magnets') 
+                  ? 'bg-primary text-primary-foreground' 
+                  : 'hover:bg-accent hover:text-accent-foreground'
+              }`}
+              data-testid="link-magnet-dashboard"
+            >
+              Magnet Orders
+            </Link>
+            <Link 
               href="/contact" 
               className={`px-2 py-1.5 sm:px-3 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${
                 isActive('/contact') 
