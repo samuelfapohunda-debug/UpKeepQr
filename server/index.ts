@@ -4,6 +4,10 @@ import { startCronJobs } from "./lib/cron";
 import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
+
+// Trust proxy headers for rate limiting and client IP detection
+app.set('trust proxy', true);
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
