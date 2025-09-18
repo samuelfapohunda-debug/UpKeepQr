@@ -11,10 +11,20 @@ import {
   AuditEvent, InsertAuditEvent,
   Note, InsertNote,
   AdminProRequestFilters,
+  OrderMagnetOrder, InsertOrderMagnetOrder,
+  OrderMagnetItem, InsertOrderMagnetItem,
+  OrderMagnetBatch, InsertOrderMagnetBatch,
+  OrderMagnetShipment, InsertOrderMagnetShipment,
+  OrderMagnetAuditEvent, InsertOrderMagnetAuditEvent,
   proRequestsTable,
   providersTable,
   auditEventsTable,
   notesTable,
+  orderMagnetOrdersTable,
+  orderMagnetItemsTable,
+  orderMagnetBatchesTable,
+  orderMagnetShipmentsTable,
+  orderMagnetAuditEventsTable,
   COLLECTIONS,
   timestampToDate 
 } from "@shared/schema";
@@ -109,6 +119,38 @@ export interface IStorage {
   // Audit Event methods
   createAuditEvent(auditEvent: InsertAuditEvent): Promise<AuditEvent>;
   getAuditEventsByRequest(requestId: string): Promise<AuditEvent[]>;
+
+  // Order Magnet methods
+  // Order operations
+  createOrderMagnetOrder(order: InsertOrderMagnetOrder): Promise<OrderMagnetOrder>;
+  getOrderMagnetOrder(id: string): Promise<OrderMagnetOrder | undefined>;
+  getAllOrderMagnetOrders(): Promise<OrderMagnetOrder[]>;
+  getOrderMagnetOrdersByStatus(status: string): Promise<OrderMagnetOrder[]>;
+  updateOrderMagnetOrderStatus(id: string, status: string): Promise<OrderMagnetOrder | undefined>;
+  
+  // Item operations
+  createOrderMagnetItem(item: InsertOrderMagnetItem): Promise<OrderMagnetItem>;
+  getOrderMagnetItem(id: string): Promise<OrderMagnetItem | undefined>;
+  getOrderMagnetItemsByOrder(orderId: string): Promise<OrderMagnetItem[]>;
+  getOrderMagnetItemsByBatch(batchId: string): Promise<OrderMagnetItem[]>;
+  updateOrderMagnetItemStatus(id: string, activationStatus: string): Promise<OrderMagnetItem | undefined>;
+  
+  // Batch operations
+  createOrderMagnetBatch(batch: InsertOrderMagnetBatch): Promise<OrderMagnetBatch>;
+  getOrderMagnetBatch(id: string): Promise<OrderMagnetBatch | undefined>;
+  getAllOrderMagnetBatches(): Promise<OrderMagnetBatch[]>;
+  updateOrderMagnetBatchStatus(id: string, status: string): Promise<OrderMagnetBatch | undefined>;
+  
+  // Shipment operations  
+  createOrderMagnetShipment(shipment: InsertOrderMagnetShipment): Promise<OrderMagnetShipment>;
+  getOrderMagnetShipment(id: string): Promise<OrderMagnetShipment | undefined>;
+  getOrderMagnetShipmentsByOrder(orderId: string): Promise<OrderMagnetShipment[]>;
+  updateOrderMagnetShipmentStatus(id: string, status: string): Promise<OrderMagnetShipment | undefined>;
+  
+  // Audit event operations
+  createOrderMagnetAuditEvent(auditEvent: InsertOrderMagnetAuditEvent): Promise<OrderMagnetAuditEvent>;
+  getOrderMagnetAuditEventsByOrder(orderId: string): Promise<OrderMagnetAuditEvent[]>;
+  getOrderMagnetAuditEventsByItem(itemId: string): Promise<OrderMagnetAuditEvent[]>;
 }
 
 export class FirebaseStorage implements IStorage {
@@ -788,6 +830,217 @@ export class FirebaseStorage implements IStorage {
     const result = await db.select().from(auditEventsTable)
       .where(eq(auditEventsTable.requestId, requestId))
       .orderBy(desc(auditEventsTable.createdAt));
+    return result;
+  }
+
+  // Order Magnet methods (using PostgreSQL via Drizzle)
+  // Order operations
+  async createOrderMagnetOrder(order: InsertOrderMagnetOrder): Promise<OrderMagnetOrder> {
+    const id = uuidv4();
+    const activationCode = nanoid(8);
+    const now = new Date();
+    
+    const newOrder = {
+      id,
+      ...order,
+      activationCode,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    await db.insert(orderMagnetOrdersTable).values(newOrder);
+    
+    return newOrder;
+  }
+
+  async getOrderMagnetOrder(id: string): Promise<OrderMagnetOrder | undefined> {
+    const result = await db.select().from(orderMagnetOrdersTable).where(eq(orderMagnetOrdersTable.id, id)).limit(1);
+    return result[0] || undefined;
+  }
+
+  async getAllOrderMagnetOrders(): Promise<OrderMagnetOrder[]> {
+    const result = await db.select().from(orderMagnetOrdersTable).orderBy(desc(orderMagnetOrdersTable.createdAt));
+    return result;
+  }
+
+  async getOrderMagnetOrdersByStatus(status: string): Promise<OrderMagnetOrder[]> {
+    const result = await db.select().from(orderMagnetOrdersTable)
+      .where(eq(orderMagnetOrdersTable.status, status))
+      .orderBy(desc(orderMagnetOrdersTable.createdAt));
+    return result;
+  }
+
+  async updateOrderMagnetOrderStatus(id: string, status: string): Promise<OrderMagnetOrder | undefined> {
+    const updateData = {
+      status,
+      updatedAt: new Date(),
+    };
+
+    await db.update(orderMagnetOrdersTable)
+      .set(updateData)
+      .where(eq(orderMagnetOrdersTable.id, id));
+    
+    return this.getOrderMagnetOrder(id);
+  }
+  
+  // Item operations
+  async createOrderMagnetItem(item: InsertOrderMagnetItem): Promise<OrderMagnetItem> {
+    const id = uuidv4();
+    const now = new Date();
+    
+    const newItem = {
+      id,
+      ...item,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    await db.insert(orderMagnetItemsTable).values(newItem);
+    
+    return newItem;
+  }
+
+  async getOrderMagnetItem(id: string): Promise<OrderMagnetItem | undefined> {
+    const result = await db.select().from(orderMagnetItemsTable).where(eq(orderMagnetItemsTable.id, id)).limit(1);
+    return result[0] || undefined;
+  }
+
+  async getOrderMagnetItemsByOrder(orderId: string): Promise<OrderMagnetItem[]> {
+    const result = await db.select().from(orderMagnetItemsTable)
+      .where(eq(orderMagnetItemsTable.orderId, orderId))
+      .orderBy(desc(orderMagnetItemsTable.createdAt));
+    return result;
+  }
+
+  async getOrderMagnetItemsByBatch(batchId: string): Promise<OrderMagnetItem[]> {
+    const result = await db.select().from(orderMagnetItemsTable)
+      .where(eq(orderMagnetItemsTable.printBatchId, batchId))
+      .orderBy(desc(orderMagnetItemsTable.createdAt));
+    return result;
+  }
+
+  async updateOrderMagnetItemStatus(id: string, activationStatus: string): Promise<OrderMagnetItem | undefined> {
+    const updateData = {
+      activationStatus,
+      updatedAt: new Date(),
+    };
+
+    await db.update(orderMagnetItemsTable)
+      .set(updateData)
+      .where(eq(orderMagnetItemsTable.id, id));
+    
+    return this.getOrderMagnetItem(id);
+  }
+  
+  // Batch operations
+  async createOrderMagnetBatch(batch: InsertOrderMagnetBatch): Promise<OrderMagnetBatch> {
+    const id = uuidv4();
+    const now = new Date();
+    
+    const newBatch = {
+      id,
+      ...batch,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    await db.insert(orderMagnetBatchesTable).values(newBatch);
+    
+    return newBatch;
+  }
+
+  async getOrderMagnetBatch(id: string): Promise<OrderMagnetBatch | undefined> {
+    const result = await db.select().from(orderMagnetBatchesTable).where(eq(orderMagnetBatchesTable.id, id)).limit(1);
+    return result[0] || undefined;
+  }
+
+  async getAllOrderMagnetBatches(): Promise<OrderMagnetBatch[]> {
+    const result = await db.select().from(orderMagnetBatchesTable).orderBy(desc(orderMagnetBatchesTable.createdAt));
+    return result;
+  }
+
+  async updateOrderMagnetBatchStatus(id: string, status: string): Promise<OrderMagnetBatch | undefined> {
+    const updateData = {
+      status,
+      updatedAt: new Date(),
+    };
+
+    await db.update(orderMagnetBatchesTable)
+      .set(updateData)
+      .where(eq(orderMagnetBatchesTable.id, id));
+    
+    return this.getOrderMagnetBatch(id);
+  }
+  
+  // Shipment operations  
+  async createOrderMagnetShipment(shipment: InsertOrderMagnetShipment): Promise<OrderMagnetShipment> {
+    const id = uuidv4();
+    const now = new Date();
+    
+    const newShipment = {
+      id,
+      ...shipment,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    await db.insert(orderMagnetShipmentsTable).values(newShipment);
+    
+    return newShipment;
+  }
+
+  async getOrderMagnetShipment(id: string): Promise<OrderMagnetShipment | undefined> {
+    const result = await db.select().from(orderMagnetShipmentsTable).where(eq(orderMagnetShipmentsTable.id, id)).limit(1);
+    return result[0] || undefined;
+  }
+
+  async getOrderMagnetShipmentsByOrder(orderId: string): Promise<OrderMagnetShipment[]> {
+    const result = await db.select().from(orderMagnetShipmentsTable)
+      .where(eq(orderMagnetShipmentsTable.orderId, orderId))
+      .orderBy(desc(orderMagnetShipmentsTable.createdAt));
+    return result;
+  }
+
+  async updateOrderMagnetShipmentStatus(id: string, status: string): Promise<OrderMagnetShipment | undefined> {
+    const updateData = {
+      status,
+      updatedAt: new Date(),
+    };
+
+    await db.update(orderMagnetShipmentsTable)
+      .set(updateData)
+      .where(eq(orderMagnetShipmentsTable.id, id));
+    
+    return this.getOrderMagnetShipment(id);
+  }
+  
+  // Audit event operations
+  async createOrderMagnetAuditEvent(auditEvent: InsertOrderMagnetAuditEvent): Promise<OrderMagnetAuditEvent> {
+    const id = uuidv4();
+    const now = new Date();
+    
+    const newAuditEvent = {
+      id,
+      ...auditEvent,
+      createdAt: now,
+    };
+
+    await db.insert(orderMagnetAuditEventsTable).values(newAuditEvent);
+    
+    return newAuditEvent;
+  }
+
+  async getOrderMagnetAuditEventsByOrder(orderId: string): Promise<OrderMagnetAuditEvent[]> {
+    const result = await db.select().from(orderMagnetAuditEventsTable)
+      .where(eq(orderMagnetAuditEventsTable.orderId, orderId))
+      .orderBy(desc(orderMagnetAuditEventsTable.createdAt));
+    return result;
+  }
+
+  async getOrderMagnetAuditEventsByItem(itemId: string): Promise<OrderMagnetAuditEvent[]> {
+    const result = await db.select().from(orderMagnetAuditEventsTable)
+      .where(eq(orderMagnetAuditEventsTable.itemId, itemId))
+      .orderBy(desc(orderMagnetAuditEventsTable.createdAt));
     return result;
   }
 }
