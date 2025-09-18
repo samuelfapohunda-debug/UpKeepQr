@@ -38,32 +38,37 @@ export default function Contact() {
   const onSubmit = async (data: ContactFormData) => {
     setIsSubmitting(true);
     try {
-      // Send the contact form data to Support@UpKeepQr.Com
       const response = await fetch("/api/contact", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          ...data,
-          to: "Support@UpKeepQr.Com", // Default recipient
-        }),
+        body: JSON.stringify(data),
       });
 
+      const result = await response.json();
+
       if (!response.ok) {
-        throw new Error("Failed to send message");
+        // Handle validation errors specifically
+        if (response.status === 400 && result.errors) {
+          const errorMessages = result.errors.map((error: any) => 
+            `${error.field}: ${error.message}`
+          ).join(", ");
+          throw new Error(`Validation failed: ${errorMessages}`);
+        }
+        throw new Error(result.message || "Failed to send message");
       }
 
       toast({
         title: "Message Sent!",
-        description: "Thank you for contacting us. We'll get back to you within 24 hours.",
+        description: `Thank you for contacting us! We've emailed you a confirmation. Ticket ${result.ticketId}`,
       });
 
       form.reset();
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "Failed to send message. Please try again or email us directly at Support@UpKeepQr.Com",
+        description: error.message || "Failed to send message. Please try again or email us directly at Support@UpKeepQr.Com",
         variant: "destructive",
       });
     } finally {
