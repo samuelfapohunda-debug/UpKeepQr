@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { pgTable, serial, varchar, text, integer, boolean, timestamp, json } from "drizzle-orm/pg-core";
+import { pgTable, serial, varchar, text, integer, boolean, timestamp, json, numeric, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { sql } from "drizzle-orm";
 
@@ -479,110 +479,10 @@ export type CreateNoteRequest = z.infer<typeof createNoteSchema>;
 // ORDER MAGNET SYSTEM SCHEMAS (E-COMMERCE)
 // =====================================================
 
-// OrderMagnetOrder schema for customer e-commerce orders
-export const orderMagnetOrderSchema = z.object({
-  id: z.string(), // UUID
-  createdAt: z.date().optional(),
-  updatedAt: z.date().optional(),
-  customerName: z.string().min(1),
-  customerEmail: z.string().email(),
-  customerPhone: z.string().min(1),
-  shipAddressLine1: z.string().min(1),
-  shipAddressLine2: z.string().optional(),
-  shipCity: z.string().min(1),
-  shipState: z.string().min(1),
-  shipZip: z.string().regex(/^\d{5}$/, "ZIP code must be 5 digits"),
-  shipCountry: z.string().default('US'),
-  subtotal: z.number().min(0),
-  shippingFee: z.number().min(0).default(0),
-  discount: z.number().min(0).default(0),
-  tax: z.number().min(0).default(0),
-  total: z.number().min(0),
-  paymentStatus: z.enum(['unpaid', 'paid', 'refunded', 'partial_refund']).default('unpaid'),
-  paymentProvider: z.enum(['stripe', 'manual', 'other']).default('stripe'),
-  paymentRef: z.string().optional(), // Stripe Payment Intent ID, etc.
-  status: z.enum(['new', 'paid', 'in_production', 'shipped', 'delivered', 'activated', 'canceled', 'refunded']).default('new'),
-  source: z.string().optional(), // campaign or channel
-  utmSource: z.string().optional(),
-  utmMedium: z.string().optional(),
-  utmCampaign: z.string().optional(),
-  notes: z.string().optional(),
-});
+// Order Magnet System - Using Drizzle table definitions as source of truth
 
-export type MagnetOrder = z.infer<typeof magnetOrderSchema>;
-
-// MagnetItem schema for individual magnet items
-export const magnetItemSchema = z.object({
-  id: z.string(), // UUID
-  orderId: z.string(), // Foreign key to MagnetOrder
-  sku: z.string().min(1),
-  quantity: z.number().min(1).default(1),
-  unitPrice: z.number().min(0),
-  activationCode: z.string().min(1), // Unique short code for /m/{code}
-  qrUrl: z.string().url(), // Full URL to /m/{code}
-  activationStatus: z.enum(['inactive', 'activated', 'deactivated']).default('inactive'),
-  activatedAt: z.date().optional(),
-  activatedByEmail: z.string().email().optional(),
-  scanCount: z.number().min(0).default(0),
-  lastScanAt: z.date().optional(),
-  printBatchId: z.string().optional(), // Foreign key to MagnetBatch
-  serialNumber: z.string().optional(), // Printed ID on magnet
-  printFileUrl: z.string().optional(), // URL to print-ready file
-  createdAt: z.date().optional(),
-  updatedAt: z.date().optional(),
-});
-
-export type MagnetItem = z.infer<typeof magnetItemSchema>;
-
-// MagnetBatch schema for print/production batches
-export const magnetBatchSchema = z.object({
-  id: z.string(), // UUID
-  name: z.string().min(1),
-  printerName: z.string().optional(),
-  status: z.enum(['open', 'submitted', 'printing', 'complete', 'canceled']).default('open'),
-  unitCost: z.number().min(0).optional(),
-  quantity: z.number().min(0).default(0), // Derived from item count
-  submittedAt: z.date().optional(),
-  completedAt: z.date().optional(),
-  notes: z.string().optional(),
-  createdAt: z.date().optional(),
-  updatedAt: z.date().optional(),
-});
-
-export type MagnetBatch = z.infer<typeof magnetBatchSchema>;
-
-// Shipment schema for shipping information
-export const shipmentSchema = z.object({
-  id: z.string(), // UUID
-  orderId: z.string(), // Foreign key to MagnetOrder
-  carrier: z.string().optional(), // UPS, FedEx, USPS, etc.
-  trackingNumber: z.string().optional(),
-  labelUrl: z.string().optional(), // Shipping label PDF
-  status: z.enum(['pending', 'label_created', 'in_transit', 'out_for_delivery', 'delivered', 'exception', 'lost']).default('pending'),
-  shippedAt: z.date().optional(),
-  expectedDelivery: z.date().optional(),
-  deliveredAt: z.date().optional(),
-  createdAt: z.date().optional(),
-  updatedAt: z.date().optional(),
-});
-
-export type Shipment = z.infer<typeof shipmentSchema>;
-
-// MagnetAuditEvent schema for tracking changes
-export const magnetAuditEventSchema = z.object({
-  id: z.string(), // UUID
-  orderId: z.string().optional(), // Foreign key to MagnetOrder
-  itemId: z.string().optional(), // Foreign key to MagnetItem
-  createdAt: z.date().optional(),
-  actor: z.string().default('admin'),
-  type: z.enum(['order_status', 'item_activation', 'batch_change', 'shipment_update', 'note_created']),
-  data: z.record(z.any()), // JSON snapshot/diff
-});
-
-export type MagnetAuditEvent = z.infer<typeof magnetAuditEventSchema>;
-
-// Drizzle table definitions for Magnet Order System
-export const magnetOrdersTable = pgTable("magnet_orders", {
+// Drizzle table definitions for Order Magnet System
+export const orderMagnetOrdersTable = pgTable("order_magnet_orders", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -595,11 +495,11 @@ export const magnetOrdersTable = pgTable("magnet_orders", {
   shipState: varchar("ship_state", { length: 50 }).notNull(),
   shipZip: varchar("ship_zip", { length: 5 }).notNull(),
   shipCountry: varchar("ship_country", { length: 10 }).notNull().default('US'),
-  subtotal: numeric("subtotal", { precision: 10, scale: 2 }).notNull(),
-  shippingFee: numeric("shipping_fee", { precision: 10, scale: 2 }).notNull().default('0'),
-  discount: numeric("discount", { precision: 10, scale: 2 }).notNull().default('0'),
-  tax: numeric("tax", { precision: 10, scale: 2 }).notNull().default('0'),
-  total: numeric("total", { precision: 10, scale: 2 }).notNull(),
+  subtotal: numeric("subtotal", { precision: 10, scale: 2, mode: 'number' }).notNull(),
+  shippingFee: numeric("shipping_fee", { precision: 10, scale: 2, mode: 'number' }).notNull().default('0'),
+  discount: numeric("discount", { precision: 10, scale: 2, mode: 'number' }).notNull().default('0'),
+  tax: numeric("tax", { precision: 10, scale: 2, mode: 'number' }).notNull().default('0'),
+  total: numeric("total", { precision: 10, scale: 2, mode: 'number' }).notNull(),
   paymentStatus: varchar("payment_status", { length: 20 }).notNull().default('unpaid'),
   paymentProvider: varchar("payment_provider", { length: 20 }).notNull().default('stripe'),
   paymentRef: varchar("payment_ref", { length: 255 }),
@@ -611,12 +511,12 @@ export const magnetOrdersTable = pgTable("magnet_orders", {
   notes: text("notes"),
 });
 
-export const magnetItemsTable = pgTable("magnet_items", {
+export const orderMagnetItemsTable = pgTable("order_magnet_items", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  orderId: varchar("order_id", { length: 255 }).notNull(),
-  sku: varchar("sku", { length: 50 }).notNull(),
+  orderId: varchar("order_id").notNull(),
+  sku: varchar("sku", { length: 100 }).notNull(),
   quantity: integer("quantity").notNull().default(1),
-  unitPrice: numeric("unit_price", { precision: 10, scale: 2 }).notNull(),
+  unitPrice: numeric("unit_price", { precision: 10, scale: 2, mode: 'number' }).notNull(),
   activationCode: varchar("activation_code", { length: 20 }).notNull().unique(),
   qrUrl: varchar("qr_url", { length: 500 }).notNull(),
   activationStatus: varchar("activation_status", { length: 20 }).notNull().default('inactive'),
@@ -624,19 +524,19 @@ export const magnetItemsTable = pgTable("magnet_items", {
   activatedByEmail: varchar("activated_by_email", { length: 255 }),
   scanCount: integer("scan_count").notNull().default(0),
   lastScanAt: timestamp("last_scan_at"),
-  printBatchId: varchar("print_batch_id", { length: 255 }),
+  printBatchId: varchar("print_batch_id"),
   serialNumber: varchar("serial_number", { length: 50 }),
   printFileUrl: varchar("print_file_url", { length: 500 }),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-export const magnetBatchesTable = pgTable("magnet_batches", {
+export const orderMagnetBatchesTable = pgTable("order_magnet_batches", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: varchar("name", { length: 255 }).notNull(),
   printerName: varchar("printer_name", { length: 255 }),
   status: varchar("status", { length: 20 }).notNull().default('open'),
-  unitCost: numeric("unit_cost", { precision: 10, scale: 2 }),
+  unitCost: numeric("unit_cost", { precision: 10, scale: 2, mode: 'number' }),
   quantity: integer("quantity").notNull().default(0),
   submittedAt: timestamp("submitted_at"),
   completedAt: timestamp("completed_at"),
@@ -645,10 +545,10 @@ export const magnetBatchesTable = pgTable("magnet_batches", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-export const shipmentsTable = pgTable("shipments", {
+export const orderMagnetShipmentsTable = pgTable("order_magnet_shipments", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  orderId: varchar("order_id", { length: 255 }).notNull(),
-  carrier: varchar("carrier", { length: 50 }),
+  orderId: varchar("order_id").notNull(),
+  carrier: varchar("carrier", { length: 100 }),
   trackingNumber: varchar("tracking_number", { length: 100 }),
   labelUrl: varchar("label_url", { length: 500 }),
   status: varchar("status", { length: 30 }).notNull().default('pending'),
@@ -659,71 +559,82 @@ export const shipmentsTable = pgTable("shipments", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-export const magnetAuditEventsTable = pgTable("magnet_audit_events", {
+export const orderMagnetAuditEventsTable = pgTable("order_magnet_audit_events", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  orderId: varchar("order_id", { length: 255 }),
-  itemId: varchar("item_id", { length: 255 }),
+  orderId: varchar("order_id"),
+  itemId: varchar("item_id"),
   createdAt: timestamp("created_at").defaultNow(),
   actor: varchar("actor", { length: 100 }).notNull().default('admin'),
-  type: varchar("type", { length: 30 }).notNull(),
-  data: json("data").$type<Record<string, any>>().notNull(),
+  type: varchar("type", { length: 50 }).notNull(),
+  data: jsonb("data").notNull(),
 });
 
-// Insert schemas for Magnet system
-export const insertMagnetOrderSchema = magnetOrderSchema.omit({ 
-  id: true, 
-  createdAt: true, 
-  updatedAt: true 
+// Drizzle-generated insert schemas and types for Order Magnet system
+export const insertOrderMagnetOrderSchema = createInsertSchema(orderMagnetOrdersTable).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
 });
-export type InsertMagnetOrder = z.infer<typeof insertMagnetOrderSchema>;
+export type InsertOrderMagnetOrder = z.infer<typeof insertOrderMagnetOrderSchema>;
+export type OrderMagnetOrder = typeof orderMagnetOrdersTable.$inferSelect;
 
-export const insertMagnetItemSchema = magnetItemSchema.omit({ 
-  id: true, 
-  createdAt: true, 
-  updatedAt: true 
+export const insertOrderMagnetItemSchema = createInsertSchema(orderMagnetItemsTable).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
 });
-export type InsertMagnetItem = z.infer<typeof insertMagnetItemSchema>;
+export type InsertOrderMagnetItem = z.infer<typeof insertOrderMagnetItemSchema>;
+export type OrderMagnetItem = typeof orderMagnetItemsTable.$inferSelect;
 
-export const insertMagnetBatchSchema = magnetBatchSchema.omit({ 
-  id: true, 
-  createdAt: true, 
-  updatedAt: true 
+export const insertOrderMagnetBatchSchema = createInsertSchema(orderMagnetBatchesTable).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
 });
-export type InsertMagnetBatch = z.infer<typeof insertMagnetBatchSchema>;
+export type InsertOrderMagnetBatch = z.infer<typeof insertOrderMagnetBatchSchema>;
+export type OrderMagnetBatch = typeof orderMagnetBatchesTable.$inferSelect;
 
-export const insertShipmentSchema = shipmentSchema.omit({ 
-  id: true, 
-  createdAt: true, 
-  updatedAt: true 
+export const insertOrderMagnetShipmentSchema = createInsertSchema(orderMagnetShipmentsTable).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
 });
-export type InsertShipment = z.infer<typeof insertShipmentSchema>;
+export type InsertOrderMagnetShipment = z.infer<typeof insertOrderMagnetShipmentSchema>;
+export type OrderMagnetShipment = typeof orderMagnetShipmentsTable.$inferSelect;
 
-export const insertMagnetAuditEventSchema = magnetAuditEventSchema.omit({ 
-  id: true, 
-  createdAt: true 
+export const insertOrderMagnetAuditEventSchema = createInsertSchema(orderMagnetAuditEventsTable).omit({
+  id: true,
+  createdAt: true,
 });
-export type InsertMagnetAuditEvent = z.infer<typeof insertMagnetAuditEventSchema>;
+export type InsertOrderMagnetAuditEvent = z.infer<typeof insertOrderMagnetAuditEventSchema>;
+export type OrderMagnetAuditEvent = typeof orderMagnetAuditEventsTable.$inferSelect;
 
-// API request schemas for Magnet system
-export const updateMagnetOrderStatusSchema = z.object({
+// API request schemas for Order Magnet system
+export const updateOrderMagnetOrderStatusSchema = z.object({
   status: z.enum(['paid', 'in_production', 'shipped', 'delivered', 'activated', 'canceled', 'refunded']),
-  note: z.string().optional(),
+  paymentStatus: z.enum(['paid', 'refunded', 'partial_refund']).optional(),
+  paymentRef: z.string().optional(),
 });
 
-export const updateShipmentSchema = z.object({
+export const updateOrderMagnetShipmentSchema = z.object({
   carrier: z.string().optional(),
   trackingNumber: z.string().optional(),
+  labelUrl: z.string().optional(),
+  status: z.enum(['label_created', 'in_transit', 'out_for_delivery', 'delivered', 'exception', 'lost']),
   shippedAt: z.string().optional(), // ISO date string
   expectedDelivery: z.string().optional(), // ISO date string
+  deliveredAt: z.string().optional(), // ISO date string
 });
 
-export const createMagnetBatchSchema = z.object({
+export const createOrderMagnetBatchSchema = z.object({
   name: z.string().min(1),
   printerName: z.string().optional(),
+  unitCost: z.number().min(0).optional(),
   notes: z.string().optional(),
+  itemIds: z.array(z.string()).optional(), // Items to add to batch
 });
 
-export const updateMagnetBatchStatusSchema = z.object({
+export const updateOrderMagnetBatchStatusSchema = z.object({
   status: z.enum(['submitted', 'printing', 'complete', 'canceled']),
   unitCost: z.number().min(0).optional(),
   submittedAt: z.string().optional(), // ISO date string
@@ -739,7 +650,7 @@ export const resendEmailSchema = z.object({
   type: z.enum(['confirmation', 'shipped', 'delivered', 'activation_reminder']),
 });
 
-export const adminMagnetFiltersSchema = z.object({
+export const adminOrderMagnetFiltersSchema = z.object({
   status: z.array(z.enum(['new', 'paid', 'in_production', 'shipped', 'delivered', 'activated', 'canceled', 'refunded'])).optional(),
   paymentStatus: z.array(z.enum(['unpaid', 'paid', 'refunded', 'partial_refund'])).optional(),
   dateFrom: z.string().optional(), // ISO date string
@@ -756,11 +667,11 @@ export const adminMagnetFiltersSchema = z.object({
   sortDir: z.enum(['asc', 'desc']).default('desc'),
 });
 
-// Type exports for Magnet API
-export type UpdateMagnetOrderStatusRequest = z.infer<typeof updateMagnetOrderStatusSchema>;
-export type UpdateShipmentRequest = z.infer<typeof updateShipmentSchema>;
-export type CreateMagnetBatchRequest = z.infer<typeof createMagnetBatchSchema>;
-export type UpdateMagnetBatchStatusRequest = z.infer<typeof updateMagnetBatchStatusSchema>;
+// Type exports for Order Magnet API
+export type UpdateOrderMagnetOrderStatusRequest = z.infer<typeof updateOrderMagnetOrderStatusSchema>;
+export type UpdateOrderMagnetShipmentRequest = z.infer<typeof updateOrderMagnetShipmentSchema>;
+export type CreateOrderMagnetBatchRequest = z.infer<typeof createOrderMagnetBatchSchema>;
+export type UpdateOrderMagnetBatchStatusRequest = z.infer<typeof updateOrderMagnetBatchStatusSchema>;
 export type ActivateItemRequest = z.infer<typeof activateItemSchema>;
 export type ResendEmailRequest = z.infer<typeof resendEmailSchema>;
-export type AdminMagnetFilters = z.infer<typeof adminMagnetFiltersSchema>;
+export type AdminOrderMagnetFilters = z.infer<typeof adminOrderMagnetFiltersSchema>;
