@@ -14,6 +14,7 @@ import AgentLogin from "@/pages/AgentLogin";
 import AgentDashboard from "@/pages/AgentDashboard";
 import TaskDetail from "@/pages/TaskDetail";
 import NotFound from "@/pages/not-found";
+import RequestPro from "@/pages/RequestPro";
 
 function Router() {
   return (
@@ -29,6 +30,7 @@ function Router() {
         <Route path="/agent" component={AgentLogin} />
         <Route path="/agent/dashboard" component={AgentDashboard} />
         <Route path="/task/:token/:taskId" component={TaskDetail} />
+        <Route path="/request-pro" component={RequestPro} />
         {/* Fallback to 404 */}
         <Route component={NotFound} />
       </Switch>

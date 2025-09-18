@@ -50,6 +50,17 @@ export default function Navigation() {
               Setup
             </Link>
             <Link 
+              href="/request-pro" 
+              className={`px-2 py-1.5 sm:px-3 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${
+                isActive('/request-pro') 
+                  ? 'bg-primary text-primary-foreground' 
+                  : 'hover:bg-accent hover:text-accent-foreground'
+              }`}
+              data-testid="link-request-pro"
+            >
+              Request a Pro
+            </Link>
+            <Link 
               href="/admin" 
               className={`px-2 py-1.5 sm:px-3 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${
                 isActive('/admin') 

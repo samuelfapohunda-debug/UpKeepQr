@@ -3,6 +3,7 @@ import express from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { authenticateAdmin, authenticateAgent, authenticateProAdmin } from "./middleware/auth";
+import { sendUserConfirmationEmail, sendAdminAlertEmail, sendStatusUpdateEmail } from "./lib/email";
 import { insertMagnetBatchSchema, insertBatchSchema, setupActivateSchema, setupPreviewSchema, taskCompleteSchema, agentLoginSchema, checkoutSchema, leadsSchema, smsOptInSchema, smsVerifySchema, createProRequestSchema, updateProRequestStatusSchema } from "../shared/schema";
 import { nanoid } from "nanoid";
 import { v4 as uuidv4 } from "uuid";
@@ -776,7 +777,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create the pro request
       const proRequest = await storage.createProRequest(validatedData);
 
-      // TODO: Send email notifications (will implement in task 3)
+      // Send email notifications
+      try {
+        // Send confirmation email to user
+        await sendUserConfirmationEmail(
+          proRequest.contactEmail,
+          proRequest.contactName,
+          proRequest.id,
+          proRequest.publicTrackingCode,
+          proRequest.trade
+        );
+        
+        // Send alert email to admin
+        await sendAdminAlertEmail(
+          proRequest.id,
+          proRequest.contactName,
+          proRequest.contactEmail,
+          proRequest.contactPhone,
+          proRequest.trade,
+          proRequest.urgency,
+          proRequest.description,
+          `${proRequest.addressLine1}${proRequest.addressLine2 ? ', ' + proRequest.addressLine2 : ''}, ${proRequest.city}, ${proRequest.state} ${proRequest.zip}`
+        );
+      } catch (emailError) {
+        console.error('Email notification error:', emailError);
+        // Don't fail the request if email fails
+      }
       
       res.status(201).json({
         id: proRequest.id,
@@ -846,6 +872,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updatedRequest = await storage.updateProRequestStatus(id, status, providerAssigned);
       if (!updatedRequest) {
         return res.status(404).json({ error: "Pro request not found" });
+      }
+
+      // Send status update email notification
+      try {
+        await sendStatusUpdateEmail(
+          updatedRequest.contactEmail,
+          updatedRequest.contactName,
+          updatedRequest.id,
+          updatedRequest.publicTrackingCode,
+          updatedRequest.trade,
+          status,
+          providerAssigned
+        );
+      } catch (emailError) {
+        console.error('Status update email error:', emailError);
+        // Don't fail the request if email fails
       }
 
       res.json(updatedRequest);
