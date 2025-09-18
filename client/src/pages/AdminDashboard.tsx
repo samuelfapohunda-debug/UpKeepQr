@@ -740,7 +740,7 @@ export default function AdminDashboard() {
                         updateStatusMutation.mutate({
                           id: selectedRequest.id,
                           status,
-                          providerAssigned: selectedRequest.providerAssigned
+                          providerAssigned: selectedRequest.providerAssigned || undefined
                         });
                       }}
                     >
