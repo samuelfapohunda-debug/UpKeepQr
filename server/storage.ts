@@ -16,6 +16,8 @@ import {
   OrderMagnetBatch, InsertOrderMagnetBatch,
   OrderMagnetShipment, InsertOrderMagnetShipment,
   OrderMagnetAuditEvent, InsertOrderMagnetAuditEvent,
+  ContactMessage, InsertContactMessage,
+  AdminContactMessageFilters,
   proRequestsTable,
   providersTable,
   auditEventsTable,
@@ -25,6 +27,7 @@ import {
   orderMagnetBatchesTable,
   orderMagnetShipmentsTable,
   orderMagnetAuditEventsTable,
+  contactMessagesTable,
   COLLECTIONS,
   timestampToDate 
 } from "@shared/schema";
@@ -151,6 +154,12 @@ export interface IStorage {
   createOrderMagnetAuditEvent(auditEvent: InsertOrderMagnetAuditEvent): Promise<OrderMagnetAuditEvent>;
   getOrderMagnetAuditEventsByOrder(orderId: string): Promise<OrderMagnetAuditEvent[]>;
   getOrderMagnetAuditEventsByItem(itemId: string): Promise<OrderMagnetAuditEvent[]>;
+
+  // Contact Message methods
+  createContactMessage(contactMessage: InsertContactMessage & { ticketId: string; sourceIp?: string }): Promise<ContactMessage>;
+  getContactMessage(id: string): Promise<ContactMessage | undefined>;
+  getContactMessages(filters: AdminContactMessageFilters): Promise<{ items: ContactMessage[]; total: number; page: number; pageSize: number }>;
+  updateContactMessageStatus(id: string, status: 'new' | 'read' | 'replied'): Promise<ContactMessage | undefined>;
 }
 
 export class FirebaseStorage implements IStorage {
@@ -1042,6 +1051,99 @@ export class FirebaseStorage implements IStorage {
       .where(eq(orderMagnetAuditEventsTable.itemId, itemId))
       .orderBy(desc(orderMagnetAuditEventsTable.createdAt));
     return result;
+  }
+
+  // Contact Message methods
+  async createContactMessage(contactMessage: InsertContactMessage & { ticketId: string; sourceIp?: string }): Promise<ContactMessage> {
+    const id = uuidv4();
+    const now = new Date();
+    
+    const newContactMessage = {
+      id,
+      ...contactMessage,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    await db.insert(contactMessagesTable).values(newContactMessage);
+    
+    return newContactMessage;
+  }
+
+  async getContactMessage(id: string): Promise<ContactMessage | undefined> {
+    const result = await db.select().from(contactMessagesTable)
+      .where(eq(contactMessagesTable.id, id))
+      .limit(1);
+    return result[0];
+  }
+
+  async getContactMessages(filters: AdminContactMessageFilters): Promise<{ items: ContactMessage[]; total: number; page: number; pageSize: number }> {
+    const { status, q, dateFrom, dateTo, page, pageSize, sortBy, sortDir } = filters;
+
+    // Build where conditions
+    const conditions = [];
+    
+    if (status && status.length > 0) {
+      conditions.push(inArray(contactMessagesTable.status, status));
+    }
+    
+    if (q) {
+      conditions.push(
+        or(
+          like(contactMessagesTable.name, `%${q}%`),
+          like(contactMessagesTable.email, `%${q}%`),
+          like(contactMessagesTable.subject, `%${q}%`),
+          like(contactMessagesTable.message, `%${q}%`),
+          like(contactMessagesTable.ticketId, `%${q}%`)
+        )
+      );
+    }
+    
+    if (dateFrom) {
+      conditions.push(sql`${contactMessagesTable.createdAt} >= ${new Date(dateFrom)}`);
+    }
+    
+    if (dateTo) {
+      conditions.push(sql`${contactMessagesTable.createdAt} <= ${new Date(dateTo)}`);
+    }
+
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+    // Get total count
+    const totalResult = await db.select({ count: sql`count(*)`.mapWith(Number) })
+      .from(contactMessagesTable)
+      .where(whereClause);
+    const total = totalResult[0]?.count || 0;
+
+    // Get paginated results
+    const offset = (page - 1) * pageSize;
+    const orderByClause = sortDir === 'asc' 
+      ? asc(contactMessagesTable[sortBy]) 
+      : desc(contactMessagesTable[sortBy]);
+
+    const items = await db.select().from(contactMessagesTable)
+      .where(whereClause)
+      .orderBy(orderByClause)
+      .limit(pageSize)
+      .offset(offset);
+
+    return {
+      items,
+      total,
+      page,
+      pageSize
+    };
+  }
+
+  async updateContactMessageStatus(id: string, status: 'new' | 'read' | 'replied'): Promise<ContactMessage | undefined> {
+    await db.update(contactMessagesTable)
+      .set({ 
+        status, 
+        updatedAt: new Date() 
+      })
+      .where(eq(contactMessagesTable.id, id));
+    
+    return this.getContactMessage(id);
   }
 }
 
