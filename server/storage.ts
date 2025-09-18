@@ -8,14 +8,19 @@ import {
   Lead, InsertLead,
   ProRequest, InsertProRequest,
   Provider, InsertProvider,
+  AuditEvent, InsertAuditEvent,
+  Note, InsertNote,
+  AdminProRequestFilters,
   proRequestsTable,
   providersTable,
+  auditEventsTable,
+  notesTable,
   COLLECTIONS,
   timestampToDate 
 } from "@shared/schema";
 import { v4 as uuidv4 } from 'uuid';
 import { nanoid } from "nanoid";
-import { eq, and } from "drizzle-orm";
+import { eq, and, like, sql, desc, asc, or, inArray } from "drizzle-orm";
 import { db } from "./db";
 
 export interface IStorage {
@@ -90,6 +95,20 @@ export interface IStorage {
   getProvider(id: string): Promise<Provider | undefined>;
   getProvidersByTradeAndZip(trade: string, zip: string): Promise<Provider[]>;
   getAllProviders(): Promise<Provider[]>;
+  searchProviders(trade?: string, zip?: string, q?: string): Promise<Provider[]>;
+
+  // Admin Pro Request methods
+  getAdminProRequests(filters: AdminProRequestFilters): Promise<{ items: ProRequest[]; total: number; page: number; pageSize: number }>;
+  getAdminProRequest(id: string): Promise<ProRequest | undefined>;
+  updateAdminProRequestStatus(id: string, status: string, providerAssigned?: string): Promise<ProRequest | undefined>;
+  
+  // Note methods
+  createNote(note: InsertNote): Promise<Note>;
+  getNotesByRequest(requestId: string): Promise<Note[]>;
+  
+  // Audit Event methods
+  createAuditEvent(auditEvent: InsertAuditEvent): Promise<AuditEvent>;
+  getAuditEventsByRequest(requestId: string): Promise<AuditEvent[]>;
 }
 
 export class FirebaseStorage implements IStorage {
@@ -605,6 +624,170 @@ export class FirebaseStorage implements IStorage {
 
   async getAllProviders(): Promise<Provider[]> {
     const result = await db.select().from(providersTable);
+    return result;
+  }
+
+  async searchProviders(trade?: string, zip?: string, q?: string): Promise<Provider[]> {
+    let query = db.select().from(providersTable);
+    
+    // Apply trade filter if provided
+    if (trade) {
+      query = query.where(eq(providersTable.trade, trade));
+    }
+    
+    let result = await query;
+    
+    // Filter by zip coverage if provided
+    if (zip) {
+      result = result.filter(provider => {
+        if (!provider.coverageZips || !Array.isArray(provider.coverageZips)) {
+          return false;
+        }
+        return provider.coverageZips.includes(zip);
+      });
+    }
+    
+    // Filter by search query if provided
+    if (q) {
+      const searchTerm = q.toLowerCase();
+      result = result.filter(provider => 
+        provider.name.toLowerCase().includes(searchTerm) ||
+        provider.email.toLowerCase().includes(searchTerm) ||
+        provider.phone.includes(searchTerm)
+      );
+    }
+    
+    return result;
+  }
+
+  // Admin Pro Request methods
+  async getAdminProRequests(filters: AdminProRequestFilters): Promise<{ items: ProRequest[]; total: number; page: number; pageSize: number }> {
+    let query = db.select().from(proRequestsTable);
+    let countQuery = db.select({ count: sql<number>`count(*)` }).from(proRequestsTable);
+    
+    const conditions = [];
+    
+    // Apply status filter
+    if (filters.status && filters.status.length > 0) {
+      conditions.push(inArray(proRequestsTable.status, filters.status));
+    }
+    
+    // Apply trade filter
+    if (filters.trade) {
+      conditions.push(eq(proRequestsTable.trade, filters.trade));
+    }
+    
+    // Apply urgency filter
+    if (filters.urgency) {
+      conditions.push(eq(proRequestsTable.urgency, filters.urgency));
+    }
+    
+    // Apply zip filter
+    if (filters.zip) {
+      conditions.push(eq(proRequestsTable.zip, filters.zip));
+    }
+    
+    // Apply provider filter
+    if (filters.providerAssigned) {
+      conditions.push(like(proRequestsTable.providerAssigned, `%${filters.providerAssigned}%`));
+    }
+    
+    // Apply search query
+    if (filters.q) {
+      const searchTerm = `%${filters.q}%`;
+      conditions.push(or(
+        like(proRequestsTable.description, searchTerm),
+        like(proRequestsTable.contactName, searchTerm),
+        like(proRequestsTable.contactEmail, searchTerm),
+        like(proRequestsTable.addressLine1, searchTerm),
+        like(proRequestsTable.city, searchTerm)
+      ));
+    }
+    
+    // Apply all conditions
+    if (conditions.length > 0) {
+      const combinedConditions = conditions.length === 1 ? conditions[0] : and(...conditions);
+      query = query.where(combinedConditions);
+      countQuery = countQuery.where(combinedConditions);
+    }
+    
+    // Apply sorting
+    const sortColumn = proRequestsTable[filters.sortBy] || proRequestsTable.createdAt;
+    query = query.orderBy(filters.sortDir === 'asc' ? asc(sortColumn) : desc(sortColumn));
+    
+    // Apply pagination
+    const offset = (filters.page - 1) * filters.pageSize;
+    query = query.limit(filters.pageSize).offset(offset);
+    
+    // Execute queries
+    const [items, countResult] = await Promise.all([
+      query,
+      countQuery
+    ]);
+    
+    const total = Number(countResult[0]?.count || 0);
+    
+    return {
+      items,
+      total,
+      page: filters.page,
+      pageSize: filters.pageSize
+    };
+  }
+
+  async getAdminProRequest(id: string): Promise<ProRequest | undefined> {
+    // Same as getProRequest but for admin context (could add admin-specific data later)
+    return this.getProRequest(id);
+  }
+
+  async updateAdminProRequestStatus(id: string, status: string, providerAssigned?: string): Promise<ProRequest | undefined> {
+    // Same as updateProRequestStatus but for admin context
+    return this.updateProRequestStatus(id, status, providerAssigned);
+  }
+
+  // Note methods
+  async createNote(note: InsertNote): Promise<Note> {
+    const id = uuidv4();
+    const now = new Date();
+    
+    const newNote = {
+      id,
+      ...note,
+      createdAt: now,
+    };
+
+    await db.insert(notesTable).values(newNote);
+    
+    return newNote;
+  }
+
+  async getNotesByRequest(requestId: string): Promise<Note[]> {
+    const result = await db.select().from(notesTable)
+      .where(eq(notesTable.requestId, requestId))
+      .orderBy(desc(notesTable.createdAt));
+    return result;
+  }
+
+  // Audit Event methods
+  async createAuditEvent(auditEvent: InsertAuditEvent): Promise<AuditEvent> {
+    const id = uuidv4();
+    const now = new Date();
+    
+    const newAuditEvent = {
+      id,
+      ...auditEvent,
+      createdAt: now,
+    };
+
+    await db.insert(auditEventsTable).values(newAuditEvent);
+    
+    return newAuditEvent;
+  }
+
+  async getAuditEventsByRequest(requestId: string): Promise<AuditEvent[]> {
+    const result = await db.select().from(auditEventsTable)
+      .where(eq(auditEventsTable.requestId, requestId))
+      .orderBy(desc(auditEventsTable.createdAt));
     return result;
   }
 }

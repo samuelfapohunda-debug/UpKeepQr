@@ -271,7 +271,7 @@ export const homeMaintenanceTasksTable = pgTable("home_maintenance_tasks", {
 });
 
 // Create insert schema using drizzle-zod
-export const insertHomeMaintenanceTaskSchema = createInsertSchema(homeMaintenanceTasksTable);
+export const insertHomeMaintenanceTaskSchema = createInsertSchema(homeMaintenanceTasksTable).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertHomeMaintenanceTask = z.infer<typeof insertHomeMaintenanceTaskSchema>;
 
 // Type exports
@@ -398,3 +398,79 @@ export const updateProRequestStatusSchema = z.object({
 // Type exports for API
 export type CreateProRequestRequest = z.infer<typeof createProRequestSchema>;
 export type UpdateProRequestStatusRequest = z.infer<typeof updateProRequestStatusSchema>;
+
+// Audit Event schema for tracking changes
+export const auditEventSchema = z.object({
+  id: z.string(), // UUID
+  requestId: z.string(), // Foreign key to pro_requests
+  actor: z.string().default('admin'),
+  type: z.enum(['status_change', 'provider_assignment', 'note_created']),
+  data: z.record(z.any()), // JSON data for storing diff or payload
+  createdAt: z.date().optional(),
+});
+
+export type AuditEvent = z.infer<typeof auditEventSchema>;
+
+// Note schema for internal notes
+export const noteSchema = z.object({
+  id: z.string(), // UUID
+  requestId: z.string(), // Foreign key to pro_requests
+  author: z.string().default('admin'),
+  message: z.string().min(1).max(2000),
+  createdAt: z.date().optional(),
+});
+
+export type Note = z.infer<typeof noteSchema>;
+
+// Audit Event Drizzle table definition
+export const auditEventsTable = pgTable("audit_events", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  requestId: varchar("request_id", { length: 255 }).notNull(),
+  actor: varchar("actor", { length: 100 }).notNull().default('admin'),
+  type: varchar("type", { length: 50 }).notNull(),
+  data: json("data").$type<Record<string, any>>().notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Note Drizzle table definition
+export const notesTable = pgTable("notes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  requestId: varchar("request_id", { length: 255 }).notNull(),
+  author: varchar("author", { length: 100 }).notNull().default('admin'),
+  message: text("message").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Insert schemas for new tables
+export const insertAuditEventSchema = auditEventSchema.omit({ 
+  id: true, 
+  createdAt: true 
+});
+export type InsertAuditEvent = z.infer<typeof insertAuditEventSchema>;
+
+export const insertNoteSchema = noteSchema.omit({ 
+  id: true, 
+  createdAt: true 
+});
+export type InsertNote = z.infer<typeof insertNoteSchema>;
+
+// Admin API request schemas
+export const createNoteSchema = z.object({
+  message: z.string().min(1).max(2000),
+});
+
+export const adminProRequestFiltersSchema = z.object({
+  status: z.array(z.enum(['new', 'assigned', 'in_progress', 'completed', 'canceled'])).optional(),
+  trade: z.enum(['roofing', 'plumbing', 'electrical', 'hvac', 'general']).optional(),
+  urgency: z.enum(['emergency', '24h', '3days', 'flexible']).optional(),
+  zip: z.string().regex(/^\d{5}$/).optional(),
+  providerAssigned: z.string().optional(),
+  q: z.string().optional(), // Search query
+  page: z.number().min(1).default(1),
+  pageSize: z.number().min(1).max(100).default(25),
+  sortBy: z.enum(['createdAt', 'updatedAt', 'urgency', 'status']).default('createdAt'),
+  sortDir: z.enum(['asc', 'desc']).default('desc'),
+});
+
+export type AdminProRequestFilters = z.infer<typeof adminProRequestFiltersSchema>;
+export type CreateNoteRequest = z.infer<typeof createNoteSchema>;
