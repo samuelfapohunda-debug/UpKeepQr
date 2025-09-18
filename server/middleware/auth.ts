@@ -51,3 +51,15 @@ export function authenticateAgent(req: AuthRequest, res: Response, next: NextFun
     return res.status(403).json({ error: 'Invalid or expired agent token' });
   }
 }
+
+// Admin authentication for Pro Request features using ADMIN_API_TOKEN
+export function authenticateProAdmin(req: AuthRequest, res: Response, next: NextFunction) {
+  const authHeader = req.headers.authorization;
+  const adminToken = process.env.ADMIN_API_TOKEN;
+  
+  if (!authHeader || !adminToken || authHeader !== `Bearer ${adminToken}`) {
+    return res.status(401).json({ error: "Unauthorized - Admin access required" });
+  }
+  
+  next();
+}

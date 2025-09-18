@@ -6,11 +6,17 @@ import {
   Household, InsertHousehold,
   Task, InsertTask,
   Lead, InsertLead,
+  ProRequest, InsertProRequest,
+  Provider, InsertProvider,
+  proRequestsTable,
+  providersTable,
   COLLECTIONS,
   timestampToDate 
 } from "@shared/schema";
 import { v4 as uuidv4 } from 'uuid';
 import { nanoid } from "nanoid";
+import { eq, and } from "drizzle-orm";
+import { db } from "./db";
 
 export interface IStorage {
   // Agent methods
@@ -71,6 +77,19 @@ export interface IStorage {
 
   // Agent metrics methods  
   getAgentMetrics(agentId: string): Promise<any>;
+
+  // Pro Request methods
+  createProRequest(proRequest: InsertProRequest): Promise<ProRequest>;
+  getProRequest(id: string): Promise<ProRequest | undefined>;
+  getProRequestByTrackingCode(trackingCode: string): Promise<ProRequest | undefined>;
+  updateProRequestStatus(id: string, status: string, providerAssigned?: string): Promise<ProRequest | undefined>;
+  getAllProRequests(): Promise<ProRequest[]>;
+
+  // Provider methods
+  createProvider(provider: InsertProvider): Promise<Provider>;
+  getProvider(id: string): Promise<Provider | undefined>;
+  getProvidersByTradeAndZip(trade: string, zip: string): Promise<Provider[]>;
+  getAllProviders(): Promise<Provider[]>;
 }
 
 export class FirebaseStorage implements IStorage {
@@ -493,6 +512,100 @@ export class FirebaseStorage implements IStorage {
       }).length,
       conversionRate: households.length > 0 ? (leads.length / households.length) * 100 : 0
     };
+  }
+
+  // Pro Request methods (using PostgreSQL via Drizzle)
+  async createProRequest(proRequest: InsertProRequest): Promise<ProRequest> {
+    const id = uuidv4();
+    const publicTrackingCode = nanoid(8);
+    const now = new Date();
+    
+    const newProRequest = {
+      id,
+      ...proRequest,
+      publicTrackingCode,
+      status: 'new' as const,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    await db.insert(proRequestsTable).values(newProRequest);
+    
+    return newProRequest;
+  }
+
+  async getProRequest(id: string): Promise<ProRequest | undefined> {
+    const result = await db.select().from(proRequestsTable).where(eq(proRequestsTable.id, id)).limit(1);
+    return result[0] || undefined;
+  }
+
+  async getProRequestByTrackingCode(trackingCode: string): Promise<ProRequest | undefined> {
+    const result = await db.select().from(proRequestsTable)
+      .where(eq(proRequestsTable.publicTrackingCode, trackingCode))
+      .limit(1);
+    return result[0] || undefined;
+  }
+
+  async updateProRequestStatus(id: string, status: string, providerAssigned?: string): Promise<ProRequest | undefined> {
+    const updateData: any = {
+      status,
+      updatedAt: new Date(),
+    };
+    
+    if (providerAssigned !== undefined) {
+      updateData.providerAssigned = providerAssigned;
+    }
+
+    await db.update(proRequestsTable)
+      .set(updateData)
+      .where(eq(proRequestsTable.id, id));
+    
+    return this.getProRequest(id);
+  }
+
+  async getAllProRequests(): Promise<ProRequest[]> {
+    const result = await db.select().from(proRequestsTable);
+    return result;
+  }
+
+  // Provider methods (using PostgreSQL via Drizzle)
+  async createProvider(provider: InsertProvider): Promise<Provider> {
+    const id = uuidv4();
+    const now = new Date();
+    
+    const newProvider = {
+      id,
+      ...provider,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    await db.insert(providersTable).values(newProvider);
+    
+    return newProvider;
+  }
+
+  async getProvider(id: string): Promise<Provider | undefined> {
+    const result = await db.select().from(providersTable).where(eq(providersTable.id, id)).limit(1);
+    return result[0] || undefined;
+  }
+
+  async getProvidersByTradeAndZip(trade: string, zip: string): Promise<Provider[]> {
+    // Get all providers with matching trade
+    const result = await db.select().from(providersTable).where(eq(providersTable.trade, trade));
+    
+    // Filter by zip coverage - check if the requested zip is in their coverage area
+    return result.filter(provider => {
+      if (!provider.coverageZips || !Array.isArray(provider.coverageZips)) {
+        return false;
+      }
+      return provider.coverageZips.includes(zip);
+    });
+  }
+
+  async getAllProviders(): Promise<Provider[]> {
+    const result = await db.select().from(providersTable);
+    return result;
   }
 }
 

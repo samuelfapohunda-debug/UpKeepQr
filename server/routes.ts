@@ -2,8 +2,8 @@ import type { Express } from "express";
 import express from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { authenticateAdmin, authenticateAgent } from "./middleware/auth";
-import { insertMagnetBatchSchema, insertBatchSchema, setupActivateSchema, setupPreviewSchema, taskCompleteSchema, agentLoginSchema, checkoutSchema, leadsSchema, smsOptInSchema, smsVerifySchema } from "../shared/schema";
+import { authenticateAdmin, authenticateAgent, authenticateProAdmin } from "./middleware/auth";
+import { insertMagnetBatchSchema, insertBatchSchema, setupActivateSchema, setupPreviewSchema, taskCompleteSchema, agentLoginSchema, checkoutSchema, leadsSchema, smsOptInSchema, smsVerifySchema, createProRequestSchema, updateProRequestStatusSchema } from "../shared/schema";
 import { nanoid } from "nanoid";
 import { v4 as uuidv4 } from "uuid";
 import QRCode from "qrcode";
@@ -64,6 +64,14 @@ const smsApiLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
   max: 3, // Limit SMS requests
   message: { error: "Too many SMS requests, please try again in a minute." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const proRequestLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000, // 10 minutes
+  max: 10, // Limit pro request submissions to 10 per IP per 10 minutes
+  message: { error: "Too many pro requests, please try again later." },
   standardHeaders: true,
   legacyHeaders: false,
 });
@@ -754,6 +762,141 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         res.status(500).json({ error: "Failed to create lead" });
       }
+    }
+  });
+
+  // Pro Request Routes for "Request a Pro" feature
+
+  // POST /api/pro-requests - Create new pro request 
+  app.post("/api/pro-requests", proRequestLimiter, async (req, res) => {
+    await createAuditLog(req, '/api/pro-requests');
+    try {
+      const validatedData = createProRequestSchema.parse(req.body);
+      
+      // Create the pro request
+      const proRequest = await storage.createProRequest(validatedData);
+
+      // TODO: Send email notifications (will implement in task 3)
+      
+      res.status(201).json({
+        id: proRequest.id,
+        publicTrackingCode: proRequest.publicTrackingCode,
+        message: "Pro request created successfully. You will receive a confirmation email shortly."
+      });
+    } catch (error: any) {
+      return handleError(error, 'pro-requests creation', res);
+    }
+  });
+
+  // GET /api/pro-requests/:id - Get pro request by ID (public - returns redacted data)
+  app.get("/api/pro-requests/:id", publicApiLimiter, async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      const proRequest = await storage.getProRequest(id);
+      if (!proRequest) {
+        return res.status(404).json({ error: "Pro request not found" });
+      }
+
+      // Return redacted details for public access
+      const publicData = {
+        id: proRequest.id,
+        trade: proRequest.trade,
+        urgency: proRequest.urgency,
+        description: proRequest.description,
+        status: proRequest.status,
+        providerAssigned: proRequest.providerAssigned,
+        publicTrackingCode: proRequest.publicTrackingCode,
+        createdAt: proRequest.createdAt,
+        updatedAt: proRequest.updatedAt,
+        // Contact info and address are redacted for public access
+      };
+
+      res.json(publicData);
+    } catch (error: any) {
+      return handleError(error, 'pro-requests get', res);
+    }
+  });
+
+  // GET /api/admin/pro-requests/:id - Get pro request by ID (admin - returns full data)
+  app.get("/api/admin/pro-requests/:id", authenticateProAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      const proRequest = await storage.getProRequest(id);
+      if (!proRequest) {
+        return res.status(404).json({ error: "Pro request not found" });
+      }
+
+      // Return full details for admin
+      res.json(proRequest);
+    } catch (error: any) {
+      return handleError(error, 'admin pro-requests get', res);
+    }
+  });
+
+  // PATCH /api/pro-requests/:id/status - Update pro request status (admin-only)
+  app.patch("/api/pro-requests/:id/status", authenticateProAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      const validatedData = updateProRequestStatusSchema.parse(req.body);
+      const { status, providerAssigned } = validatedData;
+      
+      const updatedRequest = await storage.updateProRequestStatus(id, status, providerAssigned);
+      if (!updatedRequest) {
+        return res.status(404).json({ error: "Pro request not found" });
+      }
+
+      res.json(updatedRequest);
+    } catch (error: any) {
+      return handleError(error, 'pro-requests status update', res);
+    }
+  });
+
+  // GET /api/pro-requests/track/:code - Get pro request by tracking code (public)
+  app.get("/api/pro-requests/track/:code", publicApiLimiter, async (req, res) => {
+    try {
+      const { code } = req.params;
+      
+      const proRequest = await storage.getProRequestByTrackingCode(code);
+      if (!proRequest) {
+        return res.status(404).json({ error: "Pro request not found" });
+      }
+
+      // Return redacted details for public tracking (same as public GET by ID)
+      const publicData = {
+        id: proRequest.id,
+        trade: proRequest.trade,
+        urgency: proRequest.urgency,
+        description: proRequest.description,
+        status: proRequest.status,
+        providerAssigned: proRequest.providerAssigned,
+        publicTrackingCode: proRequest.publicTrackingCode,
+        createdAt: proRequest.createdAt,
+        updatedAt: proRequest.updatedAt,
+        // Contact info and address are redacted for public access
+      };
+
+      res.json(publicData);
+    } catch (error: any) {
+      return handleError(error, 'pro-requests track', res);
+    }
+  });
+
+  // GET /api/providers - Get providers by trade and zip
+  app.get("/api/providers", publicApiLimiter, async (req, res) => {
+    try {
+      const { trade, zip } = req.query;
+      
+      if (!trade || !zip) {
+        return res.status(400).json({ error: "Trade and zip parameters are required" });
+      }
+      
+      const providers = await storage.getProvidersByTradeAndZip(trade as string, zip as string);
+      res.json(providers);
+    } catch (error: any) {
+      return handleError(error, 'providers get', res);
     }
   });
 
