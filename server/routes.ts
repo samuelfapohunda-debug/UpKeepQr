@@ -4,7 +4,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { authenticateAdmin, authenticateAgent, authenticateProAdmin } from "./middleware/auth";
 import { sendUserConfirmationEmail, sendAdminAlertEmail, sendStatusUpdateEmail } from "./lib/email";
-import { insertMagnetBatchSchema, insertBatchSchema, setupActivateSchema, setupPreviewSchema, taskCompleteSchema, agentLoginSchema, checkoutSchema, leadsSchema, smsOptInSchema, smsVerifySchema, createProRequestSchema, updateProRequestStatusSchema } from "../shared/schema";
+import { insertMagnetBatchSchema, insertBatchSchema, setupActivateSchema, setupPreviewSchema, taskCompleteSchema, agentLoginSchema, checkoutSchema, leadsSchema, smsOptInSchema, smsVerifySchema, createProRequestSchema, updateProRequestStatusSchema, adminProRequestFiltersSchema, createNoteSchema } from "../shared/schema";
 import { nanoid } from "nanoid";
 import { v4 as uuidv4 } from "uuid";
 import QRCode from "qrcode";
@@ -861,6 +861,100 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // GET /api/admin/pro-requests - Get all pro requests with filtering and pagination (admin)
+  app.get("/api/admin/pro-requests", authenticateProAdmin, async (req, res) => {
+    try {
+      await createAuditLog(req, '/api/admin/pro-requests');
+      
+      // Parse and validate query parameters
+      const filters = adminProRequestFiltersSchema.parse({
+        status: req.query.status ? (Array.isArray(req.query.status) ? req.query.status : [req.query.status]) : undefined,
+        trade: req.query.trade,
+        urgency: req.query.urgency,
+        zip: req.query.zip,
+        providerAssigned: req.query.providerAssigned,
+        q: req.query.q,
+        page: req.query.page ? Number(req.query.page) : 1,
+        pageSize: req.query.pageSize ? Number(req.query.pageSize) : 25,
+        sortBy: req.query.sortBy || 'createdAt',
+        sortDir: req.query.sortDir || 'desc'
+      });
+
+      const result = await storage.getAdminProRequests(filters);
+      res.json(result);
+    } catch (error: any) {
+      return handleError(error, 'admin pro-requests list', res);
+    }
+  });
+
+  // POST /api/admin/pro-requests/:id/notes - Add internal note to pro request (admin)
+  app.post("/api/admin/pro-requests/:id/notes", authenticateProAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const validatedData = createNoteSchema.parse(req.body);
+      
+      // Check if pro request exists
+      const proRequest = await storage.getProRequest(id);
+      if (!proRequest) {
+        return res.status(404).json({ error: "Pro request not found" });
+      }
+
+      // Create the note
+      const note = await storage.createNote({
+        requestId: id,
+        author: 'admin',
+        message: validatedData.message
+      });
+
+      // Create audit event for note creation
+      await storage.createAuditEvent({
+        requestId: id,
+        actor: 'admin',
+        type: 'note_created',
+        data: { noteId: note.id, message: validatedData.message }
+      });
+
+      res.status(201).json(note);
+    } catch (error: any) {
+      return handleError(error, 'admin pro-requests note creation', res);
+    }
+  });
+
+  // GET /api/admin/pro-requests/:id/history - Get audit history for pro request (admin)
+  app.get("/api/admin/pro-requests/:id/history", authenticateProAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      // Check if pro request exists
+      const proRequest = await storage.getProRequest(id);
+      if (!proRequest) {
+        return res.status(404).json({ error: "Pro request not found" });
+      }
+
+      const auditEvents = await storage.getAuditEventsByRequest(id);
+      res.json(auditEvents);
+    } catch (error: any) {
+      return handleError(error, 'admin pro-requests history', res);
+    }
+  });
+
+  // GET /api/admin/providers - Search providers with filtering (admin)
+  app.get("/api/admin/providers", authenticateProAdmin, async (req, res) => {
+    try {
+      const { trade, zip, q } = req.query;
+      
+      const providers = await storage.searchProviders(
+        trade as string | undefined,
+        zip as string | undefined, 
+        q as string | undefined
+      );
+      
+      res.json(providers);
+    } catch (error: any) {
+      return handleError(error, 'admin providers search', res);
+    }
+  });
+
   // PATCH /api/pro-requests/:id/status - Update pro request status (admin-only)
   app.patch("/api/pro-requests/:id/status", authenticateProAdmin, async (req, res) => {
     try {
@@ -869,10 +963,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validatedData = updateProRequestStatusSchema.parse(req.body);
       const { status, providerAssigned } = validatedData;
       
+      // Get current state for audit trail
+      const currentRequest = await storage.getProRequest(id);
+      if (!currentRequest) {
+        return res.status(404).json({ error: "Pro request not found" });
+      }
+      
       const updatedRequest = await storage.updateProRequestStatus(id, status, providerAssigned);
       if (!updatedRequest) {
         return res.status(404).json({ error: "Pro request not found" });
       }
+
+      // Create audit events for changes
+      const auditEvents = [];
+      
+      // Track status change
+      if (currentRequest.status !== status) {
+        auditEvents.push(storage.createAuditEvent({
+          requestId: id,
+          actor: 'admin',
+          type: 'status_change',
+          data: { 
+            oldStatus: currentRequest.status, 
+            newStatus: status 
+          }
+        }));
+      }
+      
+      // Track provider assignment change
+      if (currentRequest.providerAssigned !== providerAssigned) {
+        auditEvents.push(storage.createAuditEvent({
+          requestId: id,
+          actor: 'admin',
+          type: 'provider_assignment',
+          data: { 
+            oldProvider: currentRequest.providerAssigned || null, 
+            newProvider: providerAssigned || null 
+          }
+        }));
+      }
+      
+      // Wait for all audit events to be created
+      await Promise.all(auditEvents);
 
       // Send status update email notification
       try {

@@ -15,6 +15,7 @@ import AgentDashboard from "@/pages/AgentDashboard";
 import TaskDetail from "@/pages/TaskDetail";
 import NotFound from "@/pages/not-found";
 import RequestPro from "@/pages/RequestPro";
+import AdminDashboard from "@/pages/AdminDashboard";
 
 function Router() {
   return (
@@ -31,6 +32,7 @@ function Router() {
         <Route path="/agent/dashboard" component={AgentDashboard} />
         <Route path="/task/:token/:taskId" component={TaskDetail} />
         <Route path="/request-pro" component={RequestPro} />
+        <Route path="/admin/requests" component={AdminDashboard} />
         {/* Fallback to 404 */}
         <Route component={NotFound} />
       </Switch>
