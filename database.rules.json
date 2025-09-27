@@ -1,0 +1,42 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "agents": {
+      "$agentId": {
+        ".read": "auth != null && auth.uid == $agentId",
+        ".write": "auth != null && auth.uid == $agentId"
+      }
+    },
+    "magnetBatches": {
+      "$batchId": {
+        ".read": "auth != null && data.child('agentId').val() == auth.uid",
+        ".write": "auth != null && (data.child('agentId').val() == auth.uid || newData.child('agentId').val() == auth.uid)"
+      }
+    },
+    "magnets": {
+      "$magnetId": {
+        ".read": "auth != null && data.child('agentId').val() == auth.uid",
+        ".write": "auth != null && (data.child('agentId').val() == auth.uid || newData.child('agentId').val() == auth.uid)"
+      }
+    },
+    "households": {
+      "$householdId": {
+        ".read": "auth != null && data.child('agentId').val() == auth.uid",
+        ".write": "auth != null && (data.child('agentId').val() == auth.uid || newData.child('agentId').val() == auth.uid)"
+      }
+    },
+    "tasks": {
+      "$taskId": {
+        ".read": "auth != null && data.child('agentId').val() == auth.uid",
+        ".write": "auth != null && (data.child('agentId').val() == auth.uid || newData.child('agentId').val() == auth.uid)"
+      }
+    },
+    "leads": {
+      "$leadId": {
+        ".read": "auth != null && data.child('agentId').val() == auth.uid",
+        ".write": "auth != null && (data.child('agentId').val() == auth.uid || newData.child('agentId').val() == auth.uid)"
+      }
+    }
+  }
+}

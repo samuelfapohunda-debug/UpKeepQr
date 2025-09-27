@@ -1,0 +1,83 @@
+---
+import Base from '../layouts/Base.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+
+const sent  = Astro.url.searchParams.get('sent') === '1';
+const error = Astro.url.searchParams.get('error') === '1';
+---
+
+<Base title="Contact — UpkeepQR">
+  <Header />
+
+  <section class="container py-16 max-w-3xl">
+    <h1 class="font-heading text-4xl font-extrabold mb-2">Contact Us</h1>
+    <p class="text-white/70 mb-6">Have a question about magnets, reminders, or partnerships? Send us a note.</p>
+
+    {sent && (
+      <div class="card border border-lime mb-6" role="status">
+        <p class="text-white">Thanks! Your message was sent. We’ll get back to you shortly.</p>
+      </div>
+    )}
+    {error && (
+      <div class="card border border-red-400 mb-6" role="alert">
+        <p class="text-white">Sorry—something went wrong. Please try again or email support@upkeepqr.com.</p>
+      </div>
+    )}
+
+    <form class="space-y-4" method="post" action="/api/contact">
+      <!-- Honeypot (spam trap) -->
+      <input type="text" name="website" tabindex="-1" autocomplete="off" class="hidden" aria-hidden="true" />
+
+      <div>
+        <label for="name">Full name</label>
+        <input id="name" name="name" required autocomplete="name" />
+      </div>
+
+      <div class="grid md:grid-cols-2 gap-4">
+        <div>
+          <label for="email">Email</label>
+          <input id="email" type="email" name="email" required autocomplete="email" />
+        </div>
+        <div>
+          <label for="phone">Phone (optional)</label>
+          <input id="phone" name="phone" autocomplete="tel" />
+        </div>
+      </div>
+
+      <div class="grid md:grid-cols-2 gap-4">
+        <div>
+          <label for="topic">Subject</label>
+          <select id="topic" name="topic" required>
+            <option value="">Choose…</option>
+            <option>Order & Pricing</option>
+            <option>Product Question</option>
+            <option>Partnership / Bulk</option>
+            <option>Support</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div>
+          <label for="zip">ZIP (optional)</label>
+          <input id="zip" name="zip" inputmode="numeric" pattern="[0-9]*" />
+        </div>
+      </div>
+
+      <div>
+        <label for="message">Message</label>
+        <textarea id="message" name="message" rows="6" required placeholder="How can we help?"></textarea>
+      </div>
+
+      <div class="flex items-start gap-2">
+        <input id="consent" name="consent" type="checkbox" required class="mt-1" />
+        <label for="consent" class="text-white/80">I agree to be contacted about my enquiry.</label>
+      </div>
+
+      <button class="btn btn-primary" type="submit">Send message</button>
+    </form>
+
+    <p class="text-white/60 mt-6 text-sm">We use secure email delivery. You’ll also get a copy of your request.</p>
+  </section>
+
+  <Footer />
+</Base>
