@@ -11,14 +11,10 @@ import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
 
-// Trust proxy for rate limiting
 app.set('trust proxy', true);
-
-// Body parsing
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// Request logging middleware
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
@@ -47,13 +43,9 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // Setup API routes
   setupRoutes(app);
-  
-  // Start cron jobs
   startCronJobs();
   
-  // Global error handler
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     console.error("Error:", err);
     const status = err.status || err.statusCode || 500;
@@ -61,17 +53,14 @@ app.use((req, res, next) => {
     res.status(status).json({ error: message });
   });
   
-  // Create HTTP server
   const server = createServer(app);
   
-  // Setup Vite in development
   if (process.env.NODE_ENV !== "production") {
     await setupVite(app, server);
   } else {
     serveStatic(app);
   }
   
-  // Start server
   const port = parseInt(process.env.PORT || '5000', 10);
   server.listen(port, "0.0.0.0", () => {
     log(`Server running on port ${port}`);
