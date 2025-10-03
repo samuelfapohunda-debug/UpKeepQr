@@ -1,10 +1,8 @@
-import { ServerClient } from "postmark";
 
 if (!process.env.POSTMARK_API_TOKEN) {
   throw new Error("POSTMARK_API_TOKEN environment variable is required");
 }
 
-const postmarkClient = new ServerClient(process.env.POSTMARK_API_TOKEN);
 
 export interface WelcomeEmailData {
   email: string;
@@ -130,7 +128,6 @@ Questions? Reply to this email for support.
 AgentHub - Smart Home Maintenance
   `;
 
-  await postmarkClient.sendEmail({
     From: "noreply@agenthub.com",
     To: email,
     Subject: subject,
@@ -254,7 +251,6 @@ Keeping your home in perfect condition, one task at a time.
     }];
   }
 
-  await postmarkClient.sendEmail(emailData);
 }
 
 /**
@@ -415,7 +411,6 @@ AgentHub Lead Management
 This lead was generated from our home maintenance platform.
   `;
 
-  await postmarkClient.sendEmail({
     From: "leads@agenthub.com",
     To: recipientEmail,
     Subject: subject,
@@ -547,7 +542,6 @@ Questions? Reply to this email or contact support.
 UpKeepQR - Smart Home Maintenance QR Solutions
   `;
 
-  await postmarkClient.sendEmail({
     From: "support@upkeepqr.com",
     To: email,
     Subject: subject,
@@ -612,7 +606,6 @@ export async function sendContactFormEmails(data: ContactFormData): Promise<void
       </html>
     `;
 
-    await postmarkClient.sendEmail({
       From: "support@upkeepqr.com",
       To: email,
       Subject: `Re: ${topic} - Thanks for contacting UpkeepQR!`,
@@ -659,7 +652,6 @@ export async function sendContactFormEmails(data: ContactFormData): Promise<void
       </html>
     `;
 
-    await postmarkClient.sendEmail({
       From: "noreply@upkeepqr.com",
       To: "support@upkeepqr.com",
       Subject: `New Contact: ${topic}`,
