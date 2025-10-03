@@ -74,7 +74,7 @@ export default function Onboarding() {
   return (
     <div className="pt-16 min-h-screen bg-background">
       <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="bg-card rounded-xl border border-border shadow-sm p-8">
+        <div className="bg-card rounded-xl border border-gray-300 shadow-sm p-8">
           <div className="text-center mb-8">
             <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
               <i className="fas fa-home text-primary text-2xl" data-testid="setup-icon"></i>

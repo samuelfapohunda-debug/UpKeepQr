@@ -54,7 +54,7 @@ export default function Dashboard() {
 
         {/* Stats Grid */}
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-card p-6 rounded-xl border border-border" data-testid="stat-total-events">
+          <div className="bg-card p-6 rounded-xl border border-gray-300" data-testid="stat-total-events">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Total Events</p>
@@ -64,7 +64,7 @@ export default function Dashboard() {
             </div>
           </div>
           
-          <div className="bg-card p-6 rounded-xl border border-border" data-testid="stat-upcoming-events">
+          <div className="bg-card p-6 rounded-xl border border-gray-300" data-testid="stat-upcoming-events">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Upcoming Events</p>
@@ -74,7 +74,7 @@ export default function Dashboard() {
             </div>
           </div>
           
-          <div className="bg-card p-6 rounded-xl border border-border" data-testid="stat-completed-tasks">
+          <div className="bg-card p-6 rounded-xl border border-gray-300" data-testid="stat-completed-tasks">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Completed Tasks</p>
@@ -84,7 +84,7 @@ export default function Dashboard() {
             </div>
           </div>
           
-          <div className="bg-card p-6 rounded-xl border border-border" data-testid="stat-qr-generated">
+          <div className="bg-card p-6 rounded-xl border border-gray-300" data-testid="stat-qr-generated">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">QR Codes Generated</p>
@@ -97,7 +97,7 @@ export default function Dashboard() {
 
         <div className="grid lg:grid-cols-2 gap-8">
           {/* QR Code Generator */}
-          <div className="bg-card p-6 rounded-xl border border-border">
+          <div className="bg-card p-6 rounded-xl border border-gray-300">
             <h2 className="text-xl font-semibold mb-4" data-testid="qr-generator-title">QR Code Generator</h2>
             <div className="space-y-4">
               <div>
@@ -124,7 +124,7 @@ export default function Dashboard() {
                   <img 
                     src={qrCode} 
                     alt="Generated QR Code" 
-                    className="mx-auto border border-border rounded"
+                    className="mx-auto border border-gray-300 rounded"
                     data-testid="img-qr-code"
                   />
                 </div>
@@ -133,7 +133,7 @@ export default function Dashboard() {
           </div>
 
           {/* Recent Activity */}
-          <div className="bg-card p-6 rounded-xl border border-border">
+          <div className="bg-card p-6 rounded-xl border border-gray-300">
             <h2 className="text-xl font-semibold mb-4" data-testid="activity-title">Recent Activity</h2>
             <div className="space-y-4">
               <div className="flex items-center space-x-3 p-3 bg-muted rounded-lg">

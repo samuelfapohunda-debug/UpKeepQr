@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link, useSearch } from "wouter";
 import { CheckCircle, Calendar, Bell, Home, Download, Package, Wrench } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Button } from "@/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/ui/card";
+import { Badge } from "@/ui/badge";
 
 interface SetupResult {
   success: boolean;

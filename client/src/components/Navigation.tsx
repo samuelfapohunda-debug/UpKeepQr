@@ -6,7 +6,7 @@ export default function Navigation() {
   const isActive = (path: string) => location === path;
   
   return (
-    <nav className="fixed top-0 left-0 right-0 bg-card border-b border-border z-50 backdrop-blur-sm">
+    <nav className="fixed top-0 left-0 right-0 bg-card border-b border-gray-300 z-50 backdrop-blur-sm">
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
         <div className="flex justify-between items-center h-14 sm:h-16">
           {/* Logo Section */}
