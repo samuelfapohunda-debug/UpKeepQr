@@ -1,13 +1,10 @@
-import dotenv from "dotenv";
-dotenv.config();
-
 console.log("DEBUG DATABASE_URL:", process.env.DATABASE_URL);
 
 import express, { type Request, Response, NextFunction } from "express";
 import { createServer } from "http";
 import { setupRoutes } from "./src/routes/index.js";
-import { startCronJobs } from "./lib/cron";
-import { setupVite, serveStatic, log } from "./vite";
+import { startCronJobs } from "./lib/cron.js";
+import { setupVite, serveStatic, log } from "./vite.js";
 
 const app = express();
 
