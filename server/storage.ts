@@ -1148,3 +1148,55 @@ export class FirebaseStorage implements IStorage {
 }
 
 export const storage = new FirebaseStorage();
+// ==========================================
+// HOME PROFILE EXTRA METHODS
+// ==========================================
+import { homeProfileExtras, type InsertHomeProfileExtra } from "../shared/schema.js";
+
+export async function getHomeProfileExtra(householdId: string) {
+  const [result] = await db
+    .select()
+    .from(homeProfileExtras)
+    .where(eq(homeProfileExtras.householdId, householdId))
+    .limit(1);
+  
+  return result || null;
+}
+
+export async function createHomeProfileExtra(data: InsertHomeProfileExtra) {
+  const [result] = await db
+    .insert(homeProfileExtras)
+    .values({
+      ...data,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    })
+    .returning();
+  
+  return result;
+}
+
+export async function updateHomeProfileExtra(householdId: string, data: Partial<InsertHomeProfileExtra>) {
+  const existing = await getHomeProfileExtra(householdId);
+  
+  if (existing) {
+    const [result] = await db
+      .update(homeProfileExtras)
+      .set({
+        ...data,
+        updatedAt: new Date(),
+      })
+      .where(eq(homeProfileExtras.householdId, householdId))
+      .returning();
+    
+    return result;
+  } else {
+    return createHomeProfileExtra({ ...data, householdId } as InsertHomeProfileExtra);
+  }
+}
+
+export async function deleteHomeProfileExtra(householdId: string) {
+  await db
+    .delete(homeProfileExtras)
+    .where(eq(homeProfileExtras.householdId, householdId));
+}
