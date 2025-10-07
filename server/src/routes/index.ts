@@ -3,6 +3,7 @@ import healthRoutes from './health.js';
 import authRoutes from './auth.js';
 import qrRoutes from './qr.js';
 import calendarRoutes from './calendar.js';
+import homeExtraRoutes from './homeExtra.js';
 
 export function setupRoutes(app: Express) {
   // Health check route
@@ -12,4 +13,5 @@ export function setupRoutes(app: Express) {
   app.use('/api/auth', authRoutes);
   app.use('/api/qr', qrRoutes);
   app.use('/api/calendar', calendarRoutes);
+  app.use('/api', homeExtraRoutes);
 }
