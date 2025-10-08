@@ -1,36 +1,45 @@
 import { useEffect, useState } from "react";
-import { Link, useSearch } from "wouter";
+import { Link, useLocation } from "wouter";
 import { CheckCircle, Calendar, Bell, Home, Download, Package, Wrench } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
+interface Household {
+  id: string;
+  token: string;
+  zip: string;
+  homeType: string;
+  climateZone: string;
+}
+
+interface Schedule {
+  taskName: string;
+  description: string;
+  frequencyMonths: number;
+  priority: number;
+}
+
 interface SetupResult {
   success: boolean;
-  household: {
-    id: string;
-    token: string;
-    zip: string;
-    homeType: string;
-    climateZone: string;
-  };
-  schedules: Array<{
-    taskName: string;
-    description: string;
-    frequencyMonths: number;
-    priority: number;
-  }>;
+  household: Household;
+  schedules: Schedule[];
   firstTaskDue: string;
 }
 
+interface SessionData {
+  isPayment: boolean;
+  sessionId: string | null;
+}
+
 export default function SetupSuccess() {
-  const search = useSearch();
+  const [location] = useLocation();
   const [result, setResult] = useState<SetupResult | null>(null);
-  const [sessionData, setSessionData] = useState<any>(null);
+  const [sessionData, setSessionData] = useState<SessionData | null>(null);
   const [loading, setLoading] = useState(false);
 
   // Check if this is a payment success page
-  const urlParams = new URLSearchParams(search);
+  const urlParams = new URLSearchParams(window.location.search);
   const sessionId = urlParams.get('session_id');
 
   useEffect(() => {
@@ -140,7 +149,7 @@ export default function SetupSuccess() {
     );
   }
 
-  // If this is a setup completion page
+  // If this is a setup completion page but no result data
   if (!result) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 flex items-center justify-center p-4">

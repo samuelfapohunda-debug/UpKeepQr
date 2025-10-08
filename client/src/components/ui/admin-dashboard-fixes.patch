@@ -1,0 +1,110 @@
+--- AdminDashboard.tsx.original
++++ AdminDashboard.tsx
+@@ -48,8 +48,8 @@
+     page: 1,
+     pageSize: 20,
+     sortBy: "createdAt" as const,
+-    trade: "",
+-    urgency: "",
++    trade: undefined as "hvac" | "plumbing" | "electrical" | "roofing" | "general" | undefined,
++    urgency: undefined as "emergency" | "24h" | "3days" | "flexible" | undefined,
+     status: ["new", "assigned", "in_progress"],
+     search: "",
+   });
+@@ -158,8 +158,8 @@
+       if (filters.search) params.set("search", filters.search);
+       if (filters.status?.length) params.set("status", filters.status.join(","));
+       if (filters.trade && filters.trade !== "all") params.set("trade", filters.trade);
+-      if (filters.urgency && filters.urgency !== "all") params.set("urgency", filters.urgency);
+-      if (filters.sortBy) params.set("sortBy", filters.sortBy);
++      if (filters.urgency) params.set("urgency", filters.urgency);
++      params.set("sortBy", filters.sortBy);
+       params.set("page", filters.page.toString());
+       params.set("pageSize", filters.pageSize.toString());
+ 
+@@ -363,7 +363,7 @@
+         </CardContent>
+       </Card>
+ 
+-      <Card className="mb-8">
++      {/* <Card className="mb-8">
+         <CardHeader>
+           <CardTitle>Recent Activity</CardTitle>
+         </CardHeader>
+@@ -376,7 +376,7 @@
+             </div>
+           )}
+         </CardContent>
+-      </Card>
++      </Card> */}
+ 
+       <Card>
+         <CardHeader className="flex flex-row items-center justify-between">
+@@ -469,7 +469,7 @@
+                 <Select value={filters.trade} onValueChange={(value) => setFilters({ ...filters, trade: value, page: 1 })}>
+                   <SelectTrigger className="w-full">
+                     <SelectValue placeholder="All trades" />
+-                  </SelectTrigger>
++                  </SelectTrigger>as any
+                   <SelectContent>
+                     <SelectItem value="all">All Trades</SelectItem>
+                     <SelectItem value="hvac">HVAC</SelectItem>
+@@ -486,7 +486,7 @@
+                 <Select value={filters.urgency} onValueChange={(value) => setFilters({ ...filters, urgency: value, page: 1 })}>
+                   <SelectTrigger className="w-full">
+                     <SelectValue placeholder="All urgency levels" />
+-                  </SelectTrigger>
++                  </SelectTrigger>as any
+                   <SelectContent>
+                     <SelectItem value="all">All Urgency</SelectItem>
+                     <SelectItem value="emergency">Emergency</SelectItem>
+@@ -528,16 +528,16 @@
+               <div className="flex flex-wrap gap-2">
+                 {["new", "assigned", "in_progress", "completed", "canceled"].map((status) => (
+                   <Badge
+-                    key={status}
+-                    variant={filters.status.includes(status) ? "default" : "outline"}
++                    key={status as any}
++                    variant={filters.status?.includes(status as any) ? "default" : "outline"}
+                     className="cursor-pointer capitalize"
+                     onClick={() => {
+-                      const newStatus = filters.status.includes(status)
+-                        ? filters.status.filter(s => s !== status)
+-                        : [...filters.status, status];
++                      const newStatus = filters.status?.includes(status as any)
++                        ? filters.status?.filter(s => s !== status)
++                        : [...(filters.status || []), status];
+                       setFilters({ ...filters, status: newStatus, page: 1 });
+                     }}
+-                  >
++                  >as any
+                     {status.replace('_', ' ')}
+                   </Badge>
+                 ))}
+@@ -580,7 +580,7 @@
+                       <TableCell>
+                         <div className="flex items-center gap-2">
+                           <Badge variant="secondary" className="capitalize">
+-                            {request.trade}
++                            {request.trade as any}
+                           </Badge>
+                         </div>
+                       </TableCell>
+@@ -674,7 +674,7 @@
+             <CardTitle>Request Details</CardTitle>
+           </CardHeader>
+           <CardContent className="space-y-4">
+-            {selectedRequest && (
++            {selectedRequest && selectedRequest.createdAt && (
+               <>
+                 <div className="grid grid-cols-2 gap-4">
+                   <div>
+@@ -817,7 +817,7 @@
+                       </div>
+                     </div>
+                   )}
+-                  {timelineEvents.map((event, index) => (
++                  {timelineEvents.map((event: any, index) => (
+                     <div key={index} className="flex gap-4">
+                       <div className="flex flex-col items-center">
+                         <div className="h-4 w-4 rounded-full bg-blue-500"></div>
