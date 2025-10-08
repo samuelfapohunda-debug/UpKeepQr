@@ -9,7 +9,8 @@
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
-    "lint": "npx eslint . --ext .js,.jsx,.ts,.tsx --fix"
+    "lint": "eslint . --ext .js,.jsx,.ts,.tsx --max-warnings 250",
+    "test": "echo \"No tests specified\""
   },
   "dependencies": {
     "@hookform/resolvers": "^3.3.4",
