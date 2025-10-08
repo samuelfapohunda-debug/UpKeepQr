@@ -5,16 +5,6 @@ const API_BASE_URL = process.env.NODE_ENV === 'production'
   ? '' 
   : 'http://localhost:5000';
 
-interface FormData {
-  zip: string;
-  home_type: string;
-  sqft: string;
-  hvac_type: string;
-  water_heater: string;
-  roof_age_years: string;
-  email: string;
-}
-
 export default function Onboarding() {
   const params = useParams();
   const [, setLocation] = useLocation();
@@ -24,7 +14,7 @@ export default function Onboarding() {
   const [error, setError] = useState('');
   const [showOptionalFields, setShowOptionalFields] = useState(false);
   
-  const [formData, setFormData] = useState<FormData>({
+  const [formData, setFormData] = useState({
     zip: '',
     home_type: '',
     sqft: '',
@@ -40,18 +30,16 @@ export default function Onboarding() {
     setError('');
 
     try {
-      const requestBody: any = {
+      const requestBody = {
         token,
         zip: formData.zip,
         home_type: formData.home_type,
+        ...(formData.sqft && { sqft: parseInt(formData.sqft) }),
+        ...(formData.hvac_type && { hvac_type: formData.hvac_type }),
+        ...(formData.water_heater && { water_heater: formData.water_heater }),
+        ...(formData.roof_age_years && { roof_age_years: parseInt(formData.roof_age_years) }),
+        ...(formData.email && { email: formData.email }),
       };
-
-      // Add optional fields only if they have values
-      if (formData.sqft) requestBody.sqft = parseInt(formData.sqft);
-      if (formData.hvac_type) requestBody.hvac_type = formData.hvac_type;
-      if (formData.water_heater) requestBody.water_heater = formData.water_heater;
-      if (formData.roof_age_years) requestBody.roof_age_years = parseInt(formData.roof_age_years);
-      if (formData.email) requestBody.email = formData.email;
 
       const response = await fetch(`${API_BASE_URL}/api/setup/activate`, {
         method: 'POST',
@@ -86,9 +74,7 @@ export default function Onboarding() {
         <div className="bg-card rounded-xl border border-border shadow-sm p-8">
           <div className="text-center mb-8">
             <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-10 h-10 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-              </svg>
+              <i className="fas fa-home text-primary text-2xl"></i>
             </div>
             <h1 className="text-3xl font-bold mb-2">Home Setup</h1>
             <p className="text-muted-foreground">

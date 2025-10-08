@@ -1,6 +1,6 @@
 import cron from 'node-cron';
 import { storage } from '../storage';
-import { sendReminderEmail, getTaskHowToSteps } from './mail';
+import { sendReminderEmail } from './mail';
 import { createMaintenanceReminderEvent } from './ics';
 
 /**
