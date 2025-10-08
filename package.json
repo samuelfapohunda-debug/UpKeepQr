@@ -9,7 +9,7 @@
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
-    "lint": "eslint . --ext .js,.jsx,.ts,.tsx --max-warnings 250",
+    "lint": "eslint . --ext .js,.jsx,.ts,.tsx --ignore-pattern \"**/.eslintrc.*\" --ignore-pattern \"**/eslintrc.*\" --max-warnings 250",
     "test": "echo \"No tests specified\""
   },
   "dependencies": {
