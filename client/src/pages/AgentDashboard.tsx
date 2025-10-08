@@ -32,7 +32,7 @@ export default function AgentDashboard() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const agentEmail = localStorage.getItem("agentEmail");
-  const agentId = localStorage.getItem("agentId");
+  const _agentId = localStorage.getItem("agentId");
 
   // Redirect to login if not authenticated
   useEffect(() => {
