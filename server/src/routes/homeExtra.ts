@@ -1,3 +1,4 @@
+import { homeExtraLimiter } from "../middleware/rateLimit.js";
 import { Router } from "express";
 import type { Request, Response } from "express";
 import { updateHomeProfileExtraSchema } from "../../validators/homeProfileExtra.js";

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { CheckCircle, Calendar, Bell, Home, Download, Package, Wrench } from "lucide-react";
+import HomeProfileExtraForm from "@/components/HomeProfileExtraForm";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -328,6 +329,15 @@ export default function SetupSuccess() {
 
         <div className="text-center space-y-4">
           <h3 className="text-lg font-semibold">What's Next?</h3>
+
+          {/* Home Profile Extra Data Collection */}
+          {result?.household?.id && (
+            <HomeProfileExtraForm
+              householdId={result.household.id}
+              onSaveSuccess={() => console.log('Home profile data saved!')}
+            />
+          )}
+
           <p className="text-gray-600 max-w-2xl mx-auto">
             We'll send you reminders based on your home's needs and climate zone. 
             Each task is personalized for your {household.homeType} in {household.zip}.
