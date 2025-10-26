@@ -5,7 +5,7 @@ import { CheckCircle, Users, Calendar, Package, Star, Mail, Phone, MapPin } from
 
 // Stripe Payment Links mapping
 const STRIPE_PAYMENT_LINKS = {
-  single: "https://buy.stripe.com/test_8x29AV0Q0cQB0KJbu5gIo00", // 1 QR Magnet - $19
+  single: "https://buy.stripe.com/test_14A00l9mwdUFbpncy9gIo07", // 1 QR Magnet - $19
   twopack: "https://buy.stripe.com/test_8x27sNdCM03P3WVdCdgIo03", // 2 QR Magnets - $35
   "100pack": "https://buy.stripe.com/test_eVq00l42c5o98db69LgIo01", // 100 QR Magnets - $899
 };
@@ -35,7 +35,7 @@ export default function Home() {
                 </p>
               </div>
               <div className="space-x-4">
-                <Button size="lg" onClick={() => openStripeCheckout('single')} data-testid="button-get-started">
+                <Button size="lg" onClick={() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })} data-testid="button-get-started">
                   Get Started
                 </Button>
                 <Button variant="outline" size="lg" onClick={() => document.getElementById('how-it-works')?.scrollIntoView()}>
@@ -118,7 +118,7 @@ export default function Home() {
         </section>
 
         {/* Pricing Section */}
-        <section className="w-full py-12 md:py-24 lg:py-32">
+        <section id="pricing" className="w-full py-12 md:py-24 lg:py-32">
           <div className="container px-4 md:px-6 mx-auto">
             <div className="flex flex-col items-center justify-center space-y-4 text-center">
               <div className="space-y-2">
