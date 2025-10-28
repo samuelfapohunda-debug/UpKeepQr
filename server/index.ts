@@ -9,8 +9,6 @@ import { setupVite, serveStatic, log } from "./vite.js";
 const app = express();
 
 app.set('trust proxy', true);
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
 
 app.use((req, res, next) => {
   const start = Date.now();
@@ -40,7 +38,13 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // 🚨 CRITICAL: Setup routes BEFORE Vite middleware
   setupRoutes(app);
+  
+  // Now add JSON parsing for other routes (after webhook raw body handling)
+  app.use(express.json());
+  app.use(express.urlencoded({ extended: false }));
+  
   startCronJobs();
   
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {

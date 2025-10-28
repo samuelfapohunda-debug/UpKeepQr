@@ -15,6 +15,7 @@
     "tsBuildInfoFile": "./node_modules/typescript/tsbuildinfo",
     "noEmit": true,
     "module": "ESNext",
+    "moduleResolution": "Node16",
     "strict": false,
     "lib": [
       "esnext",
@@ -25,7 +26,6 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "allowImportingTsExtensions": true,
-    "moduleResolution": "bundler",
     "baseUrl": ".",
     "types": [
       "node",
