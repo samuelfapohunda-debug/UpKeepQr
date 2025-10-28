@@ -2,6 +2,13 @@ import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 import { getDatabase } from 'firebase/database';
 import admin from 'firebase-admin';
+import { readFileSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+// Get __dirname equivalent in ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // Create a placeholder database object to prevent crashes
 function createPlaceholderDb() {
@@ -47,46 +54,53 @@ export const realtimeDb = getDatabase(app);
 
 // Initialize Firebase Admin SDK for server operations
 if (admin.apps.length === 0) {
-  // Check if we have Firebase credentials before trying to initialize
   const projectId = "georgia-top-roofer";
   
   if (!projectId) {
     console.warn('Firebase configuration is missing. Firebase features will be disabled.');
-    // Create a placeholder adminDb to prevent crashes
     (global as any).adminDb = createPlaceholderDb();
   } else {
     let serviceAccount;
     
     try {
-      // Try to parse the service account key if it exists
-      if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
-        const rawKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY.trim();
-        // Check if it looks like JSON (starts with { and ends with })
-        if (rawKey.startsWith('{') && rawKey.endsWith('}')) {
-          serviceAccount = JSON.parse(rawKey);
-        } else {
-          console.warn('Firebase service account key does not appear to be valid JSON format');
-          serviceAccount = null;
+      // Try to load from JSON file first
+      const serviceAccountPath = join(__dirname, 'serviceAccountKey.json');
+      try {
+        const serviceAccountFile = readFileSync(serviceAccountPath, 'utf8');
+        serviceAccount = JSON.parse(serviceAccountFile);
+        console.log('✅ Loaded Firebase service account from file');
+      } catch (fileError) {
+        console.log('📄 Service account file not found, trying environment variables...');
+        
+        // Fallback: Try to parse from environment variable
+        if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
+          const rawKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY.trim();
+          if (rawKey.startsWith('{') && rawKey.endsWith('}')) {
+            serviceAccount = JSON.parse(rawKey);
+            console.log('✅ Loaded Firebase service account from environment variable');
+          }
+        }
+        
+        // Fallback: Try individual environment variables
+        if (!serviceAccount && process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_CLIENT_EMAIL) {
+          serviceAccount = {
+            type: "service_account",
+            project_id: projectId,
+            private_key_id: process.env.FIREBASE_PRIVATE_KEY_ID,
+            private_key: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+            client_email: process.env.FIREBASE_CLIENT_EMAIL,
+            client_id: process.env.FIREBASE_CLIENT_ID,
+            auth_uri: "https://accounts.google.com/o/oauth2/auth",
+            token_uri: "https://oauth2.googleapis.com/token",
+            auth_provider_x509_cert_url: "https://www.googleapis.com/oauth2/v1/certs",
+            client_x509_cert_url: `https://www.googleapis.com/robot/v1/metadata/x509/${encodeURIComponent(process.env.FIREBASE_CLIENT_EMAIL || '')}`
+          };
+          console.log('✅ Loaded Firebase service account from individual environment variables');
         }
       }
     } catch (error) {
-      console.error('Error parsing Firebase service account key:', error.message);
+      console.error('Error loading Firebase service account:', error instanceof Error ? error.message : error);
       serviceAccount = null;
-    }
-    
-    // Fallback to individual environment variables if JSON parsing failed
-    if (!serviceAccount) {
-      serviceAccount = {
-        project_id: projectId,  // Use project_id instead of projectId
-        private_key_id: process.env.FIREBASE_PRIVATE_KEY_ID,
-        private_key: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-        client_email: process.env.FIREBASE_CLIENT_EMAIL,
-        client_id: process.env.FIREBASE_CLIENT_ID,
-        auth_uri: "https://accounts.google.com/o/oauth2/auth",
-        token_uri: "https://oauth2.googleapis.com/token",
-        auth_provider_x509_cert_url: "https://www.googleapis.com/oauth2/v1/certs",
-        client_x509_cert_url: `https://www.googleapis.com/robot/v1/metadata/x509/${encodeURIComponent(process.env.FIREBASE_CLIENT_EMAIL || '')}`
-      };
     }
 
     // Only initialize if we have the required credentials
@@ -99,13 +113,11 @@ if (admin.apps.length === 0) {
         });
         console.log('✅ Firebase Admin SDK initialized successfully');
       } catch (error) {
-        console.error('Failed to initialize Firebase Admin SDK:', error.message);
-        // Create placeholder adminDb if initialization fails
+        console.error('❌ Failed to initialize Firebase Admin SDK:', error instanceof Error ? error.message : error);
         (global as any).adminDb = createPlaceholderDb();
       }
     } else {
-      console.warn('Firebase service account credentials are incomplete. Firebase features will be disabled.');
-      // Create placeholder adminDb
+      console.warn('⚠️ Firebase service account credentials are incomplete. Firebase features will be disabled.');
       (global as any).adminDb = createPlaceholderDb();
     }
   }
