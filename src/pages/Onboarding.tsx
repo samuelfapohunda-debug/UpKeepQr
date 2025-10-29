@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import ExtendedHomeProfile from '../components/setup/ExtendedHomeProfile';
 import { useParams, useLocation } from 'wouter';
 
 const API_BASE_URL = process.env.NODE_ENV === 'production' 
@@ -260,6 +261,20 @@ export default function Onboarding() {
                   </div>
                 </div>
               )}
+
+          {/* Extended Home Profile Section */}
+          <div className="mt-8">
+            <ExtendedHomeProfile 
+              setupToken={setupToken} // Make sure this variable exists in your component
+              onSave={(data) => {
+                // Analytics tracking
+                console.log("📊 Analytics: home_extra_completed", {
+                  token: setupToken,
+                  fieldsFilled: Object.keys(data).filter(k => data[k] !== null && data[k] !== undefined).length
+                });
+              }}
+            />
+          </div>
             </div>
 
             <button 

@@ -1215,59 +1215,42 @@ export async function getHomeIdByToken(token: string): Promise<number | null> {
   }
 }
 
-
-// Home Profile Extra Functions - Public API compatible
-
-
-// =============================================================================
-// ADAPTER FUNCTIONS FOR PUBLIC API COMPATIBILITY
-// Public routes expect homeId (number) but existing functions use householdId (string)
-// These adapters convert between the two
-// =============================================================================
-
-export async function getHomeProfileExtraByHomeId(homeId: number) {
+// Also ensure these functions exist for home_profile_extra:
+export async function getHomeProfileExtra(homeId: number): Promise<any> {
   try {
-    // Convert numeric homeId to string householdId
-    const householdId = homeId.toString();
-    
-    const [result] = await db
-      .select()
-      .from(homeProfileExtras)
-      .where(eq(homeProfileExtras.householdId, householdId))
-      .limit(1);
-    
-    return result || null;
+    const result = await db.query(
+      `SELECT * FROM home_profile_extra WHERE home_id = $1`,
+      [homeId]
+    );
+    return result.rows[0] || {};
   } catch (error) {
-    console.error('Error in getHomeProfileExtraByHomeId:', error);
-    return null;
+    console.error('Error getting home profile extra:', error);
+    return {};
   }
 }
 
-export async function updateHomeProfileExtraByHomeId(homeId: number, data: any) {
+export async function updateHomeProfileExtra(homeId: number, data: any): Promise<any> {
   try {
-    // Convert numeric homeId to string householdId
-    const householdId = homeId.toString();
-    const existing = await getHomeProfileExtra(householdId);
+    const fields = Object.keys(data);
+    const values = Object.values(data);
     
-    if (existing) {
-      const [result] = await db
-        .update(homeProfileExtras)
-        .set(data)
-        .where(eq(homeProfileExtras.householdId, householdId))
-        .returning();
-      return result;
-    } else {
-      const [result] = await db
-        .insert(homeProfileExtras)
-        .values({
-          householdId,
-          ...data
-        })
-        .returning();
-      return result;
+    if (fields.length === 0) {
+      return await getHomeProfileExtra(homeId);
     }
+    
+    const setClause = fields.map((field, index) => `${field} = $${index + 2}`).join(', ');
+    const query = `
+      INSERT INTO home_profile_extra (home_id, ${fields.join(', ')}, updated_at)
+      VALUES ($1, ${fields.map((_, i) => `$${i + 2}`).join(', ')}, CURRENT_TIMESTAMP)
+      ON CONFLICT (home_id) 
+      DO UPDATE SET ${setClause}, updated_at = CURRENT_TIMESTAMP
+      RETURNING *
+    `;
+    
+    const result = await db.query(query, [homeId, ...values]);
+    return result.rows[0];
   } catch (error) {
-    console.error('Error in updateHomeProfileExtraByHomeId:', error);
+    console.error('Error updating home profile extra:', error);
     throw error;
   }
 }
