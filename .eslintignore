@@ -1,0 +1,10 @@
+node_modules
+dist
+build
+*.cjs
+server/preload-stripe.cjs
+server/lib/stripe-loader.cjs
+server/src/lib/stripe.js
+.tsxrc.json
+tsx.config.json
+test-*.mjs
