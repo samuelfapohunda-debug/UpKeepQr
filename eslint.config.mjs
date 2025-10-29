@@ -7,8 +7,49 @@ export default [
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
+    ignores: [
+      // Dependencies
+      "node_modules/**",
+      "dist/**",
+      "build/**",
+      "coverage/**",
+      "migrations/**",
+      
+      // Generated/bundled files
+      "**/*.min.js",
+      "**/*.bundle.js",
+      
+      // CommonJS files
+      "**/*.cjs",
+      "server/preload-stripe.cjs",
+      "server/lib/stripe-loader.cjs",
+      "server/src/lib/stripe.js",
+      
+      // Config files
+      ".tsxrc.json",
+      "tsx.config.json",
+      
+      // Test files
+      "test-*.mjs",
+      "test-*.js",
+      
+      // Third-party packages
+      "packages/**",
+      "functions/**",
+      
+      // Babel standalone (minified)
+      "**/babel-standalone/**",
+      "**/babel.min.js",
+      "**/*standalone*.js",
+      
+      // Assets
+      "src/assets/**",
+      "public/assets/**",
+      "public/**/*.min.js",
+    ],
+  },
+  {
     files: ["**/*.{js,jsx,ts,tsx}"],
-    ignores: ["node_modules", "dist", "build", "coverage", "migrations"],
     languageOptions: {
       ecmaVersion: "latest",
       sourceType: "module",
