@@ -6,7 +6,7 @@ let routeContent = fs.readFileSync('server/src/routes/publicHomeExtra.ts', 'utf8
 
 // Update imports to use the adapter functions
 routeContent = routeContent.replace(
-  /import { \n  getHomeProfileExtra, \n  updateHomeProfileExtra,\n  getHomeIdByToken\n} from \"\.\.\/\.\.\/storage\.js\";/,
+  /import { \n {2}getHomeProfileExtra, \n {2}updateHomeProfileExtra,\n {2}getHomeIdByToken\n} from "\.\.\/\.\.\/storage\.js";/,
   `import { 
   getHomeProfileExtraByHomeId, 
   updateHomeProfileExtraByHomeId,
@@ -26,4 +26,5 @@ routeContent = routeContent.replace(
 );
 
 fs.writeFileSync('server/src/routes/publicHomeExtra.ts', routeContent);
+
 console.log('✅ Public routes updated to use adapter functions');
