@@ -15,7 +15,10 @@ interface FormData {
   email: string;
 }
 
-export default function Onboarding() {
+interface OnboardingProps {
+  onComplete?: () => void;
+}
+export default function Onboarding({ onComplete }: OnboardingProps = {}) {
   const params = useParams();
   const [, setLocation] = useLocation();
   const token = params.token;
@@ -63,7 +66,11 @@ export default function Onboarding() {
 
       if (response.ok && result.success) {
         sessionStorage.setItem('setupResult', JSON.stringify(result));
-        setLocation('/setup/success');
+        if (onComplete) {
+          onComplete();
+        } else {
+          setLocation('/setup/success');
+        }
       } else {
         setError(result.error || 'Setup activation failed');
       }

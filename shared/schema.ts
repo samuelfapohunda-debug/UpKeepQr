@@ -761,3 +761,6 @@ export const homeProfileExtras = pgTable("home_profile_extras", {
 
 export type HomeProfileExtra = typeof homeProfileExtras.$inferSelect;
 export type InsertHomeProfileExtra = typeof homeProfileExtras.$inferInsert;
+
+// Lead Capture
+export * from "./lead-schema.js";

@@ -7,7 +7,7 @@ import Navigation from "@/components/Navigation";
 import Home from "@/pages/Home";
 import Pricing from "@/pages/Pricing";
 import Contact from "@/pages/Contact";
-import Onboarding from "@/pages/Onboarding";
+import OnboardingWithLead from "@/pages/OnboardingWithLead";
 import SetupSuccess from "@/pages/SetupSuccess";
 import Dashboard from "@/pages/Dashboard";
 import AgentLogin from "@/pages/AgentLogin";
@@ -27,7 +27,7 @@ function Router() {
         <Route path="/pricing" component={Pricing} />
         <Route path="/contact" component={Contact} />
         <Route path="/setup/success" component={SetupSuccess} />
-        <Route path="/setup/:token" component={Onboarding} />
+        <Route path="/setup/:token" component={OnboardingWithLead} />
         <Route path="/admin" component={Dashboard} />
         <Route path="/agent" component={AgentLogin} />
         <Route path="/agent/dashboard" component={AgentDashboard} />
