@@ -5,30 +5,23 @@ import qrRoutes from './qr.js';
 import calendarRoutes from './calendar.js';
 import homeExtraRoutes from './homeExtra.js';
 import webhookRoutes from './webhook.js';
+import publicHomeExtraRoutes from './publicHomeExtra.js'; // ADD THIS LINE
 
 export function setupRoutes(app: Express) {
-  console.log('📋 Setting up routes...');
-  
-  // Health check route
   app.use('/health', healthRoutes);
-  console.log('✅ Health routes registered at /health');
-  
-  // Webhook routes (includes raw body middleware internally)
-  app.use('/api', webhookRoutes);
-  console.log('✅ Webhook routes registered at /api');
-  
-  // API routes
   app.use('/api/auth', authRoutes);
-  console.log('✅ Auth routes registered at /api/auth');
-  
   app.use('/api/qr', qrRoutes);
-  console.log('✅ QR routes registered at /api/qr');
-  
   app.use('/api/calendar', calendarRoutes);
+  app.use('/api/admin/home-extra', homeExtraRoutes);
+  app.use('/api/public', publicHomeExtraRoutes); // ADD THIS LINE
+  app.use('/api/webhook', webhookRoutes);
+  
+  console.log('✅ Health routes registered at /health');
+  console.log('✅ Auth routes registered at /api/auth');
+  console.log('✅ QR routes registered at /api/qr');
   console.log('✅ Calendar routes registered at /api/calendar');
-  
-  app.use('/api', homeExtraRoutes);
-  console.log('✅ HomeExtra routes registered at /api');
-  
+  console.log('✅ Admin home extra routes registered at /api/admin/home-extra');
+  console.log('✅ Public home extra routes registered at /api/public'); // ADD THIS LINE
+  console.log('✅ Webhook routes registered at /api/webhook');
   console.log('📋 All routes setup complete');
 }
