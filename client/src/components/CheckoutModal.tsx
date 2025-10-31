@@ -64,11 +64,11 @@ export default function CheckoutModal({ sku, isOpen, onClose, agentId }: Checkou
       console.log("Redirecting to:", checkoutUrl);
       // Simply redirect to the Stripe checkout URL
       window.location.href = checkoutUrl;
-    } catch (error: any) {
+    } catch (error) {
       console.error("Checkout error:", error);
       toast({
         title: "Checkout Failed",
-        description: error?.message || "Unable to process checkout. Please try again.",
+        description: error instanceof Error ? error.message : 'Unknown error' || "Unable to process checkout. Please try again.",
         variant: "destructive",
       });
     } finally {

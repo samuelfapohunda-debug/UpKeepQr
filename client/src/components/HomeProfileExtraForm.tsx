@@ -33,7 +33,7 @@ export default function HomeProfileExtraForm({ householdId, onSaveSuccess }: Hom
         const data = await res.json();
         if (data) setFormData(prev => ({ ...prev, ...data }));
       }
-    } catch (err) { 
+    } catch (error) { 
       console.log('No existing data'); 
     }
   };
@@ -67,7 +67,7 @@ export default function HomeProfileExtraForm({ householdId, onSaveSuccess }: Hom
     setSaveStatus('idle');
     
     try {
-      const cleanData: any = {};
+      const cleanData: Record<string, string | number> = {};
       Object.entries(formData).forEach(([key, value]) => {
         if (value !== '' && value !== null && value !== undefined) {
           if (['yearBuilt', 'lotSqFt', 'roofAgeYears', 'hvacAgeYears', 'waterHeaterAgeYears', 
@@ -95,8 +95,8 @@ export default function HomeProfileExtraForm({ householdId, onSaveSuccess }: Hom
       if (onSaveSuccess) onSaveSuccess();
       setTimeout(() => setIsExpanded(false), 2000);
       
-    } catch (err: any) {
-      setErrorMessage(err.message || 'Failed to save');
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Failed to save');
       setSaveStatus('error');
     } finally {
       setIsSaving(false);
