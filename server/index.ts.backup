@@ -39,10 +39,11 @@ app.use((req, res, next) => {
 
 (async () => {
   // 🚨 CRITICAL: Setup routes BEFORE Vite middleware
+  registerRoutes(app);
+  
+  // Now add JSON parsing for other routes (after webhook raw body handling)
   app.use(express.json());
   app.use(express.urlencoded({ extended: false }));
-  
-  registerRoutes(app);
   
   startCronJobs();
   

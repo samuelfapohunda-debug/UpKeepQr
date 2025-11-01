@@ -17,8 +17,6 @@ const activateSchema = z.object({
 
 router.post("/activate", async (req: Request, res: Response) => {
   try {
-    console.log("�� Received setup activation request:", req.body);
-    console.log("📋 Headers:", req.headers);
     const validated = activateSchema.safeParse(req.body);
 
     if (!validated.success) {

@@ -7,9 +7,9 @@ import homeExtraRoutes from './homeExtra.js';
 import webhookRoutes from './webhook.js';
 import publicHomeExtraRoutes from './publicHomeExtra.js';
 import leadsRoutes from './leads.js';
-import setupRoutes from './setup.js';
+import setupRoutes from './setup.ts';
 
-export function setupRoutes(app: Express) {
+export function registerRoutes(app: Express) {
   app.use('/health', healthRoutes);
   app.use('/api/auth', authRoutes);
   app.use('/api/qr', qrRoutes);
