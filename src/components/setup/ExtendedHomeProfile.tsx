@@ -65,7 +65,7 @@ export default function ExtendedHomeProfile({ setupToken, onSave }: Props) { // 
       } else {
         setMessage({ type: "error", text: result.error || "Failed to save" });
       }
-    } catch (err) {
+    } catch {
       setMessage({ type: "error", text: "Network error" });
     } finally {
       setSaving(false);

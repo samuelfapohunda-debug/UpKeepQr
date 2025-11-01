@@ -54,7 +54,7 @@ export default function CheckoutModal({ sku, isOpen, onClose, agentId }: Checkou
 
       const responseData = await response.json();
       console.log("Checkout response:", responseData);
-      const { sessionId, checkoutUrl } = responseData;
+      const { checkoutUrl } = responseData;
       
       // Check if we have a valid checkout URL
       if (!checkoutUrl) {

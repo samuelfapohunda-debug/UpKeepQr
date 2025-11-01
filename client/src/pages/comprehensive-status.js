@@ -48,7 +48,7 @@ class StatusChecker {
       };
       scanDir(path.join(this.rootDir, dirPath));
       return count;
-    } catch (error) {
+    } catch {
       return 0;
     }
   }
@@ -127,7 +127,7 @@ class StatusChecker {
         Object.entries(keyDeps).forEach(([name, exists]) => {
           console.log(`   ${exists ? '✅' : '❌'} ${name}`);
         });
-      } catch (error) {
+      } catch {
         console.log('   ❌ Error reading package.json');
       }
     }

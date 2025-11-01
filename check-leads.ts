@@ -28,7 +28,7 @@ async function checkLeads() {
       console.table(leads.rows);
       console.log(`\n✅ Total leads shown: ${leads.rows.length}`);
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('❌ Error:', error.message);
   }
   

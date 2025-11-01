@@ -14,7 +14,7 @@ async function checkLeads() {
     const count = await db.execute(sql`SELECT COUNT(*) as count FROM leads;`);
     console.log('📊 Current leads count:', count.rows[0].count);
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('❌ Error:', error.message);
   }
   
