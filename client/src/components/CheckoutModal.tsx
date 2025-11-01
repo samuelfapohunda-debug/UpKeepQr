@@ -68,7 +68,7 @@ export default function CheckoutModal({ sku, isOpen, onClose, agentId }: Checkou
       console.error("Checkout error:", error);
       toast({
         title: "Checkout Failed",
-        description: error instanceof Error ? error.message : 'Unknown error' || "Unable to process checkout. Please try again.",
+        description: error instanceof Error ? error.message : "Unable to process checkout. Please try again.",
         variant: "destructive",
       });
     } finally {

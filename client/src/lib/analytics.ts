@@ -41,9 +41,9 @@ class Analytics {
     this.sendToService(eventData);
   }
 
-  private sendToService(data: AnalyticsEvent): void {
+  private sendToService(_data: AnalyticsEvent): void {
     // TODO: Implement your analytics service integration
-    // For now, just log
+    console.log("Analytics event:", data);
     
     // Example for PostHog:
     // window.posthog?.capture(data.event, data.payload);
