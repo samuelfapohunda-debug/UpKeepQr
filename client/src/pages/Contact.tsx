@@ -51,7 +51,7 @@ export default function Contact() {
       if (!response.ok) {
         // Handle validation errors specifically
         if (response.status === 400 && result.errors) {
-          const errorMessages = result.errors.map((error: any) => 
+          const errorMessages = result.errors.map((error: { field: string; message: string }) => 
             `${error.field}: ${error.message}`
           ).join(", ");
           throw new Error(`Validation failed: ${errorMessages}`);

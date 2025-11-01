@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, Users, Package, Mail, Phone, MapPin } from "lucide-react";
+import { CheckCircle, Users, Package } from "lucide-react";
 
 // Stripe Payment Links mapping
 const STRIPE_PAYMENT_LINKS = {
