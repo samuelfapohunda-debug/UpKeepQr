@@ -273,7 +273,7 @@ export default function AdminDashboard() {
       });
       setSelectedRequest(null);
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         title: "Error",
         description: error.message || "Failed to update status",
@@ -315,7 +315,7 @@ export default function AdminDashboard() {
         description: "Note added successfully",
       });
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         title: "Error",
         description: error.message || "Failed to add note",

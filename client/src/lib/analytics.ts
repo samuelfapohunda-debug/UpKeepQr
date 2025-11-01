@@ -5,7 +5,7 @@
 
 interface AnalyticsEvent {
   event: string;
-  payload?: Record<string, any>;
+  payload?: Record<string, unknown>;
   timestamp?: string;
 }
 
@@ -22,7 +22,7 @@ class Analytics {
    * @param event Event name (e.g., "home_extra_saved")
    * @param payload Event data (no PII)
    */
-  track(event: string, payload?: Record<string, any>): void {
+  track(event: string, payload?: Record<string, unknown>): void {
     if (!this.enabled) return;
 
     const eventData: AnalyticsEvent = {
