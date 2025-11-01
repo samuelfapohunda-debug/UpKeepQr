@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Users, Package, CheckCircle, Activity, LogOut } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
 
 function useAuthenticatedRequest(url: string) {
   const token = localStorage.getItem("agentToken");
@@ -164,7 +163,7 @@ export default function AgentDashboard() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {households.map((household: any) => (
+                  {households.map((household) => (
                     <div 
                       key={household.id} 
                       className="flex items-center justify-between p-3 border rounded-lg"
@@ -217,7 +216,7 @@ export default function AgentDashboard() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {batches.map((batch: any) => (
+                  {batches.map((batch) => (
                     <div 
                       key={batch.id} 
                       className="flex items-center justify-between p-3 border rounded-lg"

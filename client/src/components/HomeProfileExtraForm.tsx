@@ -33,7 +33,7 @@ export default function HomeProfileExtraForm({ householdId, onSaveSuccess }: Hom
         const data = await res.json();
         if (data) setFormData(prev => ({ ...prev, ...data }));
       }
-    } catch (error) { 
+    } catch { 
       console.log('No existing data'); 
     }
   };
@@ -95,7 +95,7 @@ export default function HomeProfileExtraForm({ householdId, onSaveSuccess }: Hom
       if (onSaveSuccess) onSaveSuccess();
       setTimeout(() => setIsExpanded(false), 2000);
       
-    } catch (error) {
+    } catch {
       setErrorMessage(error instanceof Error ? error.message : 'Failed to save');
       setSaveStatus('error');
     } finally {
