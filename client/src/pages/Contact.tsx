@@ -65,7 +65,7 @@ export default function Contact() {
       });
 
       form.reset();
-    } catch (error: any) {
+    } catch (error) {
       toast({
         title: "Error",
         description: error.message || "Failed to send message. Please try again or email us directly at Support@UpKeepQr.Com",
