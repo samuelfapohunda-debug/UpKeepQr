@@ -14,8 +14,8 @@
     "incremental": true,
     "tsBuildInfoFile": "./node_modules/typescript/tsbuildinfo",
     "noEmit": true,
-    "module": "Node16",
-    "moduleResolution": "Node16",
+    "module": "ESNext",
+    "moduleResolution": "node",
     "strict": false,
     "lib": [
       "esnext",
