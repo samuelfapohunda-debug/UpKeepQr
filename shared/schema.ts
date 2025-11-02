@@ -65,6 +65,19 @@ export const householdSchema = z.object({
   climateZone: z.string().optional(),
   phone: z.string().optional(),
   smsOptIn: z.boolean().optional().default(false),
+  country: z.enum(['US', 'CA']).optional().default('US'),
+  preferredContact: z.enum(['email', 'phone', 'text']).optional(),
+  preferredContactTime: z.enum(['morning', 'afternoon', 'evening']).optional(),
+  heatPump: z.enum(['yes', 'no', 'unknown']).optional(),
+  sqft: z.number().positive().optional(),
+  hvacType: z.string().optional(),
+  waterHeater: z.string().optional(),
+  roofAgeYears: z.number().min(0).max(100).optional(),
+  interestType: z.enum(['sales', 'rent', 'lease', 'maintenance']).optional(),
+  needConsultation: z.boolean().optional(),
+  budgetRange: z.string().optional(),
+  timelineToProceed: z.string().optional(),
+  notes: z.string().optional(),
   activatedAt: z.date().optional(),
   lastReminder: z.date().optional(),
   createdAt: z.date().optional(),
@@ -164,13 +177,40 @@ export const insertBatchSchema = z.object({
 // Setup and API schemas
 export const setupActivateSchema = z.object({
   token: z.string().min(1),
-  zip: z.string().regex(/^\d{5}$/, "ZIP code must be 5 digits"),
+  // Personal Details
+  fullName: z.string().min(2).optional(),
+  phone: z.string().optional(),
+  email: z.string().email().optional(),
+  preferredContact: z.enum(['email', 'phone', 'text']).optional(),
+  preferredContactTime: z.enum(['morning', 'afternoon', 'evening']).optional(),
+  
+  // Home Details
+  country: z.enum(['US', 'CA']).optional().default('US'),
+  streetAddress: z.string().optional(),
+  city: z.string().optional(),
+  state: z.string().optional(),
+  postalCode: z.string().min(1), // Supports both ZIP and postal codes
+  zip: z.string().optional(), // Legacy support
   home_type: z.string().min(1),
   sqft: z.number().positive().optional(),
   hvac_type: z.string().optional(),
+  heatPump: z.enum(['yes', 'no', 'unknown']).optional(),
   water_heater: z.string().optional(),
   roof_age_years: z.number().min(0).max(100).optional(),
-  email: z.string().email().optional(),
+  isOwner: z.boolean().optional(),
+  
+  // Interest Details
+  interestType: z.enum(['sales', 'rent', 'lease', 'maintenance']).optional(),
+  needConsultation: z.boolean().optional(),
+  budgetRange: z.string().optional(),
+  timelineToProceed: z.string().optional(),
+  notes: z.string().optional(),
+}).refine((data) => {
+  // Either postalCode or zip must be provided
+  return data.postalCode || data.zip;
+}, {
+  message: "Either postalCode or zip must be provided",
+  path: ["postalCode"],
 });
 
 export const setupPreviewSchema = z.object({

@@ -158,7 +158,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     await createAuditLog(req, '/api/setup/activate');
     try {
       const validatedData = setupActivateSchema.parse(req.body);
-      const { token, zip, home_type, sqft, hvac_type, water_heater, roof_age_years, email } = validatedData;
+      const { 
+        token, 
+        // Personal details
+        fullName,
+        phone,
+        email,
+        preferredContact,
+        preferredContactTime,
+        // Home details
+        country,
+        streetAddress,
+        city,
+        state,
+        postalCode,
+        zip, // Legacy support
+        home_type, 
+        sqft, 
+        hvac_type, 
+        heatPump,
+        water_heater, 
+        roof_age_years,
+        isOwner,
+        // Interest details
+        interestType,
+        needConsultation,
+        budgetRange,
+        timelineToProceed,
+        notes
+      } = validatedData;
+
+      // Use postalCode or fall back to zip for legacy support
+      const zipCode = postalCode || zip;
 
       // Validate token exists in magnets
       const magnet = await storage.getMagnetByToken(token);
@@ -172,8 +203,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (household) {
         // Update existing household
         household = await storage.updateHousehold(household.id, {
-          zip,
+          name: fullName || household.name,
+          email: email || household.email,
+          phone: phone || household.phone,
+          address: streetAddress || household.address,
+          city: city || household.city,
+          state: state || household.state,
+          zip: zipCode || household.zip,
           homeType: home_type as any,
+          country: country || 'US',
+          preferredContact,
+          preferredContactTime,
+          sqft,
+          hvacType: hvac_type,
+          heatPump,
+          waterHeater: water_heater,
+          roofAgeYears: roof_age_years,
+          interestType,
+          needConsultation,
+          budgetRange,
+          timelineToProceed,
+          notes,
           activatedAt: new Date(),
         });
       } else {
@@ -182,13 +232,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
           id: uuidv4(),
           magnetToken: token,
           agentId: magnet.agentId,
-          name: email?.split('@')[0] || 'User',
+          name: fullName || email?.split('@')[0] || 'User',
           email: email || '',
-          address: '',
-          city: '',
-          state: '',
-          zip,
+          phone: phone || '',
+          address: streetAddress || '',
+          city: city || '',
+          state: state || '',
+          zip: zipCode || '',
           homeType: home_type as any,
+          country: country || 'US',
+          preferredContact,
+          preferredContactTime,
+          sqft,
+          hvacType: hvac_type,
+          heatPump,
+          waterHeater: water_heater,
+          roofAgeYears: roof_age_years,
+          interestType,
+          needConsultation,
+          budgetRange,
+          timelineToProceed,
+          notes,
           smsOptIn: false,
           activatedAt: new Date(),
         });
@@ -199,10 +263,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Get climate zone and generate schedule
-      const climateZone = getClimateZone(zip);
+      const climateZone = getClimateZone(zipCode || '');
       const coreTasks = generateCoreSchedule(climateZone);
 
       // Build initial schedule with proper due dates
+      const climateHousehold: ClimateHousehold = {
       const climateHousehold: ClimateHousehold = {
         id: household.id,
         zip: household.zip,
