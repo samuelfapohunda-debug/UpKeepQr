@@ -126,7 +126,7 @@ export default function Onboarding({ onComplete }: OnboardingProps = {}) {
 
     try {
       // 1. Submit original onboarding data
-      const onboardingData: any = {
+      const onboardingData: Record<string, string | boolean | number | undefined> = {
         token,
         zip: formData.zip,
       };
@@ -199,7 +199,7 @@ export default function Onboarding({ onComplete }: OnboardingProps = {}) {
         setError(leadResult.error || 'Failed to save lead information');
       }
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Setup error:', err);
       setError('Network error. Please try again.');
     } finally {

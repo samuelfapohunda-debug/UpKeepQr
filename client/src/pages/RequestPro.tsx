@@ -70,7 +70,7 @@ export default function RequestPro() {
       
       return response.json();
     },
-    onSuccess: (result: any) => {
+    onSuccess: (result: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
       setIsSubmitted(true);
       setTrackingCode(result.publicTrackingCode);
       toast({
