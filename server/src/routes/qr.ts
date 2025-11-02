@@ -23,7 +23,7 @@ router.post('/generate', async (req, res) => {
       qrCode: qrCodeDataURL,
       data 
     });
-  } catch (error) {
+  } catch {
     res.status(400).json({ error: 'Failed to generate QR code' });
   }
 });
@@ -44,7 +44,7 @@ router.get('/token/:token', async (req, res) => {
       qrCode: qrCodeDataURL,
       setupUrl 
     });
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: 'Failed to generate setup QR code' });
   }
 });

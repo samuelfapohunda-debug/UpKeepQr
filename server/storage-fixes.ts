@@ -3,7 +3,7 @@
 import { db } from "./db";
 
 // Corrected function - uses homeId (number) instead of householdId (string)
-export async function getHomeProfileExtra(homeId: number): Promise<any> {
+export async function getHomeProfileExtra(homeId: number): Promise<unknown> {
   try {
     const result = await db.query(
       `SELECT * FROM home_profile_extra WHERE home_id = $1`,

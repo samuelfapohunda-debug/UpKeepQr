@@ -1,11 +1,11 @@
 // Extended FirebaseStorage interface to include missing methods
-import { FirebaseStorage } from '../storage';
+import { FirebaseStorage as _FirebaseStorage } from '../storage';
 
 declare module '../storage' {
   interface FirebaseStorage {
-    getPendingReminders(now: Date): Promise<any[]>;
+    getPendingReminders(now: Date): Promise<unknown[]>;
     updateReminderStatus(id: string, status: string): Promise<void>;
-    getHouseholdById(id: string): Promise<any>;
-    getBatchById(id: string): Promise<any>;
+    getHouseholdById(id: string): Promise<unknown>;
+    getBatchById(id: string): Promise<unknown>;
   }
 }

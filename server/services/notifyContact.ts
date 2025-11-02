@@ -16,8 +16,8 @@ const FROM_EMAIL = process.env.FROM_EMAIL || 'Support@UpKeepQr.Com';
 const FROM_NAME = process.env.FROM_NAME || 'UpKeepQR Support';
 const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || 'ops@upkeepqr.com,admin@upkeepqr.com').split(',').map(email => email.trim());
 const SENDGRID_TEMPLATE_CONTACT_ACK = process.env.SENDGRID_TEMPLATE_CONTACT_ACK;
-const SENDGRID_SANDBOX_MODE = process.env.SENDGRID_SANDBOX_MODE === 'true';
-const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || FROM_EMAIL;
+const _SENDGRID_SANDBOX_MODE = process.env.SENDGRID_SANDBOX_MODE === 'true';
+const _SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || FROM_EMAIL;
 
 interface ContactAckEmailParams {
   name: string;
@@ -38,7 +38,7 @@ interface ContactOpsEmailParams {
 
 // Customer acknowledgment email with exact copy from spec
 export async function sendContactAckEmail(params: ContactAckEmailParams): Promise<boolean> {
-  const { name, email, subject, message, ticketId } = params;
+  const { name, email, subject, _message, ticketId } = params;
   const firstName = getFirstName(name);
 
   const emailSubject = `Thanks for reaching out to UpKeepQR (Ticket ${ticketId})`;
@@ -173,7 +173,7 @@ Reply-to this email to respond to the customer.`;
 }
 
 // Retry logic with exponential backoff (max 3 attempts)
-export async function sendEmailWithRetry<T extends any[]>(
+export async function sendEmailWithRetry<T extends unknown[]>(
   emailFunction: (...args: T) => Promise<boolean>,
   ...args: T
 ): Promise<boolean> {

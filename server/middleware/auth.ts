@@ -24,7 +24,7 @@ export function authenticateAdmin(req: AuthRequest, res: Response, next: NextFun
     const decoded = jwt.verify(token, jwtSecret) as { id: string };
     req.user = decoded;
     next();
-  } catch (error) {
+  } catch {
     return res.status(403).json({ error: 'Invalid or expired token' });
   }
 }
@@ -47,7 +47,7 @@ export function authenticateAgent(req: AuthRequest, res: Response, next: NextFun
     req.agentId = decoded.agentId;
     req.agentEmail = decoded.email;
     next();
-  } catch (error) {
+  } catch {
     return res.status(403).json({ error: 'Invalid or expired agent token' });
   }
 }

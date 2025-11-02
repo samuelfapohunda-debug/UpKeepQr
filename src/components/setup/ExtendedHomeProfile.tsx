@@ -39,7 +39,7 @@ export default function ExtendedHomeProfile({ setupToken, onSave }: Props) { // 
     }
   };
 
-  const update = (key: keyof HomeProfileExtra, value: any) => {
+  const update = (key: keyof HomeProfileExtra, value: string | number | boolean | null) => {
     setForm({ ...form, [key]: value });
     setMessage(null);
   };

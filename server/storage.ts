@@ -79,7 +79,7 @@ export interface IStorage {
   getOverdueTasks(): Promise<Task[]>;
   // Additional task methods
   createSchedule(data: Record<string, unknown>): Promise<unknown>;
-  getScheduleByHouseholdAndTask(householdId: string, taskName: string): Promise<any>;
+  getScheduleByHouseholdAndTask(householdId: string, taskName: string): Promise<unknown>;
   createTaskCompletion(data: Record<string, unknown>): Promise<unknown>;
 
   // Lead methods  
@@ -89,12 +89,12 @@ export interface IStorage {
   updateLeadStatus(id: string, status: Lead['status']): Promise<void>;
 
   // Event/Audit methods
-  createEvent(event: { householdId: string; eventType: string; eventData: string }): Promise<any>;
+  createEvent(event: { householdId: string; eventType: string; eventData: string }): Promise<unknown>;
   createAuditLog(data: Record<string, unknown>): Promise<unknown>;
   createReminderQueue(data: Record<string, unknown>): Promise<unknown>;
 
   // Agent metrics methods  
-  getAgentMetrics(agentId: string): Promise<any>;
+  getAgentMetrics(agentId: string): Promise<unknown>;
 
   // Pro Request methods
   createProRequest(proRequest: InsertProRequest): Promise<ProRequest>;
@@ -503,7 +503,7 @@ export class FirebaseStorage implements IStorage {
     return schedule;
   }
 
-  async getScheduleByHouseholdAndTask(householdId: string, taskName: string): Promise<any> {
+  async getScheduleByHouseholdAndTask(householdId: string, taskName: string): Promise<unknown> {
     const query = await adminDb.collection('schedules')
       .where('householdId', '==', householdId)
       .where('taskName', '==', taskName)
@@ -527,7 +527,7 @@ export class FirebaseStorage implements IStorage {
   }
 
   // Event/Audit methods
-  async createEvent(event: { householdId: string; eventType: string; eventData: string }): Promise<any> {
+  async createEvent(event: { householdId: string; eventType: string; eventData: string }): Promise<unknown> {
     const eventId = uuidv4();
     const newEvent = {
       id: eventId,
@@ -563,7 +563,7 @@ export class FirebaseStorage implements IStorage {
   }
 
   // Agent metrics methods
-  async getAgentMetrics(agentId: string): Promise<any> {
+  async getAgentMetrics(agentId: string): Promise<unknown> {
     // Calculate metrics from existing data
     const [households, leads, batches] = await Promise.all([
       this.getHouseholdsByAgent(agentId),

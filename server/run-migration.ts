@@ -10,7 +10,7 @@ if (!DATABASE_URL) {
 }
 
 const sql = postgres(DATABASE_URL);
-const db = drizzle(sql);
+const _db = drizzle(sql);
 
 async function runMigration() {
   try {

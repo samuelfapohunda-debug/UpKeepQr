@@ -87,7 +87,7 @@ async function generatePdfFromData(batch: Record<string, unknown>, magnets: Arra
       doc.addPage();
       currentRow = 0;
       currentCol = 0;
-      currentPage++;
+      currentPage_++;
     }
 
     // Calculate position

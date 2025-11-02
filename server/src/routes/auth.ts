@@ -18,7 +18,7 @@ const registerSchema = z.object({
 
 router.post('/login', (req, res) => {
   try {
-    const { username, password } = loginSchema.parse(req.body);
+    const { username, _password } = loginSchema.parse(req.body);
     
     // TODO: Implement actual authentication logic
     const token = nanoid();
@@ -28,7 +28,7 @@ router.post('/login', (req, res) => {
       token,
       user: { username }
     });
-  } catch (error) {
+  } catch {
     res.status(400).json({ error: 'Invalid credentials' });
   }
 });
@@ -49,7 +49,7 @@ router.post('/register', (req, res) => {
         lastName: userData.lastName
       }
     });
-  } catch (error) {
+  } catch {
     res.status(400).json({ error: 'Registration failed' });
   }
 });

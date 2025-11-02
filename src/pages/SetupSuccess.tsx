@@ -3,7 +3,7 @@ import { useLocation, Link } from 'wouter';
 import ExtendedHomeProfile from '../components/setup/ExtendedHomeProfile';
 
 export default function SetupSuccess() {
-  const [setupResult, setSetupResult] = useState<any>(null);
+  const [setupResult, setSetupResult] = useState<unknown>(null);
   const [, setLocation] = useLocation();
 
   useEffect(() => {

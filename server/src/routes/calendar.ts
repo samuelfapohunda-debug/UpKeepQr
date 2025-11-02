@@ -21,7 +21,7 @@ router.post('/event', async (req, res) => {
     res.setHeader('Content-Type', 'text/calendar');
     res.setHeader('Content-Disposition', 'attachment; filename="event.ics"');
     res.send(icsContent);
-  } catch (error) {
+  } catch {
     res.status(400).json({ error: 'Failed to create calendar event' });
   }
 });
@@ -38,7 +38,7 @@ router.get('/events/:agentId', (req, res) => {
       events,
       agentId 
     });
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: 'Failed to fetch events' });
   }
 });
