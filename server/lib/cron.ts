@@ -50,7 +50,7 @@ async function processReminderQueue(): Promise<void> {
 /**
  * Process a single reminder
  */
-async function processReminder(reminder: any): Promise<void> {
+async function processReminder(reminder: { id: string; userId: string; taskId: string; message: string; method: string }): Promise<void> {
   // Get household information
   const household = await storage.getHouseholdById(reminder.householdId);
   if (!household) {

@@ -4,32 +4,56 @@ declare module 'uuid' {
 }
 
 declare module 'csv-writer' {
-  export function createObjectCsvWriter(args: any): any;
+  interface CsvWriter {
+    writeRecords(records: unknown[]): Promise<void>;
+  }
+  export function createObjectCsvWriter(args: {
+    path: string;
+    header: Array<{ id: string; title: string }>;
+  }): CsvWriter;
 }
 
 declare module 'express-rate-limit' {
-  const rateLimit: any;
+  import { RequestHandler } from 'express';
+  interface RateLimitOptions {
+    windowMs?: number;
+    max?: number;
+    message?: string;
+  }
+  function rateLimit(options?: RateLimitOptions): RequestHandler;
   export default rateLimit;
 }
 
 declare module 'morgan' {
-  const morgan: any;
+  import { RequestHandler } from 'express';
+  function morgan(format: string): RequestHandler;
   export default morgan;
 }
 
 declare module 'pdfkit' {
-  const PDFDocument: any;
+  import { Stream } from 'stream';
+  class PDFDocument extends Stream {
+    constructor(options?: unknown);
+    fontSize(size: number): this;
+    text(text: string, x?: number, y?: number, options?: unknown): this;
+    moveDown(lines?: number): this;
+    end(): void;
+  }
   export default PDFDocument;
 }
 
 declare module 'twilio' {
-  const twilio: any;
+  interface TwilioClient {
+    messages: {
+      create(options: { body: string; to: string; from: string }): Promise<unknown>;
+    };
+  }
+  function twilio(accountSid: string, authToken: string): TwilioClient;
   export default twilio;
 }
 
-// Stripe types
 declare namespace Stripe {
   interface Checkout {
-    Session: any;
+    Session: unknown;
   }
 }

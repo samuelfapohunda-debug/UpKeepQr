@@ -93,7 +93,7 @@ export function buildInitialSchedule(household: Household, tasks: CoreTask[]): S
   const now = new Date();
   const climateZone = household.climateZone || getClimateZone(household.zip);
   
-  return tasks.map((task, index) => {
+  return tasks.map((task, _index) => {
     const taskCode = task.name.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z_]/g, '');
     let nextDueDate: Date;
 

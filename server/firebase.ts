@@ -58,7 +58,7 @@ if (admin.apps.length === 0) {
   
   if (!projectId) {
     console.warn('Firebase configuration is missing. Firebase features will be disabled.');
-    (global as any).adminDb = createPlaceholderDb();
+    (global as { adminDb?: unknown }).adminDb = createPlaceholderDb();
   } else {
     let serviceAccount;
     
@@ -69,7 +69,7 @@ if (admin.apps.length === 0) {
         const serviceAccountFile = readFileSync(serviceAccountPath, 'utf8');
         serviceAccount = JSON.parse(serviceAccountFile);
         console.log('✅ Loaded Firebase service account from file');
-      } catch (fileError) {
+      } catch {
         console.log('📄 Service account file not found, trying environment variables...');
         
         // Fallback: Try to parse from environment variable
@@ -114,16 +114,16 @@ if (admin.apps.length === 0) {
         console.log('✅ Firebase Admin SDK initialized successfully');
       } catch (error) {
         console.error('❌ Failed to initialize Firebase Admin SDK:', error instanceof Error ? error.message : error);
-        (global as any).adminDb = createPlaceholderDb();
+        (global as { adminDb?: unknown }).adminDb = createPlaceholderDb();
       }
     } else {
       console.warn('⚠️ Firebase service account credentials are incomplete. Firebase features will be disabled.');
-      (global as any).adminDb = createPlaceholderDb();
+      (global as { adminDb?: unknown }).adminDb = createPlaceholderDb();
     }
   }
 }
 
 // Export adminDb - use placeholder if Firebase is not initialized properly
-export const adminDb = admin.apps.length > 0 ? admin.firestore() : (global as any).adminDb;
+export const adminDb = admin.apps.length > 0 ? admin.firestore() : (global as { adminDb?: unknown }).adminDb;
 export const adminRealtimeDb = admin.apps.length > 0 ? admin.database() : null;
 export { admin };
