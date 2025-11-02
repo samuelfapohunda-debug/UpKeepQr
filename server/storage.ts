@@ -617,7 +617,7 @@ export class FirebaseStorage implements IStorage {
   }
 
   async updateProRequestStatus(id: string, status: string, providerAssigned?: string): Promise<ProRequest | undefined> {
-    const updateData: any = {
+    const updateData: Record<string, unknown> = {
       status,
       updatedAt: new Date(),
     };
@@ -1243,7 +1243,7 @@ export async function getHomeProfileExtraByHomeId(homeId: number) {
   }
 }
 
-export async function updateHomeProfileExtraByHomeId(homeId: number, data: any) {
+export async function updateHomeProfileExtraByHomeId(homeId: number, data: Record<string, unknown>) {
   try {
     // Convert numeric homeId to string householdId
     const householdId = homeId.toString();
