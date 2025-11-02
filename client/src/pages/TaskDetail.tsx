@@ -20,7 +20,7 @@ interface TaskDetailProps {
 
 export default function TaskDetail() {
   const [, params] = useRoute("/task/:token/:taskId");
-  const [, setLocation] = useLocation();
+  const location = useLocation();
   const { toast } = useToast();
   const [showBookingForm, setShowBookingForm] = useState(false);
   const [service, setService] = useState("");
@@ -48,7 +48,7 @@ export default function TaskDetail() {
       setService("");
       setNotes("");
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         title: "Request Failed",
         description: error.message || "Failed to submit service request. Please try again.",

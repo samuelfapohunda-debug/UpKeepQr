@@ -35,7 +35,7 @@ export default function AgentLogin() {
       });
       setLocation("/agent/dashboard");
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         title: "Login failed",
         description: error.message || "Please check your email and try again",

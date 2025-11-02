@@ -34,7 +34,7 @@ interface SessionData {
 }
 
 export default function SetupSuccess() {
-  const [location] = useLocation();
+  useLocation(); // Hook required for routing
   const [result, setResult] = useState<SetupResult | null>(null);
   const [sessionData, setSessionData] = useState<SessionData | null>(null);
   const [loading, setLoading] = useState(false);

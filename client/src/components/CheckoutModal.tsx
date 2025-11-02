@@ -46,7 +46,7 @@ export default function CheckoutModal({ sku, isOpen, onClose, agentId }: Checkou
         try {
           const error = await response.json();
           errorMessage = error.error || error.message || errorMessage;
-        } catch (e) {
+        } catch {
           // Failed to parse error response, use default message
         }
         throw new Error(errorMessage);

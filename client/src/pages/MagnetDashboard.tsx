@@ -224,7 +224,7 @@ export default function MagnetDashboard() {
   });
 
   // Fetch batches
-  const { data: batchesData, isLoading: batchesLoading } = useQuery({
+  const { isLoading: batchesLoading } = useQuery({
     queryKey: ["/api/admin/magnets/batches"],
     enabled: isAuthenticated && !!token && activeTab === "batches",
   });
@@ -249,7 +249,7 @@ export default function MagnetDashboard() {
       });
       setSelectedOrder(null);
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         title: "Error",
         description: error.message || "Failed to update status",
@@ -498,13 +498,13 @@ export default function MagnetDashboard() {
                       {["new", "paid", "in_production", "shipped", "delivered", "activated", "canceled", "refunded"].map((status) => (
                         <Button
                           key={status}
-                          variant={(filters.status || []).includes(status as any) ? "default" : "outline"}
+                          variant={(filters.status || []).includes(status as "pending" | "in_progress" | "completed") ? "default" : "outline"}
                           size="sm"
                           onClick={() => {
                             const currentStatus = filters.status || [];
-                            const newStatus = currentStatus.includes(status as any)
+                            const newStatus = currentStatus.includes(status as "pending" | "in_progress" | "completed")
                               ? currentStatus.filter(s => s !== status)
-                              : [...currentStatus, status as any];
+                              : [...currentStatus, status as "pending" | "in_progress" | "completed"];
                             setFilters({ ...filters, status: newStatus, page: 1 });
                           }}
                           data-testid={`button-status-${status}`}
