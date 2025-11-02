@@ -20,7 +20,7 @@ interface TaskDetailProps {
 
 export default function TaskDetail() {
   const [, params] = useRoute("/task/:token/:taskId");
-  const location = useLocation();
+  useLocation(); // Hook required for routing
   const { toast } = useToast();
   const [showBookingForm, setShowBookingForm] = useState(false);
   const [service, setService] = useState("");
