@@ -27,7 +27,7 @@ export function getDB() {
   return pool;
 }
 
-export async function query(text: string, params?: any[]) {
+export async function query(text: string, params?: unknown[]) {
   const db = getDB();
   const result = await db.query(text, params);
   return result;

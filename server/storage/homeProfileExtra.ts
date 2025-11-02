@@ -37,8 +37,8 @@ export class HomeProfileExtraStorage {
     return str.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
   }
 
-  private toCamelCase(obj: any): any {
-    const camelObj: any = {};
+  private toCamelCase(obj: Record<string, unknown>): Record<string, unknown> {
+    const camelObj: Record<string, unknown> = {};
     for (const key in obj) {
       const camelKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
       camelObj[camelKey] = obj[key];

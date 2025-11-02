@@ -31,7 +31,7 @@ router.get('/events/:agentId', (req, res) => {
     const { agentId } = req.params;
     
     // TODO: Fetch agent events from database
-    const events: any[] = [];
+    const events: Array<Record<string, unknown>> = [];
     
     res.json({ 
       success: true, 

@@ -82,7 +82,7 @@ async function runMigration() {
     
     console.log('\n✅ Migration completed successfully!');
     
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('❌ Migration failed:', error.message);
     process.exit(1);
   }

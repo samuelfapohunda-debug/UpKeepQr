@@ -51,7 +51,7 @@ export const loggerFormat = morgan(':remote-addr - :remote-user [:date[clf]] ":m
  * Audit logging middleware
  */
 export function createAuditLogger(action: string) {
-  return async (req: any, res: any, next: any) => {
+  return async (req: Request, res: Response, next: NextFunction) => {
     try {
       const actor = req.ip || 'unknown';
       const meta = {
@@ -78,7 +78,7 @@ export function createAuditLogger(action: string) {
 /**
  * Generic error handler that logs details but returns sanitized errors
  */
-export function handleError(error: any, action: string, res: any) {
+export function handleError(error: unknown, action: string, res: Response) {
   // Log full error details server-side
   console.error(`Error in ${action}:`, {
     message: error.message,
@@ -92,7 +92,7 @@ export function handleError(error: any, action: string, res: any) {
     return res.status(400).json({ 
       error: "Invalid input data",
       // Only include field names, not values, for security
-      fields: error.errors?.map((e: any) => e.path[0]).filter(Boolean) || []
+      fields: error.errors?.map((e: { path: string[] }) => e.path[0]).filter(Boolean) || []
     });
   }
 

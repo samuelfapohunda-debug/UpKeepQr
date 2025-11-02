@@ -41,7 +41,7 @@ export async function generateBatchProofSheet(batchId: string): Promise<Buffer> 
   return generatePdfFromData(batch, magnets);
 }
 
-async function generatePdfFromData(batch: any, magnets: any[]): Promise<Buffer> {
+async function generatePdfFromData(batch: Record<string, unknown>, magnets: Array<Record<string, unknown>>): Promise<Buffer> {
 
   // Create PDF document
   const doc = new PDFDocument({

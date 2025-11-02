@@ -153,7 +153,7 @@ Reply-to this email to respond to the customer.`;
         subject: emailSubject,
         text: textContent,
         html: htmlContent,
-      } as any) // Type assertion to handle replyTo field
+      } as Record<string, unknown>)
     );
 
     const results = await Promise.all(promises);

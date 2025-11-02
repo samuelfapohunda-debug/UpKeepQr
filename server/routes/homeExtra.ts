@@ -21,7 +21,7 @@ router.patch("/api/home/:homeId/extra", async (req, res) => {
     const validatedData = homeProfileExtraSchema.parse(req.body);
     const updated = await homeProfileExtraStorage.upsert(parseInt(homeId), validatedData);
     res.json({ success: true, data: updated, message: "Profile updated successfully" });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("Error updating home extra:", err);
     if (err.name === "ZodError") {
       return res.status(400).json({ error: "Validation failed", details: err.errors });

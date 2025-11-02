@@ -1,25 +1,25 @@
 // server/lib/mail.ts
 // Email sending functions for UpKeepQR
 
-export const sendWelcomeEmail = async (params: any) => {
+export const sendWelcomeEmail = async (params: { email: string; name: string; [key: string]: unknown }) => {
   // Implementation here
   console.log('Welcome email sent:', params);
   return { success: true };
 };
 
-export const sendOrderConfirmationEmail = async (params: any) => {
+export const sendOrderConfirmationEmail = async (params: { email: string; orderId: string; [key: string]: unknown }) => {
   // Implementation here
   console.log('Order confirmation email sent:', params);
   return { success: true };
 };
 
-export const sendContactFormEmails = async (params: any) => {
+export const sendContactFormEmails = async (params: { name: string; email: string; message: string; [key: string]: unknown }) => {
   // Implementation here
   console.log('Contact form emails sent:', params);
   return { success: true };
 };
 
-export const sendLeadNotificationEmail = async (params: any) => {
+export const sendLeadNotificationEmail = async (params: { name: string; email: string; phone: string; [key: string]: unknown }) => {
   // Implementation here
   console.log('Lead notification email sent:', params);
   return { success: true };

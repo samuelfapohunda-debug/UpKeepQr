@@ -17,7 +17,7 @@ export async function getHomeProfileExtra(homeId: number): Promise<any> {
 }
 
 // Corrected function - uses homeId (number) instead of householdId (string)  
-export async function updateHomeProfileExtra(homeId: number, data: any): Promise<any> {
+export async function updateHomeProfileExtra(homeId: number, data: Record<string, unknown>): Promise<unknown> {
   try {
     const fields = Object.keys(data);
     const values = Object.values(data);

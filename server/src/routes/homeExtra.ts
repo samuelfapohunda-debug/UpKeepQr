@@ -45,7 +45,7 @@ router.patch("/home-extra/:householdId", authenticateAdmin, async (req: Request,
       data: updated,
       message: "Home profile updated successfully" 
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error updating home extra:", error);
     
     if (error.name === "ZodError") {

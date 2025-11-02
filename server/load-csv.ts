@@ -39,7 +39,7 @@ function parseCSV(content: string): CSVRow[] {
       continue;
     }
 
-    const row: any = {};
+    const row: Record<string, string> = {};
     for (let j = 0; j < headers.length; j++) {
       row[headers[j]] = values[j] || null;
     }

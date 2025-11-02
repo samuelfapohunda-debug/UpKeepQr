@@ -45,7 +45,7 @@ router.post("/activate", async (req: Request, res: Response) => {
       token: data.token,
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("❌ Setup activation error:", error);
     res.status(500).json({
       error: "Failed to activate setup",

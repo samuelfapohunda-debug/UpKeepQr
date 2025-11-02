@@ -78,9 +78,9 @@ export interface IStorage {
   updateTaskStatus(id: string, status: Task['status']): Promise<void>;
   getOverdueTasks(): Promise<Task[]>;
   // Additional task methods
-  createSchedule(data: any): Promise<any>;
+  createSchedule(data: Record<string, unknown>): Promise<unknown>;
   getScheduleByHouseholdAndTask(householdId: string, taskName: string): Promise<any>;
-  createTaskCompletion(data: any): Promise<any>;
+  createTaskCompletion(data: Record<string, unknown>): Promise<unknown>;
 
   // Lead methods  
   createLead(lead: InsertLead): Promise<Lead>;
@@ -90,8 +90,8 @@ export interface IStorage {
 
   // Event/Audit methods
   createEvent(event: { householdId: string; eventType: string; eventData: string }): Promise<any>;
-  createAuditLog(data: any): Promise<any>;
-  createReminderQueue(data: any): Promise<any>;
+  createAuditLog(data: Record<string, unknown>): Promise<unknown>;
+  createReminderQueue(data: Record<string, unknown>): Promise<unknown>;
 
   // Agent metrics methods  
   getAgentMetrics(agentId: string): Promise<any>;
@@ -490,7 +490,7 @@ export class FirebaseStorage implements IStorage {
   }
 
   // Additional task methods
-  async createSchedule(data: any): Promise<any> {
+  async createSchedule(data: Record<string, unknown>): Promise<unknown> {
     // For now, create a basic task
     const scheduleId = uuidv4();
     const schedule = {
@@ -514,7 +514,7 @@ export class FirebaseStorage implements IStorage {
     return this.convertFirestoreData(query.docs[0]);
   }
 
-  async createTaskCompletion(data: any): Promise<any> {
+  async createTaskCompletion(data: Record<string, unknown>): Promise<unknown> {
     const completionId = uuidv4();
     const completion = {
       id: completionId,
@@ -539,7 +539,7 @@ export class FirebaseStorage implements IStorage {
     return newEvent;
   }
 
-  async createAuditLog(data: any): Promise<any> {
+  async createAuditLog(data: Record<string, unknown>): Promise<unknown> {
     const logId = uuidv4();
     const auditLog = {
       id: logId,
@@ -550,7 +550,7 @@ export class FirebaseStorage implements IStorage {
     return auditLog;
   }
 
-  async createReminderQueue(data: any): Promise<any> {
+  async createReminderQueue(data: Record<string, unknown>): Promise<unknown> {
     const reminderId = uuidv4();
     const reminder = {
       id: reminderId,
