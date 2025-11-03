@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
-import { getFirestore as getClientFirestore } from 'firebase/firestore';
-import { getFirestore as getAdminFirestore, Firestore } from 'firebase-admin/firestore';
+import { getFirestore, Firestore } from 'firebase-admin/firestore';
+import { getFirestore } from 'firebase/firestore';
 import { getDatabase } from 'firebase/database';
 import admin from 'firebase-admin';
 import { readFileSync } from 'fs';
@@ -12,7 +12,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 // Create a placeholder database object to prevent crashes
-function createPlaceholderDb(): Firestore {
+function createPlaceholderDb() {
   return {
     collection: () => ({
       doc: () => ({
@@ -34,7 +34,7 @@ function createPlaceholderDb(): Firestore {
       }),
       get: () => Promise.resolve({ empty: true, docs: [] })
     })
-  } as Firestore;
+  };
 }
 
 // Firebase configuration (client-side)
@@ -50,7 +50,7 @@ const firebaseConfig = {
 
 // Initialize Firebase client app
 const app = initializeApp(firebaseConfig);
-export const db = getClientFirestore(app);
+export const db = getFirestore(app);
 export const realtimeDb = getDatabase(app);
 
 // Initialize Firebase Admin SDK for server operations
@@ -125,6 +125,6 @@ if (admin.apps.length === 0) {
 }
 
 // Export adminDb - use placeholder if Firebase is not initialized properly
-export const adminDb: Firestore = admin.apps.length > 0 ? getAdminFirestore() : createPlaceholderDb() as Firestore;
+export const adminDb = admin.apps.length > 0 ? admin.firestore() : (global as { adminDb?: unknown }).adminDb;
 export const adminRealtimeDb = admin.apps.length > 0 ? admin.database() : null;
 export { admin };
