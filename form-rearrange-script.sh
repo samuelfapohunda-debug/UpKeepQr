@@ -1,3 +1,87 @@
+#!/bin/bash
+
+# ============================================================================
+# Onboarding Form Rearrangement Script (Optimized)
+# ============================================================================
+# Author: UpKeepQR Development Team
+# Purpose: Rearrange "Complete Your Setup" form in Onboarding.tsx
+# 
+# New Structure:
+# Section 1: Personal Detail - Name, phone, email, preferred contact method/time
+# Section 2: Home Detail - Address+ZIP, home type, sqft, HVAC, heat pump, 
+#            water heater, roof age, owner status
+# Section 3: Your Interest - Interest type, consultation, budget, timeline, 
+#            preferred contact time, notes
+# ============================================================================
+
+set -euo pipefail
+
+# === Configuration ===
+FORM_FILE="./client/src/pages/Onboarding.tsx"
+TIMESTAMP="$(date +"%Y%m%d_%H%M%S")"
+BACKUP_FILE="${FORM_FILE}.backup_${TIMESTAMP}"
+NEW_FILE="${FORM_FILE}.new"
+DRY_RUN="${DRY_RUN:-false}"
+
+# === Color Codes ===
+readonly GREEN='\033[0;32m'
+readonly YELLOW='\033[1;33m'
+readonly RED='\033[0;31m'
+readonly BLUE='\033[0;34m'
+readonly NC='\033[0m' # No color
+
+# === Error Handler ===
+trap 'handle_error $LINENO' ERR
+
+handle_error() {
+  echo -e "\n${RED}❌ Script failed at line $1${NC}" >&2
+  echo -e "${YELLOW}💡 Check file permissions, syntax, or file path${NC}" >&2
+  echo -e "${YELLOW}🔄 Rollback available: cp \"$BACKUP_FILE\" \"$FORM_FILE\"${NC}" >&2
+  exit 1
+}
+
+# === Cleanup Handler ===
+cleanup() {
+  if [[ -f "$NEW_FILE" ]]; then
+    rm -f "$NEW_FILE"
+  fi
+}
+trap cleanup EXIT
+
+# === Logging Functions ===
+log_info() { echo -e "${BLUE}ℹ️  $1${NC}"; }
+log_success() { echo -e "${GREEN}✅ $1${NC}"; }
+log_warning() { echo -e "${YELLOW}⚠️  $1${NC}"; }
+log_error() { echo -e "${RED}❌ $1${NC}" >&2; }
+
+# === Main Script ===
+echo -e "${YELLOW}🔧 Starting form rearrangement...${NC}"
+log_info "Target file: $FORM_FILE"
+
+# Dry run check
+if [[ "$DRY_RUN" == "true" ]]; then
+  log_warning "DRY RUN MODE - No files will be modified"
+  echo -e "  Would create backup: ${BACKUP_FILE}"
+  echo -e "  Would overwrite: ${FORM_FILE}"
+  exit 0
+fi
+
+# File existence check
+if [[ ! -f "$FORM_FILE" ]]; then
+  log_error "File not found: $FORM_FILE"
+  exit 1
+fi
+
+# Create backup
+if cp "$FORM_FILE" "$BACKUP_FILE"; then
+  log_success "Backup created: $BACKUP_FILE"
+else
+  log_error "Failed to create backup"
+  exit 1
+fi
+
+# Create the rearranged form file
+cat > "${NEW_FILE}" << 'EOFFORM'
 import { useState } from 'react';
 import { useParams } from 'wouter';
 import { useLocation } from 'wouter';
@@ -648,3 +732,63 @@ export default function Onboarding({ onComplete }: OnboardingProps = {}) {
     </div>
   );
 }
+EOFFORM
+
+# Check if file actually changed
+if cmp -s "$FORM_FILE" "$NEW_FILE"; then
+  log_warning "No changes detected - file content is identical"
+  rm -f "$NEW_FILE"
+  exit 0
+fi
+
+# Replace original with new file
+if mv "$NEW_FILE" "$FORM_FILE"; then
+  log_success "Form rearrangement complete!"
+else
+  log_error "Failed to replace original file"
+  exit 1
+fi
+
+# === Summary Output ===
+cat <<EOF
+
+${GREEN}╔════════════════════════════════════════════════════════════════╗
+║                    📋 Summary of Changes                       ║
+╚════════════════════════════════════════════════════════════════╝${NC}
+
+${BLUE}1️⃣  Personal Detail (Required)${NC}
+   → Name, Phone, Email
+   → Preferred Contact Method, Preferred Contact Time
+
+${BLUE}2️⃣  Home Detail (Collapsible, Required)${NC}
+   → Address, City, State, ZIP Code
+   → Home Type, Square Footage
+   → HVAC Type, Water Heater Type, Roof Age
+   → Are You the Owner?
+
+${BLUE}3️⃣  Your Interest (Collapsible, Optional)${NC}
+   → Interest Type, Need Consultation?
+   → Budget Range, Timeline to Proceed
+   → Notes/Comments
+
+${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}
+
+💾
+Backup Location: ${YELLOW}${BACKUP_FILE}${NC}
+
+${YELLOW}⚠️  Post-Implementation Checklist:${NC}
+   ${GREEN}✓${NC} 1. Test all field validations
+   ${GREEN}✓${NC} 2. Verify API submissions to /api/setup/activate & /api/leads
+   ${GREEN}✓${NC} 3. Check required field indicators and error messages
+   ${GREEN}✓${NC} 4. Test collapsible section toggles
+   ${GREEN}✓${NC} 5. Run linting: ${BLUE}npm run lint${NC}
+   ${GREEN}✓${NC} 6. Build and test: ${BLUE}npm run build && npm run dev${NC}
+
+${YELLOW}🔄 Rollback Command:${NC}
+   ${BLUE}cp "$BACKUP_FILE" "$FORM_FILE"${NC}
+
+${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}
+
+${GREEN}✨ Form rearrangement completed successfully!${NC}
+
+EOF
