@@ -1,85 +1,70 @@
-import { useState } from 'react';
-import { useParams } from 'wouter';
-import { useLocation } from 'wouter';
+import React, { useState, useEffect } from 'react';
+import { useLocation, useRoute } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useToast } from '@/hooks/use-toast';
 
-interface FormData {
-  // Original onboarding fields
-  zip: string;
-  home_type: string;
-  sqft: string;
-  hvac_type: string;
-  water_heater: string;
-  roof_age_years: string;
-  email: string;
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
+const Onboarding: React.FC = () => {
+  const [location, setLocation] = useLocation();
+  const [match, params] = useRoute('/setup/:token');
   
-  // Lead capture fields
-  fullName: string;
-  phone: string;
-  preferredContact: string;
-  hearAboutUs: string;
-  streetAddress: string;
-  city: string;
-  state: string;
-  propertyType: string;
-  interestType: string;
-  needConsultation: boolean;
-  isOwner: boolean;
-  budgetRange: string;
-  timelineToProceed: string;
-  preferredContactTime: string;
-  notes: string;
-}
-
-interface OnboardingProps {
-  onComplete?: () => void;
-}
-
-const API_BASE_URL = import.meta.env.PROD ? '' : 'http://localhost:5000';
-
-export default function Onboarding({ onComplete }: OnboardingProps = {}) {
-  const params = useParams();
-  const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const token = params.token;
   
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [showHomeDetails, setShowHomeDetails] = useState(false);
-  const [showInterests, setShowInterests] = useState(false);
-  
-  const [formData, setFormData] = useState<FormData>({
-    zip: '',
-    home_type: '',
-    sqft: '',
-    hvac_type: '',
-    water_heater: '',
-    roof_age_years: '',
-    email: '',
+  const [formData, setFormData] = useState({
+    // Personal details
     fullName: '',
     phone: '',
-    preferredContact: 'Email',
+    email: '',
+    preferredContact: 'Email' as 'Email' | 'Phone' | 'SMS',  // Fixed: Capitalized
+    preferredContactTime: '',
     hearAboutUs: '',
+    
+    // Address
     streetAddress: '',
     city: '',
     state: '',
-    propertyType: 'Residential',
-    interestType: 'Sales',
-    needConsultation: true,
+    zip: '',
+    
+    // Property details
+    propertyType: 'residential' as 'residential' | 'commercial',
+    home_type: '',
+    sqft: '',
+    interestType: 'Sales' as 'Sales' | 'Rent' | 'Lease',  // Fixed: Match backend
+    needConsultation: false,
     isOwner: true,
+    
+    // Systems
+    hvac_type: '',
+    water_heater: '',
+    roof_age_years: '',
+    
+    // Additional fields
     budgetRange: '',
     timelineToProceed: '',
-    preferredContactTime: '',
     notes: '',
   });
 
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [token, setToken] = useState<string | null>(params?.token || null);
+  const [showHomeDetails, setShowHomeDetails] = useState(true);
+  const [showInterests, setShowInterests] = useState(true);
+
+  useEffect(() => {
+    const setupToken = params?.token;
+    if (!setupToken) {
+      setError('Invalid setup link');
+    } else {
+      setToken(setupToken);
+    }
+  }, [params]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -89,9 +74,21 @@ export default function Onboarding({ onComplete }: OnboardingProps = {}) {
     }
   };
 
+  const handleSelectChange = (name: string, value: string) => {
+    setFormData(prev => ({ ...prev, [name]: value }));
+    if (validationErrors[name]) {
+      setValidationErrors(prev => ({ ...prev, [name]: '' }));
+    }
+  };
+
+  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, checked } = e.target;
+    setFormData(prev => ({ ...prev, [name]: checked }));
+  };
+
   const validateRequiredFields = () => {
     const errors: Record<string, string> = {};
-    
+
     if (!formData.fullName.trim()) errors.fullName = "Name is required";
     if (!formData.phone.match(/^\+?[\d\s\-()]+$/) || formData.phone.length < 10) {
       errors.phone = "Valid phone number is required";
@@ -101,14 +98,14 @@ export default function Onboarding({ onComplete }: OnboardingProps = {}) {
     if (!formData.city.trim()) errors.city = "City is required";
     if (!formData.state.trim() || formData.state.length !== 2) errors.state = "Valid 2-letter state code required";
     if (!formData.zip.trim() || formData.zip.length < 5) errors.zip = "Valid ZIP code is required";
-    
+
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateRequiredFields()) {
       toast({
         title: "Validation Error",
@@ -132,7 +129,7 @@ export default function Onboarding({ onComplete }: OnboardingProps = {}) {
         token,
         zip: formData.zip,
       };
-      
+
       if (formData.home_type) onboardingData.home_type = formData.home_type;
       if (formData.sqft) onboardingData.sqft = formData.sqft;
       if (formData.hvac_type) onboardingData.hvac_type = formData.hvac_type;
@@ -147,7 +144,7 @@ export default function Onboarding({ onComplete }: OnboardingProps = {}) {
       });
 
       const setupResult = await setupResponse.json();
-      
+
       if (!setupResponse.ok || !setupResult.success) {
         setError(setupResult.error || 'Setup activation failed');
         setLoading(false);
@@ -170,11 +167,11 @@ export default function Onboarding({ onComplete }: OnboardingProps = {}) {
         interestType: formData.interestType,
         needConsultation: formData.needConsultation,
         isOwner: formData.isOwner,
+        activationCode: token,  // Fixed: Added activationCode
         budgetRange: formData.budgetRange,
         timelineToProceed: formData.timelineToProceed,
         preferredContactTime: formData.preferredContactTime,
         notes: formData.notes,
-        activationCode: token,
       };
 
       const leadResponse = await fetch(`${API_BASE_URL}/api/leads`, {
@@ -183,39 +180,35 @@ export default function Onboarding({ onComplete }: OnboardingProps = {}) {
         body: JSON.stringify(leadData),
       });
 
-      const leadResult = await leadResponse.json();
-
-      if (leadResponse.ok) {
-        sessionStorage.setItem('setupResult', JSON.stringify(setupResult));
-        toast({
-          title: "Success!",
-          description: "Your information has been saved.",
-        });
-        
-        if (onComplete) {
-          onComplete();
-        } else {
-          setLocation('/setup/success');
-        }
-      } else {
-        setError(leadResult.error || 'Failed to save lead information');
+      if (!leadResponse.ok) {
+        console.error('Lead capture failed, but continuing...');
       }
 
-    } catch (err: unknown) {
-      console.error('Setup error:', err);
-      setError('Network error. Please try again.');
+      toast({
+        title: "Success!",
+        description: "Your home has been registered successfully.",
+      });
+
+      setLocation('/dashboard');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+      toast({
+        title: "Error",
+        description: "Failed to complete setup. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto">
-        <div className="bg-white rounded-2xl shadow-xl p-8">
+        <div className="bg-white rounded-lg shadow-xl p-8">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Complete Your Setup</h1>
-            <p className="text-gray-600">Help us personalize your home maintenance experience</p>
+            <h1 className="text-3xl font-bold text-gray-900">Complete Your Home Setup</h1>
+            <p className="mt-2 text-gray-600">Help us understand your home and needs better</p>
           </div>
 
           {error && (
@@ -278,7 +271,6 @@ export default function Onboarding({ onComplete }: OnboardingProps = {}) {
                     required
                     value={formData.email}
                     onChange={handleInputChange}
-                    placeholder="your.email@example.com"
                     className={validationErrors.email ? "border-red-500" : ""}
                   />
                   {validationErrors.email && (
@@ -291,7 +283,7 @@ export default function Onboarding({ onComplete }: OnboardingProps = {}) {
                   <Select
                     name="preferredContact"
                     value={formData.preferredContact}
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, preferredContact: value }))}
+                    onValueChange={(value) => handleSelectChange('preferredContact', value)}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -309,7 +301,7 @@ export default function Onboarding({ onComplete }: OnboardingProps = {}) {
                   <Select
                     name="preferredContactTime"
                     value={formData.preferredContactTime}
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, preferredContactTime: value }))}
+                    onValueChange={(value) => handleSelectChange('preferredContactTime', value)}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select..." />
@@ -320,6 +312,78 @@ export default function Onboarding({ onComplete }: OnboardingProps = {}) {
                       <SelectItem value="Evening">Evening</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+
+                <div className="md:col-span-2">
+                  <Label htmlFor="streetAddress">Street Address *</Label>
+                  <Input
+                    id="streetAddress"
+                    name="streetAddress"
+                    required
+                    value={formData.streetAddress}
+                    onChange={handleInputChange}
+                    className={validationErrors.streetAddress ? "border-red-500" : ""}
+                  />
+                  {validationErrors.streetAddress && (
+                    <p className="text-red-500 text-sm mt-1">{validationErrors.streetAddress}</p>
+                  )}
+                </div>
+
+                <div>
+                  <Label htmlFor="city">City *</Label>
+                  <Input
+                    id="city"
+                    name="city"
+                    required
+                    value={formData.city}
+                    onChange={handleInputChange}
+                    className={validationErrors.city ? "border-red-500" : ""}
+                  />
+                  {validationErrors.city && (
+                    <p className="text-red-500 text-sm mt-1">{validationErrors.city}</p>
+                  )}
+                </div>
+
+                <div>
+                  <Label htmlFor="state">State *</Label>
+                  <Input
+                    id="state"
+                    name="state"
+                    required
+                    maxLength={2}
+                    placeholder="CA"
+                    value={formData.state}
+                    onChange={handleInputChange}
+                    className={validationErrors.state ? "border-red-500" : ""}
+                  />
+                  {validationErrors.state && (
+                    <p className="text-red-500 text-sm mt-1">{validationErrors.state}</p>
+                  )}
+                </div>
+
+                <div>
+                  <Label htmlFor="zip">ZIP Code *</Label>
+                  <Input
+                    id="zip"
+                    name="zip"
+                    required
+                    value={formData.zip}
+                    onChange={handleInputChange}
+                    className={validationErrors.zip ? "border-red-500" : ""}
+                  />
+                  {validationErrors.zip && (
+                    <p className="text-red-500 text-sm mt-1">{validationErrors.zip}</p>
+                  )}
+                </div>
+
+                <div>
+                  <Label htmlFor="hearAboutUs">How did you hear about us?</Label>
+                  <Input
+                    id="hearAboutUs"
+                    name="hearAboutUs"
+                    value={formData.hearAboutUs}
+                    onChange={handleInputChange}
+                  />
                 </div>
               </div>
             </div>
@@ -335,7 +399,7 @@ export default function Onboarding({ onComplete }: OnboardingProps = {}) {
                   2
                 </div>
                 <h2 className="text-xl font-semibold">Home Detail</h2>
-                <span className="ml-auto text-sm text-gray-500">* Required</span>
+                <span className="ml-auto text-sm text-gray-500">Optional</span>
                 <svg
                   className={`w-5 h-5 transition-transform ${showHomeDetails ? 'rotate-180' : ''}`}
                   fill="none"
@@ -347,176 +411,107 @@ export default function Onboarding({ onComplete }: OnboardingProps = {}) {
               </button>
 
               {showHomeDetails && (
-                <div className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="md:col-span-2">
-                      <Label htmlFor="streetAddress">Street Address *</Label>
-                      <Input
-                        id="streetAddress"
-                        name="streetAddress"
-                        required
-                        value={formData.streetAddress}
-                        onChange={handleInputChange}
-                        className={validationErrors.streetAddress ? "border-red-500" : ""}
-                      />
-                      {validationErrors.streetAddress && (
-                        <p className="text-red-500 text-sm mt-1">{validationErrors.streetAddress}</p>
-                      )}
-                    </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <Label htmlFor="home_type">Home Type</Label>
+                    <Select
+                      name="home_type"
+                      value={formData.home_type}
+                      onValueChange={(value) => handleSelectChange('home_type', value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Single Family">Single Family</SelectItem>
+                        <SelectItem value="Condo">Condo</SelectItem>
+                        <SelectItem value="Townhouse">Townhouse</SelectItem>
+                        <SelectItem value="Apartment">Apartment</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-                    <div>
-                      <Label htmlFor="city">City *</Label>
-                      <Input
-                        id="city"
-                        name="city"
-                        required
-                        value={formData.city}
-                        onChange={handleInputChange}
-                        className={validationErrors.city ? "border-red-500" : ""}
-                      />
-                      {validationErrors.city && (
-                        <p className="text-red-500 text-sm mt-1">{validationErrors.city}</p>
-                      )}
-                    </div>
+                  <div>
+                    <Label htmlFor="sqft">Square Footage</Label>
+                    <Input
+                      id="sqft"
+                      name="sqft"
+                      type="number"
+                      value={formData.sqft}
+                      onChange={handleInputChange}
+                    />
+                  </div>
 
-                    <div>
-                      <Label htmlFor="state">State *</Label>
-                      <Input
-                        id="state"
-                        name="state"
-                        required
-                        maxLength={2}
-                        placeholder="GA"
-                        value={formData.state}
-                        onChange={(e) => setFormData(prev => ({ ...prev, state: e.target.value.toUpperCase() }))}
-                        className={validationErrors.state ? "border-red-500" : ""}
-                      />
-                      {validationErrors.state && (
-                        <p className="text-red-500 text-sm mt-1">{validationErrors.state}</p>
-                      )}
-                    </div>
+                  <div>
+                    <Label htmlFor="hvac_type">HVAC Type</Label>
+                    <Select
+                      name="hvac_type"
+                      value={formData.hvac_type}
+                      onValueChange={(value) => handleSelectChange('hvac_type', value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Central AC">Central AC</SelectItem>
+                        <SelectItem value="Heat Pump">Heat Pump</SelectItem>
+                        <SelectItem value="Window Units">Window Units</SelectItem>
+                        <SelectItem value="None">None</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-                    <div>
-                      <Label htmlFor="zip">ZIP Code *</Label>
-                      <Input
-                        id="zip"
-                        name="zip"
-                        required
-                        value={formData.zip}
-                        onChange={handleInputChange}
-                        placeholder="30281"
-                        className={validationErrors.zip ? "border-red-500" : ""}
-                      />
-                      {validationErrors.zip && (
-                        <p className="text-red-500 text-sm mt-1">{validationErrors.zip}</p>
-                      )}
-                    </div>
+                  <div>
+                    <Label htmlFor="water_heater">Water Heater Type</Label>
+                    <Select
+                      name="water_heater"
+                      value={formData.water_heater}
+                      onValueChange={(value) => handleSelectChange('water_heater', value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Tank">Tank</SelectItem>
+                        <SelectItem value="Tankless">Tankless</SelectItem>
+                        <SelectItem value="Heat Pump">Heat Pump</SelectItem>
+                        <SelectItem value="Unknown">Unknown</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-                    <div>
-                      <Label htmlFor="home_type">Home Type *</Label>
-                      <Select
-                        name="home_type"
-                        value={formData.home_type}
-                        onValueChange={(value) => setFormData(prev => ({ ...prev, home_type: value }))}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select home type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Single Family Home">Single Family Home</SelectItem>
-                          <SelectItem value="Townhouse">Townhouse</SelectItem>
-                          <SelectItem value="Condo">Condo</SelectItem>
-                          <SelectItem value="Apartment">Apartment</SelectItem>
-                          <SelectItem value="Duplex">Duplex</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+                  <div>
+                    <Label htmlFor="roof_age_years">Roof Age (Years)</Label>
+                    <Input
+                      id="roof_age_years"
+                      name="roof_age_years"
+                      type="number"
+                      value={formData.roof_age_years}
+                      onChange={handleInputChange}
+                    />
+                  </div>
 
-                    <div>
-                      <Label htmlFor="sqft">Square Footage</Label>
-                      <Input
-                        id="sqft"
-                        name="sqft"
-                        type="number"
-                        value={formData.sqft}
-                        onChange={handleInputChange}
-                        placeholder="3000"
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="hvac_type">HVAC Type</Label>
-                      <Select
-                        name="hvac_type"
-                        value={formData.hvac_type}
-                        onValueChange={(value) => setFormData(prev => ({ ...prev, hvac_type: value }))}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select HVAC type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Central Air & Heat">Central Air & Heat</SelectItem>
-                          <SelectItem value="Heat Pump">Heat Pump</SelectItem>
-                          <SelectItem value="Window Units">Window Units</SelectItem>
-                          <SelectItem value="Ductless Mini-Split">Ductless Mini-Split</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div>
-                      <Label htmlFor="water_heater">Water Heater Type</Label>
-                      <Select
-                        name="water_heater"
-                        value={formData.water_heater}
-                        onValueChange={(value) => setFormData(prev => ({ ...prev, water_heater: value }))}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select water heater" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Gas Tank">Gas Tank</SelectItem>
-                          <SelectItem value="Gas Tankless">Gas Tankless</SelectItem>
-                          <SelectItem value="Electric Tank">Electric Tank</SelectItem>
-                          <SelectItem value="Hybrid Heat Pump">Hybrid Heat Pump</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div>
-                      <Label htmlFor="roof_age_years">Roof Age (Years)</Label>
-                      <Input
-                        id="roof_age_years"
-                        name="roof_age_years"
-                        type="number"
-                        value={formData.roof_age_years}
-                        onChange={handleInputChange}
-                        placeholder="30"
-                      />
-                    </div>
-
-                    <div>
-                      <Label>Are You the Owner?</Label>
-                      <RadioGroup
-                        value={formData.isOwner ? "Yes" : "No"}
-                        onValueChange={(value) => setFormData(prev => ({ ...prev, isOwner: value === "Yes" }))}
-                        className="flex gap-4 mt-2"
-                      >
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="Yes" id="owner-yes" />
-                          <Label htmlFor="owner-yes">Yes</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="No" id="owner-no" />
-                          <Label htmlFor="owner-no">No</Label>
-                        </div>
-                      </RadioGroup>
-                    </div>
+                  <div>
+                    <Label>Are you the homeowner?</Label>
+                    <RadioGroup
+                      value={formData.isOwner ? "Yes" : "No"}
+                      onValueChange={(value) => setFormData(prev => ({ ...prev, isOwner: value === "Yes" }))}
+                    >
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="Yes" id="owner-yes" />
+                        <Label htmlFor="owner-yes">Yes</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="No" id="owner-no" />
+                        <Label htmlFor="owner-no">No</Label>
+                      </div>
+                    </RadioGroup>
                   </div>
                 </div>
               )}
             </div>
 
-            {/* Section 3: Your Interest */}
+            {/* Section 3: Interests & Needs */}
             <div className="space-y-6">
               <button
                 type="button"
@@ -526,10 +521,10 @@ export default function Onboarding({ onComplete }: OnboardingProps = {}) {
                 <div className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-semibold">
                   3
                 </div>
-                <h2 className="text-xl font-semibold">Your Interest</h2>
-                <span className="text-sm text-gray-500">(Optional)</span>
+                <h2 className="text-xl font-semibold">Interests & Needs</h2>
+                <span className="ml-auto text-sm text-gray-500">Optional</span>
                 <svg
-                  className={`ml-auto w-5 h-5 transition-transform ${showInterests ? 'rotate-180' : ''}`}
+                  className={`w-5 h-5 transition-transform ${showInterests ? 'rotate-180' : ''}`}
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -541,95 +536,91 @@ export default function Onboarding({ onComplete }: OnboardingProps = {}) {
               {showInterests && (
                 <div className="space-y-6">
                   <div>
-                    <Label>Interest Type *</Label>
+                    <Label>What are you interested in?</Label>
                     <RadioGroup
                       value={formData.interestType}
-                      onValueChange={(value) => setFormData(prev => ({ ...prev, interestType: value }))}
-                      className="flex gap-4 mt-2"
+                      onValueChange={(value) => handleSelectChange('interestType', value)}
                     >
                       <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="Sales" id="sales" />
-                        <Label htmlFor="sales">Sales</Label>
+                        <RadioGroupItem value="Sales" id="interest-sales" />
+                        <Label htmlFor="interest-sales">Purchasing Products</Label>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="Rent" id="rent" />
-                        <Label htmlFor="rent">Rent</Label>
+                        <RadioGroupItem value="Rent" id="interest-rent" />
+                        <Label htmlFor="interest-rent">Rental/Leasing</Label>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="Lease" id="lease" />
-                        <Label htmlFor="lease">Lease</Label>
+                        <RadioGroupItem value="Lease" id="interest-lease" />
+                        <Label htmlFor="interest-lease">Maintenance Services</Label>
                       </div>
                     </RadioGroup>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <Label>Need Consultation?</Label>
-                      <RadioGroup
-                        value={formData.needConsultation ? "Yes" : "No"}
-                        onValueChange={(value) => setFormData(prev => ({ ...prev, needConsultation: value === "Yes" }))}
-                        className="flex gap-4 mt-2"
-                      >
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="Yes" id="consult-yes" />
-                          <Label htmlFor="consult-yes">Yes</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="No" id="consult-no" />
-                          <Label htmlFor="consult-no">No</Label>
-                        </div>
-                      </RadioGroup>
-                    </div>
+                  <div>
+                    <Label>Would you like a consultation?</Label>
+                    <RadioGroup
+                      value={formData.needConsultation ? "Yes" : "No"}
+                      onValueChange={(value) => setFormData(prev => ({ ...prev, needConsultation: value === "Yes" }))}
+                    >
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="Yes" id="consult-yes" />
+                        <Label htmlFor="consult-yes">Yes</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="No" id="consult-no" />
+                        <Label htmlFor="consult-no">No</Label>
+                      </div>
+                    </RadioGroup>
+                  </div>
 
-                    <div>
-                      <Label htmlFor="budgetRange">Budget Range</Label>
-                      <Select
-                        name="budgetRange"
-                        value={formData.budgetRange}
-                        onValueChange={(value) => setFormData(prev => ({ ...prev, budgetRange: value }))}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="$0-5K">$0–5K</SelectItem>
-                          <SelectItem value="$5K-15K">$5K–15K</SelectItem>
-                          <SelectItem value="$15K-30K">$15K–30K</SelectItem>
-                          <SelectItem value="$30K+">$30K+</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+                  <div>
+                    <Label htmlFor="budgetRange">Budget Range</Label>
+                    <Select
+                      name="budgetRange"
+                      value={formData.budgetRange}
+                      onValueChange={(value) => handleSelectChange('budgetRange', value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="under-1k">Under $1,000</SelectItem>
+                        <SelectItem value="1k-5k">$1,000 - $5,000</SelectItem>
+                        <SelectItem value="5k-10k">$5,000 - $10,000</SelectItem>
+                        <SelectItem value="over-10k">Over $10,000</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-                    <div>
-                      <Label htmlFor="timelineToProceed">Timeline to Proceed</Label>
-                      <Select
-                        name="timelineToProceed"
-                        value={formData.timelineToProceed}
-                        onValueChange={(value) => setFormData(prev => ({ ...prev, timelineToProceed: value }))}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Immediately">Immediately</SelectItem>
-                          <SelectItem value="Within 1 Month">Within 1 Month</SelectItem>
-                          <SelectItem value="1-3 Months">1–3 Months</SelectItem>
-                          <SelectItem value="Just Exploring">Just Exploring</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+                  <div>
+                    <Label htmlFor="timelineToProceed">Timeline to Proceed</Label>
+                    <Select
+                      name="timelineToProceed"
+                      value={formData.timelineToProceed}
+                      onValueChange={(value) => handleSelectChange('timelineToProceed', value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="immediate">Immediately</SelectItem>
+                        <SelectItem value="1-3months">1-3 Months</SelectItem>
+                        <SelectItem value="3-6months">3-6 Months</SelectItem>
+                        <SelectItem value="exploring">Just Exploring</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-                    <div className="md:col-span-2">
-                      <Label htmlFor="notes">Notes / Comments</Label>
-                      <Textarea
-                        id="notes"
-                        name="notes"
-                        placeholder="Tell us more about your needs..."
-                        value={formData.notes}
-                        onChange={handleInputChange}
-                        rows={4}
-                      />
-                    </div>
+                  <div>
+                    <Label htmlFor="notes">Additional Notes</Label>
+                    <Textarea
+                      id="notes"
+                      name="notes"
+                      value={formData.notes}
+                      onChange={handleInputChange}
+                      rows={4}
+                      placeholder="Any specific concerns or requirements..."
+                    />
                   </div>
                 </div>
               )}
@@ -647,4 +638,6 @@ export default function Onboarding({ onComplete }: OnboardingProps = {}) {
       </div>
     </div>
   );
-}
+};
+
+export default Onboarding;

@@ -1,4 +1,5 @@
 console.log("DEBUG DATABASE_URL:", process.env.DATABASE_URL);
+import cors from "cors";
 
 import express, { type Request, Response, NextFunction } from "express";
 import { createServer } from "http";
@@ -39,6 +40,18 @@ app.use((req, res, next) => {
 
 (async () => {
   // 🚨 CRITICAL: Setup routes BEFORE Vite middleware
+  // 🚨 CORS Configuration - Must be FIRST
+  app.use(cors({
+    origin: [
+      'https://infamous-werewolf-v67jxv7jgxwhx7w4-5000.app.github.dev',
+      'http://localhost:5173',
+      'http://localhost:5000'
+    ],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+  }));
+
   app.use(express.json());
   app.use(express.urlencoded({ extended: false }));
   

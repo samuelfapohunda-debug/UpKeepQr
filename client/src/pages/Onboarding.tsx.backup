@@ -1,196 +1,406 @@
-import { useState } from 'react';
-import { useParams, useLocation } from 'wouter';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { useToast } from '@/hooks/use-toast';
 
-const API_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? '' 
-  : 'http://localhost:5000';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
-interface FormData {
-  zip: string;
-  home_type: string;
-  sqft: string;
-  hvac_type: string;
-  water_heater: string;
-  roof_age_years: string;
-  email: string;
-}
-
-export default function Onboarding() {
-  const params = useParams();
-  const [, setLocation] = useLocation();
-  const token = params.token;
+const Onboarding: React.FC = () => {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const { toast } = useToast();
   
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [showOptionalFields, setShowOptionalFields] = useState(false);
-  
-  const [formData, setFormData] = useState<FormData>({
+  const [formData, setFormData] = useState({
+    // Personal details
+    fullName: '',
+    phone: '',
+    email: '',
+    preferredContact: 'Email' as 'Email' | 'Phone' | 'SMS',  // Fixed: Capitalized
+    preferredContactTime: '',
+    hearAboutUs: '',
+    
+    // Address
+    streetAddress: '',
+    city: '',
+    state: '',
     zip: '',
+    
+    // Property details
+    propertyType: 'residential' as 'residential' | 'commercial',
     home_type: '',
     sqft: '',
+    interestType: 'Sales' as 'Sales' | 'Rent' | 'Lease',  // Fixed: Match backend
+    needConsultation: false,
+    isOwner: true,
+    
+    // Systems
     hvac_type: '',
     water_heater: '',
     roof_age_years: '',
-    email: '',
+    
+    // Additional fields
+    budgetRange: '',
+    timelineToProceed: '',
+    notes: '',
   });
+
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [token, setToken] = useState<string | null>(null);
+  const [showHomeDetails, setShowHomeDetails] = useState(true);
+  const [showInterests, setShowInterests] = useState(true);
+
+  useEffect(() => {
+    const setupToken = searchParams.get('token');
+    if (!setupToken) {
+      setError('Invalid setup link');
+    } else {
+      setToken(setupToken);
+    }
+  }, [searchParams]);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    if (validationErrors[name]) {
+      setValidationErrors(prev => ({ ...prev, [name]: '' }));
+    }
+  };
+
+  const handleSelectChange = (name: string, value: string) => {
+    setFormData(prev => ({ ...prev, [name]: value }));
+    if (validationErrors[name]) {
+      setValidationErrors(prev => ({ ...prev, [name]: '' }));
+    }
+  };
+
+  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, checked } = e.target;
+    setFormData(prev => ({ ...prev, [name]: checked }));
+  };
+
+  const validateRequiredFields = () => {
+    const errors: Record<string, string> = {};
+
+    if (!formData.fullName.trim()) errors.fullName = "Name is required";
+    if (!formData.phone.match(/^\+?[\d\s\-()]+$/) || formData.phone.length < 10) {
+      errors.phone = "Valid phone number is required";
+    }
+    if (!formData.email.trim()) errors.email = "Email is required";
+    if (!formData.streetAddress.trim()) errors.streetAddress = "Address is required";
+    if (!formData.city.trim()) errors.city = "City is required";
+    if (!formData.state.trim() || formData.state.length !== 2) errors.state = "Valid 2-letter state code required";
+    if (!formData.zip.trim() || formData.zip.length < 5) errors.zip = "Valid ZIP code is required";
+
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!validateRequiredFields()) {
+      toast({
+        title: "Validation Error",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!token) {
+      setError('Invalid setup token');
+      return;
+    }
+
     setLoading(true);
     setError('');
 
     try {
-      const requestBody: any = {
+      // 1. Submit original onboarding data
+      const onboardingData: Record<string, string | boolean | number | undefined> = {
         token,
         zip: formData.zip,
-        home_type: formData.home_type,
       };
 
-      // Add optional fields only if they have values
-      if (formData.sqft) requestBody.sqft = parseInt(formData.sqft);
-      if (formData.hvac_type) requestBody.hvac_type = formData.hvac_type;
-      if (formData.water_heater) requestBody.water_heater = formData.water_heater;
-      if (formData.roof_age_years) requestBody.roof_age_years = parseInt(formData.roof_age_years);
-      if (formData.email) requestBody.email = formData.email;
+      if (formData.home_type) onboardingData.home_type = formData.home_type;
+      if (formData.sqft) onboardingData.sqft = formData.sqft;
+      if (formData.hvac_type) onboardingData.hvac_type = formData.hvac_type;
+      if (formData.water_heater) onboardingData.water_heater = formData.water_heater;
+      if (formData.roof_age_years) onboardingData.roof_age_years = formData.roof_age_years;
+      if (formData.email) onboardingData.email = formData.email;
 
-      const response = await fetch(`${API_BASE_URL}/api/setup/activate`, {
+      const setupResponse = await fetch(`${API_BASE_URL}/api/setup/activate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody),
+        body: JSON.stringify(onboardingData),
       });
 
-      const result = await response.json();
+      const setupResult = await setupResponse.json();
 
-      if (response.ok && result.success) {
-        sessionStorage.setItem('setupResult', JSON.stringify(result));
-        setLocation('/setup/success');
-      } else {
-        setError(result.error || 'Setup activation failed');
+      if (!setupResponse.ok || !setupResult.success) {
+        setError(setupResult.error || 'Setup activation failed');
+        setLoading(false);
+        return;
       }
-    } catch (err: any) {
-      console.error('Setup error:', err);
-      setError('Network error. Please try again.');
+
+      // 2. Submit lead capture data
+      const leadData = {
+        fullName: formData.fullName.trim(),
+        email: formData.email.trim().toLowerCase(),
+        phone: formData.phone,
+        preferredContact: formData.preferredContact,
+        hearAboutUs: formData.hearAboutUs,
+        streetAddress: formData.streetAddress.trim(),
+        city: formData.city.trim(),
+        state: formData.state.trim().toUpperCase(),
+        zipCode: formData.zip.trim(),
+        propertyType: formData.propertyType,
+        homeType: formData.home_type,
+        interestType: formData.interestType,
+        needConsultation: formData.needConsultation,
+        isOwner: formData.isOwner,
+        activationCode: token,  // Fixed: Added activationCode
+        budgetRange: formData.budgetRange,
+        timelineToProceed: formData.timelineToProceed,
+        preferredContactTime: formData.preferredContactTime,
+        notes: formData.notes,
+      };
+
+      const leadResponse = await fetch(`${API_BASE_URL}/api/leads`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(leadData),
+      });
+
+      if (!leadResponse.ok) {
+        console.error('Lead capture failed, but continuing...');
+      }
+
+      toast({
+        title: "Success!",
+        description: "Your home has been registered successfully.",
+      });
+
+      navigate('/dashboard');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+      toast({
+        title: "Error",
+        description: "Failed to complete setup. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
-
   return (
-    <div className="pt-16 min-h-screen bg-background">
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="bg-card rounded-xl border border-border shadow-sm p-8">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-3xl mx-auto">
+        <div className="bg-white rounded-lg shadow-xl p-8">
           <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-10 h-10 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-              </svg>
-            </div>
-            <h1 className="text-3xl font-bold mb-2">Home Setup</h1>
-            <p className="text-muted-foreground">
-              Tell us about your home to get personalized maintenance schedules
-            </p>
-            {token && (
-              <div className="mt-4 bg-muted px-3 py-2 rounded-md text-sm">
-                <span className="text-muted-foreground">Setup Token:</span> 
-                <span className="font-mono font-medium ml-1">{token}</span>
-              </div>
-            )}
+            <h1 className="text-3xl font-bold text-gray-900">Complete Your Home Setup</h1>
+            <p className="mt-2 text-gray-600">Help us understand your home and needs better</p>
           </div>
 
           {error && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-md">
-              <p className="text-red-600 text-sm">{error}</p>
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-red-800 text-sm">{error}</p>
             </div>
           )}
 
-          <form className="space-y-8" onSubmit={handleSubmit}>
-            <div>
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold">
+          <form onSubmit={handleSubmit} className="space-y-8">
+            
+            {/* Section 1: Personal Detail */}
+            <div className="space-y-6">
+              <div className="flex items-center gap-3 pb-3 border-b">
+                <div className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-semibold">
                   1
                 </div>
-                <h2 className="text-lg font-semibold">Basic Information</h2>
-                <span className="text-xs text-muted-foreground ml-auto">* Required</span>
+                <h2 className="text-xl font-semibold">Personal Detail</h2>
+                <span className="ml-auto text-sm text-gray-500">* Required</span>
               </div>
-              
-              <div className="space-y-4 pl-10">
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="zip" className="block text-sm font-medium mb-2">
-                      ZIP Code <span className="text-red-500">*</span>
-                    </label>
-                    <input 
-                      type="text" 
-                      id="zip" 
-                      name="zip"
-                      value={formData.zip}
-                      onChange={handleInputChange}
-                      placeholder="12345"
-                      required
-                      pattern="[0-9]{5}"
-                      maxLength={5}
-                      className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label htmlFor="home_type" className="block text-sm font-medium mb-2">
-                      Home Type <span className="text-red-500">*</span>
-                    </label>
-                    <select 
-                      id="home_type"
-                      name="home_type" 
-                      value={formData.home_type}
-                      onChange={handleInputChange}
-                      required
-                      className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-                    >
-                      <option value="">Select home type</option>
-                      <option value="single-family">Single Family Home</option>
-                      <option value="townhouse">Townhouse</option>
-                      <option value="condo">Condominium</option>
-                      <option value="apartment">Apartment</option>
-                      <option value="mobile">Mobile Home</option>
-                    </select>
-                  </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="md:col-span-2">
+                  <Label htmlFor="fullName">Name *</Label>
+                  <Input
+                    id="fullName"
+                    name="fullName"
+                    required
+                    value={formData.fullName}
+                    onChange={handleInputChange}
+                    className={validationErrors.fullName ? "border-red-500" : ""}
+                  />
+                  {validationErrors.fullName && (
+                    <p className="text-red-500 text-sm mt-1">{validationErrors.fullName}</p>
+                  )}
                 </div>
 
                 <div>
-                  <label htmlFor="email" className="block text-sm font-medium mb-2">Email (Optional)</label>
-                  <input 
-                    type="email" 
+                  <Label htmlFor="phone">Phone Number *</Label>
+                  <Input
+                    id="phone"
+                    name="phone"
+                    type="tel"
+                    required
+                    placeholder="+1 (555) 123-4567"
+                    value={formData.phone}
+                    onChange={handleInputChange}
+                    className={validationErrors.phone ? "border-red-500" : ""}
+                  />
+                  {validationErrors.phone && (
+                    <p className="text-red-500 text-sm mt-1">{validationErrors.phone}</p>
+                  )}
+                </div>
+
+                <div>
+                  <Label htmlFor="email">Email *</Label>
+                  <Input
                     id="email"
                     name="email"
+                    type="email"
+                    required
                     value={formData.email}
                     onChange={handleInputChange}
-                    placeholder="homeowner@example.com"
-                    className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                    className={validationErrors.email ? "border-red-500" : ""}
                   />
-                  <p className="text-sm text-muted-foreground mt-1">
-                    We'll send you maintenance reminders and tips
-                  </p>
+                  {validationErrors.email && (
+                    <p className="text-red-500 text-sm mt-1">{validationErrors.email}</p>
+                  )}
+                </div>
+
+                <div>
+                  <Label htmlFor="preferredContact">Preferred Contact Method</Label>
+                  <Select
+                    name="preferredContact"
+                    value={formData.preferredContact}
+                    onValueChange={(value) => handleSelectChange('preferredContact', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Email">Email</SelectItem>
+                      <SelectItem value="Phone">Phone</SelectItem>
+                      <SelectItem value="SMS">SMS</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label htmlFor="preferredContactTime">Preferred Contact Time</Label>
+                  <Select
+                    name="preferredContactTime"
+                    value={formData.preferredContactTime}
+                    onValueChange={(value) => handleSelectChange('preferredContactTime', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Morning">Morning</SelectItem>
+                      <SelectItem value="Afternoon">Afternoon</SelectItem>
+                      <SelectItem value="Evening">Evening</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="md:col-span-2">
+                  <Label htmlFor="streetAddress">Street Address *</Label>
+                  <Input
+                    id="streetAddress"
+                    name="streetAddress"
+                    required
+                    value={formData.streetAddress}
+                    onChange={handleInputChange}
+                    className={validationErrors.streetAddress ? "border-red-500" : ""}
+                  />
+                  {validationErrors.streetAddress && (
+                    <p className="text-red-500 text-sm mt-1">{validationErrors.streetAddress}</p>
+                  )}
+                </div>
+
+                <div>
+                  <Label htmlFor="city">City *</Label>
+                  <Input
+                    id="city"
+                    name="city"
+                    required
+                    value={formData.city}
+                    onChange={handleInputChange}
+                    className={validationErrors.city ? "border-red-500" : ""}
+                  />
+                  {validationErrors.city && (
+                    <p className="text-red-500 text-sm mt-1">{validationErrors.city}</p>
+                  )}
+                </div>
+
+                <div>
+                  <Label htmlFor="state">State *</Label>
+                  <Input
+                    id="state"
+                    name="state"
+                    required
+                    maxLength={2}
+                    placeholder="CA"
+                    value={formData.state}
+                    onChange={handleInputChange}
+                    className={validationErrors.state ? "border-red-500" : ""}
+                  />
+                  {validationErrors.state && (
+                    <p className="text-red-500 text-sm mt-1">{validationErrors.state}</p>
+                  )}
+                </div>
+
+                <div>
+                  <Label htmlFor="zip">ZIP Code *</Label>
+                  <Input
+                    id="zip"
+                    name="zip"
+                    required
+                    value={formData.zip}
+                    onChange={handleInputChange}
+                    className={validationErrors.zip ? "border-red-500" : ""}
+                  />
+                  {validationErrors.zip && (
+                    <p className="text-red-500 text-sm mt-1">{validationErrors.zip}</p>
+                  )}
+                </div>
+
+                <div>
+                  <Label htmlFor="hearAboutUs">How did you hear about us?</Label>
+                  <Input
+                    id="hearAboutUs"
+                    name="hearAboutUs"
+                    value={formData.hearAboutUs}
+                    onChange={handleInputChange}
+                  />
                 </div>
               </div>
             </div>
 
-            <div className="border-t pt-6">
+            {/* Section 2: Home Detail */}
+            <div className="space-y-6">
               <button
                 type="button"
-                onClick={() => setShowOptionalFields(!showOptionalFields)}
-                className="flex items-center gap-2 w-full text-left mb-4 hover:opacity-80 transition-opacity"
+                onClick={() => setShowHomeDetails(!showHomeDetails)}
+                className="flex items-center gap-3 pb-3 border-b w-full text-left"
               >
-                <div className="w-8 h-8 bg-muted text-foreground rounded-full flex items-center justify-center text-sm font-bold">
+                <div className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-semibold">
                   2
                 </div>
-                <h2 className="text-lg font-semibold">Additional Details</h2>
-                <span className="text-xs text-muted-foreground ml-2">(Optional)</span>
+                <h2 className="text-xl font-semibold">Home Detail</h2>
+                <span className="ml-auto text-sm text-gray-500">Optional</span>
                 <svg
-                  className={`w-5 h-5 ml-auto transition-transform ${showOptionalFields ? 'rotate-180' : ''}`}
+                  className={`w-5 h-5 transition-transform ${showHomeDetails ? 'rotate-180' : ''}`}
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -199,93 +409,234 @@ export default function Onboarding() {
                 </svg>
               </button>
 
-              {showOptionalFields && (
-                <div className="space-y-4 pl-10">
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div>
-                      <label htmlFor="sqft" className="block text-sm font-medium mb-2">Square Footage</label>
-                      <input 
-                        type="number" 
-                        id="sqft"
-                        name="sqft"
-                        value={formData.sqft}
-                        onChange={handleInputChange}
-                        placeholder="2000"
-                        min="100"
-                        max="20000"
-                        className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-                      />
-                    </div>
-                    
-                    <div>
-                      <label htmlFor="hvac_type" className="block text-sm font-medium mb-2">HVAC Type</label>
-                      <select 
-                        id="hvac_type"
-                        name="hvac_type"
-                        value={formData.hvac_type}
-                        onChange={handleInputChange}
-                        className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-                      >
-                        <option value="">Select HVAC type</option>
-                        <option value="central-air">Central Air & Heat</option>
-                        <option value="heat-pump">Heat Pump</option>
-                        <option value="window-units">Window Units</option>
-                        <option value="baseboard">Baseboard Heat</option>
-                        <option value="radiant">Radiant Heat</option>
-                        <option value="other">Other</option>
-                      </select>
-                    </div>
+              {showHomeDetails && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <Label htmlFor="home_type">Home Type</Label>
+                    <Select
+                      name="home_type"
+                      value={formData.home_type}
+                      onValueChange={(value) => handleSelectChange('home_type', value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Single Family">Single Family</SelectItem>
+                        <SelectItem value="Condo">Condo</SelectItem>
+                        <SelectItem value="Townhouse">Townhouse</SelectItem>
+                        <SelectItem value="Apartment">Apartment</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
 
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div>
-                      <label htmlFor="water_heater" className="block text-sm font-medium mb-2">Water Heater Type</label>
-                      <select 
-                        id="water_heater"
-                        name="water_heater"
-                        value={formData.water_heater}
-                        onChange={handleInputChange}
-                        className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-                      >
-                        <option value="">Select type</option>
-                        <option value="gas-tank">Gas Tank</option>
-                        <option value="electric-tank">Electric Tank</option>
-                        <option value="gas-tankless">Gas Tankless</option>
-                        <option value="electric-tankless">Electric Tankless</option>
-                        <option value="hybrid">Hybrid Heat Pump</option>
-                        <option value="solar">Solar</option>
-                      </select>
-                    </div>
-                    
-                    <div>
-                      <label htmlFor="roof_age_years" className="block text-sm font-medium mb-2">Roof Age (Years)</label>
-                      <input 
-                        type="number" 
-                        id="roof_age_years"
-                        name="roof_age_years"
-                        value={formData.roof_age_years}
-                        onChange={handleInputChange}
-                        placeholder="10"
-                        min="0"
-                        max="100"
-                        className="w-full px-3 py-2 border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-                      />
-                    </div>
+                  <div>
+                    <Label htmlFor="sqft">Square Footage</Label>
+                    <Input
+                      id="sqft"
+                      name="sqft"
+                      type="number"
+                      value={formData.sqft}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="hvac_type">HVAC Type</Label>
+                    <Select
+                      name="hvac_type"
+                      value={formData.hvac_type}
+                      onValueChange={(value) => handleSelectChange('hvac_type', value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Central AC">Central AC</SelectItem>
+                        <SelectItem value="Heat Pump">Heat Pump</SelectItem>
+                        <SelectItem value="Window Units">Window Units</SelectItem>
+                        <SelectItem value="None">None</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="water_heater">Water Heater Type</Label>
+                    <Select
+                      name="water_heater"
+                      value={formData.water_heater}
+                      onValueChange={(value) => handleSelectChange('water_heater', value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Tank">Tank</SelectItem>
+                        <SelectItem value="Tankless">Tankless</SelectItem>
+                        <SelectItem value="Heat Pump">Heat Pump</SelectItem>
+                        <SelectItem value="Unknown">Unknown</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="roof_age_years">Roof Age (Years)</Label>
+                    <Input
+                      id="roof_age_years"
+                      name="roof_age_years"
+                      type="number"
+                      value={formData.roof_age_years}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+
+                  <div>
+                    <Label>Are you the homeowner?</Label>
+                    <RadioGroup
+                      value={formData.isOwner ? "Yes" : "No"}
+                      onValueChange={(value) => setFormData(prev => ({ ...prev, isOwner: value === "Yes" }))}
+                    >
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="Yes" id="owner-yes" />
+                        <Label htmlFor="owner-yes">Yes</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="No" id="owner-no" />
+                        <Label htmlFor="owner-no">No</Label>
+                      </div>
+                    </RadioGroup>
                   </div>
                 </div>
               )}
             </div>
 
-            <button 
-              type="submit" 
+            {/* Section 3: Interests & Needs */}
+            <div className="space-y-6">
+              <button
+                type="button"
+                onClick={() => setShowInterests(!showInterests)}
+                className="flex items-center gap-3 pb-3 border-b w-full text-left"
+              >
+                <div className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-semibold">
+                  3
+                </div>
+                <h2 className="text-xl font-semibold">Interests & Needs</h2>
+                <span className="ml-auto text-sm text-gray-500">Optional</span>
+                <svg
+                  className={`w-5 h-5 transition-transform ${showInterests ? 'rotate-180' : ''}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+
+              {showInterests && (
+                <div className="space-y-6">
+                  <div>
+                    <Label>What are you interested in?</Label>
+                    <RadioGroup
+                      value={formData.interestType}
+                      onValueChange={(value) => handleSelectChange('interestType', value)}
+                    >
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="Sales" id="interest-sales" />
+                        <Label htmlFor="interest-sales">Purchasing Products</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="Rent" id="interest-rent" />
+                        <Label htmlFor="interest-rent">Rental/Leasing</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="Lease" id="interest-lease" />
+                        <Label htmlFor="interest-lease">Maintenance Services</Label>
+                      </div>
+                    </RadioGroup>
+                  </div>
+
+                  <div>
+                    <Label>Would you like a consultation?</Label>
+                    <RadioGroup
+                      value={formData.needConsultation ? "Yes" : "No"}
+                      onValueChange={(value) => setFormData(prev => ({ ...prev, needConsultation: value === "Yes" }))}
+                    >
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="Yes" id="consult-yes" />
+                        <Label htmlFor="consult-yes">Yes</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="No" id="consult-no" />
+                        <Label htmlFor="consult-no">No</Label>
+                      </div>
+                    </RadioGroup>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="budgetRange">Budget Range</Label>
+                    <Select
+                      name="budgetRange"
+                      value={formData.budgetRange}
+                      onValueChange={(value) => handleSelectChange('budgetRange', value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="under-1k">Under $1,000</SelectItem>
+                        <SelectItem value="1k-5k">$1,000 - $5,000</SelectItem>
+                        <SelectItem value="5k-10k">$5,000 - $10,000</SelectItem>
+                        <SelectItem value="over-10k">Over $10,000</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="timelineToProceed">Timeline to Proceed</Label>
+                    <Select
+                      name="timelineToProceed"
+                      value={formData.timelineToProceed}
+                      onValueChange={(value) => handleSelectChange('timelineToProceed', value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="immediate">Immediately</SelectItem>
+                        <SelectItem value="1-3months">1-3 Months</SelectItem>
+                        <SelectItem value="3-6months">3-6 Months</SelectItem>
+                        <SelectItem value="exploring">Just Exploring</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="notes">Additional Notes</Label>
+                    <Textarea
+                      id="notes"
+                      name="notes"
+                      value={formData.notes}
+                      onChange={handleInputChange}
+                      rows={4}
+                      placeholder="Any specific concerns or requirements..."
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <Button
+              type="submit"
+              className="w-full py-6 text-lg"
               disabled={loading}
-              className="w-full bg-primary text-primary-foreground py-3 rounded-md font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50"
             >
-              {loading ? 'Setting up your home...' : 'Complete Setup'}
-            </button>
+              {loading ? 'Submitting...' : 'Complete Setup'}
+            </Button>
           </form>
         </div>
       </div>
     </div>
   );
-}
+};
+
+export default Onboarding;
