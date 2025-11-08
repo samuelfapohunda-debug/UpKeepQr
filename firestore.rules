@@ -1,0 +1,57 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isAgent(agentId) {
+      return isAuthenticated() && request.auth.uid == agentId;
+    }
+    
+    function belongsToAgent(agentId) {
+      return isAuthenticated() && request.auth.uid == agentId;
+    }
+    
+    // Agents collection - agents can only access their own data
+    match /agents/{agentId} {
+      allow read, write: if isAgent(agentId);
+    }
+    
+    // Magnet Batches - agents can only access their own batches
+    match /magnetBatches/{batchId} {
+      allow read, write: if belongsToAgent(resource.data.agentId);
+      allow create: if belongsToAgent(request.resource.data.agentId);
+    }
+    
+    // Magnets - agents can only access magnets from their batches
+    match /magnets/{magnetId} {
+      allow read, write: if belongsToAgent(resource.data.agentId);
+      allow create: if belongsToAgent(request.resource.data.agentId);
+    }
+    
+    // Households - agents can only access households they manage
+    match /households/{householdId} {
+      allow read, write: if belongsToAgent(resource.data.agentId);
+      allow create: if belongsToAgent(request.resource.data.agentId);
+    }
+    
+    // Tasks - agents can only access tasks for their households
+    match /tasks/{taskId} {
+      allow read, write: if belongsToAgent(resource.data.agentId);
+      allow create: if belongsToAgent(request.resource.data.agentId);
+    }
+    
+    // Leads - agents can only access their own leads
+    match /leads/{leadId} {
+      allow read, write: if belongsToAgent(resource.data.agentId);
+      allow create: if belongsToAgent(request.resource.data.agentId);
+    }
+    
+    // Deny all other access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,0 +1,264 @@
+Website Requirements for UpkeepQR (Replit + Firebase)
+Domain:
+www.upkeepQR.com (pointed to Firebase Hosting)
+
+
+
+1. Branding & Visuals
+Logo (finalized):
+
+
+UpkeepQR wordmark + checkmark/house caricature logo
+
+
+Color Palette:
+
+
+Navy Blue: #1E2A38 (backgrounds)
+
+
+Bright Green: #A6E22E (CTA buttons)
+
+
+White: #FFFFFF (text/contrast)
+
+
+Light Gray: #F5F7FA (section backgrounds)
+
+
+Typography:
+
+
+Headings: Poppins, sans-serif (bold, modern)
+
+
+Body: Inter, sans-serif (readable, neutral)
+
+
+Favicon:
+
+
+32x32px version of the checkmark-in-house icon
+
+
+
+2. Tabs / Pages
+Home
+Hero section: Logo + tagline (“Simple scans. Smart reminders.”)
+
+
+CTA buttons: Order Magnets (links to Stripe 1-magnet checkout), See Demo (optional video placeholder)
+
+
+Features grid (Filter reminders, Request a Pro, QR-based scheduling, Fee Listing)
+
+
+Testimonials placeholder (optional)
+
+
+Footer: Privacy, Terms, Contact email, social links
+
+
+Order Magnets
+Stripe Payment Buttons (Embed via Checkout links):
+
+
+1 Magnet: https://buy.stripe.com/test_8x29AV0Q0cQB0KJbu5gIo00
+
+
+100 Magnets
+
+
+300 Magnets
+
+
+Dynamic pricing cards styled with hover effect
+
+
+FAQ below pricing (Stripe refunds, shipping, etc.)
+
+
+Contact Us
+Form (fields: Name, Email, Message)
+
+
+Send via Postmark API (transactional email → support@upkeepqr.com)
+
+
+Confirmation message + canned auto-reply from Postmark
+
+
+Request a Pro
+Form (fields: Name, Email, Address, Service Needed, Urgency)
+
+
+Sends to Postmark inbox (support@upkeepqr.com)
+
+
+Auto-reply with “We’ll connect you with a local pro shortly”
+
+
+Fee Listing (Property Submission)
+Form (fields: Name, Email, Property Address, Property Type, Square Footage, Notes)
+
+
+Sends to Postmark (support@upkeepqr.com)
+
+
+Auto-confirmation email with next steps
+
+
+FAQ
+Dynamic accordion FAQs:
+
+
+“How do QR magnets work?”
+
+
+“What happens when I scan the magnet?”
+
+
+“Is my data safe?”
+
+
+“What’s the cost of Pro request?”
+
+
+“How do I list my property?”
+
+
+
+3. CTAs (Call-to-Action)
+Primary CTA (green button): “Order magnets” (links to 1-magnet Stripe checkout by default)
+
+
+Secondary CTA: “Request a Pro” / “List Your Property”
+
+
+
+4. Integrations
+Stripe Checkout: for 1/100/300 magnets (Payment Links)
+
+
+Postmark: for forms (Contact, Request a Pro, Fee Listing) with canned auto-replies
+
+
+Firebase Hosting: deploy front-end
+
+
+Firebase Functions: (optional) webhook handler for Stripe → send confirmation email via Postmark
+
+
+Google Analytics 4 (GA4): track events (page_view, cta_click, purchase)
+
+
+Google Search Console (GSC): SEO indexing
+
+
+
+5. Analytics & Tracking
+GA4 setup: connect to Firebase Hosting
+
+
+UTM Conventions:
+
+
+Social: ?utm_source=facebook&utm_medium=social&utm_campaign=launch
+
+
+Email: ?utm_source=newsletter&utm_medium=email&utm_campaign=launch
+
+
+Ads: ?utm_source=google&utm_medium=cpc&utm_campaign=homeqr_ads
+
+
+
+6. Copywriting
+Hero:
+ “Simple scans. Smart reminders.
+ A fridge magnet that remembers home maintenance for you. Scan once, answer a few questions, and we’ll nudge you when it’s time.”
+
+
+Features Section:
+
+
+📅 Automated Reminders – “Never forget an AC filter or smoke alarm check.”
+
+
+🛠️ Book a Pro – “Tap once to connect with trusted local pros.”
+
+
+🏠 Property Listings – “List and showcase your property with ease.”
+
+
+🔒 Secure & Simple – “Your info is private, and reminders just work.”
+
+
+FAQ Copy: Answer 5–7 questions clearly, short format.
+
+
+Emails (via Postmark):
+
+
+Contact Confirmation: “Thanks for reaching out! We’ll get back within 24h.”
+
+
+Request a Pro Confirmation: “Thanks for your request. A local pro will contact you shortly.”
+
+
+Property Listing Confirmation: “Your property details have been received. Our team will review and follow up.”
+
+
+
+7. Social Media Placeholders
+Footer links to:
+
+
+facebook.com/upkeepqr
+
+
+instagram.com/upkeepqr
+
+
+twitter.com/upkeepqr
+
+
+linkedin.com/company/upkeepqr
+
+
+
+8. Technical Setup on Replit
+Stack: Astro + TailwindCSS (clean, responsive, Firebase-ready)
+
+
+Deployment: Firebase Hosting (firebase.json)
+
+
+Environment Variables:
+
+
+POSTMARK_API_TOKEN
+
+
+STRIPE_SECRET_KEY
+
+
+Forms: use Astro/React forms → Replit server route → Postmark API
+
+
+Checkout: embed Stripe Checkout buttons
+
+
+
+9. Stretch Features (Phase 2+)
+User accounts (Firebase Auth) to save maintenance schedule
+
+
+Pro directory (search local contractors by zip code)
+
+
+Dashboard for homeowners (calendar sync, reminders)
+
+
+
+

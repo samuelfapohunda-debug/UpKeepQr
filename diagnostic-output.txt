@@ -1,0 +1,490 @@
+=== TypeScript Errors ===
+client/src/App.tsx(30,37): error TS2322: Type '({ onComplete }?: OnboardingProps) => Element' is not assignable to type 'ComponentType<RouteComponentProps<undefined>>'.
+  Type '({ onComplete }?: OnboardingProps) => Element' is not assignable to type 'FunctionComponent<RouteComponentProps<undefined>>'.
+    Types of parameters '__0' and 'props' are incompatible.
+      Type 'RouteComponentProps<undefined>' has no properties in common with type 'OnboardingProps'.
+client/src/components/HomeProfileExtraForm.tsx(77,13): error TS2322: Type 'string | boolean | string[]' is not assignable to type 'string | number'.
+  Type 'boolean' is not assignable to type 'string | number'.
+client/src/components/HomeProfileExtraForm.tsx(99,23): error TS2552: Cannot find name 'error'. Did you mean 'Error'?
+client/src/components/HomeProfileExtraForm.tsx(99,48): error TS2552: Cannot find name 'error'. Did you mean 'Error'?
+client/src/components/ui/calendar.tsx(55,9): error TS2353: Object literal may only specify known properties, and 'IconLeft' does not exist in type 'Partial<CustomComponents>'.
+client/src/hooks/use-toast.ts(32,26): error TS2552: Cannot find name 'actionTypes'. Did you mean '_actionTypes'?
+client/src/hooks/use-toast.ts(79,25): error TS2339: Property 'toast' does not exist on type 'Action'.
+  Property 'toast' does not exist on type '{ type: any; toastId?: string; }'.
+client/src/hooks/use-toast.ts(86,27): error TS2339: Property 'toast' does not exist on type 'Action'.
+  Property 'toast' does not exist on type '{ type: any; toastId?: string; }'.
+client/src/hooks/use-toast.ts(86,56): error TS2339: Property 'toast' does not exist on type 'Action'.
+  Property 'toast' does not exist on type '{ type: any; toastId?: string; }'.
+client/src/hooks/use-toast.ts(91,15): error TS2339: Property 'toastId' does not exist on type 'Action'.
+client/src/hooks/use-toast.ts(116,18): error TS2339: Property 'toastId' does not exist on type 'Action'.
+  Property 'toastId' does not exist on type '{ type: any; toast: ToasterToast; }'.
+client/src/hooks/use-toast.ts(124,60): error TS2339: Property 'toastId' does not exist on type 'Action'.
+  Property 'toastId' does not exist on type '{ type: any; toast: ToasterToast; }'.
+client/src/lib/analytics.ts(46,37): error TS2552: Cannot find name 'data'. Did you mean '_data'?
+client/src/pages/AdminDashboard.tsx(51,5): error TS2322: Type '""' is not assignable to type '"roofing" | "plumbing" | "electrical" | "hvac" | "general"'.
+client/src/pages/AdminDashboard.tsx(52,5): error TS2322: Type '""' is not assignable to type '"emergency" | "24h" | "3days" | "flexible"'.
+client/src/pages/AdminDashboard.tsx(161,28): error TS2367: This comparison appears to be unintentional because the types '"roofing" | "plumbing" | "electrical" | "hvac" | "general"' and '"all"' have no overlap.
+client/src/pages/AdminDashboard.tsx(162,30): error TS2367: This comparison appears to be unintentional because the types '"emergency" | "24h" | "3days" | "flexible"' and '"all"' have no overlap.
+client/src/pages/AdminDashboard.tsx(472,98): error TS2322: Type 'string' is not assignable to type '"roofing" | "plumbing" | "electrical" | "hvac" | "general"'.
+client/src/pages/AdminDashboard.tsx(489,100): error TS2322: Type 'string' is not assignable to type '"emergency" | "24h" | "3days" | "flexible"'.
+client/src/pages/AdminDashboard.tsx(531,56): error TS2345: Argument of type 'string' is not assignable to parameter of type '"new" | "canceled" | "in_progress" | "completed" | "assigned"'.
+client/src/pages/AdminDashboard.tsx(534,67): error TS2345: Argument of type 'string' is not assignable to parameter of type '"new" | "canceled" | "in_progress" | "completed" | "assigned"'.
+client/src/pages/AdminDashboard.tsx(537,50): error TS2322: Type 'string[]' is not assignable to type '("new" | "canceled" | "in_progress" | "completed" | "assigned")[]'.
+  Type 'string' is not assignable to type '"new" | "canceled" | "in_progress" | "completed" | "assigned"'.
+client/src/pages/AdminDashboard.tsx(817,86): error TS2339: Property 'data' does not exist on type '{ data?: Record<string, any>; type?: "status_change" | "provider_assignment" | "note_created"; id?: string; createdAt?: Date; requestId?: string; actor?: string; } | { id?: string; createdAt?: Date; message?: string; requestId?: string; author?: string; }'.
+  Property 'data' does not exist on type '{ id?: string; createdAt?: Date; message?: string; requestId?: string; author?: string; }'.
+client/src/pages/MagnetDashboard.tsx(235,67): error TS2345: Argument of type '{ method: string; headers: { "Content-Type": string; Authorization: string; }; body: string; }' is not assignable to parameter of type 'string'.
+client/src/pages/MagnetDashboard.tsx(501,68): error TS2345: Argument of type '"pending" | "in_progress" | "completed"' is not assignable to parameter of type '"new" | "paid" | "in_production" | "shipped" | "delivered" | "activated" | "canceled" | "refunded"'.
+  Type '"pending"' is not assignable to type '"new" | "paid" | "in_production" | "shipped" | "delivered" | "activated" | "canceled" | "refunded"'.
+client/src/pages/MagnetDashboard.tsx(505,70): error TS2345: Argument of type '"pending" | "in_progress" | "completed"' is not assignable to parameter of type '"new" | "paid" | "in_production" | "shipped" | "delivered" | "activated" | "canceled" | "refunded"'.
+  Type '"pending"' is not assignable to type '"new" | "paid" | "in_production" | "shipped" | "delivered" | "activated" | "canceled" | "refunded"'.
+client/src/pages/MagnetDashboard.tsx(508,54): error TS2322: Type '("new" | "paid" | "in_production" | "shipped" | "delivered" | "activated" | "canceled" | "refunded" | "pending" | "in_progress" | "completed")[]' is not assignable to type '("new" | "paid" | "in_production" | "shipped" | "delivered" | "activated" | "canceled" | "refunded")[]'.
+  Type '"new" | "paid" | "in_production" | "shipped" | "delivered" | "activated" | "canceled" | "refunded" | "pending" | "in_progress" | "completed"' is not assignable to type '"new" | "paid" | "in_production" | "shipped" | "delivered" | "activated" | "canceled" | "refunded"'.
+    Type '"pending"' is not assignable to type '"new" | "paid" | "in_production" | "shipped" | "delivered" | "activated" | "canceled" | "refunded"'.
+client/src/pages/MagnetDashboard.tsx(557,34): error TS2362: The left-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type.
+client/src/pages/MagnetDashboard.tsx(682,67): error TS2551: Property 'billAddressLine1' does not exist on type '{ source: string; id: string; status: string; notes: string; createdAt: Date; updatedAt: Date; customerName: string; customerEmail: string; customerPhone: string; shipAddressLine1: string; ... 15 more ...; utmCampaign: string; }'. Did you mean 'shipAddressLine1'?
+client/src/pages/MagnetDashboard.tsx(682,101): error TS2339: Property 'billCity' does not exist on type '{ source: string; id: string; status: string; notes: string; createdAt: Date; updatedAt: Date; customerName: string; customerEmail: string; customerPhone: string; shipAddressLine1: string; ... 15 more ...; utmCampaign: string; }'.
+client/src/pages/MagnetDashboard.tsx(682,127): error TS2339: Property 'billState' does not exist on type '{ source: string; id: string; status: string; notes: string; createdAt: Date; updatedAt: Date; customerName: string; customerEmail: string; customerPhone: string; shipAddressLine1: string; ... 15 more ...; utmCampaign: string; }'.
+client/src/pages/MagnetDashboard.tsx(682,153): error TS2339: Property 'billZip' does not exist on type '{ source: string; id: string; status: string; notes: string; createdAt: Date; updatedAt: Date; customerName: string; customerEmail: string; customerPhone: string; shipAddressLine1: string; ... 15 more ...; utmCampaign: string; }'.
+client/src/pages/MagnetDashboard.tsx(689,60): error TS2362: The left-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type.
+client/src/pages/MagnetDashboard.tsx(739,67): error TS2339: Property 'shippingCarrier' does not exist on type '{ source: string; id: string; status: string; notes: string; createdAt: Date; updatedAt: Date; customerName: string; customerEmail: string; customerPhone: string; shipAddressLine1: string; ... 15 more ...; utmCampaign: string; }'.
+client/src/pages/MagnetDashboard.tsx(740,68): error TS2339: Property 'trackingNumber' does not exist on type '{ source: string; id: string; status: string; notes: string; createdAt: Date; updatedAt: Date; customerName: string; customerEmail: string; customerPhone: string; shipAddressLine1: string; ... 15 more ...; utmCampaign: string; }'.
+client/src/pages/MagnetDashboard.tsx(741,36): error TS2339: Property 'shippedAt' does not exist on type '{ source: string; id: string; status: string; notes: string; createdAt: Date; updatedAt: Date; customerName: string; customerEmail: string; customerPhone: string; shipAddressLine1: string; ... 15 more ...; utmCampaign: string; }'.
+client/src/pages/MagnetDashboard.tsx(742,78): error TS2339: Property 'shippedAt' does not exist on type '{ source: string; id: string; status: string; notes: string; createdAt: Date; updatedAt: Date; customerName: string; customerEmail: string; customerPhone: string; shipAddressLine1: string; ... 15 more ...; utmCampaign: string; }'.
+client/src/pages/Onboarding.tsx(50,24): error TS2339: Property 'token' does not exist on type 'StringRouteParams<undefined>'.
+client/src/pages/RequestPro.tsx(75,30): error TS2339: Property 'publicTrackingCode' does not exist on type 'ChangeEvent<HTMLSelectElement | HTMLInputElement | HTMLTextAreaElement>'.
+client/src/pages/TaskDetail.tsx(31,15): error TS18047: 'params' is possibly 'null'.
+client/src/pages/TaskDetail.tsx(70,10): error TS18047: 'params' is possibly 'null'.
+client/src/pages/TaskDetail.tsx(80,30): error TS2339: Property 'token' does not exist on type 'never'.
+server/index.ts(51,24): error TS2339: Property 'status' does not exist on type 'Error'.
+server/index.ts(51,38): error TS2339: Property 'statusCode' does not exist on type 'Error'.
+server/lib/cron.ts(35,31): error TS2345: Argument of type 'unknown' is not assignable to parameter of type '{ id: string; userId: string; taskId: string; message: string; method: string; }'.
+  Type '{}' is missing the following properties from type '{ id: string; userId: string; taskId: string; message: string; method: string; }': id, userId, taskId, message, method
+server/lib/cron.ts(37,64): error TS2339: Property 'id' does not exist on type 'unknown'.
+server/lib/cron.ts(40,53): error TS2339: Property 'id' does not exist on type 'unknown'.
+server/lib/cron.ts(55,61): error TS2339: Property 'householdId' does not exist on type '{ id: string; userId: string; taskId: string; message: string; method: string; }'.
+server/lib/cron.ts(66,17): error TS2339: Property 'email' does not exist on type 'unknown'.
+server/lib/cron.ts(69,26): error TS2304: Cannot find name 'getTaskHowToSteps'.
+server/lib/cron.ts(69,53): error TS2339: Property 'taskName' does not exist on type '{ id: string; userId: string; taskId: string; message: string; method: string; }'.
+server/lib/cron.ts(73,18): error TS2339: Property 'taskName' does not exist on type '{ id: string; userId: string; taskId: string; message: string; method: string; }'.
+server/lib/cron.ts(74,27): error TS2339: Property 'dueDate' does not exist on type '{ id: string; userId: string; taskId: string; message: string; method: string; }'.
+server/lib/cron.ts(75,18): error TS2339: Property 'taskDescription' does not exist on type '{ id: string; userId: string; taskId: string; message: string; method: string; }'.
+server/lib/cron.ts(75,58): error TS2339: Property 'taskName' does not exist on type '{ id: string; userId: string; taskId: string; message: string; method: string; }'.
+server/lib/cron.ts(76,19): error TS2339: Property 'zip' does not exist on type 'unknown'.
+server/lib/cron.ts(76,46): error TS2339: Property 'zip' does not exist on type 'unknown'.
+server/lib/cron.ts(80,35): error TS2339: Property 'email' does not exist on type 'unknown'.
+server/lib/cron.ts(84,26): error TS2339: Property 'email' does not exist on type 'unknown'.
+server/lib/cron.ts(86,29): error TS2339: Property 'taskName' does not exist on type '{ id: string; userId: string; taskId: string; message: string; method: string; }'.
+server/lib/cron.ts(87,27): error TS2339: Property 'dueDate' does not exist on type '{ id: string; userId: string; taskId: string; message: string; method: string; }'.
+server/lib/cron.ts(88,31): error TS2339: Property 'taskDescription' does not exist on type '{ id: string; userId: string; taskId: string; message: string; method: string; }'.
+server/lib/cron.ts(88,71): error TS2339: Property 'taskName' does not exist on type '{ id: string; userId: string; taskId: string; message: string; method: string; }'.
+server/lib/cron.ts(90,9): error TS2322: Type 'Buffer<ArrayBufferLike>' is not assignable to type 'string'.
+server/lib/cron.ts(94,57): error TS2339: Property 'taskName' does not exist on type '{ id: string; userId: string; taskId: string; message: string; method: string; }'.
+server/lib/cron.ts(94,82): error TS2339: Property 'email' does not exist on type 'unknown'.
+server/lib/cron.ts(101,17): error TS2339: Property 'smsOptIn' does not exist on type 'unknown'.
+server/lib/cron.ts(101,39): error TS2339: Property 'phone' does not exist on type 'unknown'.
+server/lib/cron.ts(105,19): error TS2339: Property 'phone' does not exist on type 'unknown'.
+server/lib/cron.ts(106,18): error TS2339: Property 'taskName' does not exist on type '{ id: string; userId: string; taskId: string; message: string; method: string; }'.
+server/lib/cron.ts(107,18): error TS2339: Property 'dueDate' does not exist on type '{ id: string; userId: string; taskId: string; message: string; method: string; }'.
+server/lib/cron.ts(111,56): error TS2339: Property 'taskName' does not exist on type '{ id: string; userId: string; taskId: string; message: string; method: string; }'.
+server/lib/cron.ts(111,81): error TS2339: Property 'phone' does not exist on type 'unknown'.
+server/lib/cron.ts(115,31): error TS2339: Property 'householdId' does not exist on type '{ id: string; userId: string; taskId: string; message: string; method: string; }'.
+server/lib/cron.ts(119,30): error TS2339: Property 'taskName' does not exist on type '{ id: string; userId: string; taskId: string; message: string; method: string; }'.
+server/lib/cron.ts(120,29): error TS2339: Property 'dueDate' does not exist on type '{ id: string; userId: string; taskId: string; message: string; method: string; }'.
+server/lib/cron.ts(121,28): error TS2339: Property 'phone' does not exist on type 'unknown'.
+server/lib/cron.ts(136,29): error TS2339: Property 'householdId' does not exist on type '{ id: string; userId: string; taskId: string; message: string; method: string; }'.
+server/lib/cron.ts(140,28): error TS2339: Property 'taskName' does not exist on type '{ id: string; userId: string; taskId: string; message: string; method: string; }'.
+server/lib/cron.ts(141,27): error TS2339: Property 'dueDate' does not exist on type '{ id: string; userId: string; taskId: string; message: string; method: string; }'.
+server/lib/pdf.ts(41,30): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'Record<string, unknown>'.
+  Index signature for type 'string' is missing in type '{}'.
+server/lib/pdf.ts(59,7): error TS2339: Property 'font' does not exist on type 'PDFDocument'.
+server/lib/pdf.ts(63,7): error TS2339: Property 'font' does not exist on type 'PDFDocument'.
+server/lib/pdf.ts(71,25): error TS2339: Property 'page' does not exist on type 'PDFDocument'.
+server/lib/pdf.ts(71,42): error TS2339: Property 'page' does not exist on type 'PDFDocument'.
+server/lib/pdf.ts(71,66): error TS2339: Property 'page' does not exist on type 'PDFDocument'.
+server/lib/pdf.ts(72,26): error TS2339: Property 'page' does not exist on type 'PDFDocument'.
+server/lib/pdf.ts(72,44): error TS2339: Property 'page' does not exist on type 'PDFDocument'.
+server/lib/pdf.ts(72,67): error TS2339: Property 'page' does not exist on type 'PDFDocument'.
+server/lib/pdf.ts(87,11): error TS2339: Property 'addPage' does not exist on type 'PDFDocument'.
+server/lib/pdf.ts(90,7): error TS2552: Cannot find name 'currentPage_'. Did you mean 'currentPage'?
+server/lib/pdf.ts(94,19): error TS2339: Property 'page' does not exist on type 'PDFDocument'.
+server/lib/pdf.ts(95,19): error TS2339: Property 'page' does not exist on type 'PDFDocument'.
+server/lib/pdf.ts(113,11): error TS2339: Property 'rect' does not exist on type 'PDFDocument'.
+server/lib/pdf.ts(117,11): error TS2339: Property 'image' does not exist on type 'PDFDocument'.
+server/lib/pdf.ts(121,11): error TS2339: Property 'font' does not exist on type 'PDFDocument'.
+server/lib/pdf.ts(125,11): error TS2339: Property 'font' does not exist on type 'PDFDocument'.
+server/lib/pdf.ts(131,11): error TS2339: Property 'font' does not exist on type 'PDFDocument'.
+server/lib/pdf.ts(132,39): error TS2339: Property 'substring' does not exist on type 'unknown'.
+server/lib/pdf.ts(137,11): error TS2339: Property 'font' does not exist on type 'PDFDocument'.
+server/lib/pdf.ts(138,33): error TS2339: Property 'substring' does not exist on type 'unknown'.
+server/lib/pdf.ts(145,11): error TS2339: Property 'font' does not exist on type 'PDFDocument'.
+server/lib/pdf.ts(161,7): error TS2339: Property 'font' does not exist on type 'PDFDocument'.
+server/lib/pdf.ts(163,16): error TS2339: Property 'page' does not exist on type 'PDFDocument'.
+server/lib/pdf.ts(164,16): error TS2339: Property 'page' does not exist on type 'PDFDocument'.
+server/lib/pdf.ts(164,34): error TS2339: Property 'page' does not exist on type 'PDFDocument'.
+server/load-csv.ts(46,15): error TS2352: Conversion of type 'Record<string, string>' to type 'CSVRow' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type 'Record<string, string>' is missing the following properties from type 'CSVRow': task_code, category, task_name, base_frequency, and 17 more.
+server/middleware/security.ts(11,3): error TS2322: Type '{ error: string; }' is not assignable to type 'string'.
+server/middleware/security.ts(21,3): error TS2322: Type '{ error: string; }' is not assignable to type 'string'.
+server/middleware/security.ts(31,3): error TS2322: Type '{ error: string; }' is not assignable to type 'string'.
+server/middleware/security.ts(41,187): error TS2554: Expected 1 arguments, but got 2.
+server/middleware/security.ts(54,52): error TS2552: Cannot find name 'NextFunction'. Did you mean 'Function'?
+server/middleware/security.ts(56,25): error TS2339: Property 'ip' does not exist on type 'Request'.
+server/middleware/security.ts(60,24): error TS2339: Property 'get' does not exist on type 'Request'.
+server/middleware/security.ts(84,20): error TS2339: Property 'message' does not exist on type 'unknown'.
+server/middleware/security.ts(85,18): error TS2339: Property 'stack' does not exist on type 'unknown'.
+server/middleware/security.ts(86,17): error TS2339: Property 'name' does not exist on type 'unknown'.
+server/middleware/security.ts(91,14): error TS2339: Property 'name' does not exist on type 'unknown'.
+server/middleware/security.ts(92,16): error TS2349: This expression is not callable.
+  Type 'Number' has no call signatures.
+server/middleware/security.ts(95,21): error TS2339: Property 'errors' does not exist on type 'unknown'.
+server/middleware/security.ts(100,14): error TS2349: This expression is not callable.
+  Type 'Number' has no call signatures.
+server/migrate-leads.ts(86,48): error TS2339: Property 'message' does not exist on type 'unknown'.
+server/routes.ts(51,3): error TS2322: Type '{ error: string; }' is not assignable to type 'string'.
+server/routes.ts(59,3): error TS2322: Type '{ error: string; }' is not assignable to type 'string'.
+server/routes.ts(67,3): error TS2322: Type '{ error: string; }' is not assignable to type 'string'.
+server/routes.ts(75,3): error TS2322: Type '{ error: string; }' is not assignable to type 'string'.
+server/routes.ts(149,30): error TS2554: Expected 1 arguments, but got 2.
+server/routes.ts(297,32): error TS2339: Property 'id' does not exist on type 'unknown'.
+server/routes.ts(314,34): error TS2345: Argument of type '{ email: string; homeType: "other" | "mobile" | "single_family" | "condo" | "townhouse" | "apartment"; climateZone: ClimateZone; taskCount: number; dashboardUrl: string; }' is not assignable to parameter of type '{ [key: string]: unknown; email: string; name: string; }'.
+  Property 'name' is missing in type '{ email: string; homeType: "other" | "mobile" | "single_family" | "condo" | "townhouse" | "apartment"; climateZone: ClimateZone; taskCount: number; dashboardUrl: string; }' but required in type '{ [key: string]: unknown; email: string; name: string; }'.
+server/routes.ts(429,62): error TS2339: Property 'frequencyMonths' does not exist on type 'unknown'.
+server/routes.ts(434,30): error TS2339: Property 'id' does not exist on type 'unknown'.
+server/routes.ts(446,30): error TS2339: Property 'id' does not exist on type 'unknown'.
+server/routes.ts(447,28): error TS2339: Property 'taskName' does not exist on type 'unknown'.
+server/routes.ts(448,35): error TS2339: Property 'description' does not exist on type 'unknown'.
+server/routes.ts(452,40): error TS2339: Property 'taskName' does not exist on type 'unknown'.
+server/routes.ts(461,30): error TS2339: Property 'taskName' does not exist on type 'unknown'.
+server/routes.ts(469,36): error TS2339: Property 'taskName' does not exist on type 'unknown'.
+server/routes.ts(641,60): error TS2713: Cannot access 'Checkout.Session' because 'Checkout' is a type, but not a namespace. Did you mean to retrieve the type of the property 'Session' in 'Checkout' with 'Checkout["Session"]'?
+server/routes.ts(789,11): error TS2554: Expected 1 arguments, but got 3.
+server/routes.ts(803,11): error TS2554: Expected 1 arguments, but got 3.
+server/routes.ts(1063,13): error TS2339: Property 'shippingCarrier' does not exist on type '{ source: string; id: string; status: string; notes: string; createdAt: Date; updatedAt: Date; customerName: string; customerEmail: string; customerPhone: string; shipAddressLine1: string; ... 15 more ...; utmCampaign: string; }'.
+server/routes.ts(1101,57): error TS2769: No overload matches this call.
+  Overload 1 of 3, '(callbackfn: (previousValue: { source: string; id: string; status: string; notes: string; createdAt: Date; updatedAt: Date; customerName: string; customerEmail: string; customerPhone: string; shipAddressLine1: string; ... 15 more ...; utmCampaign: string; }, currentValue: { ...; }, currentIndex: number, array: { ...; }[]) => { ...; }, initialValue: { ...; }): { ...; }', gave the following error.
+    Type 'string' is not assignable to type '{ source: string; id: string; status: string; notes: string; createdAt: Date; updatedAt: Date; customerName: string; customerEmail: string; customerPhone: string; shipAddressLine1: string; ... 15 more ...; utmCampaign: string; }'.
+  Overload 2 of 3, '(callbackfn: (previousValue: number, currentValue: { source: string; id: string; status: string; notes: string; createdAt: Date; updatedAt: Date; customerName: string; customerEmail: string; customerPhone: string; ... 16 more ...; utmCampaign: string; }, currentIndex: number, array: { ...; }[]) => number, initialValue: number): number', gave the following error.
+    Type 'string' is not assignable to type 'number'.
+server/routes/homeExtra.ts(26,13): error TS2339: Property 'name' does not exist on type 'unknown'.
+server/routes/homeExtra.ts(27,78): error TS2339: Property 'errors' does not exist on type 'unknown'.
+server/run-migration.ts(2,22): error TS2307: Cannot find module 'postgres' or its corresponding type declarations.
+server/services/notifyContact.ts(41,33): error TS2339: Property '_message' does not exist on type 'ContactAckEmailParams'.
+server/services/notifyContact.ts(149,17): error TS2345: Argument of type 'Record<string, unknown>' is not assignable to parameter of type 'EmailParams'.
+  Type 'Record<string, unknown>' is missing the following properties from type 'EmailParams': to, from, subject
+server/src/middleware/rateLimit.ts(10,3): error TS2322: Type '{ error: string; retryAfter: string; }' is not assignable to type 'string'.
+server/src/routes/auth.ts(21,23): error TS2339: Property '_password' does not exist on type '{ password?: string; username?: string; }'.
+server/src/routes/calendar.ts(19,36): error TS2345: Argument of type '{ title?: string; description?: string; end?: string; start?: string; location?: string; }' is not assignable to parameter of type 'CalendarEvent'.
+  Property 'title' is optional in type '{ title?: string; description?: string; end?: string; start?: string; location?: string; }' but required in type 'CalendarEvent'.
+server/src/routes/homeExtra.ts(18,40): error TS2339: Property 'collection' does not exist on type 'unknown'.
+server/src/routes/homeExtra.ts(35,40): error TS2339: Property 'collection' does not exist on type 'unknown'.
+server/src/routes/homeExtra.ts(41,63): error TS2559: Type '{ ownerType?: "owner" | "landlord" | "pm" | "flipper"; sellWindow?: "none" | "lt12" | "12to24" | "gt24"; yearBuilt?: number; exteriorType?: "siding" | "brick" | "stucco" | "other"; lotSqFt?: number; ... 20 more ...; appliances?: { ...; }[]; }' has no properties in common with type 'Partial<{ householdId: string; }>'.
+server/src/routes/homeExtra.ts(51,15): error TS2339: Property 'name' does not exist on type 'unknown'.
+server/src/routes/homeExtra.ts(54,24): error TS2339: Property 'errors' does not exist on type 'unknown'.
+server/src/routes/leads.ts(14,3): error TS2322: Type '{ error: string; }' is not assignable to type 'string'.
+server/src/routes/leads.ts(62,33): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(value: { id: string | SQL<unknown> | Placeholder<string, any>; email: string | SQL<unknown> | Placeholder<string, any>; fullName: string | SQL<unknown> | Placeholder<...>; ... 4 more ...; zipCode: string | ... 1 more ... | Placeholder<...>; }): PgInsertBase<...>', gave the following error.
+    Object literal may only specify known properties, and 'preferredContact' does not exist in type '{ id: string | SQL<unknown> | Placeholder<string, any>; email: string | SQL<unknown> | Placeholder<string, any>; fullName: string | SQL<unknown> | Placeholder<string, any>; ... 4 more ...; zipCode: string | ... 1 more ... | Placeholder<...>; }'.
+  Overload 2 of 2, '(values: { id: string | SQL<unknown> | Placeholder<string, any>; email: string | SQL<unknown> | Placeholder<string, any>; fullName: string | SQL<unknown> | Placeholder<...>; ... 4 more ...; zipCode: string | ... 1 more ... | Placeholder<...>; }[]): PgInsertBase<...>', gave the following error.
+    Object literal may only specify known properties, and 'id' does not exist in type '{ id: string | SQL<unknown> | Placeholder<string, any>; email: string | SQL<unknown> | Placeholder<string, any>; fullName: string | SQL<unknown> | Placeholder<string, any>; ... 4 more ...; zipCode: string | ... 1 more ... | Placeholder<...>; }[]'.
+server/src/routes/publicHomeExtra.ts(79,15): error TS2339: Property 'name' does not exist on type 'unknown'.
+server/src/routes/publicHomeExtra.ts(82,24): error TS2339: Property 'errors' does not exist on type 'unknown'.
+server/src/routes/webhook.ts(34,56): error TS2339: Property 'type' does not exist on type 'unknown'.
+server/src/routes/webhook.ts(36,67): error TS2339: Property 'message' does not exist on type 'unknown'.
+server/src/routes/webhook.ts(40,13): error TS2339: Property 'type' does not exist on type 'unknown'.
+server/src/routes/webhook.ts(41,27): error TS2339: Property 'data' does not exist on type 'unknown'.
+server/src/routes/webhook.ts(55,9): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(value: { customerName: string | SQL<unknown> | Placeholder<string, any>; customerEmail: string | SQL<unknown> | Placeholder<string, any>; customerPhone: string | ... 1 more ... | Placeholder<...>; ... 5 more ...; total: string | ... 1 more ... | Placeholder<...>; }): PgInsertBase<...>', gave the following error.
+    Object literal may only specify known properties, and 'id' does not exist in type '{ customerName: string | SQL<unknown> | Placeholder<string, any>; customerEmail: string | SQL<unknown> | Placeholder<string, any>; customerPhone: string | SQL<...> | Placeholder<...>; ... 5 more ...; total: string | ... 1 more ... | Placeholder<...>; }'.
+  Overload 2 of 2, '(values: { customerName: string | SQL<unknown> | Placeholder<string, any>; customerEmail: string | SQL<unknown> | Placeholder<string, any>; customerPhone: string | ... 1 more ... | Placeholder<...>; ... 5 more ...; total: string | ... 1 more ... | Placeholder<...>; }[]): PgInsertBase<...>', gave the following error.
+    Object literal may only specify known properties, and 'id' does not exist in type '{ customerName: string | SQL<unknown> | Placeholder<string, any>; customerEmail: string | SQL<unknown> | Placeholder<string, any>; customerPhone: string | SQL<...> | Placeholder<...>; ... 5 more ...; total: string | ... 1 more ... | Placeholder<...>; }[]'.
+server/src/routes/webhook.ts(72,46): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(value: { sku: string | SQL<unknown> | Placeholder<string, any>; activationCode: string | SQL<unknown> | Placeholder<string, any>; orderId: string | SQL<unknown> | Placeholder<...>; unitPrice: string | ... 1 more ... | Placeholder<...>; qrUrl: string | ... 1 more ... | Placeholder<...>; }): PgInsertBase<...>', gave the following error.
+    Object literal may only specify known properties, and 'quantity' does not exist in type '{ sku: string | SQL<unknown> | Placeholder<string, any>; activationCode: string | SQL<unknown> | Placeholder<string, any>; orderId: string | SQL<unknown> | Placeholder<...>; unitPrice: string | ... 1 more ... | Placeholder<...>; qrUrl: string | ... 1 more ... | Placeholder<...>; }'.
+  Overload 2 of 2, '(values: { sku: string | SQL<unknown> | Placeholder<string, any>; activationCode: string | SQL<unknown> | Placeholder<string, any>; orderId: string | SQL<unknown> | Placeholder<...>; unitPrice: string | ... 1 more ... | Placeholder<...>; qrUrl: string | ... 1 more ... | Placeholder<...>; }[]): PgInsertBase<...>', gave the following error.
+    Object literal may only specify known properties, and 'orderId' does not exist in type '{ sku: string | SQL<unknown> | Placeholder<string, any>; activationCode: string | SQL<unknown> | Placeholder<string, any>; orderId: string | SQL<unknown> | Placeholder<...>; unitPrice: string | ... 1 more ... | Placeholder<...>; qrUrl: string | ... 1 more ... | Placeholder<...>; }[]'.
+server/storage-fixes.ts(8,29): error TS2349: This expression is not callable.
+  Type '{ readonly homeMaintenanceTasksTable: RelationalQueryBuilder<ExtractTablesWithRelations<typeof import("/workspaces/UpKeepQr/shared/schema")>, { tsName: "homeMaintenanceTasksTable"; dbName: "home_maintenance_tasks"; columns: { ...; }; relations: never; primaryKey: AnyColumn[]; }>; ... 11 more ...; readonly leadsTable...' has no call signatures.
+server/storage-fixes.ts(38,29): error TS2349: This expression is not callable.
+  Type '{ readonly homeMaintenanceTasksTable: RelationalQueryBuilder<ExtractTablesWithRelations<typeof import("/workspaces/UpKeepQr/shared/schema")>, { tsName: "homeMaintenanceTasksTable"; dbName: "home_maintenance_tasks"; columns: { ...; }; relations: never; primaryKey: AnyColumn[]; }>; ... 11 more ...; readonly leadsTable...' has no call signatures.
+server/storage-fixes.ts(49,29): error TS2349: This expression is not callable.
+  Type '{ readonly homeMaintenanceTasksTable: RelationalQueryBuilder<ExtractTablesWithRelations<typeof import("/workspaces/UpKeepQr/shared/schema")>, { tsName: "homeMaintenanceTasksTable"; dbName: "home_maintenance_tasks"; columns: { ...; }; relations: never; primaryKey: AnyColumn[]; }>; ... 11 more ...; readonly leadsTable...' has no call signatures.
+server/storage.ts(183,31): error TS2339: Property 'collection' does not exist on type 'unknown'.
+server/storage.ts(188,33): error TS2339: Property 'collection' does not exist on type 'unknown'.
+server/storage.ts(208,19): error TS2339: Property 'collection' does not exist on type 'unknown'.
+server/storage.ts(224,19): error TS2339: Property 'collection' does not exist on type 'unknown'.
+server/storage.ts(229,31): error TS2339: Property 'collection' does not exist on type 'unknown'.
+server/storage.ts(234,33): error TS2339: Property 'collection' does not exist on type 'unknown'.
+server/storage.ts(244,19): error TS2339: Property 'collection' does not exist on type 'unknown'.
+server/storage.ts(262,19): error TS2339: Property 'collection' does not exist on type 'unknown'.
+server/storage.ts(267,31): error TS2339: Property 'collection' does not exist on type 'unknown'.
+server/storage.ts(286,33): error TS2339: Property 'collection' does not exist on type 'unknown'.
+server/storage.ts(296,33): error TS2339: Property 'collection' does not exist on type 'unknown'.
+server/storage.ts(305,33): error TS2339: Property 'collection' does not exist on type 'unknown'.
+server/storage.ts(330,19): error TS2339: Property 'collection' does not exist on type 'unknown'.
+server/storage.ts(335,31): error TS2339: Property 'collection' does not exist on type 'unknown'.
+server/storage.ts(340,33): error TS2339: Property 'collection' does not exist on type 'unknown'.
+server/storage.ts(350,33): error TS2339: Property 'collection' does not exist on type 'unknown'.
+server/storage.ts(371,19): error TS2339: Property 'collection' does not exist on type 'unknown'.
+server/storage.ts(376,31): error TS2339: Property 'collection' does not exist on type 'unknown'.
+server/storage.ts(381,33): error TS2339: Property 'collection' does not exist on type 'unknown'.
+server/storage.ts(390,33): error TS2339: Property 'collection' does not exist on type 'unknown'.
+server/storage.ts(399,19): error TS2339: Property 'collection' does not exist on type 'unknown'.
+server/storage.ts(408,33): error TS2339: Property 'collection' does not exist on type 'unknown'.
+server/storage.ts(428,19): error TS2339: Property 'collection' does not exist on type 'unknown'.
+server/storage.ts(433,31): error TS2339: Property 'collection' does not exist on type 'unknown'.
+server/storage.ts(438,33): error TS2339: Property 'collection' does not exist on type 'unknown'.
+server/storage.ts(448,19): error TS2339: Property 'collection' does not exist on type 'unknown'.
+server/storage.ts(478,19): error TS2339: Property 'collection' does not exist on type 'unknown'.
+server/storage.ts(502,19): error TS2339: Property 'collection' does not exist on type 'unknown'.
+server/storage.ts(507,33): error TS2339: Property 'collection' does not exist on type 'unknown'.
+server/storage.ts(525,19): error TS2339: Property 'collection' does not exist on type 'unknown'.
+server/storage.ts(538,19): error TS2339: Property 'collection' does not exist on type 'unknown'.
+server/storage.ts(549,19): error TS2339: Property 'collection' does not exist on type 'unknown'.
+server/storage.ts(561,19): error TS2339: Property 'collection' does not exist on type 'unknown'.
+server/storage.ts(602,46): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(value: { description: string | SQL<unknown> | Placeholder<string, any>; city: string | SQL<unknown> | Placeholder<string, any>; state: string | SQL<unknown> | Placeholder<...>; ... 7 more ...; publicTrackingCode: string | ... 1 more ... | Placeholder<...>; }): PgInsertBase<...>', gave the following error.
+    Argument of type '{ publicTrackingCode: string; status: "new"; createdAt: Date; updatedAt: Date; description?: string; city?: string; state?: string; zip?: string; trade?: "roofing" | "plumbing" | "electrical" | "hvac" | "general"; ... 9 more ...; id: string; }' is not assignable to parameter of type '{ description: string | SQL<unknown> | Placeholder<string, any>; city: string | SQL<unknown> | Placeholder<string, any>; state: string | SQL<unknown> | Placeholder<...>; ... 7 more ...; publicTrackingCode: string | ... 1 more ... | Placeholder<...>; }'.
+      Property 'description' is optional in type '{ publicTrackingCode: string; status: "new"; createdAt: Date; updatedAt: Date; description?: string; city?: string; state?: string; zip?: string; trade?: "roofing" | "plumbing" | "electrical" | "hvac" | "general"; ... 9 more ...; id: string; }' but required in type '{ description: string | SQL<unknown> | Placeholder<string, any>; city: string | SQL<unknown> | Placeholder<string, any>; state: string | SQL<unknown> | Placeholder<...>; ... 7 more ...; publicTrackingCode: string | ... 1 more ... | Placeholder<...>; }'.
+  Overload 2 of 2, '(values: { description: string | SQL<unknown> | Placeholder<string, any>; city: string | SQL<unknown> | Placeholder<string, any>; state: string | SQL<unknown> | Placeholder<...>; ... 7 more ...; publicTrackingCode: string | ... 1 more ... | Placeholder<...>; }[]): PgInsertBase<...>', gave the following error.
+    Argument of type '{ publicTrackingCode: string; status: "new"; createdAt: Date; updatedAt: Date; description?: string; city?: string; state?: string; zip?: string; trade?: "roofing" | "plumbing" | "electrical" | "hvac" | "general"; ... 9 more ...; id: string; }' is not assignable to parameter of type '{ description: string | SQL<unknown> | Placeholder<string, any>; city: string | SQL<unknown> | Placeholder<string, any>; state: string | SQL<unknown> | Placeholder<...>; ... 7 more ...; publicTrackingCode: string | ... 1 more ... | Placeholder<...>; }[]'.
+      Type '{ publicTrackingCode: string; status: "new"; createdAt: Date; updatedAt: Date; description?: string; city?: string; state?: string; zip?: string; trade?: "roofing" | "plumbing" | "electrical" | "hvac" | "general"; ... 9 more ...; id: string; }' is missing the following properties from type '{ description: string | SQL<unknown> | Placeholder<string, any>; city: string | SQL<unknown> | Placeholder<string, any>; state: string | SQL<unknown> | Placeholder<...>; ... 7 more ...; publicTrackingCode: string | ... 1 more ... | Placeholder<...>; }[]': length, pop, push, concat, and 35 more.
+server/storage.ts(609,5): error TS2322: Type '{ id: string; status: string; description: string; city: string; state: string; createdAt: Date; updatedAt: Date; zip: string; trade: string; urgency: string; photos: string[]; addressLine1: string; ... 6 more ...; publicTrackingCode: string; }' is not assignable to type '{ id?: string; status?: "new" | "canceled" | "in_progress" | "completed" | "assigned"; description?: string; city?: string; state?: string; createdAt?: Date; updatedAt?: Date; zip?: string; ... 10 more ...; publicTrackingCode?: string; }'.
+  Types of property 'status' are incompatible.
+    Type 'string' is not assignable to type '"new" | "canceled" | "in_progress" | "completed" | "assigned"'.
+server/storage.ts(616,5): error TS2322: Type '{ id: string; status: string; description: string; city: string; state: string; createdAt: Date; updatedAt: Date; zip: string; trade: string; urgency: string; photos: string[]; addressLine1: string; ... 6 more ...; publicTrackingCode: string; }' is not assignable to type '{ id?: string; status?: "new" | "canceled" | "in_progress" | "completed" | "assigned"; description?: string; city?: string; state?: string; createdAt?: Date; updatedAt?: Date; zip?: string; ... 10 more ...; publicTrackingCode?: string; }'.
+  Types of property 'status' are incompatible.
+    Type 'string' is not assignable to type '"new" | "canceled" | "in_progress" | "completed" | "assigned"'.
+server/storage.ts(638,5): error TS2322: Type '{ id: string; status: string; description: string; city: string; state: string; createdAt: Date; updatedAt: Date; zip: string; trade: string; urgency: string; photos: string[]; addressLine1: string; ... 6 more ...; publicTrackingCode: string; }[]' is not assignable to type '{ id?: string; status?: "new" | "canceled" | "in_progress" | "completed" | "assigned"; description?: string; city?: string; state?: string; createdAt?: Date; updatedAt?: Date; zip?: string; ... 10 more ...; publicTrackingCode?: string; }[]'.
+  Type '{ id: string; status: string; description: string; city: string; state: string; createdAt: Date; updatedAt: Date; zip: string; trade: string; urgency: string; photos: string[]; addressLine1: string; ... 6 more ...; publicTrackingCode: string; }' is not assignable to type '{ id?: string; status?: "new" | "canceled" | "in_progress" | "completed" | "assigned"; description?: string; city?: string; state?: string; createdAt?: Date; updatedAt?: Date; zip?: string; ... 10 more ...; publicTrackingCode?: string; }'.
+    Types of property 'status' are incompatible.
+      Type 'string' is not assignable to type '"new" | "canceled" | "in_progress" | "completed" | "assigned"'.
+server/storage.ts(653,44): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(value: { email: string | SQL<unknown> | Placeholder<string, any>; name: string | SQL<unknown> | Placeholder<string, any>; phone: string | SQL<unknown> | Placeholder<string, any>; trade: string | ... 1 more ... | Placeholder<...>; coverageZips: string[] | ... 1 more ... | Placeholder<...>; }): PgInsertBase<...>', gave the following error.
+    Argument of type '{ createdAt: Date; updatedAt: Date; email?: string; name?: string; phone?: string; trade?: "roofing" | "plumbing" | "electrical" | "hvac" | "general"; coverageZips?: string[]; id: string; }' is not assignable to parameter of type '{ email: string | SQL<unknown> | Placeholder<string, any>; name: string | SQL<unknown> | Placeholder<string, any>; phone: string | SQL<unknown> | Placeholder<string, any>; trade: string | ... 1 more ... | Placeholder<...>; coverageZips: string[] | ... 1 more ... | Placeholder<...>; }'.
+      Property 'email' is optional in type '{ createdAt: Date; updatedAt: Date; email?: string; name?: string; phone?: string; trade?: "roofing" | "plumbing" | "electrical" | "hvac" | "general"; coverageZips?: string[]; id: string; }' but required in type '{ email: string | SQL<unknown> | Placeholder<string, any>; name: string | SQL<unknown> | Placeholder<string, any>; phone: string | SQL<unknown> | Placeholder<string, any>; trade: string | ... 1 more ... | Placeholder<...>; coverageZips: string[] | ... 1 more ... | Placeholder<...>; }'.
+  Overload 2 of 2, '(values: { email: string | SQL<unknown> | Placeholder<string, any>; name: string | SQL<unknown> | Placeholder<string, any>; phone: string | SQL<unknown> | Placeholder<string, any>; trade: string | ... 1 more ... | Placeholder<...>; coverageZips: string[] | ... 1 more ... | Placeholder<...>; }[]): PgInsertBase<...>', gave the following error.
+    Argument of type '{ createdAt: Date; updatedAt: Date; email?: string; name?: string; phone?: string; trade?: "roofing" | "plumbing" | "electrical" | "hvac" | "general"; coverageZips?: string[]; id: string; }' is not assignable to parameter of type '{ email: string | SQL<unknown> | Placeholder<string, any>; name: string | SQL<unknown> | Placeholder<string, any>; phone: string | SQL<unknown> | Placeholder<string, any>; trade: string | ... 1 more ... | Placeholder<...>; coverageZips: string[] | ... 1 more ... | Placeholder<...>; }[]'.
+      Type '{ createdAt: Date; updatedAt: Date; email?: string; name?: string; phone?: string; trade?: "roofing" | "plumbing" | "electrical" | "hvac" | "general"; coverageZips?: string[]; id: string; }' is missing the following properties from type '{ email: string | SQL<unknown> | Placeholder<string, any>; name: string | SQL<unknown> | Placeholder<string, any>; phone: string | SQL<unknown> | Placeholder<string, any>; trade: string | ... 1 more ... | Placeholder<...>; coverageZips: string[] | ... 1 more ... | Placeholder<...>; }[]': length, pop, push, concat, and 35 more.
+server/storage.ts(660,5): error TS2322: Type '{ id: string; email: string; name: string; phone: string; createdAt: Date; updatedAt: Date; trade: string; coverageZips: string[]; }' is not assignable to type '{ id?: string; email?: string; name?: string; phone?: string; createdAt?: Date; updatedAt?: Date; trade?: "roofing" | "plumbing" | "electrical" | "hvac" | "general"; coverageZips?: string[]; }'.
+  Types of property 'trade' are incompatible.
+    Type 'string' is not assignable to type '"roofing" | "plumbing" | "electrical" | "hvac" | "general"'.
+server/storage.ts(668,5): error TS2322: Type '{ id: string; email: string; name: string; phone: string; createdAt: Date; updatedAt: Date; trade: string; coverageZips: string[]; }[]' is not assignable to type '{ id?: string; email?: string; name?: string; phone?: string; createdAt?: Date; updatedAt?: Date; trade?: "roofing" | "plumbing" | "electrical" | "hvac" | "general"; coverageZips?: string[]; }[]'.
+  Type '{ id: string; email: string; name: string; phone: string; createdAt: Date; updatedAt: Date; trade: string; coverageZips: string[]; }' is not assignable to type '{ id?: string; email?: string; name?: string; phone?: string; createdAt?: Date; updatedAt?: Date; trade?: "roofing" | "plumbing" | "electrical" | "hvac" | "general"; coverageZips?: string[]; }'.
+    Types of property 'trade' are incompatible.
+      Type 'string' is not assignable to type '"roofing" | "plumbing" | "electrical" | "hvac" | "general"'.
+server/storage.ts(678,5): error TS2322: Type '{ id: string; email: string; name: string; phone: string; createdAt: Date; updatedAt: Date; trade: string; coverageZips: string[]; }[]' is not assignable to type '{ id?: string; email?: string; name?: string; phone?: string; createdAt?: Date; updatedAt?: Date; trade?: "roofing" | "plumbing" | "electrical" | "hvac" | "general"; coverageZips?: string[]; }[]'.
+  Type '{ id: string; email: string; name: string; phone: string; createdAt: Date; updatedAt: Date; trade: string; coverageZips: string[]; }' is not assignable to type '{ id?: string; email?: string; name?: string; phone?: string; createdAt?: Date; updatedAt?: Date; trade?: "roofing" | "plumbing" | "electrical" | "hvac" | "general"; coverageZips?: string[]; }'.
+    Types of property 'trade' are incompatible.
+      Type 'string' is not assignable to type '"roofing" | "plumbing" | "electrical" | "hvac" | "general"'.
+server/storage.ts(686,7): error TS2740: Type 'Omit<PgSelectBase<"providers", { id: PgColumn<{ name: "id"; tableName: "providers"; dataType: "string"; columnType: "PgVarchar"; data: string; driverParam: string; notNull: true; hasDefault: true; isPrimaryKey: true; ... 4 more ...; generated: GeneratedColumnConfig<...>; }, {}, {}>; ... 6 more ...; updatedAt: PgColu...' is missing the following properties from type 'PgSelectBase<"providers", { id: PgColumn<{ name: "id"; tableName: "providers"; dataType: "string"; columnType: "PgVarchar"; data: string; driverParam: string; notNull: true; hasDefault: true; isPrimaryKey: true; ... 4 more ...; generated: GeneratedColumnConfig<...>; }, {}, {}>; ... 6 more ...; updatedAt: PgColumn<.....': config, joinsNotNullableMap, tableName, isPartialSelect, and 5 more.
+server/storage.ts(711,5): error TS2322: Type '{ id: string; email: string; name: string; phone: string; createdAt: Date; updatedAt: Date; trade: string; coverageZips: string[]; }[]' is not assignable to type '{ id?: string; email?: string; name?: string; phone?: string; createdAt?: Date; updatedAt?: Date; trade?: "roofing" | "plumbing" | "electrical" | "hvac" | "general"; coverageZips?: string[]; }[]'.
+  Type '{ id: string; email: string; name: string; phone: string; createdAt: Date; updatedAt: Date; trade: string; coverageZips: string[]; }' is not assignable to type '{ id?: string; email?: string; name?: string; phone?: string; createdAt?: Date; updatedAt?: Date; trade?: "roofing" | "plumbing" | "electrical" | "hvac" | "general"; coverageZips?: string[]; }'.
+    Types of property 'trade' are incompatible.
+      Type 'string' is not assignable to type '"roofing" | "plumbing" | "electrical" | "hvac" | "general"'.
+server/storage.ts(761,7): error TS2740: Type 'Omit<PgSelectBase<"pro_requests", { id: PgColumn<{ name: "id"; tableName: "pro_requests"; dataType: "string"; columnType: "PgVarchar"; data: string; driverParam: string; notNull: true; hasDefault: true; isPrimaryKey: true; ... 4 more ...; generated: GeneratedColumnConfig<...>; }, {}, {}>; ... 17 more ...; updatedAt:...' is missing the following properties from type 'PgSelectBase<"pro_requests", { id: PgColumn<{ name: "id"; tableName: "pro_requests"; dataType: "string"; columnType: "PgVarchar"; data: string; driverParam: string; notNull: true; hasDefault: true; isPrimaryKey: true; ... 4 more ...; generated: GeneratedColumnConfig<...>; }, {}, {}>; ... 17 more ...; updatedAt: PgCo...': config, joinsNotNullableMap, tableName, isPartialSelect, and 5 more.
+server/storage.ts(762,7): error TS2740: Type 'Omit<PgSelectBase<"pro_requests", { count: SQL<number>; }, "partial", Record<"pro_requests", "not-null">, false, "where", { count: number; }[], { count: DrizzleTypeError<"You cannot reference this field without assigning it an alias first - use `.as(<alias>)`">; }>, "where">' is missing the following properties from type 'PgSelectBase<"pro_requests", { count: SQL<number>; }, "partial", Record<"pro_requests", "not-null">, false, never, { count: number; }[], { count: DrizzleTypeError<"You cannot reference this field without assigning it an alias first - use `.as(<alias>)`">; }>': config, joinsNotNullableMap, tableName, isPartialSelect, and 5 more.
+server/storage.ts(767,5): error TS2740: Type 'Omit<PgSelectBase<"pro_requests", { id: PgColumn<{ name: "id"; tableName: "pro_requests"; dataType: "string"; columnType: "PgVarchar"; data: string; driverParam: string; notNull: true; hasDefault: true; isPrimaryKey: true; ... 4 more ...; generated: GeneratedColumnConfig<...>; }, {}, {}>; ... 17 more ...; updatedAt:...' is missing the following properties from type 'PgSelectBase<"pro_requests", { id: PgColumn<{ name: "id"; tableName: "pro_requests"; dataType: "string"; columnType: "PgVarchar"; data: string; driverParam: string; notNull: true; hasDefault: true; isPrimaryKey: true; ... 4 more ...; generated: GeneratedColumnConfig<...>; }, {}, {}>; ... 17 more ...; updatedAt: PgCo...': config, joinsNotNullableMap, tableName, isPartialSelect, and 5 more.
+server/storage.ts(771,5): error TS2740: Type 'Omit<PgSelectBase<"pro_requests", { id: PgColumn<{ name: "id"; tableName: "pro_requests"; dataType: "string"; columnType: "PgVarchar"; data: string; driverParam: string; notNull: true; hasDefault: true; isPrimaryKey: true; ... 4 more ...; generated: GeneratedColumnConfig<...>; }, {}, {}>; ... 17 more ...; updatedAt:...' is missing the following properties from type 'PgSelectBase<"pro_requests", { id: PgColumn<{ name: "id"; tableName: "pro_requests"; dataType: "string"; columnType: "PgVarchar"; data: string; driverParam: string; notNull: true; hasDefault: true; isPrimaryKey: true; ... 4 more ...; generated: GeneratedColumnConfig<...>; }, {}, {}>; ... 17 more ...; updatedAt: PgCo...': config, joinsNotNullableMap, tableName, isPartialSelect, and 6 more.
+server/storage.ts(782,7): error TS2322: Type '{ id: string; status: string; description: string; city: string; state: string; createdAt: Date; updatedAt: Date; zip: string; trade: string; urgency: string; photos: string[]; addressLine1: string; ... 6 more ...; publicTrackingCode: string; }[]' is not assignable to type '{ id?: string; status?: "new" | "canceled" | "in_progress" | "completed" | "assigned"; description?: string; city?: string; state?: string; createdAt?: Date; updatedAt?: Date; zip?: string; ... 10 more ...; publicTrackingCode?: string; }[]'.
+  Type '{ id: string; status: string; description: string; city: string; state: string; createdAt: Date; updatedAt: Date; zip: string; trade: string; urgency: string; photos: string[]; addressLine1: string; ... 6 more ...; publicTrackingCode: string; }' is not assignable to type '{ id?: string; status?: "new" | "canceled" | "in_progress" | "completed" | "assigned"; description?: string; city?: string; state?: string; createdAt?: Date; updatedAt?: Date; zip?: string; ... 10 more ...; publicTrackingCode?: string; }'.
+    Types of property 'status' are incompatible.
+      Type 'string' is not assignable to type '"new" | "canceled" | "in_progress" | "completed" | "assigned"'.
+server/storage.ts(810,40): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(value: { message: string | SQL<unknown> | Placeholder<string, any>; requestId: string | SQL<unknown> | Placeholder<string, any>; }): PgInsertBase<PgTableWithColumns<{ name: "notes"; schema: undefined; columns: { ...; }; dialect: "pg"; }>, NeonQueryResultHKT, undefined, false, never>', gave the following error.
+    Argument of type '{ createdAt: Date; message?: string; requestId?: string; author?: string; id: string; }' is not assignable to parameter of type '{ message: string | SQL<unknown> | Placeholder<string, any>; requestId: string | SQL<unknown> | Placeholder<string, any>; }'.
+      Property 'message' is optional in type '{ createdAt: Date; message?: string; requestId?: string; author?: string; id: string; }' but required in type '{ message: string | SQL<unknown> | Placeholder<string, any>; requestId: string | SQL<unknown> | Placeholder<string, any>; }'.
+  Overload 2 of 2, '(values: { message: string | SQL<unknown> | Placeholder<string, any>; requestId: string | SQL<unknown> | Placeholder<string, any>; }[]): PgInsertBase<PgTableWithColumns<{ name: "notes"; schema: undefined; columns: { ...; }; dialect: "pg"; }>, NeonQueryResultHKT, undefined, false, never>', gave the following error.
+    Argument of type '{ createdAt: Date; message?: string; requestId?: string; author?: string; id: string; }' is not assignable to parameter of type '{ message: string | SQL<unknown> | Placeholder<string, any>; requestId: string | SQL<unknown> | Placeholder<string, any>; }[]'.
+      Type '{ createdAt: Date; message?: string; requestId?: string; author?: string; id: string; }' is missing the following properties from type '{ message: string | SQL<unknown> | Placeholder<string, any>; requestId: string | SQL<unknown> | Placeholder<string, any>; }[]': length, pop, push, concat, and 35 more.
+server/storage.ts(833,46): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(value: { data: Record<string, unknown> | SQL<unknown> | Placeholder<string, any>; type: string | SQL<unknown> | Placeholder<string, any>; requestId: string | SQL<...> | Placeholder<...>; }): PgInsertBase<...>', gave the following error.
+    Argument of type '{ createdAt: Date; data?: Record<string, any>; type?: "status_change" | "provider_assignment" | "note_created"; requestId?: string; actor?: string; id: string; }' is not assignable to parameter of type '{ data: Record<string, unknown> | SQL<unknown> | Placeholder<string, any>; type: string | SQL<unknown> | Placeholder<string, any>; requestId: string | SQL<...> | Placeholder<...>; }'.
+      Property 'data' is optional in type '{ createdAt: Date; data?: Record<string, any>; type?: "status_change" | "provider_assignment" | "note_created"; requestId?: string; actor?: string; id: string; }' but required in type '{ data: Record<string, unknown> | SQL<unknown> | Placeholder<string, any>; type: string | SQL<unknown> | Placeholder<string, any>; requestId: string | SQL<...> | Placeholder<...>; }'.
+  Overload 2 of 2, '(values: { data: Record<string, unknown> | SQL<unknown> | Placeholder<string, any>; type: string | SQL<unknown> | Placeholder<string, any>; requestId: string | SQL<...> | Placeholder<...>; }[]): PgInsertBase<...>', gave the following error.
+    Argument of type '{ createdAt: Date; data?: Record<string, any>; type?: "status_change" | "provider_assignment" | "note_created"; requestId?: string; actor?: string; id: string; }' is not assignable to parameter of type '{ data: Record<string, unknown> | SQL<unknown> | Placeholder<string, any>; type: string | SQL<unknown> | Placeholder<string, any>; requestId: string | SQL<...> | Placeholder<...>; }[]'.
+      Type '{ createdAt: Date; data?: Record<string, any>; type?: "status_change" | "provider_assignment" | "note_created"; requestId?: string; actor?: string; id: string; }' is missing the following properties from type '{ data: Record<string, unknown> | SQL<unknown> | Placeholder<string, any>; type: string | SQL<unknown> | Placeholder<string, any>; requestId: string | SQL<...> | Placeholder<...>; }[]': length, pop, push, concat, and 35 more.
+server/storage.ts(842,5): error TS2322: Type '{ data: Record<string, unknown>; type: string; id: string; createdAt: Date; requestId: string; actor: string; }[]' is not assignable to type '{ data?: Record<string, any>; type?: "status_change" | "provider_assignment" | "note_created"; id?: string; createdAt?: Date; requestId?: string; actor?: string; }[]'.
+  Type '{ data: Record<string, unknown>; type: string; id: string; createdAt: Date; requestId: string; actor: string; }' is not assignable to type '{ data?: Record<string, any>; type?: "status_change" | "provider_assignment" | "note_created"; id?: string; createdAt?: Date; requestId?: string; actor?: string; }'.
+    Types of property 'type' are incompatible.
+      Type 'string' is not assignable to type '"status_change" | "provider_assignment" | "note_created"'.
+server/storage.ts(860,52): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(value: { customerName: string | SQL<unknown> | Placeholder<string, any>; customerEmail: string | SQL<unknown> | Placeholder<string, any>; customerPhone: string | ... 1 more ... | Placeholder<...>; ... 5 more ...; total: string | ... 1 more ... | Placeholder<...>; }): PgInsertBase<...>', gave the following error.
+    Argument of type '{ activationCode: string; createdAt: Date; updatedAt: Date; source?: string; status?: string; notes?: string; customerName?: string; customerEmail?: string; customerPhone?: string; shipAddressLine1?: string; ... 16 more ...; id: string; }' is not assignable to parameter of type '{ customerName: string | SQL<unknown> | Placeholder<string, any>; customerEmail: string | SQL<unknown> | Placeholder<string, any>; customerPhone: string | SQL<...> | Placeholder<...>; ... 5 more ...; total: string | ... 1 more ... | Placeholder<...>; }'.
+      Property 'customerName' is optional in type '{ activationCode: string; createdAt: Date; updatedAt: Date; source?: string; status?: string; notes?: string; customerName?: string; customerEmail?: string; customerPhone?: string; shipAddressLine1?: string; ... 16 more ...; id: string; }' but required in type '{ customerName: string | SQL<unknown> | Placeholder<string, any>; customerEmail: string | SQL<unknown> | Placeholder<string, any>; customerPhone: string | SQL<...> | Placeholder<...>; ... 5 more ...; total: string | ... 1 more ... | Placeholder<...>; }'.
+  Overload 2 of 2, '(values: { customerName: string | SQL<unknown> | Placeholder<string, any>; customerEmail: string | SQL<unknown> | Placeholder<string, any>; customerPhone: string | ... 1 more ... | Placeholder<...>; ... 5 more ...; total: string | ... 1 more ... | Placeholder<...>; }[]): PgInsertBase<...>', gave the following error.
+    Argument of type '{ activationCode: string; createdAt: Date; updatedAt: Date; source?: string; status?: string; notes?: string; customerName?: string; customerEmail?: string; customerPhone?: string; shipAddressLine1?: string; ... 16 more ...; id: string; }' is not assignable to parameter of type '{ customerName: string | SQL<unknown> | Placeholder<string, any>; customerEmail: string | SQL<unknown> | Placeholder<string, any>; customerPhone: string | SQL<...> | Placeholder<...>; ... 5 more ...; total: string | ... 1 more ... | Placeholder<...>; }[]'.
+      Type '{ activationCode: string; createdAt: Date; updatedAt: Date; source?: string; status?: string; notes?: string; customerName?: string; customerEmail?: string; customerPhone?: string; shipAddressLine1?: string; ... 16 more ...; id: string; }' is missing the following properties from type '{ customerName: string | SQL<unknown> | Placeholder<string, any>; customerEmail: string | SQL<unknown> | Placeholder<string, any>; customerPhone: string | SQL<...> | Placeholder<...>; ... 5 more ...; total: string | ... 1 more ... | Placeholder<...>; }[]': length, pop, push, concat, and 35 more.
+server/storage.ts(862,5): error TS2322: Type '{ activationCode: string; createdAt: Date; updatedAt: Date; source?: string; status?: string; notes?: string; customerName?: string; customerEmail?: string; customerPhone?: string; shipAddressLine1?: string; ... 16 more ...; id: string; }' is not assignable to type '{ source: string; id: string; status: string; notes: string; createdAt: Date; updatedAt: Date; customerName: string; customerEmail: string; customerPhone: string; shipAddressLine1: string; ... 15 more ...; utmCampaign: string; }'.
+  Property 'source' is optional in type '{ activationCode: string; createdAt: Date; updatedAt: Date; source?: string; status?: string; notes?: string; customerName?: string; customerEmail?: string; customerPhone?: string; shipAddressLine1?: string; ... 16 more ...; id: string; }' but required in type '{ source: string; id: string; status: string; notes: string; createdAt: Date; updatedAt: Date; customerName: string; customerEmail: string; customerPhone: string; shipAddressLine1: string; ... 15 more ...; utmCampaign: string; }'.
+server/storage.ts(889,12): error TS2559: Type '{ status: string; updatedAt: Date; }' has no properties in common with type '{ customerName?: string | SQL<unknown>; customerEmail?: string | SQL<unknown>; customerPhone?: string | SQL<unknown>; shipAddressLine1?: string | SQL<unknown>; shipCity?: string | SQL<unknown>; shipState?: string | SQL<...>; shipZip?: string | SQL<...>; subtotal?: string | SQL<...>; total?: string | SQL<...>; }'.
+server/storage.ts(907,51): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(value: { sku: string | SQL<unknown> | Placeholder<string, any>; activationCode: string | SQL<unknown> | Placeholder<string, any>; orderId: string | SQL<unknown> | Placeholder<...>; unitPrice: string | ... 1 more ... | Placeholder<...>; qrUrl: string | ... 1 more ... | Placeholder<...>; }): PgInsertBase<...>', gave the following error.
+    Argument of type '{ createdAt: Date; updatedAt: Date; sku?: string; activationCode?: string; activationStatus?: string; activatedAt?: unknown; orderId?: string; quantity?: unknown; unitPrice?: unknown; qrUrl?: string; activatedByEmail?: string; ... 5 more ...; id: string; }' is not assignable to parameter of type '{ sku: string | SQL<unknown> | Placeholder<string, any>; activationCode: string | SQL<unknown> | Placeholder<string, any>; orderId: string | SQL<unknown> | Placeholder<...>; unitPrice: string | ... 1 more ... | Placeholder<...>; qrUrl: string | ... 1 more ... | Placeholder<...>; }'.
+      Property 'sku' is optional in type '{ createdAt: Date; updatedAt: Date; sku?: string; activationCode?: string; activationStatus?: string; activatedAt?: unknown; orderId?: string; quantity?: unknown; unitPrice?: unknown; qrUrl?: string; activatedByEmail?: string; ... 5 more ...; id: string; }' but required in type '{ sku: string | SQL<unknown> | Placeholder<string, any>; activationCode: string | SQL<unknown> | Placeholder<string, any>; orderId: string | SQL<unknown> | Placeholder<...>; unitPrice: string | ... 1 more ... | Placeholder<...>; qrUrl: string | ... 1 more ... | Placeholder<...>; }'.
+  Overload 2 of 2, '(values: { sku: string | SQL<unknown> | Placeholder<string, any>; activationCode: string | SQL<unknown> | Placeholder<string, any>; orderId: string | SQL<unknown> | Placeholder<...>; unitPrice: string | ... 1 more ... | Placeholder<...>; qrUrl: string | ... 1 more ... | Placeholder<...>; }[]): PgInsertBase<...>', gave the following error.
+    Argument of type '{ createdAt: Date; updatedAt: Date; sku?: string; activationCode?: string; activationStatus?: string; activatedAt?: unknown; orderId?: string; quantity?: unknown; unitPrice?: unknown; qrUrl?: string; activatedByEmail?: string; ... 5 more ...; id: string; }' is not assignable to parameter of type '{ sku: string | SQL<unknown> | Placeholder<string, any>; activationCode: string | SQL<unknown> | Placeholder<string, any>; orderId: string | SQL<unknown> | Placeholder<...>; unitPrice: string | ... 1 more ... | Placeholder<...>; qrUrl: string | ... 1 more ... | Placeholder<...>; }[]'.
+      Type '{ createdAt: Date; updatedAt: Date; sku?: string; activationCode?: string; activationStatus?: string; activatedAt?: unknown; orderId?: string; quantity?: unknown; unitPrice?: unknown; qrUrl?: string; activatedByEmail?: string; ... 5 more ...; id: string; }' is missing the following properties from type '{ sku: string | SQL<unknown> | Placeholder<string, any>; activationCode: string | SQL<unknown> | Placeholder<string, any>; orderId: string | SQL<unknown> | Placeholder<...>; unitPrice: string | ... 1 more ... | Placeholder<...>; qrUrl: string | ... 1 more ... | Placeholder<...>; }[]': length, pop, push, concat, and 35 more.
+server/storage.ts(909,5): error TS2322: Type '{ createdAt: Date; updatedAt: Date; sku?: string; activationCode?: string; activationStatus?: string; activatedAt?: unknown; orderId?: string; quantity?: unknown; unitPrice?: unknown; qrUrl?: string; activatedByEmail?: string; ... 5 more ...; id: string; }' is not assignable to type '{ sku: string; id: string; activationCode: string; createdAt: Date; updatedAt: Date; activationStatus: string; activatedAt: Date; orderId: string; quantity: number; unitPrice: string; ... 6 more ...; printFileUrl: string; }'.
+  Property 'sku' is optional in type '{ createdAt: Date; updatedAt: Date; sku?: string; activationCode?: string; activationStatus?: string; activatedAt?: unknown; orderId?: string; quantity?: unknown; unitPrice?: unknown; qrUrl?: string; activatedByEmail?: string; ... 5 more ...; id: string; }' but required in type '{ sku: string; id: string; activationCode: string; createdAt: Date; updatedAt: Date; activationStatus: string; activatedAt: Date; orderId: string; quantity: number; unitPrice: string; ... 6 more ...; printFileUrl: string; }'.
+server/storage.ts(938,12): error TS2559: Type '{ activationStatus: string; updatedAt: Date; }' has no properties in common with type '{ sku?: string | SQL<unknown>; activationCode?: string | SQL<unknown>; orderId?: string | SQL<unknown>; unitPrice?: string | SQL<unknown>; qrUrl?: string | SQL<unknown>; }'.
+server/storage.ts(956,53): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(value: { name: string | SQL<unknown> | Placeholder<string, any>; }): PgInsertBase<PgTableWithColumns<{ name: "order_magnet_batches"; schema: undefined; columns: { id: PgColumn<{ name: "id"; tableName: "order_magnet_batches"; ... 11 more ...; generated: GeneratedColumnConfig<...>; }, {}, {}>; ... 9 more ...; updatedAt: PgColumn<...>; }; dialect: "pg"; }>, NeonQueryResultHKT, undefined, false, never>', gave the following error.
+    Argument of type '{ createdAt: Date; updatedAt: Date; status?: string; name?: string; notes?: string; submittedAt?: unknown; completedAt?: unknown; quantity?: unknown; printerName?: string; unitCost?: unknown; id: string; }' is not assignable to parameter of type '{ name: string | SQL<unknown> | Placeholder<string, any>; }'.
+      Property 'name' is optional in type '{ createdAt: Date; updatedAt: Date; status?: string; name?: string; notes?: string; submittedAt?: unknown; completedAt?: unknown; quantity?: unknown; printerName?: string; unitCost?: unknown; id: string; }' but required in type '{ name: string | SQL<unknown> | Placeholder<string, any>; }'.
+  Overload 2 of 2, '(values: { name: string | SQL<unknown> | Placeholder<string, any>; }[]): PgInsertBase<PgTableWithColumns<{ name: "order_magnet_batches"; schema: undefined; columns: { id: PgColumn<{ name: "id"; tableName: "order_magnet_batches"; ... 11 more ...; generated: GeneratedColumnConfig<...>; }, {}, {}>; ... 9 more ...; updatedAt: PgColumn<...>; }; dialect: "pg"; }>, NeonQueryResultHKT, undefined, false, never>', gave the following error.
+    Argument of type '{ createdAt: Date; updatedAt: Date; status?: string; name?: string; notes?: string; submittedAt?: unknown; completedAt?: unknown; quantity?: unknown; printerName?: string; unitCost?: unknown; id: string; }' is not assignable to parameter of type '{ name: string | SQL<unknown> | Placeholder<string, any>; }[]'.
+      Type '{ createdAt: Date; updatedAt: Date; status?: string; name?: string; notes?: string; submittedAt?: unknown; completedAt?: unknown; quantity?: unknown; printerName?: string; unitCost?: unknown; id: string; }' is missing the following properties from type '{ name: string | SQL<unknown> | Placeholder<string, any>; }[]': length, pop, push, concat, and 35 more.
+server/storage.ts(958,5): error TS2322: Type '{ createdAt: Date; updatedAt: Date; status?: string; name?: string; notes?: string; submittedAt?: unknown; completedAt?: unknown; quantity?: unknown; printerName?: string; unitCost?: unknown; id: string; }' is not assignable to type '{ id: string; status: string; name: string; notes: string; createdAt: Date; updatedAt: Date; submittedAt: Date; completedAt: Date; quantity: number; printerName: string; unitCost: string; }'.
+  Property 'status' is optional in type '{ createdAt: Date; updatedAt: Date; status?: string; name?: string; notes?: string; submittedAt?: unknown; completedAt?: unknown; quantity?: unknown; printerName?: string; unitCost?: unknown; id: string; }' but required in type '{ id: string; status: string; name: string; notes: string; createdAt: Date; updatedAt: Date; submittedAt: Date; completedAt: Date; quantity: number; printerName: string; unitCost: string; }'.
+server/storage.ts(978,12): error TS2559: Type '{ status: string; updatedAt: Date; }' has no properties in common with type '{ name?: string | SQL<unknown>; }'.
+server/storage.ts(996,55): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(value: { orderId: string | SQL<unknown> | Placeholder<string, any>; }): PgInsertBase<PgTableWithColumns<{ name: "order_magnet_shipments"; schema: undefined; columns: { id: PgColumn<{ name: "id"; tableName: "order_magnet_shipments"; ... 11 more ...; generated: GeneratedColumnConfig<...>; }, {}, {}>; ... 9 more ...; updatedAt: PgColumn<...>; }; dialect: "pg"; }>, NeonQueryResultHKT, undefined, false, never>', gave the following error.
+    Argument of type '{ createdAt: Date; updatedAt: Date; status?: string; carrier?: string; shippedAt?: unknown; trackingNumber?: string; orderId?: string; labelUrl?: string; expectedDelivery?: unknown; deliveredAt?: unknown; id: string; }' is not assignable to parameter of type '{ orderId: string | SQL<unknown> | Placeholder<string, any>; }'.
+      Property 'orderId' is optional in type '{ createdAt: Date; updatedAt: Date; status?: string; carrier?: string; shippedAt?: unknown; trackingNumber?: string; orderId?: string; labelUrl?: string; expectedDelivery?: unknown; deliveredAt?: unknown; id: string; }' but required in type '{ orderId: string | SQL<unknown> | Placeholder<string, any>; }'.
+  Overload 2 of 2, '(values: { orderId: string | SQL<unknown> | Placeholder<string, any>; }[]): PgInsertBase<PgTableWithColumns<{ name: "order_magnet_shipments"; schema: undefined; columns: { id: PgColumn<{ name: "id"; tableName: "order_magnet_shipments"; ... 11 more ...; generated: GeneratedColumnConfig<...>; }, {}, {}>; ... 9 more ...; updatedAt: PgColumn<...>; }; dialect: "pg"; }>, NeonQueryResultHKT, undefined, false, never>', gave the following error.
+    Argument of type '{ createdAt: Date; updatedAt: Date; status?: string; carrier?: string; shippedAt?: unknown; trackingNumber?: string; orderId?: string; labelUrl?: string; expectedDelivery?: unknown; deliveredAt?: unknown; id: string; }' is not assignable to parameter of type '{ orderId: string | SQL<unknown> | Placeholder<string, any>; }[]'.
+      Type '{ createdAt: Date; updatedAt: Date; status?: string; carrier?: string; shippedAt?: unknown; trackingNumber?: string; orderId?: string; labelUrl?: string; expectedDelivery?: unknown; deliveredAt?: unknown; id: string; }' is missing the following properties from type '{ orderId: string | SQL<unknown> | Placeholder<string, any>; }[]': length, pop, push, concat, and 35 more.
+server/storage.ts(998,5): error TS2322: Type '{ createdAt: Date; updatedAt: Date; status?: string; carrier?: string; shippedAt?: unknown; trackingNumber?: string; orderId?: string; labelUrl?: string; expectedDelivery?: unknown; deliveredAt?: unknown; id: string; }' is not assignable to type '{ id: string; status: string; createdAt: Date; updatedAt: Date; carrier: string; shippedAt: Date; trackingNumber: string; orderId: string; labelUrl: string; expectedDelivery: Date; deliveredAt: Date; }'.
+  Property 'status' is optional in type '{ createdAt: Date; updatedAt: Date; status?: string; carrier?: string; shippedAt?: unknown; trackingNumber?: string; orderId?: string; labelUrl?: string; expectedDelivery?: unknown; deliveredAt?: unknown; id: string; }' but required in type '{ id: string; status: string; createdAt: Date; updatedAt: Date; carrier: string; shippedAt: Date; trackingNumber: string; orderId: string; labelUrl: string; expectedDelivery: Date; deliveredAt: Date; }'.
+server/storage.ts(1020,12): error TS2559: Type '{ status: string; updatedAt: Date; }' has no properties in common with type '{ orderId?: string | SQL<unknown>; }'.
+server/storage.ts(1037,57): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(value: { data: unknown; type: string | SQL<unknown> | Placeholder<string, any>; }): PgInsertBase<PgTableWithColumns<{ name: "order_magnet_audit_events"; schema: undefined; columns: { id: PgColumn<{ name: "id"; tableName: "order_magnet_audit_events"; ... 11 more ...; generated: GeneratedColumnConfig<...>; }, {}, {}>; ... 5 more ...; data: PgColumn<...>; }; dialect: "pg"; }>, NeonQueryResultHKT, undefined, false, never>', gave the following error.
+    Argument of type '{ createdAt: Date; data?: Json; type?: string; actor?: string; orderId?: string; itemId?: string; id: string; }' is not assignable to parameter of type '{ data: unknown; type: string | SQL<unknown> | Placeholder<string, any>; }'.
+      Property 'data' is optional in type '{ createdAt: Date; data?: Json; type?: string; actor?: string; orderId?: string; itemId?: string; id: string; }' but required in type '{ data: unknown; type: string | SQL<unknown> | Placeholder<string, any>; }'.
+  Overload 2 of 2, '(values: { data: unknown; type: string | SQL<unknown> | Placeholder<string, any>; }[]): PgInsertBase<PgTableWithColumns<{ name: "order_magnet_audit_events"; schema: undefined; columns: { id: PgColumn<{ name: "id"; tableName: "order_magnet_audit_events"; ... 11 more ...; generated: GeneratedColumnConfig<...>; }, {}, {}>; ... 5 more ...; data: PgColumn<...>; }; dialect: "pg"; }>, NeonQueryResultHKT, undefined, false, never>', gave the following error.
+    Argument of type '{ createdAt: Date; data?: Json; type?: string; actor?: string; orderId?: string; itemId?: string; id: string; }' is not assignable to parameter of type '{ data: unknown; type: string | SQL<unknown> | Placeholder<string, any>; }[]'.
+      Type '{ createdAt: Date; data?: Json; type?: string; actor?: string; orderId?: string; itemId?: string; id: string; }' is missing the following properties from type '{ data: unknown; type: string | SQL<unknown> | Placeholder<string, any>; }[]': length, pop, push, concat, and 35 more.
+server/storage.ts(1039,5): error TS2322: Type '{ createdAt: Date; data?: Json; type?: string; actor?: string; orderId?: string; itemId?: string; id: string; }' is not assignable to type '{ data: unknown; type: string; id: string; createdAt: Date; actor: string; orderId: string; itemId: string; }'.
+  Property 'data' is optional in type '{ createdAt: Date; data?: Json; type?: string; actor?: string; orderId?: string; itemId?: string; id: string; }' but required in type '{ data: unknown; type: string; id: string; createdAt: Date; actor: string; orderId: string; itemId: string; }'.
+server/storage.ts(1068,50): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(value: { email: string | SQL<unknown> | Placeholder<string, any>; name: string | SQL<unknown> | Placeholder<string, any>; message: string | SQL<unknown> | Placeholder<...>; subject: string | ... 1 more ... | Placeholder<...>; ticketId: string | ... 1 more ... | Placeholder<...>; }): PgInsertBase<...>', gave the following error.
+    Argument of type '{ createdAt: Date; updatedAt: Date; email?: string; name?: string; message?: string; subject?: string; tags?: Json; ticketId: string; sourceIp?: string; id: string; }' is not assignable to parameter of type '{ email: string | SQL<unknown> | Placeholder<string, any>; name: string | SQL<unknown> | Placeholder<string, any>; message: string | SQL<unknown> | Placeholder<string, any>; subject: string | ... 1 more ... | Placeholder<...>; ticketId: string | ... 1 more ... | Placeholder<...>; }'.
+      Property 'email' is optional in type '{ createdAt: Date; updatedAt: Date; email?: string; name?: string; message?: string; subject?: string; tags?: Json; ticketId: string; sourceIp?: string; id: string; }' but required in type '{ email: string | SQL<unknown> | Placeholder<string, any>; name: string | SQL<unknown> | Placeholder<string, any>; message: string | SQL<unknown> | Placeholder<string, any>; subject: string | ... 1 more ... | Placeholder<...>; ticketId: string | ... 1 more ... | Placeholder<...>; }'.
+  Overload 2 of 2, '(values: { email: string | SQL<unknown> | Placeholder<string, any>; name: string | SQL<unknown> | Placeholder<string, any>; message: string | SQL<unknown> | Placeholder<...>; subject: string | ... 1 more ... | Placeholder<...>; ticketId: string | ... 1 more ... | Placeholder<...>; }[]): PgInsertBase<...>', gave the following error.
+    Argument of type '{ createdAt: Date; updatedAt: Date; email?: string; name?: string; message?: string; subject?: string; tags?: Json; ticketId: string; sourceIp?: string; id: string; }' is not assignable to parameter of type '{ email: string | SQL<unknown> | Placeholder<string, any>; name: string | SQL<unknown> | Placeholder<string, any>; message: string | SQL<unknown> | Placeholder<string, any>; subject: string | ... 1 more ... | Placeholder<...>; ticketId: string | ... 1 more ... | Placeholder<...>; }[]'.
+      Type '{ createdAt: Date; updatedAt: Date; email?: string; name?: string; message?: string; subject?: string; tags?: Json; ticketId: string; sourceIp?: string; id: string; }' is missing the following properties from type '{ email: string | SQL<unknown> | Placeholder<string, any>; name: string | SQL<unknown> | Placeholder<string, any>; message: string | SQL<unknown> | Placeholder<string, any>; subject: string | ... 1 more ... | Placeholder<...>; ticketId: string | ... 1 more ... | Placeholder<...>; }[]': length, pop, push, concat, and 35 more.
+server/storage.ts(1070,5): error TS2741: Property 'status' is missing in type '{ createdAt: Date; updatedAt: Date; email?: string; name?: string; message?: string; subject?: string; tags?: Json; ticketId: string; sourceIp?: string; id: string; }' but required in type '{ id: string; status: string; email: string; name: string; createdAt: Date; updatedAt: Date; message: string; subject: string; sourceIp: string; ticketId: string; tags: string[]; }'.
+server/storage.ts(1141,9): error TS2353: Object literal may only specify known properties, and 'status' does not exist in type '{ email?: string | SQL<unknown>; name?: string | SQL<unknown>; message?: string | SQL<unknown>; subject?: string | SQL<unknown>; ticketId?: string | SQL<unknown>; }'.
+server/storage.ts(1171,7): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(value: { householdId: string | SQL<unknown> | Placeholder<string, any>; }): PgInsertBase<PgTableWithColumns<{ name: "home_profile_extras"; schema: undefined; columns: { id: PgColumn<{ name: "id"; tableName: "home_profile_extras"; ... 11 more ...; generated: GeneratedColumnConfig<...>; }, {}, {}>; ... 28 more ...; updatedAt: PgColumn<...>; }; dialect: "pg"; }>, NeonQueryResultHKT, undefined, false, never>', gave the following error.
+    Object literal may only specify known properties, and 'createdAt' does not exist in type '{ householdId: string | SQL<unknown> | Placeholder<string, any>; }'.
+  Overload 2 of 2, '(values: { householdId: string | SQL<unknown> | Placeholder<string, any>; }[]): PgInsertBase<PgTableWithColumns<{ name: "home_profile_extras"; schema: undefined; columns: { id: PgColumn<{ name: "id"; tableName: "home_profile_extras"; ... 11 more ...; generated: GeneratedColumnConfig<...>; }, {}, {}>; ... 28 more ...; updatedAt: PgColumn<...>; }; dialect: "pg"; }>, NeonQueryResultHKT, undefined, false, never>', gave the following error.
+    Object literal may only specify known properties, and 'createdAt' does not exist in type '{ householdId: string | SQL<unknown> | Placeholder<string, any>; }[]'.
+server/storage.ts(1187,9): error TS2353: Object literal may only specify known properties, and 'updatedAt' does not exist in type '{ householdId?: string | SQL<unknown>; }'.
+server/storage.ts(1207,29): error TS2349: This expression is not callable.
+  Type '{ readonly homeMaintenanceTasksTable: RelationalQueryBuilder<ExtractTablesWithRelations<typeof import("/workspaces/UpKeepQr/shared/schema")>, { tsName: "homeMaintenanceTasksTable"; dbName: "home_maintenance_tasks"; columns: { ...; }; relations: never; primaryKey: AnyColumn[]; }>; ... 11 more ...; readonly leadsTable...' has no call signatures.
+server/storage/homeProfileExtra.ts(24,29): error TS2349: This expression is not callable.
+  Type '{ readonly homeMaintenanceTasksTable: RelationalQueryBuilder<ExtractTablesWithRelations<typeof import("/workspaces/UpKeepQr/shared/schema")>, { tsName: "homeMaintenanceTasksTable"; dbName: "home_maintenance_tasks"; columns: { ...; }; relations: never; primaryKey: AnyColumn[]; }>; ... 11 more ...; readonly leadsTable...' has no call signatures.
+server/storage/homeProfileExtra.ts(29,29): error TS2349: This expression is not callable.
+  Type '{ readonly homeMaintenanceTasksTable: RelationalQueryBuilder<ExtractTablesWithRelations<typeof import("/workspaces/UpKeepQr/shared/schema")>, { tsName: "homeMaintenanceTasksTable"; dbName: "home_maintenance_tasks"; columns: { ...; }; relations: never; primaryKey: AnyColumn[]; }>; ... 11 more ...; readonly leadsTable...' has no call signatures.
+
+=== ESLint Issues ===
+(node:4166) ESLintIgnoreWarning: The ".eslintignore" file is no longer supported. Switch to using the "ignores" property in "eslint.config.js": https://eslint.org/docs/latest/use/configure/migration-guide#ignoring-files
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+/workspaces/UpKeepQr/server/lib/pdf.ts
+  78:7  error    'currentPage' is never reassigned. Use 'const' instead                                  prefer-const
+  78:7  warning  'currentPage' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+/workspaces/UpKeepQr/server/routes.ts
+     7:10   warning  'insertMagnetBatchSchema' is defined but never used. Allowed unused vars must match /^_/u            @typescript-eslint/no-unused-vars
+     7:419  warning  'insertOrderMagnetAuditEventSchema' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+    17:10   warning  'createRequire' is defined but never used. Allowed unused vars must match /^_/u                      @typescript-eslint/no-unused-vars
+    32:30   warning  Unexpected any. Specify a different type                                                             @typescript-eslint/no-explicit-any
+    43:22   warning  'body' is defined but never used. Allowed unused args must match /^_/u                               @typescript-eslint/no-unused-vars
+    43:28   warning  Unexpected any. Specify a different type                                                             @typescript-eslint/no-explicit-any
+    43:33   warning  'sig' is defined but never used. Allowed unused args must match /^_/u                                @typescript-eslint/no-unused-vars
+    43:38   warning  Unexpected any. Specify a different type                                                             @typescript-eslint/no-explicit-any
+    43:43   warning  'secret' is defined but never used. Allowed unused args must match /^_/u                             @typescript-eslint/no-unused-vars
+    43:51   warning  Unexpected any. Specify a different type                                                             @typescript-eslint/no-explicit-any
+    81:36   warning  Unexpected any. Specify a different type                                                             @typescript-eslint/no-explicit-any
+    97:29   warning  Unexpected any. Specify a different type                                                             @typescript-eslint/no-explicit-any
+    97:55   warning  Unexpected any. Specify a different type                                                             @typescript-eslint/no-explicit-any
+   108:37   warning  Unexpected any. Specify a different type                                                             @typescript-eslint/no-explicit-any
+   182:9    warning  'isOwner' is assigned a value but never used. Allowed unused vars must match /^_/u                   @typescript-eslint/no-unused-vars
+   359:21   warning  Unexpected any. Specify a different type                                                             @typescript-eslint/no-explicit-any
+   403:21   warning  Unexpected any. Specify a different type                                                             @typescript-eslint/no-explicit-any
+   473:21   warning  Unexpected any. Specify a different type                                                             @typescript-eslint/no-explicit-any
+   521:38   warning  Unexpected any. Specify a different type                                                             @typescript-eslint/no-explicit-any
+   529:21   warning  Unexpected any. Specify a different type                                                             @typescript-eslint/no-explicit-any
+   634:19   warning  Unexpected any. Specify a different type                                                             @typescript-eslint/no-explicit-any
+   666:19   warning  'magnet' is assigned a value but never used. Allowed unused vars must match /^_/u                    @typescript-eslint/no-unused-vars
+   823:21   warning  Unexpected any. Specify a different type                                                             @typescript-eslint/no-explicit-any
+   876:21   warning  Unexpected any. Specify a different type                                                             @typescript-eslint/no-explicit-any
+   906:21   warning  Unexpected any. Specify a different type                                                             @typescript-eslint/no-explicit-any
+   923:21   warning  Unexpected any. Specify a different type                                                             @typescript-eslint/no-explicit-any
+   949:21   warning  Unexpected any. Specify a different type                                                             @typescript-eslint/no-explicit-any
+   982:21   warning  Unexpected any. Specify a different type                                                             @typescript-eslint/no-explicit-any
+  1000:21   warning  Unexpected any. Specify a different type                                                             @typescript-eslint/no-explicit-any
+  1017:21   warning  Unexpected any. Specify a different type                                                             @typescript-eslint/no-explicit-any
+  1105:21   warning  Unexpected any. Specify a different type                                                             @typescript-eslint/no-explicit-any
+  1116:48   warning  'sortBy' is assigned a value but never used. Allowed unused vars must match /^_/u                    @typescript-eslint/no-unused-vars
+  1145:21   warning  Unexpected any. Specify a different type                                                             @typescript-eslint/no-explicit-any
+  1173:21   warning  Unexpected any. Specify a different type                                                             @typescript-eslint/no-explicit-any
+  1196:21   warning  Unexpected any. Specify a different type                                                             @typescript-eslint/no-explicit-any
+  1236:21   warning  Unexpected any. Specify a different type                                                             @typescript-eslint/no-explicit-any
+  1254:21   warning  Unexpected any. Specify a different type                                                             @typescript-eslint/no-explicit-any
+  1278:21   warning  Unexpected any. Specify a different type                                                             @typescript-eslint/no-explicit-any
+  1290:21   warning  Unexpected any. Specify a different type                                                             @typescript-eslint/no-explicit-any
+  1305:21   warning  Unexpected any. Specify a different type                                                             @typescript-eslint/no-explicit-any
+  1323:21   warning  Unexpected any. Specify a different type                                                             @typescript-eslint/no-explicit-any
+  1350:21   warning  Unexpected any. Specify a different type                                                             @typescript-eslint/no-explicit-any
+  1423:21   warning  Unexpected any. Specify a different type                                                             @typescript-eslint/no-explicit-any
+  1453:21   warning  Unexpected any. Specify a different type                                                             @typescript-eslint/no-explicit-any
+  1469:21   warning  Unexpected any. Specify a different type                                                             @typescript-eslint/no-explicit-any
+  1500:21   warning  Unexpected any. Specify a different type                                                             @typescript-eslint/no-explicit-any
+  1559:21   warning  Unexpected any. Specify a different type                                                             @typescript-eslint/no-explicit-any
+  1596:21   warning  Unexpected any. Specify a different type                                                             @typescript-eslint/no-explicit-any
+  1633:21   warning  Unexpected any. Specify a different type                                                             @typescript-eslint/no-explicit-any
+  1646:31   warning  Unexpected any. Specify a different type                                                             @typescript-eslint/no-explicit-any
+  1651:21   warning  Unexpected any. Specify a different type                                                             @typescript-eslint/no-explicit-any
+  1660:31   warning  Unexpected any. Specify a different type                                                             @typescript-eslint/no-explicit-any
+  1673:21   warning  Unexpected any. Specify a different type                                                             @typescript-eslint/no-explicit-any
+  1682:31   warning  Unexpected any. Specify a different type                                                             @typescript-eslint/no-explicit-any
+  1691:21   warning  Unexpected any. Specify a different type                                                             @typescript-eslint/no-explicit-any
+  1719:21   warning  Unexpected any. Specify a different type                                                             @typescript-eslint/no-explicit-any
+  1889:21   warning  Unexpected any. Specify a different type                                                             @typescript-eslint/no-explicit-any
+  1905:21   warning  Unexpected any. Specify a different type                                                             @typescript-eslint/no-explicit-any
+  1997:21   warning  Unexpected any. Specify a different type                                                             @typescript-eslint/no-explicit-any
+  2029:21   warning  Unexpected any. Specify a different type                                                             @typescript-eslint/no-explicit-any
+  2053:21   warning  Unexpected any. Specify a different type                                                             @typescript-eslint/no-explicit-any
+  2071:16   warning  'handleContactFormSubmission' is defined but never used. Allowed unused vars must match /^_/u        @typescript-eslint/no-unused-vars
+
+✖ 64 problems (1 error, 63 warnings)
+  1 error and 0 warnings potentially fixable with the `--fix` option.
+
+
+=== Code around line 78 ===
+    70	  // Grid configuration
+    71	  const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+    72	  const pageHeight = doc.page.height - doc.page.margins.top - doc.page.margins.bottom;
+    73	  const cols = 3;
+    74	  const rows = 4;
+    75	  const cellWidth = pageWidth / cols;
+    76	  const cellHeight = (pageHeight - 80) / rows; // Reserve space for header
+    77	  
+    78	  let currentPage = 0;
+    79	  let currentRow = 0;
+    80	  let currentCol = 0;
+    81	
+    82	  for (let i = 0; i < magnets.length; i++) {
+    83	    const magnet = magnets[i];
+    84	    
+    85	    // Add new page if needed
+    86	    if (i > 0 && i % (cols * rows) === 0) {
+    87	      doc.addPage();
+    88	      currentRow = 0;
+    89	      currentCol = 0;
+    90	      currentPage_++;
+
+=== All currentPage references ===
+78:  let currentPage = 0;
+90:      currentPage_++;
+
+=== Test output ===
+
+> server@1.0.0 test
+> echo "No tests specified"
+
+No tests specified

@@ -1,0 +1,34 @@
+import express from 'express';
+import cors from 'cors';
+import dotenv from 'dotenv';
+import { config } from './config.js';
+import { setupRoutes } from './routes/index.js';
+import './jobs/index.js';
+
+dotenv.config();
+
+const app = express();
+
+// Middleware
+app.use(cors({
+  origin: [
+    'https://infamous-werewolf-v67jjxv7jgxwhx7w4-5000.app.github.dev',
+    'http://localhost:5173',
+    'http://localhost:3000',
+    'http://localhost:5000'
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+}));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Setup routes
+setupRoutes(app);
+
+const PORT = config.port;
+
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server running on http://0.0.0.0:${PORT}`);
+});

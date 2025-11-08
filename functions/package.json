@@ -1,0 +1,24 @@
+{
+  "name": "upkeepqr-functions",
+  "private": true,
+  "version": "1.0.0",
+  "main": "index.js",
+  "engines": {
+    "node": "20"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "build": "echo \"no build step\"",
+    "deploy": "firebase deploy --only functions"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "firebase-functions": "^5.0.1",
+    "postmark": "^4.0.5",
+    "twilio": "^4.22.0"
+  },
+  "devDependencies": {
+    "eslint": "^8.57.1"
+  }
+}

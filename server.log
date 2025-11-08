@@ -1,0 +1,44 @@
+nohup: ignoring input
+
+> server@1.0.0 dev
+> node --env-file=.env --require ./server/preload-stripe.cjs --import tsx --watch server/index.ts
+
+✅ Stripe pre-loaded before tsx
+✅ Stripe pre-loaded before tsx
+✅ Loaded Firebase service account from file
+✅ Firebase Admin SDK initialized successfully
+🔧 Webhook router initialized
+✅ Webhook routes registered
+DEBUG DATABASE_URL: postgresql://neondb_owner:npg_RyTIUD76sXwl@ep-fancy-field-aew7y798.c-2.us-east-2.aws.neon.tech/neondb?sslmode=require
+✅ Health routes registered at /health
+✅ Auth routes registered at /api/auth
+✅ QR routes registered at /api/qr
+✅ Calendar routes registered at /api/calendar
+✅ Admin home extra routes registered at /api/admin/home-extra
+✅ Public home extra routes registered at /api/public
+✅ Webhook routes registered at /api/webhook
+✅ Leads routes registered at /api/leads
+✅ Setup routes registered at /api/setup
+�� All routes setup complete
+✅ Cron jobs started successfully
+12:52:27 AM [express] Server running on port 5000
+�� Received setup activation request: { token: 'demo-token', zip: '30126', home_type: 'single-family' }
+📋 Headers: {
+  host: 'localhost:5000',
+  'user-agent': 'curl/8.5.0',
+  accept: '*/*',
+  'content-type': 'application/json',
+  'content-length': '82'
+}
+✅ Setup activation received: { token: 'demo-token', zip: '30126', email: undefined }
+12:52:29 AM [express] POST /api/setup/activate 200 in 12ms :: {"success":true,"message":"Setup activa…
+12:52:40 AM [vite] Pre-transform error: /workspaces/UpKeepQr/client/src/pages/Onboarding.tsx: Identifier 'handleSubmit' has already been declared. (87:8)
+
+  85 |   };
+  86 |
+> 87 |   const handleSubmit = async (e: React.FormEvent) => {
+     |         ^
+  88 |     e.preventDefault();
+  89 |     
+  90 |     if (!validateRequiredFields()) {
+Failed running 'server/index.ts'. Waiting for file changes before restarting...
