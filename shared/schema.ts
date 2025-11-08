@@ -542,7 +542,7 @@ export const orderMagnetOrdersTable = pgTable("order_magnet_orders", {
   total: numeric("total", { precision: 10, scale: 2 }).notNull(),
   paymentStatus: varchar("payment_status", { length: 20 }).notNull().default('unpaid'),
   paymentProvider: varchar("payment_provider", { length: 20 }).notNull().default('stripe'),
-  paymentRef: varchar("payment_ref", { length: 255 }),
+  paymentRef: varchar("payment_ref", { length: 255 }).unique(),
   status: varchar("status", { length: 20 }).notNull().default('new'),
   source: varchar("source", { length: 100 }),
   utmSource: varchar("utm_source", { length: 100 }),
