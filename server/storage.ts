@@ -35,6 +35,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { nanoid } from "nanoid";
 import { eq, and, like, sql, desc, asc, or, inArray } from "drizzle-orm";
 import { db } from "./db";
+import { generateOrderId } from "./utils/orderIdGenerator";
 
 export interface IStorage {
   // Agent methods
@@ -846,11 +847,13 @@ export class FirebaseStorage implements IStorage {
   // Order operations
   async createOrderMagnetOrder(order: InsertOrderMagnetOrder): Promise<OrderMagnetOrder> {
     const id = uuidv4();
+    const orderId = await generateOrderId(); // Generate sequential order ID
     const activationCode = nanoid(8);
     const now = new Date();
     
     const newOrder = {
       id,
+      orderId,
       ...order,
       activationCode,
       createdAt: now,
