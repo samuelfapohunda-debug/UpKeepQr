@@ -166,6 +166,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         email,
         preferredContact,
         preferredContactTime,
+        smsOptIn,
         // Home details
         country,
         streetAddress,
@@ -214,6 +215,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           country: country || 'US',
           preferredContact,
           preferredContactTime,
+          smsOptIn: smsOptIn ?? false,
           sqft,
           hvacType: hvac_type,
           heatPump,
@@ -253,7 +255,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           budgetRange,
           timelineToProceed,
           notes,
-          smsOptIn: false,
+          smsOptIn: smsOptIn ?? false,
           activatedAt: new Date(),
         });
       }
