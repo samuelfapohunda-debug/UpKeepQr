@@ -1614,13 +1614,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(500).json({ error: "JWT_SECRET not configured" });
       }
 
-      // Hardcoded admin credentials for development
-      // In production, this should validate against a database with hashed passwords
-      const ADMIN_EMAIL = 'samuel@upkeepqr.com';
-      const ADMIN_PASSWORD = 'UpKeep2025!Admin';
+      if (!process.env.ADMIN_EMAIL || !process.env.ADMIN_PASSWORD) {
+        return res.status(500).json({ error: "Admin credentials not configured" });
+      }
       
-      // Validate credentials
-      if (email !== ADMIN_EMAIL || password !== ADMIN_PASSWORD) {
+      // Validate credentials from environment variables
+      if (email !== process.env.ADMIN_EMAIL || password !== process.env.ADMIN_PASSWORD) {
         return res.status(401).json({ 
           error: "Invalid email or password" 
         });
