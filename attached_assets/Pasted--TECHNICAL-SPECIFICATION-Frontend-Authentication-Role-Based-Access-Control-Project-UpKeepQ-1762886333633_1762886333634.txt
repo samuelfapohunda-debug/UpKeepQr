@@ -1,0 +1,828 @@
+# TECHNICAL SPECIFICATION: Frontend Authentication & Role-Based Access Control
+
+**Project:** UpKeepQr  
+**Feature:** Admin Authentication Frontend (4 Security Components)  
+**Specification Version:** 2.0 - FINAL IMPLEMENTATION READY  
+**Date:** 2025-11-11  
+**Implementation Target:** Replit AI Agent  
+**Priority:** HIGH (Security Enhancement)
+
+---
+
+## 📋 EXECUTIVE SUMMARY
+
+### What This Spec Does
+Implements **frontend authentication** to connect to the existing backend JWT system. Adds 4 security components:
+1. **AuthContext** - Global authentication state management
+2. **Login Page** - Admin login form at `/login`
+3. **ProtectedRoute** - Wrapper component for admin routes
+4. **Navigation Updates** - Role-based link visibility + Login/Logout buttons
+
+### Current State
+- ✅ Backend: JWT auth fully implemented (`server/middleware/auth.ts`)
+- ✅ Backend: All admin endpoints protected
+- ❌ Frontend: No auth context, login page, or route protection
+- ❌ Frontend: Navigation shows admin links to everyone
+
+### Implementation Summary
+- **Files to Create:** 3 new files
+- **Files to Modify:** 2 existing files
+- **Lines of Code:** ~820 lines
+- **Implementation Time:** 6-7 hours
+- **Risk Level:** 🟢 LOW (frontend-only, no breaking changes)
+
+---
+
+## 🎯 QUICK START FOR REPLIT AGENT
+
+### Copy-Paste This Prompt
+
+\`\`\`
+TASK: Implement frontend authentication for UpKeepQr per specification
+
+IMPLEMENTATION ORDER (MUST FOLLOW):
+
+1. CREATE client/src/contexts/AuthContext.tsx
+   - Auth state management with login/logout
+   - Token storage (localStorage + "Remember Me")
+   - Token validation on mount
+   - Error handling
+
+2. CREATE client/src/components/ProtectedRoute.tsx
+   - Wrapper for admin routes
+   - Redirect to /login if not authenticated
+   - Loading spinner during auth check
+
+3. CREATE client/src/pages/Login.tsx
+   - Full-page login form
+   - Email, password, "Remember Me" checkbox
+   - Error display, loading states
+   - Auto-redirect if authenticated
+
+4. UPDATE client/src/components/Navigation.tsx
+   - Import useAuth hook
+   - Hide Setup link (only via QR token)
+   - Show/hide admin links based on auth
+   - Add Login/Logout buttons
+
+5. UPDATE client/src/App.tsx
+   - Wrap with AuthProvider
+   - Add /login route
+   - Wrap admin routes with ProtectedRoute
+
+CRITICAL REQUIREMENTS:
+- Backend endpoint: POST /api/agent/login {email, password}
+- Token storage: localStorage (key: 'upkeepqr_admin_token')
+- Token expiration: 24 hours
+- Setup link: REMOVE from navigation (only accessible via QR URL)
+- Protected routes: /admin, /admin/requests, /admin/magnets, /agent/dashboard
+
+TEST CHECKLIST:
+- Login with Remember Me → token persists
+- Visit /admin/requests logged out → redirect to /login
+- Logout → clear storage, hide admin links
+- Refresh page → stay logged in
+- Navigation shows correct links per auth state
+
+SEE FULL SPECIFICATION: SPEC-FRONTEND-AUTH-RBAC-FINAL.md
+\`\`\`
+
+---
+
+## 📝 DETAILED IMPLEMENTATION
+
+### COMPONENT 1: AuthContext (client/src/contexts/AuthContext.tsx)
+
+Complete file - copy this exactly:
+
+```typescript
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+
+interface AuthState {
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  token: string | null;
+  adminEmail: string | null;
+  rememberMe: boolean;
+}
+
+interface AuthContextType extends AuthState {
+  login: (email: string, password: string, rememberMe?: boolean) => Promise<{ success: boolean; error?: string }>;
+  logout: () => void;
+  checkAuth: () => boolean;
+  clearError: () => void;
+  error: string | null;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+const TOKEN_KEY = 'upkeepqr_admin_token';
+const EMAIL_KEY = 'upkeepqr_admin_email';
+const REMEMBER_ME_KEY = 'upkeepqr_remember_me';
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [authState, setAuthState] = useState<AuthState>({
+    isAuthenticated: false,
+    isLoading: true,
+    token: null,
+    adminEmail: null,
+    rememberMe: true,
+  });
+
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const storedToken = localStorage.getItem(TOKEN_KEY);
+    const storedEmail = localStorage.getItem(EMAIL_KEY);
+    const storedRememberMe = localStorage.getItem(REMEMBER_ME_KEY);
+
+    if (storedToken && storedEmail) {
+      try {
+        const tokenData = JSON.parse(atob(storedToken.split('.')[1]));
+        const expirationTime = tokenData.exp * 1000;
+        
+        if (Date.now() < expirationTime) {
+          setAuthState({
+            isAuthenticated: true,
+            isLoading: false,
+            token: storedToken,
+            adminEmail: storedEmail,
+            rememberMe: storedRememberMe === 'true',
+          });
+        } else {
+          localStorage.removeItem(TOKEN_KEY);
+          localStorage.removeItem(EMAIL_KEY);
+          localStorage.removeItem(REMEMBER_ME_KEY);
+          setError('Your session has expired. Please log in again.');
+          setAuthState({
+            isAuthenticated: false,
+            isLoading: false,
+            token: null,
+            adminEmail: null,
+            rememberMe: true,
+          });
+        }
+      } catch (error) {
+        localStorage.removeItem(TOKEN_KEY);
+        localStorage.removeItem(EMAIL_KEY);
+        localStorage.removeItem(REMEMBER_ME_KEY);
+        setAuthState({
+          isAuthenticated: false,
+          isLoading: false,
+          token: null,
+          adminEmail: null,
+          rememberMe: true,
+        });
+      }
+    } else {
+      setAuthState(prev => ({ ...prev, isLoading: false }));
+    }
+  }, []);
+
+  const login = async (
+    email: string, 
+    password: string, 
+    rememberMe: boolean = true
+  ): Promise<{ success: boolean; error?: string }> => {
+    try {
+      setError(null);
+
+      const response = await fetch(`${API_BASE_URL}/api/agent/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        return { 
+          success: false, 
+          error: errorData.error || 'Login failed. Please check your credentials.' 
+        };
+      }
+
+      const data = await response.json();
+      
+      if (data.success && data.token) {
+        if (rememberMe) {
+          localStorage.setItem(TOKEN_KEY, data.token);
+          localStorage.setItem(EMAIL_KEY, email);
+          localStorage.setItem(REMEMBER_ME_KEY, 'true');
+        } else {
+          sessionStorage.setItem(TOKEN_KEY, data.token);
+          sessionStorage.setItem(EMAIL_KEY, email);
+        }
+
+        setAuthState({
+          isAuthenticated: true,
+          isLoading: false,
+          token: data.token,
+          adminEmail: email,
+          rememberMe,
+        });
+
+        return { success: true };
+      } else {
+        return { 
+          success: false, 
+          error: 'Invalid response from server. Please try again.' 
+        };
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      return { 
+        success: false, 
+        error: 'Network error. Please check your connection and try again.' 
+      };
+    }
+  };
+
+  const logout = () => {
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(EMAIL_KEY);
+    localStorage.removeItem(REMEMBER_ME_KEY);
+    sessionStorage.removeItem(TOKEN_KEY);
+    sessionStorage.removeItem(EMAIL_KEY);
+
+    setAuthState({
+      isAuthenticated: false,
+      isLoading: false,
+      token: null,
+      adminEmail: null,
+      rememberMe: true,
+    });
+
+    setError(null);
+  };
+
+  const checkAuth = (): boolean => {
+    return authState.isAuthenticated;
+  };
+
+  const clearError = () => {
+    setError(null);
+  };
+
+  const contextValue: AuthContextType = {
+    ...authState,
+    login,
+    logout,
+    checkAuth,
+    clearError,
+    error,
+  };
+
+  return (
+    <AuthContext.Provider value={contextValue}>
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+export function useAuth() {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+}
+
+export function getAuthToken(): string | null {
+  return localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY);
+}
+
+export function getAuthHeaders(): HeadersInit {
+  const token = getAuthToken();
+  if (token) {
+    return {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    };
+  }
+  return {
+    'Content-Type': 'application/json',
+  };
+}
+```
+
+### COMPONENT 2: ProtectedRoute (client/src/components/ProtectedRoute.tsx)
+
+Complete file - copy this exactly:
+
+```typescript
+import { useEffect } from 'react';
+import { useLocation } from 'wouter';
+import { useAuth } from '@/contexts/AuthContext';
+
+interface ProtectedRouteProps {
+  children: React.ReactNode;
+}
+
+export default function ProtectedRoute({ children }: ProtectedRouteProps) {
+  const [location, setLocation] = useLocation();
+  const { isAuthenticated, isLoading } = useAuth();
+
+  useEffect(() => {
+    if (isLoading) return;
+
+    if (!isAuthenticated) {
+      const attemptedPath = location;
+      const redirectUrl = `/login?redirect=${encodeURIComponent(attemptedPath)}`;
+      console.log(`Not authenticated, redirecting to: ${redirectUrl}`);
+      setLocation(redirectUrl);
+    }
+  }, [isAuthenticated, isLoading, location, setLocation]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
+          <p className="text-muted-foreground">Verifying access...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return null;
+  }
+
+  return <>{children}</>;
+}
+```
+
+
+### COMPONENT 3: Login Page (client/src/pages/Login.tsx)
+
+Complete file - copy this exactly:
+
+```typescript
+import { useState, useEffect } from 'react';
+import { useLocation } from 'wouter';
+import { useAuth } from '@/contexts/AuthContext';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+
+export default function Login() {
+  const [, setLocation] = useLocation();
+  const { login, isAuthenticated, error: authError, clearError } = useAuth();
+  
+  const [formData, setFormData] = useState({
+    email: '',
+    password: '',
+    rememberMe: true,
+  });
+  const [localError, setLocalError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const urlParams = new URLSearchParams(window.location.search);
+  const redirectTo = urlParams.get('redirect') || '/admin/requests';
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      setLocation(redirectTo);
+    }
+  }, [isAuthenticated, redirectTo, setLocation]);
+
+  useEffect(() => {
+    return () => {
+      clearError();
+    };
+  }, [clearError]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLocalError('');
+    setLoading(true);
+
+    if (!formData.email || !formData.email.includes('@')) {
+      setLocalError('Please enter a valid email address.');
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const result = await login(formData.email, formData.password, formData.rememberMe);
+      
+      if (result.success) {
+        setLocation(redirectTo);
+      } else {
+        setLocalError(result.error || 'Login failed. Please try again.');
+      }
+    } catch (err) {
+      setLocalError('An unexpected error occurred. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    if (localError) setLocalError('');
+    if (authError) clearError();
+  };
+
+  const handleCheckboxChange = (checked: boolean) => {
+    setFormData(prev => ({ ...prev, rememberMe: checked }));
+  };
+
+  const displayError = localError || authError;
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-primary/10 flex items-center justify-center px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full">
+        <div className="text-center mb-8">
+          <div className="flex justify-center mb-4">
+            <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center shadow-lg">
+              <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M16 6L8 12H10V20H14V16H18V20H22V12H24L16 6Z" fill="white"/>
+                <path d="M12 18L14 20L20 14" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+          </div>
+          <h1 className="text-3xl font-bold text-foreground mb-2">Admin Login</h1>
+          <p className="text-muted-foreground">Sign in to access the admin dashboard</p>
+        </div>
+
+        <div className="bg-card border border-border rounded-xl shadow-xl p-6 sm:p-8">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {displayError && (
+              <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-lg text-sm">
+                <div className="flex items-start gap-2">
+                  <svg className="h-5 w-5 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span className="flex-1">{displayError}</span>
+                </div>
+              </div>
+            )}
+
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium mb-2 text-foreground">Email Address</label>
+              <input
+                type="email"
+                id="email"
+                name="email"
+                value={formData.email}
+                onChange={handleInputChange}
+                placeholder="admin@upkeepqr.com"
+                required
+                autoComplete="email"
+                disabled={loading}
+                className="w-full px-4 py-3 border border-input rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium mb-2 text-foreground">Password</label>
+              <input
+                type="password"
+                id="password"
+                name="password"
+                value={formData.password}
+                onChange={handleInputChange}
+                placeholder="••••••••"
+                required
+                autoComplete="current-password"
+                disabled={loading}
+                className="w-full px-4 py-3 border border-input rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              />
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="rememberMe"
+                checked={formData.rememberMe}
+                onCheckedChange={handleCheckboxChange}
+                disabled={loading}
+              />
+              <label htmlFor="rememberMe" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer text-foreground">
+                Remember me for 24 hours
+              </label>
+            </div>
+
+            <Button type="submit" disabled={loading} className="w-full py-3 text-base font-semibold">
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+                  </svg>
+                  Signing in...
+                </span>
+              ) : (
+                'Sign In'
+              )}
+            </Button>
+          </form>
+
+          <div className="mt-6 pt-6 border-t border-border">
+            <p className="text-center text-sm text-muted-foreground">Need access? Contact your system administrator</p>
+          </div>
+        </div>
+
+        <div className="mt-6 text-center">
+          <a href="/" className="text-sm text-primary hover:text-primary/80 font-medium transition-colors inline-flex items-center gap-1">
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            Back to Home
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+}
+```
+
+
+### COMPONENT 4: Navigation Updates (client/src/components/Navigation.tsx)
+
+**CHANGES TO MAKE:**
+
+1. **Add imports at top:**
+```typescript
+import { useAuth } from '@/contexts/AuthContext';
+import { Button } from '@/components/ui/button';
+```
+
+2. **Add auth hook in component:**
+```typescript
+export default function Navigation() {
+  const [location] = useLocation();
+  const { isAuthenticated, logout, adminEmail } = useAuth();
+  
+  const isActive = (path: string) => location === path;
+  
+  const handleLogout = () => {
+    logout();
+    window.location.href = '/';
+  };
+```
+
+3. **Replace navigation JSX with this (find the return statement and replace everything inside):**
+
+Key changes:
+- Remove "Setup" link completely (only accessible via QR token URL)
+- Wrap admin links in `{isAuthenticated && (<>...</>)}`
+- Add Login button when logged out
+- Add admin email + Logout button when logged in
+
+```typescript
+return (
+  <nav className="fixed top-0 left-0 right-0 bg-card border-b border-border z-50 backdrop-blur-sm">
+    <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
+      <div className="flex justify-between items-center h-14 sm:h-16">
+        <div className="flex items-center space-x-2 min-w-0 flex-shrink-0">
+          <Link href="/" className="flex items-center space-x-1 sm:space-x-2 hover:opacity-80 transition-opacity">
+            <svg width="20" height="20" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" className="sm:w-6 sm:h-6">
+              <rect width="32" height="32" rx="6" fill="#A6E22E"/>
+              <path d="M16 6L8 12H10V20H14V16H18V20H22V12H24L16 6Z" fill="white"/>
+              <path d="M12 18L14 20L20 14" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            <span className="font-semibold text-sm sm:text-base lg:text-lg truncate">UpKeepQR</span>
+          </Link>
+        </div>
+        
+        <div className="flex items-center space-x-1 sm:space-x-2 lg:space-x-4 flex-shrink-0">
+          <Link href="/" className={`px-2 py-1.5 sm:px-3 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${
+            isActive('/') ? 'bg-primary text-primary-foreground' : 'hover:bg-accent hover:text-accent-foreground'
+          }`}>
+            Home
+          </Link>
+          
+          <Link href="/request-pro" className={`px-2 py-1.5 sm:px-3 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${
+            isActive('/request-pro') ? 'bg-primary text-primary-foreground' : 'hover:bg-accent hover:text-accent-foreground'
+          }`}>
+            Request a Pro
+          </Link>
+          
+          <Link href="/contact" className={`px-2 py-1.5 sm:px-3 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${
+            isActive('/contact') ? 'bg-primary text-primary-foreground' : 'hover:bg-accent hover:text-accent-foreground'
+          }`}>
+            Contact Us
+          </Link>
+          
+          {isAuthenticated && (
+            <>
+              <Link href="/admin/requests" className={`px-2 py-1.5 sm:px-3 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${
+                isActive('/admin/requests') ? 'bg-primary text-primary-foreground' : 'hover:bg-accent hover:text-accent-foreground'
+              }`}>
+                Pro Dashboard
+              </Link>
+              
+              <Link href="/admin/magnets" className={`px-2 py-1.5 sm:px-3 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${
+                isActive('/admin/magnets') ? 'bg-primary text-primary-foreground' : 'hover:bg-accent hover:text-accent-foreground'
+              }`}>
+                Magnet Orders
+              </Link>
+            </>
+          )}
+          
+          <Link href="/pricing" className="px-3 py-1.5 sm:px-4 sm:py-2 bg-primary text-primary-foreground rounded-md text-xs sm:text-sm font-medium transition-colors whitespace-nowrap hover:bg-primary/90">
+            Order Magnet
+          </Link>
+          
+          {isAuthenticated ? (
+            <div className="flex items-center gap-2 ml-2 pl-2 border-l border-border">
+              <span className="hidden md:inline text-xs text-muted-foreground truncate max-w-[150px]" title={adminEmail || ''}>
+                {adminEmail}
+              </span>
+              <Button onClick={handleLogout} variant="ghost" size="sm" className="text-xs sm:text-sm">
+                Logout
+              </Button>
+            </div>
+          ) : (
+            <Link href="/login">
+              <Button variant="outline" size="sm" className="text-xs sm:text-sm ml-2">
+                Admin Login
+              </Button>
+            </Link>
+          )}
+        </div>
+      </div>
+    </div>
+  </nav>
+);
+```
+
+### COMPONENT 5: App.tsx Updates (client/src/App.tsx)
+
+**CHANGES TO MAKE:**
+
+1. **Add imports:**
+```typescript
+import { AuthProvider } from '@/contexts/AuthContext';
+import ProtectedRoute from '@/components/ProtectedRoute';
+import Login from '@/pages/Login';
+```
+
+2. **Replace entire App function with:**
+
+```typescript
+function Router() {
+  return (
+    <div className="min-h-screen bg-background text-foreground">
+      <Navigation />
+      <Switch>
+        {/* Public Routes */}
+        <Route path="/" component={Home} />
+        <Route path="/pricing" component={Pricing} />
+        <Route path="/contact" component={Contact} />
+        <Route path="/request-pro" component={RequestPro} />
+        <Route path="/setup/success" component={SetupSuccess} />
+        <Route path="/setup/:token" component={Onboarding} />
+        <Route path="/task/:token/:taskId" component={TaskDetail} />
+        
+        {/* Auth Route */}
+        <Route path="/login" component={Login} />
+        
+        {/* Protected Admin Routes */}
+        <Route path="/admin">
+          {() => (
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          )}
+        </Route>
+        
+        <Route path="/admin/requests">
+          {() => (
+            <ProtectedRoute>
+              <AdminDashboard />
+            </ProtectedRoute>
+          )}
+        </Route>
+        
+        <Route path="/admin/magnets">
+          {() => (
+            <ProtectedRoute>
+              <MagnetDashboard />
+            </ProtectedRoute>
+          )}
+        </Route>
+        
+        {/* Legacy Agent Routes */}
+        <Route path="/agent" component={AgentLogin} />
+        <Route path="/agent/dashboard">
+          {() => (
+            <ProtectedRoute>
+              <AgentDashboard />
+            </ProtectedRoute>
+          )}
+        </Route>
+        
+        {/* Fallback */}
+        <Route component={NotFound} />
+      </Switch>
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Router />
+        </TooltipProvider>
+      </AuthProvider>
+    </QueryClientProvider>
+  );
+}
+
+export default App;
+```
+
+---
+
+## ✅ TESTING CHECKLIST
+
+### Critical Tests (Run These First)
+
+- [ ] **Login Flow:** Visit /login → Enter credentials → Redirects to /admin/requests
+- [ ] **Remember Me:** Login with checked → Close browser → Reopen → Still logged in
+- [ ] **Protected Routes:** Visit /admin/requests logged out → Redirects to /login
+- [ ] **Logout:** Click Logout → Redirects to home → Admin links hidden
+- [ ] **Token Persistence:** Login → Refresh page → Still logged in
+- [ ] **Navigation:** Logged out shows Login button / Logged in shows Logout + email
+- [ ] **Setup Hidden:** Setup link not visible in navigation (either logged in or out)
+- [ ] **Mobile Responsive:** Test on 375px width → All features accessible
+
+### Test Credentials
+Use your existing admin email from Firebase. Backend accepts any email for testing.
+
+---
+
+## 🚀 DEPLOYMENT CHECKLIST
+
+### Before Deploy
+- [ ] All TypeScript errors resolved (npm run build succeeds)
+- [ ] No console errors in browser DevTools
+- [ ] Backend JWT_SECRET is set (check .env)
+- [ ] Frontend VITE_API_BASE_URL is set
+- [ ] All manual tests passed
+
+### After Deploy
+- [ ] Test login on production
+- [ ] Verify protected routes redirect correctly
+- [ ] Check browser console for errors
+- [ ] Test mobile responsiveness
+- [ ] Monitor error logs for 24 hours
+
+---
+
+## 📚 KEY CONCEPTS
+
+### Token Storage
+- **localStorage:** Persists across browser sessions (when "Remember Me" checked)
+- **sessionStorage:** Cleared when browser closes (when "Remember Me" unchecked)
+- **Keys:** `upkeepqr_admin_token`, `upkeepqr_admin_email`, `upkeepqr_remember_me`
+
+### Route Protection
+- **ProtectedRoute wrapper:** Checks authentication before rendering
+- **Redirect with preservation:** `/login?redirect=/admin/requests`
+- **Loading state:** Shows spinner while validating token
+
+### Authentication Flow
+1. User visits protected route → ProtectedRoute checks auth
+2. Not authenticated → Redirect to /login with return URL
+3. User logs in → Token stored → Redirect to preserved URL
+4. Page refresh → Token validated from storage → User stays logged in
+
+---
+
+## 🛟 TROUBLESHOOTING
+
+**"useAuth must be used within AuthProvider"**
+→ Ensure App.tsx wraps everything with `<AuthProvider>`
+
+**Protected routes accessible without login**
+→ Check ProtectedRoute is wrapping the route correctly
+
+**Token not persisting**
+→ Check localStorage in DevTools → Application → Local Storage
+
+**Navigation links not updating**
+→ Verify useAuth hook is called in Navigation.tsx
+
+**Login redirect not working**
+→ Check URL params: should be `/login?redirect=...`
+
+---
+
+## 📖 SPECIFICATION COMPLETE
+
+**Status:** ✅ Ready for Implementation  
+**Risk Level:** 🟢 LOW  
+**Breaking Changes:** None  
+**Implementation Time:** 6-7 hours
+
+Copy the Replit Agent prompt from the top of this document and begin implementation!
