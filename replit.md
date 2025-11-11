@@ -4,10 +4,13 @@ This is an UpKeepQR Agent Management Platform built as a monorepo TypeScript app
 
 # Recent Changes
 
-## November 11, 2025 - Authentication Cleanup
+## November 11, 2025 - Authentication Cleanup & Dashboard Refactoring
 - **Removed Admin Token Authentication**: Completely removed `ADMIN_API_TOKEN` authentication system
 - **Removed `authenticateProAdmin` Middleware**: Deleted deprecated token-based authentication function
 - **Unified Admin Authentication**: All admin routes now use JWT-based `authenticateAgent` middleware
+- **Dashboard UI Cleanup**: Removed all custom admin token login forms from MagnetDashboard and AdminDashboard
+- **Centralized Auth State**: Both dashboards now exclusively use AuthContext for authentication state management
+- **CORS Optimization**: Fixed GET requests to send only Authorization header (no Content-Type) to avoid CORS preflight issues
 - **Security Enhancement**: Platform now exclusively uses email/password authentication with JWT tokens
 - **Architecture Note**: Legacy `server/routes.ts` not currently served (admin endpoints need migration to modular route system in `server/src/routes/`)
 
