@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth, getAuthToken, getAuthHeaders } from "@/contexts/AuthContext";
 import { OrderMagnetOrder, AdminOrderMagnetFilters } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,8 +27,7 @@ const statusColors: Record<string, string> = {
 };
 
 export default function MagnetDashboard() {
-  const [token, setToken] = useState<string>("");
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const { logout } = useAuth();
   const [selectedOrder, setSelectedOrder] = useState<OrderMagnetOrder | null>(null);
   const [activeTab, setActiveTab] = useState<"orders" | "batches" | "items">("orders");
   
@@ -49,95 +49,6 @@ export default function MagnetDashboard() {
   });
 
   const { toast } = useToast();
-
-  // Check for existing token on mount
-  useEffect(() => {
-    const storedToken = localStorage.getItem("adminToken");
-    if (storedToken) {
-      setToken(storedToken);
-      setIsAuthenticated(true);
-    }
-  }, []);
-
-  // Test token validity
-  const testAuth = async (testToken: string) => {
-    try {
-      const response = await fetch("/api/admin/magnets/orders?page=1&pageSize=1", {
-        headers: {
-          "Authorization": `Bearer ${testToken}`
-        }
-      });
-      return response.ok;
-    } catch {
-      return false;
-    }
-  };
-
-  // Handle login
-  const handleLogin = async () => {
-    if (!token.trim()) {
-      toast({
-        title: "Error",
-        description: "Please enter an admin token",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const isValid = await testAuth(token);
-    if (isValid) {
-      localStorage.setItem("adminToken", token);
-      setIsAuthenticated(true);
-      toast({
-        title: "Success",
-        description: "Successfully authenticated as admin",
-      });
-    } else {
-      toast({
-        title: "Error", 
-        description: "Invalid admin token",
-        variant: "destructive",
-      });
-    }
-  };
-
-  // Handle logout
-  const handleLogout = () => {
-    localStorage.removeItem("adminToken");
-    setToken("");
-    setIsAuthenticated(false);
-    setSelectedOrder(null);
-  };
-
-  // Configure API request headers for authenticated calls
-  useEffect(() => {
-    if (isAuthenticated && token) {
-      queryClient.setDefaultOptions({
-        queries: {
-          queryFn: async ({ queryKey }) => {
-            const url = Array.isArray(queryKey) ? queryKey[0] : queryKey;
-            const response = await fetch(url as string, {
-              headers: {
-                "Authorization": `Bearer ${token}`
-              }
-            });
-            
-            if (response.status === 401) {
-              setIsAuthenticated(false);
-              localStorage.removeItem("adminToken");
-              throw new Error("Unauthorized");
-            }
-            
-            if (!response.ok) {
-              throw new Error(`Request failed: ${response.status}`);
-            }
-            
-            return response.json();
-          }
-        }
-      });
-    }
-  }, [isAuthenticated, token]);
 
   // Fetch orders with filters  
   const { data: ordersData, isLoading: ordersLoading } = useQuery({
@@ -162,17 +73,10 @@ export default function MagnetDashboard() {
       params.set("sortBy", filters.sortBy);
       params.set("sortDir", filters.sortDir);
 
+      const token = getAuthToken();
       const response = await fetch(`/api/admin/magnets/orders?${params}`, {
-        headers: {
-          "Authorization": `Bearer ${token}`
-        }
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
-
-      if (response.status === 401) {
-        setIsAuthenticated(false);
-        localStorage.removeItem("adminToken");
-        throw new Error("Unauthorized");
-      }
 
       if (!response.ok) {
         throw new Error("Failed to fetch orders");
@@ -180,7 +84,7 @@ export default function MagnetDashboard() {
 
       return response.json();
     },
-    enabled: isAuthenticated && !!token && activeTab === "orders",
+    enabled: activeTab === "orders",
   });
 
   // Fetch order metrics for KPIs
@@ -202,17 +106,10 @@ export default function MagnetDashboard() {
       if (filters.carrier) params.set("carrier", filters.carrier);
       if (filters.q) params.set("q", filters.q);
 
+      const token = getAuthToken();
       const response = await fetch(`/api/admin/magnets/orders/metrics?${params}`, {
-        headers: {
-          "Authorization": `Bearer ${token}`
-        }
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
-
-      if (response.status === 401) {
-        setIsAuthenticated(false);
-        localStorage.removeItem("adminToken");
-        throw new Error("Unauthorized");
-      }
 
       if (!response.ok) {
         throw new Error("Failed to fetch metrics");
@@ -220,26 +117,28 @@ export default function MagnetDashboard() {
 
       return response.json();
     },
-    enabled: isAuthenticated && !!token,
   });
 
   // Fetch batches
   const { isLoading: batchesLoading } = useQuery({
     queryKey: ["/api/admin/magnets/batches"],
-    enabled: isAuthenticated && !!token && activeTab === "batches",
+    enabled: activeTab === "batches",
   });
 
   // Update order status mutation
   const updateStatusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
-      return apiRequest(`/api/admin/magnets/orders/${id}/status`, {
+      const response = await fetch(`/api/admin/magnets/orders/${id}/status`, {
         method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ status })
       });
+      
+      if (!response.ok) {
+        throw new Error("Failed to update status");
+      }
+      
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/magnets/orders"] });
@@ -257,39 +156,6 @@ export default function MagnetDashboard() {
       });
     },
   });
-
-  // Auth gate
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <Card className="w-full max-w-md">
-          <CardHeader>
-            <CardTitle>Admin Sign In</CardTitle>
-            <CardDescription>
-              Enter your admin token to access the Order Magnet dashboard
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="token">Admin Token</Label>
-              <Input
-                id="token"
-                type="password"
-                placeholder="Enter admin token"
-                value={token}
-                onChange={(e) => setToken(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleLogin()}
-                data-testid="input-admin-token"
-              />
-            </div>
-            <Button onClick={handleLogin} className="w-full" data-testid="button-admin-login">
-              Sign In
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
 
   // Calculate KPIs from metrics data
   const kpis = {
@@ -337,7 +203,7 @@ export default function MagnetDashboard() {
                   Items
                 </Button>
               </div>
-              <Button variant="outline" onClick={handleLogout} data-testid="button-admin-logout">
+              <Button variant="outline" onClick={logout} data-testid="button-admin-logout">
                 Sign Out
               </Button>
             </div>
