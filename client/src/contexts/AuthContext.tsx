@@ -36,9 +36,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const storedToken = localStorage.getItem(TOKEN_KEY);
-    const storedEmail = localStorage.getItem(EMAIL_KEY);
+    const storedToken = localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY);
+    const storedEmail = localStorage.getItem(EMAIL_KEY) || sessionStorage.getItem(EMAIL_KEY);
     const storedRememberMe = localStorage.getItem(REMEMBER_ME_KEY);
+    const isFromLocalStorage = Boolean(localStorage.getItem(TOKEN_KEY));
 
     if (storedToken && storedEmail) {
       try {
@@ -54,9 +55,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             rememberMe: storedRememberMe === 'true',
           });
         } else {
-          localStorage.removeItem(TOKEN_KEY);
-          localStorage.removeItem(EMAIL_KEY);
-          localStorage.removeItem(REMEMBER_ME_KEY);
+          if (isFromLocalStorage) {
+            localStorage.removeItem(TOKEN_KEY);
+            localStorage.removeItem(EMAIL_KEY);
+            localStorage.removeItem(REMEMBER_ME_KEY);
+          } else {
+            sessionStorage.removeItem(TOKEN_KEY);
+            sessionStorage.removeItem(EMAIL_KEY);
+          }
           setError('Your session has expired. Please log in again.');
           setAuthState({
             isAuthenticated: false,
@@ -67,9 +73,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           });
         }
       } catch (error) {
-        localStorage.removeItem(TOKEN_KEY);
-        localStorage.removeItem(EMAIL_KEY);
-        localStorage.removeItem(REMEMBER_ME_KEY);
+        if (isFromLocalStorage) {
+          localStorage.removeItem(TOKEN_KEY);
+          localStorage.removeItem(EMAIL_KEY);
+          localStorage.removeItem(REMEMBER_ME_KEY);
+        } else {
+          sessionStorage.removeItem(TOKEN_KEY);
+          sessionStorage.removeItem(EMAIL_KEY);
+        }
         setAuthState({
           isAuthenticated: false,
           isLoading: false,
