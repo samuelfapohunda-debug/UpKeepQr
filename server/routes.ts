@@ -2,7 +2,7 @@ import type { Express } from "express";
 import express from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { authenticateAdmin, authenticateAgent, authenticateProAdmin } from "./middleware/auth";
+import { authenticateAdmin, authenticateAgent } from "./middleware/auth";
 import { sendUserConfirmationEmail, sendAdminAlertEmail, sendStatusUpdateEmail } from "./lib/email";
 import { insertMagnetBatchSchema, insertBatchSchema, setupActivateSchema, setupPreviewSchema, taskCompleteSchema, agentLoginSchema, checkoutSchema, leadsSchema, smsOptInSchema, smsVerifySchema, createProRequestSchema, updateProRequestStatusSchema, adminProRequestFiltersSchema, createNoteSchema, insertOrderMagnetOrderSchema, insertOrderMagnetItemSchema, insertOrderMagnetBatchSchema, insertOrderMagnetShipmentSchema, insertOrderMagnetAuditEventSchema } from "../shared/schema";
 import { nanoid } from "nanoid";
@@ -911,7 +911,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // GET /api/admin/pro-requests/:id - Get pro request by ID (admin - returns full data)
-  app.get("/api/admin/pro-requests/:id", authenticateProAdmin, async (req, res) => {
+  app.get("/api/admin/pro-requests/:id", authenticateAgent, async (req, res) => {
     try {
       const { id } = req.params;
       
@@ -928,7 +928,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // GET /api/admin/pro-requests - Get all pro requests with filtering and pagination (admin)
-  app.get("/api/admin/pro-requests", authenticateProAdmin, async (req, res) => {
+  app.get("/api/admin/pro-requests", authenticateAgent, async (req, res) => {
     try {
       await createAuditLog(req, '/api/admin/pro-requests');
       
@@ -954,7 +954,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // POST /api/admin/pro-requests/:id/notes - Add internal note to pro request (admin)
-  app.post("/api/admin/pro-requests/:id/notes", authenticateProAdmin, async (req, res) => {
+  app.post("/api/admin/pro-requests/:id/notes", authenticateAgent, async (req, res) => {
     try {
       const { id } = req.params;
       const validatedData = createNoteSchema.parse(req.body);
@@ -987,7 +987,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // GET /api/admin/pro-requests/:id/history - Get audit history for pro request (admin)
-  app.get("/api/admin/pro-requests/:id/history", authenticateProAdmin, async (req, res) => {
+  app.get("/api/admin/pro-requests/:id/history", authenticateAgent, async (req, res) => {
     try {
       const { id } = req.params;
       
@@ -1005,7 +1005,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // GET /api/admin/providers - Search providers with filtering (admin)
-  app.get("/api/admin/providers", authenticateProAdmin, async (req, res) => {
+  app.get("/api/admin/providers", authenticateAgent, async (req, res) => {
     try {
       const { trade, zip, q } = req.query;
       
@@ -1024,7 +1024,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Order Magnet Admin Routes
 
   // GET /api/admin/magnets/orders/metrics - Get order magnet metrics for KPIs (admin)
-  app.get("/api/admin/magnets/orders/metrics", authenticateProAdmin, async (req, res) => {
+  app.get("/api/admin/magnets/orders/metrics", authenticateAgent, async (req, res) => {
     try {
       await createAuditLog(req, '/api/admin/magnets/orders/metrics');
       
@@ -1110,7 +1110,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // GET /api/admin/magnets/orders - Get all order magnet orders with filtering and pagination (admin)
-  app.get("/api/admin/magnets/orders", authenticateProAdmin, async (req, res) => {
+  app.get("/api/admin/magnets/orders", authenticateAgent, async (req, res) => {
     try {
       await createAuditLog(req, '/api/admin/magnets/orders');
       
@@ -1150,7 +1150,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // GET /api/admin/magnets/orders/:id - Get order magnet order by ID (admin - returns full data)
-  app.get("/api/admin/magnets/orders/:id", authenticateProAdmin, async (req, res) => {
+  app.get("/api/admin/magnets/orders/:id", authenticateAgent, async (req, res) => {
     try {
       const { id } = req.params;
       
@@ -1178,7 +1178,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // POST /api/admin/magnets/orders - Create a new order magnet order (admin)
-  app.post("/api/admin/magnets/orders", authenticateProAdmin, async (req, res) => {
+  app.post("/api/admin/magnets/orders", authenticateAgent, async (req, res) => {
     try {
       await createAuditLog(req, '/api/admin/magnets/orders POST');
       
@@ -1201,7 +1201,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // PATCH /api/admin/magnets/orders/:id/status - Update order magnet order status (admin)
-  app.patch("/api/admin/magnets/orders/:id/status", authenticateProAdmin, async (req, res) => {
+  app.patch("/api/admin/magnets/orders/:id/status", authenticateAgent, async (req, res) => {
     try {
       const { id } = req.params;
       const { status } = req.body;
@@ -1241,7 +1241,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // GET /api/admin/magnets/orders/:id/items - Get items for an order magnet order (admin)
-  app.get("/api/admin/magnets/orders/:id/items", authenticateProAdmin, async (req, res) => {
+  app.get("/api/admin/magnets/orders/:id/items", authenticateAgent, async (req, res) => {
     try {
       const { id } = req.params;
       
@@ -1259,7 +1259,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // POST /api/admin/magnets/items - Create a new order magnet item (admin)
-  app.post("/api/admin/magnets/items", authenticateProAdmin, async (req, res) => {
+  app.post("/api/admin/magnets/items", authenticateAgent, async (req, res) => {
     try {
       await createAuditLog(req, '/api/admin/magnets/items POST');
       
@@ -1283,7 +1283,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // GET /api/admin/magnets/batches - Get all order magnet batches (admin)
-  app.get("/api/admin/magnets/batches", authenticateProAdmin, async (req, res) => {
+  app.get("/api/admin/magnets/batches", authenticateAgent, async (req, res) => {
     try {
       await createAuditLog(req, '/api/admin/magnets/batches');
       
@@ -1295,7 +1295,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // POST /api/admin/magnets/batches - Create a new order magnet batch (admin)
-  app.post("/api/admin/magnets/batches", authenticateProAdmin, async (req, res) => {
+  app.post("/api/admin/magnets/batches", authenticateAgent, async (req, res) => {
     try {
       await createAuditLog(req, '/api/admin/magnets/batches POST');
       
@@ -1310,7 +1310,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // GET /api/admin/magnets/batches/:id/items - Get items for a specific batch (admin)
-  app.get("/api/admin/magnets/batches/:id/items", authenticateProAdmin, async (req, res) => {
+  app.get("/api/admin/magnets/batches/:id/items", authenticateAgent, async (req, res) => {
     try {
       const { id } = req.params;
       
@@ -1328,7 +1328,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // POST /api/admin/magnets/shipments - Create a new order magnet shipment (admin)
-  app.post("/api/admin/magnets/shipments", authenticateProAdmin, async (req, res) => {
+  app.post("/api/admin/magnets/shipments", authenticateAgent, async (req, res) => {
     try {
       await createAuditLog(req, '/api/admin/magnets/shipments POST');
       
@@ -1355,7 +1355,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // PATCH /api/pro-requests/:id/status - Update pro request status (admin-only)
-  app.patch("/api/pro-requests/:id/status", authenticateProAdmin, async (req, res) => {
+  app.patch("/api/pro-requests/:id/status", authenticateAgent, async (req, res) => {
     try {
       const { id } = req.params;
       
@@ -2016,7 +2016,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Website removed - now using WordPress instead of Astro/Firebase hosting
 
   // GET /api/admin/contact-messages - Admin endpoint to view contact messages
-  app.get("/api/admin/contact-messages", authenticateProAdmin, async (req, res) => {
+  app.get("/api/admin/contact-messages", authenticateAgent, async (req, res) => {
     try {
       const { adminContactMessageFiltersSchema } = await import('../shared/schema');
       
@@ -2046,7 +2046,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // PATCH /api/admin/contact-messages/:id/status - Update contact message status
-  app.patch("/api/admin/contact-messages/:id/status", authenticateProAdmin, express.json(), async (req, res) => {
+  app.patch("/api/admin/contact-messages/:id/status", authenticateAgent, express.json(), async (req, res) => {
     try {
       const { id } = req.params;
       const { status } = req.body;
