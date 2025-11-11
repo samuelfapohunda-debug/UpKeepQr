@@ -412,7 +412,9 @@ export default function MagnetDashboard() {
                       <TableBody>
                         {ordersData?.items?.map((order: OrderMagnetOrder) => (
                           <TableRow key={order.id} data-testid={`row-order-${order.id}`}>
-                            <TableCell className="font-mono text-sm">{order.id}</TableCell>
+                            <TableCell className="font-mono text-sm" data-testid={`text-order-id-${order.id}`}>
+                              {order.orderId}
+                            </TableCell>
                             <TableCell>
                               <div>
                                 <div className="font-medium">{order.customerName}</div>

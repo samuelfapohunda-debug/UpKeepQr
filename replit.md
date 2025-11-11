@@ -4,6 +4,16 @@ This is an UpKeepQR Agent Management Platform built as a monorepo TypeScript app
 
 # Recent Changes
 
+## November 11, 2025 - Order ID Format Change Implementation
+- **New Order ID Format**: Changed from UUID to sequential format `{counter}-{year}` (e.g., "1-2025", "2-2025")
+- **Database Schema**: Added `orderId` field (VARCHAR(50), UNIQUE, NOT NULL) to `order_magnet_orders` table
+- **PostgreSQL Sequence**: Created `order_id_counter` sequence for atomic, race-condition-free counter generation
+- **Backend Implementation**: Created `generateOrderId()` utility function using PostgreSQL sequence
+- **Storage Layer**: Updated `createOrderMagnetOrder()` to generate and set formatted Order ID
+- **Frontend Display**: Updated MagnetDashboard to display formatted Order ID instead of UUID
+- **Migration**: Added migration file `20251111_205002_create_order_id_sequence.sql` for deployment
+- **Counter Behavior**: Counter never resets (continuous across years) for auditability and collision avoidance
+
 ## November 11, 2025 - Authentication Cleanup & Dashboard Refactoring
 - **Removed Admin Token Authentication**: Completely removed `ADMIN_API_TOKEN` authentication system
 - **Removed `authenticateProAdmin` Middleware**: Deleted deprecated token-based authentication function

@@ -526,6 +526,7 @@ export type CreateNoteRequest = z.infer<typeof createNoteSchema>;
 // Drizzle table definitions for Order Magnet System
 export const orderMagnetOrdersTable = pgTable("order_magnet_orders", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  orderId: varchar("order_id", { length: 50 }).unique().notNull(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
   customerName: varchar("customer_name", { length: 255 }).notNull(),
@@ -629,6 +630,7 @@ export const contactMessagesTable = pgTable("contact_messages", {
 // Drizzle-generated insert schemas and types for Order Magnet system
 export const insertOrderMagnetOrderSchema = createInsertSchema(orderMagnetOrdersTable).omit({
   id: true,
+  orderId: true,
   createdAt: true,
   updatedAt: true,
 });
@@ -805,4 +807,4 @@ export type HomeProfileExtra = typeof homeProfileExtras.$inferSelect;
 export type InsertHomeProfileExtra = typeof homeProfileExtras.$inferInsert;
 
 // Lead Capture
-export * from "./lead-schema.js";
+export * from "./lead-schema";
