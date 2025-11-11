@@ -6,7 +6,9 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
+import { Smartphone } from 'lucide-react';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -24,6 +26,7 @@ const Onboarding: React.FC = () => {
     preferredContact: 'Email' as 'Email' | 'Phone' | 'SMS',  // Fixed: Capitalized
     preferredContactTime: '',
     hearAboutUs: '',
+    smsOptIn: false,
     
     // Address
     streetAddress: '',
@@ -128,6 +131,7 @@ const Onboarding: React.FC = () => {
       const onboardingData: Record<string, string | boolean | number | undefined> = {
         token,
         zip: formData.zip,
+        smsOptIn: formData.smsOptIn,
       };
 
       if (formData.home_type) onboardingData.home_type = formData.home_type;
@@ -256,10 +260,31 @@ const Onboarding: React.FC = () => {
                     value={formData.phone}
                     onChange={handleInputChange}
                     className={validationErrors.phone ? "border-red-500" : ""}
+                    data-testid="input-phone"
                   />
                   {validationErrors.phone && (
                     <p className="text-red-500 text-sm mt-1">{validationErrors.phone}</p>
                   )}
+                </div>
+
+                <div className="md:col-span-2">
+                  <div className="flex items-start space-x-3">
+                    <Checkbox
+                      id="smsOptIn"
+                      name="smsOptIn"
+                      checked={formData.smsOptIn}
+                      onCheckedChange={(checked) => setFormData(prev => ({ ...prev, smsOptIn: checked as boolean }))}
+                      data-testid="checkbox-sms-opt-in"
+                    />
+                    <div className="flex-1">
+                      <Label htmlFor="smsOptIn" className="flex items-center gap-2 font-normal cursor-pointer">
+                        <Smartphone className="w-4 h-4" />
+                        <span className="text-sm text-muted-foreground">
+                          I consent to receive maintenance reminders and updates via SMS. Standard message and data rates may apply. Reply STOP to opt out.
+                        </span>
+                      </Label>
+                    </div>
+                  </div>
                 </div>
 
                 <div>

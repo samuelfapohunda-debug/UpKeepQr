@@ -183,6 +183,7 @@ export const setupActivateSchema = z.object({
   email: z.string().email().optional(),
   preferredContact: z.enum(['email', 'phone', 'text']).optional(),
   preferredContactTime: z.enum(['morning', 'afternoon', 'evening']).optional(),
+  smsOptIn: z.boolean().optional().default(false),
   
   // Home Details
   country: z.enum(['US', 'CA']).optional().default('US'),
