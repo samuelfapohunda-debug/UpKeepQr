@@ -1,9 +1,17 @@
 import { Link, useLocation } from 'wouter';
+import { useAuth } from '@/contexts/AuthContext';
+import { Button } from '@/components/ui/button';
 
 export default function Navigation() {
   const [location] = useLocation();
+  const { isAuthenticated, logout, adminEmail } = useAuth();
   
   const isActive = (path: string) => location === path;
+  
+  const handleLogout = () => {
+    logout();
+    window.location.href = '/';
+  };
   
   return (
     <nav className="fixed top-0 left-0 right-0 bg-card border-b border-border z-50 backdrop-blur-sm">
@@ -38,17 +46,7 @@ export default function Navigation() {
             >
               Home
             </Link>
-            <Link 
-              href="/setup/demo-token" 
-              className={`px-2 py-1.5 sm:px-3 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${
-                isActive('/setup/demo-token') 
-                  ? 'bg-primary text-primary-foreground' 
-                  : 'hover:bg-accent hover:text-accent-foreground'
-              }`}
-              data-testid="link-setup"
-            >
-              Setup
-            </Link>
+            
             <Link 
               href="/request-pro" 
               className={`px-2 py-1.5 sm:px-3 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${
@@ -60,28 +58,7 @@ export default function Navigation() {
             >
               Request a Pro
             </Link>
-            <Link 
-              href="/admin/requests" 
-              className={`px-2 py-1.5 sm:px-3 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${
-                isActive('/admin/requests') 
-                  ? 'bg-primary text-primary-foreground' 
-                  : 'hover:bg-accent hover:text-accent-foreground'
-              }`}
-              data-testid="link-admin-dashboard"
-            >
-              Pro Dashboard
-            </Link>
-            <Link 
-              href="/admin/magnets" 
-              className={`px-2 py-1.5 sm:px-3 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${
-                isActive('/admin/magnets') 
-                  ? 'bg-primary text-primary-foreground' 
-                  : 'hover:bg-accent hover:text-accent-foreground'
-              }`}
-              data-testid="link-magnet-dashboard"
-            >
-              Magnet Orders
-            </Link>
+            
             <Link 
               href="/contact" 
               className={`px-2 py-1.5 sm:px-3 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${
@@ -93,6 +70,35 @@ export default function Navigation() {
             >
               Contact Us
             </Link>
+            
+            {isAuthenticated && (
+              <>
+                <Link 
+                  href="/admin/requests" 
+                  className={`px-2 py-1.5 sm:px-3 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${
+                    isActive('/admin/requests') 
+                      ? 'bg-primary text-primary-foreground' 
+                      : 'hover:bg-accent hover:text-accent-foreground'
+                  }`}
+                  data-testid="link-admin-dashboard"
+                >
+                  Pro Dashboard
+                </Link>
+                
+                <Link 
+                  href="/admin/magnets" 
+                  className={`px-2 py-1.5 sm:px-3 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${
+                    isActive('/admin/magnets') 
+                      ? 'bg-primary text-primary-foreground' 
+                      : 'hover:bg-accent hover:text-accent-foreground'
+                  }`}
+                  data-testid="link-magnet-dashboard"
+                >
+                  Magnet Orders
+                </Link>
+              </>
+            )}
+            
             <Link 
               href="/pricing" 
               className="px-3 py-1.5 sm:px-4 sm:py-2 bg-primary text-primary-foreground rounded-md text-xs sm:text-sm font-medium transition-colors whitespace-nowrap hover:bg-primary/90"
@@ -100,6 +106,23 @@ export default function Navigation() {
             >
               Order Magnet
             </Link>
+            
+            {isAuthenticated ? (
+              <div className="flex items-center gap-2 ml-2 pl-2 border-l border-border">
+                <span className="hidden md:inline text-xs text-muted-foreground truncate max-w-[150px]" title={adminEmail || ''}>
+                  {adminEmail}
+                </span>
+                <Button onClick={handleLogout} variant="ghost" size="sm" className="text-xs sm:text-sm" data-testid="button-logout">
+                  Logout
+                </Button>
+              </div>
+            ) : (
+              <Link href="/login">
+                <Button variant="outline" size="sm" className="text-xs sm:text-sm ml-2" data-testid="button-admin-login">
+                  Admin Login
+                </Button>
+              </Link>
+            )}
           </div>
         </div>
       </div>

@@ -3,6 +3,8 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { AuthProvider } from "@/contexts/AuthContext";
+import ProtectedRoute from "@/components/ProtectedRoute";
 import Navigation from "@/components/Navigation";
 import Home from "@/pages/Home";
 import Pricing from "@/pages/Pricing";
@@ -17,6 +19,7 @@ import NotFound from "@/pages/not-found";
 import RequestPro from "@/pages/RequestPro";
 import AdminDashboard from "@/pages/AdminDashboard";
 import MagnetDashboard from "@/pages/MagnetDashboard";
+import Login from "@/pages/Login";
 
 function Router() {
   return (
@@ -26,15 +29,32 @@ function Router() {
         <Route path="/" component={Home} />
         <Route path="/pricing" component={Pricing} />
         <Route path="/contact" component={Contact} />
+        <Route path="/login" component={Login} />
         <Route path="/setup/success" component={SetupSuccess} />
         <Route path="/setup/:token" component={Onboarding} />
-        <Route path="/admin" component={Dashboard} />
-        <Route path="/agent" component={AgentLogin} />
-        <Route path="/agent/dashboard" component={AgentDashboard} />
         <Route path="/task/:token/:taskId" component={TaskDetail} />
         <Route path="/request-pro" component={RequestPro} />
-        <Route path="/admin/requests" component={AdminDashboard} />
-        <Route path="/admin/magnets" component={MagnetDashboard} />
+        <Route path="/admin">
+          <ProtectedRoute>
+            <Dashboard />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/admin/requests">
+          <ProtectedRoute>
+            <AdminDashboard />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/admin/magnets">
+          <ProtectedRoute>
+            <MagnetDashboard />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/agent" component={AgentLogin} />
+        <Route path="/agent/dashboard">
+          <ProtectedRoute>
+            <AgentDashboard />
+          </ProtectedRoute>
+        </Route>
         {/* Fallback to 404 */}
         <Route component={NotFound} />
       </Switch>
@@ -46,8 +66,10 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <Toaster />
-        <Router />
+        <AuthProvider>
+          <Toaster />
+          <Router />
+        </AuthProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );
