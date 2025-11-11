@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth, getAuthToken, getAuthHeaders } from "@/contexts/AuthContext";
 import { ProRequest, Note, AuditEvent, AdminProRequestFilters } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,8 +40,7 @@ const urgencyColors = {
 };
 
 export default function AdminDashboard() {
-  const [token, setToken] = useState<string>("");
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const { logout } = useAuth();
   const [selectedRequest, setSelectedRequest] = useState<ProRequest | null>(null);
   const [showProviderPicker, setShowProviderPicker] = useState<boolean>(false);
   const [newNote, setNewNote] = useState<string>("");
@@ -61,95 +61,6 @@ export default function AdminDashboard() {
 
   const { toast } = useToast();
 
-  // Check for existing token on mount
-  useEffect(() => {
-    const storedToken = localStorage.getItem("adminToken");
-    if (storedToken) {
-      setToken(storedToken);
-      setIsAuthenticated(true);
-    }
-  }, []);
-
-  // Test token validity
-  const testAuth = async (testToken: string) => {
-    try {
-      const response = await fetch("/api/admin/pro-requests?page=1&pageSize=1", {
-        headers: {
-          "Authorization": `Bearer ${testToken}`
-        }
-      });
-      return response.ok;
-    } catch {
-      return false;
-    }
-  };
-
-  // Handle login
-  const handleLogin = async () => {
-    if (!token.trim()) {
-      toast({
-        title: "Error",
-        description: "Please enter an admin token",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const isValid = await testAuth(token);
-    if (isValid) {
-      localStorage.setItem("adminToken", token);
-      setIsAuthenticated(true);
-      toast({
-        title: "Success",
-        description: "Successfully authenticated as admin",
-      });
-    } else {
-      toast({
-        title: "Error", 
-        description: "Invalid admin token",
-        variant: "destructive",
-      });
-    }
-  };
-
-  // Handle logout
-  const handleLogout = () => {
-    localStorage.removeItem("adminToken");
-    setToken("");
-    setIsAuthenticated(false);
-    setSelectedRequest(null);
-  };
-
-  // Configure API request headers for authenticated calls
-  useEffect(() => {
-    if (isAuthenticated && token) {
-      queryClient.setDefaultOptions({
-        queries: {
-          queryFn: async ({ queryKey }) => {
-            const url = Array.isArray(queryKey) ? queryKey[0] : queryKey;
-            const response = await fetch(url as string, {
-              headers: {
-                "Authorization": `Bearer ${token}`
-              }
-            });
-            
-            if (response.status === 401) {
-              setIsAuthenticated(false);
-              localStorage.removeItem("adminToken");
-              throw new Error("Unauthorized");
-            }
-            
-            if (!response.ok) {
-              throw new Error(`Request failed: ${response.status}`);
-            }
-            
-            return response.json();
-          }
-        }
-      });
-    }
-  }, [isAuthenticated, token]);
-
   // Fetch pro requests with filters
   const { data: requestsData, isLoading: requestsLoading } = useQuery({
     queryKey: ["/api/admin/pro-requests", filters],
@@ -168,17 +79,10 @@ export default function AdminDashboard() {
       params.set("sortBy", filters.sortBy);
       params.set("sortDir", filters.sortDir);
 
+      const token = getAuthToken();
       const response = await fetch(`/api/admin/pro-requests?${params}`, {
-        headers: {
-          "Authorization": `Bearer ${token}`
-        }
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
-
-      if (response.status === 401) {
-        setIsAuthenticated(false);
-        localStorage.removeItem("adminToken");
-        throw new Error("Unauthorized");
-      }
 
       if (!response.ok) {
         throw new Error("Failed to fetch requests");
@@ -186,7 +90,6 @@ export default function AdminDashboard() {
 
       return response.json();
     },
-    enabled: isAuthenticated && !!token,
   });
 
   // Fetch providers for picker
@@ -197,44 +100,30 @@ export default function AdminDashboard() {
       if (selectedRequest?.trade) params.set("trade", selectedRequest.trade);
       if (selectedRequest?.zip) params.set("zip", selectedRequest.zip);
 
+      const token = getAuthToken();
       const response = await fetch(`/api/admin/providers?${params}`, {
-        headers: {
-          "Authorization": `Bearer ${token}`
-        }
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
-
-      if (response.status === 401) {
-        setIsAuthenticated(false);
-        localStorage.removeItem("adminToken");
-        throw new Error("Unauthorized");
-      }
 
       if (!response.ok) throw new Error("Failed to fetch providers");
       return response.json();
     },
-    enabled: isAuthenticated && !!token && showProviderPicker && !!selectedRequest,
+    enabled: showProviderPicker && !!selectedRequest,
   });
 
   // Fetch notes and history for selected request
   const { data: notes } = useQuery({
     queryKey: ["/api/admin/pro-requests", selectedRequest?.id, "history"],
     queryFn: async () => {
+      const token = getAuthToken();
       const response = await fetch(`/api/admin/pro-requests/${selectedRequest!.id}/history`, {
-        headers: {
-          "Authorization": `Bearer ${token}`
-        }
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
-
-      if (response.status === 401) {
-        setIsAuthenticated(false);
-        localStorage.removeItem("adminToken");
-        throw new Error("Unauthorized");
-      }
 
       if (!response.ok) throw new Error("Failed to fetch history");
       return response.json();
     },
-    enabled: isAuthenticated && !!token && !!selectedRequest,
+    enabled: !!selectedRequest,
   });
 
   // Update status mutation
@@ -244,16 +133,10 @@ export default function AdminDashboard() {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
+          ...getAuthHeaders()
         },
         body: JSON.stringify({ status, providerAssigned })
       });
-      
-      if (response.status === 401) {
-        setIsAuthenticated(false);
-        localStorage.removeItem("adminToken");
-        throw new Error("Unauthorized");
-      }
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: "Unknown error" }));
@@ -289,16 +172,10 @@ export default function AdminDashboard() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
+          ...getAuthHeaders()
         },
         body: JSON.stringify({ message })
       });
-      
-      if (response.status === 401) {
-        setIsAuthenticated(false);
-        localStorage.removeItem("adminToken");
-        throw new Error("Unauthorized");
-      }
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: "Unknown error" }));
@@ -324,39 +201,6 @@ export default function AdminDashboard() {
     },
   });
 
-  // Auth gate
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <Card className="w-full max-w-md">
-          <CardHeader>
-            <CardTitle>Admin Sign In</CardTitle>
-            <CardDescription>
-              Enter your admin token to access the Request a Pro dashboard
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="token">Admin Token</Label>
-              <Input
-                id="token"
-                type="password"
-                placeholder="Enter admin token"
-                value={token}
-                onChange={(e) => setToken(e.target.value)}
-                onKeyPress={(e) => e.key === "Enter" && handleLogin()}
-                data-testid="input-admin-token"
-              />
-            </div>
-            <Button onClick={handleLogin} className="w-full" data-testid="button-admin-login">
-              Sign In
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   // Calculate KPIs
   const kpis = {
     new: requestsData?.items?.filter((r: ProRequest) => r.status === "new").length || 0,
@@ -375,7 +219,7 @@ export default function AdminDashboard() {
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
               Request a Pro Dashboard
             </h1>
-            <Button variant="outline" onClick={handleLogout} data-testid="button-admin-logout">
+            <Button variant="outline" onClick={logout} data-testid="button-admin-logout">
               Sign Out
             </Button>
           </div>
