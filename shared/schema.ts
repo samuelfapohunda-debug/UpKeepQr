@@ -230,6 +230,7 @@ export const taskCompleteSchema = z.object({
 
 export const agentLoginSchema = z.object({
   email: z.string().email(),
+  password: z.string().min(1),
 });
 
 export const checkoutSchema = z.object({

@@ -1603,23 +1603,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Agent Routes - Authentication and Dashboard
   
-  // POST /api/agent/login - Mock agent login
+  // POST /api/agent/login - Admin login with password validation
   app.post("/api/agent/login", authApiLimiter, async (req, res) => {
     await createAuditLog(req, '/api/agent/login');
     try {
       const validatedData = agentLoginSchema.parse(req.body);
-      const { email } = validatedData;
+      const { email, password } = validatedData;
 
       if (!process.env.JWT_SECRET) {
         return res.status(500).json({ error: "JWT_SECRET not configured" });
       }
 
-      // Mock agent ID generation (in real app, validate against agent database)
-      const agentId = email.split('@')[0]; // Simple mock: use email prefix as agent ID
+      // Hardcoded admin credentials for development
+      // In production, this should validate against a database with hashed passwords
+      const ADMIN_EMAIL = 'samuel@upkeepqr.com';
+      const ADMIN_PASSWORD = 'UpKeep2025!Admin';
       
-      // Generate JWT token
+      // Validate credentials
+      if (email !== ADMIN_EMAIL || password !== ADMIN_PASSWORD) {
+        return res.status(401).json({ 
+          error: "Invalid email or password" 
+        });
+      }
+
+      const agentId = 'agent_samuel';
+      
+      // Generate JWT token with role information
       const token = jwt.sign(
-        { agentId, email },
+        { agentId, email, role: 'admin' },
         process.env.JWT_SECRET,
         { expiresIn: '24h' }
       );
@@ -1629,13 +1640,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         token,
         agent: {
           id: agentId,
-          email
+          email,
+          role: 'admin'
         }
       });
     } catch (error: any) {
       console.error("Agent login error:", error);
       if (error?.name === 'ZodError') {
-        res.status(400).json({ error: "Invalid email format", details: error.errors });
+        res.status(400).json({ error: "Invalid email or password", details: error.errors });
       } else {
         res.status(500).json({ error: "Login failed" });
       }
