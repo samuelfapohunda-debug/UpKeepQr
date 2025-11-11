@@ -4,7 +4,6 @@ import cors from "cors";
 import express, { type Request, Response, NextFunction } from "express";
 import { createServer } from "http";
 import { registerRoutes } from "./src/routes/index.ts";
-import { registerRoutes as registerLegacyRoutes } from "./routes.ts";
 import { startCronJobs } from "./lib/cron.js";
 import { setupVite, serveStatic, log } from "./vite.js";
 
@@ -57,9 +56,6 @@ app.use((req, res, next) => {
   app.use(express.urlencoded({ extended: false }));
   
   registerRoutes(app);
-  
-  // Register legacy admin routes (TODO: migrate to modular system)
-  await registerLegacyRoutes(app);
   
   startCronJobs();
   
