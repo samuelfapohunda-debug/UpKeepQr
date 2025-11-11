@@ -41,10 +41,14 @@ The project is configured for both development and production environments:
 - **Type Checking**: Shared TypeScript configuration across the monorepo
 
 ## Authentication & Security
-Implements token-based authentication for agent management:
-- **Token Generation**: Nanoid for secure token generation
-- **Setup Flow**: QR code-based agent onboarding with expiring tokens
-- **Session Handling**: Express session management with configurable storage
+Implements JWT-based authentication for admin access:
+- **JWT Tokens**: Signed tokens with 24-hour expiration for admin authentication  
+- **Admin Login**: Secure login endpoint at `/api/auth/agent/login` with email/password validation
+- **Token Storage**: Client-side storage in localStorage (remember me) or sessionStorage (session-only)
+- **Protected Routes**: React route guards redirect unauthenticated users to login page
+- **Rate Limiting**: Login attempts limited to 5 per 15 minutes per IP address
+- **Environment Secrets**: Admin credentials stored securely in Replit Secrets (ADMIN_EMAIL, ADMIN_PASSWORD, JWT_SECRET)
+- **QR Setup Flow**: Separate token-based onboarding with expiring magnet tokens for homeowner setup
 - **Validation**: Zod schemas for input validation and type safety
 
 # External Dependencies

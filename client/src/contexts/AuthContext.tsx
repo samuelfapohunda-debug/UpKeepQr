@@ -22,7 +22,9 @@ const TOKEN_KEY = 'upkeepqr_admin_token';
 const EMAIL_KEY = 'upkeepqr_admin_email';
 const REMEMBER_ME_KEY = 'upkeepqr_remember_me';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+// API base URL - defaults to same-origin (empty string) for production
+// Set VITE_API_BASE_URL only if backend is on a different origin
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [authState, setAuthState] = useState<AuthState>({
@@ -102,7 +104,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       setError(null);
 
-      const response = await fetch(`${API_BASE_URL}/api/agent/login`, {
+      const response = await fetch(`${API_BASE_URL}/api/auth/agent/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
