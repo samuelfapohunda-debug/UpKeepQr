@@ -2,6 +2,15 @@
 
 This is an UpKeepQR Agent Management Platform built as a monorepo TypeScript application. The platform provides tools for managing business agents with features including scheduling, QR code generation, onboarding workflows, and dashboard management. The application is structured as a full-stack solution with a React frontend and Express backend, designed to streamline agent operations and automate common workflows. The customer-facing website has been moved to WordPress hosting instead of the previous Astro/Firebase setup.
 
+# Recent Changes
+
+## November 11, 2025 - Authentication Cleanup
+- **Removed Admin Token Authentication**: Completely removed `ADMIN_API_TOKEN` authentication system
+- **Removed `authenticateProAdmin` Middleware**: Deleted deprecated token-based authentication function
+- **Unified Admin Authentication**: All admin routes now use JWT-based `authenticateAgent` middleware
+- **Security Enhancement**: Platform now exclusively uses email/password authentication with JWT tokens
+- **Architecture Note**: Legacy `server/routes.ts` not currently served (admin endpoints need migration to modular route system in `server/src/routes/`)
+
 # User Preferences
 
 Preferred communication style: Simple, everyday language.
