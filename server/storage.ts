@@ -135,6 +135,7 @@ export interface IStorage {
   // Item operations
   createOrderMagnetItem(item: InsertOrderMagnetItem): Promise<OrderMagnetItem>;
   getOrderMagnetItem(id: string): Promise<OrderMagnetItem | undefined>;
+  getOrderMagnetItemByActivationCode(activationCode: string): Promise<OrderMagnetItem | undefined>;
   getOrderMagnetItemsByOrder(orderId: string): Promise<OrderMagnetItem[]>;
   getOrderMagnetItemsByBatch(batchId: string): Promise<OrderMagnetItem[]>;
   updateOrderMagnetItemStatus(id: string, activationStatus: string): Promise<OrderMagnetItem | undefined>;
@@ -914,6 +915,13 @@ export class FirebaseStorage implements IStorage {
 
   async getOrderMagnetItem(id: string): Promise<OrderMagnetItem | undefined> {
     const result = await db.select().from(orderMagnetItemsTable).where(eq(orderMagnetItemsTable.id, id)).limit(1);
+    return result[0] || undefined;
+  }
+
+  async getOrderMagnetItemByActivationCode(activationCode: string): Promise<OrderMagnetItem | undefined> {
+    const result = await db.select().from(orderMagnetItemsTable)
+      .where(eq(orderMagnetItemsTable.activationCode, activationCode))
+      .limit(1);
     return result[0] || undefined;
   }
 
