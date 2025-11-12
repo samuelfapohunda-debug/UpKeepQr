@@ -3,7 +3,7 @@ import cors from "cors";
 
 import express, { type Request, Response, NextFunction } from "express";
 import { createServer } from "http";
-import { registerRoutes } from "./src/routes/index.ts";
+import { registerRoutes } from "./src/routes/index";
 import { startCronJobs } from "./lib/cron.js";
 import { setupVite, serveStatic, log } from "./vite.js";
 
@@ -52,15 +52,18 @@ app.use((req, res, next) => {
     allowedHeaders: ['Content-Type', 'Authorization']
   }));
 
+  // ⚡ CRITICAL: Stripe webhook needs raw body BEFORE express.json() parses it
+  app.use('/api/webhook/stripe', express.raw({ type: 'application/json' }));
+
   app.use(express.json());
   app.use(express.urlencoded({ extended: false }));
   
   registerRoutes(app);
   
-  app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
+  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     console.error("Error:", err);
-    const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
+    const status = err?.status || err?.statusCode || 500;
+    const message = err?.message || "Internal Server Error";
     res.status(status).json({ error: message });
   });
   
