@@ -84,12 +84,15 @@ router.post('/stripe', async (req: Request, res: Response) => {
       });
 
       console.log('✅ Order created:', orderId, 'with UUID:', order.id);
+      res.json({ received: true, orderId: order.id });
     } catch (error: any) {
       console.error('❌ Error creating order:', error?.message);
+      console.error('Full error:', error);
+      return res.status(500).json({ error: 'Failed to create order', details: error?.message });
     }
+  } else {
+    res.json({ received: true, skipped: true, eventType: event.type });
   }
-
-  res.json({ received: true });
 });
 
 if (process.env.NODE_ENV === 'development') {
