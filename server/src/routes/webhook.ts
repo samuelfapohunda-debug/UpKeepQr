@@ -7,6 +7,7 @@ import {
   orderMagnetItemsTable,
 } from "../../../shared/schema.js";
 import { createRequire } from "module";
+import { generateOrderId } from "../../utils/orderIdGenerator.js";
 
 const require = createRequire(import.meta.url);
 const { stripe } = require("../lib/stripe.js");
@@ -48,11 +49,13 @@ router.post('/webhooks/stripe', express.raw({ type: 'application/json' }), async
     });
 
     try {
-      const orderId = nanoid(16);
+      const id = nanoid(16);
+      const orderId = await generateOrderId();
       const activationCode = nanoid(12);
       
       await db.insert(orderMagnetOrdersTable).values({
-        id: orderId,
+        id,
+        orderId,
         customerName: session.customer_details?.name || '',
         customerEmail: session.customer_details?.email || '',
         customerPhone: session.customer_details?.phone || '',
@@ -70,7 +73,7 @@ router.post('/webhooks/stripe', express.raw({ type: 'application/json' }), async
       });
 
       await db.insert(orderMagnetItemsTable).values({
-        orderId: orderId,
+        orderId: id,
         sku: session.metadata?.sku || 'single',
         quantity: 1,
         unitPrice: String(session.amount_total || 0),
