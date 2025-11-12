@@ -84,7 +84,7 @@ router.post('/stripe', async (req: Request, res: Response) => {
       });
 
       console.log('✅ Order created:', orderId, 'with UUID:', order.id);
-      res.json({ received: true, orderId: order.id });
+      res.json({ received: true, orderId: orderId });
     } catch (error: any) {
       console.error('❌ Error creating order:', error?.message);
       console.error('Full error:', error);
