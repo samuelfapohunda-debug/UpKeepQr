@@ -4,6 +4,13 @@ This is an UpKeepQR Agent Management Platform built as a monorepo TypeScript app
 
 # Recent Changes
 
+## November 12, 2025 - Stripe Webhook Integration Complete
+- **Database Setup**: Created `order_id_counter` PostgreSQL sequence required for sequential Order ID generation
+- **Webhook Error Handling**: Fixed webhook to return 500 errors on failure (instead of silent 200 OK) enabling proper Stripe retry behavior
+- **Currency Display Fix**: Removed double division by 100 in MagnetDashboard currency formatting (amounts already stored in dollars, not cents)
+- **Testing Verified**: Successfully processed live webhook events creating orders 1-2025 and 3-2025 with $853.15 payments
+- **Production Ready**: Webhooks now properly handle Stripe checkout.session.completed events with error visibility and retry support
+
 ## November 12, 2025 - Modular Route Architecture Migration
 - **Magnet Order Endpoints Migration**: Moved all 11 magnet order admin endpoints from legacy `server/routes.ts` to modular system
 - **New Router Module**: Created `server/src/routes/magnet-orders.ts` consolidating all magnet admin routes (metrics, orders, items, batches, shipments)
