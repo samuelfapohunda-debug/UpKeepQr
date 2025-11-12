@@ -28,13 +28,13 @@ router.post('/stripe', express.raw({ type: 'application/json' }), async (req: Re
     return res.status(400).json({ error: "Missing webhook signature or secret" });
   }
 
-  let event: unknown;
+  let event: any;
 
   try {
     event = stripe.webhooks.constructEvent(req.body, sig as string, webhookSecret);
     console.log('✅ Webhook signature verified:', event.type);
-  } catch (err: unknown) {
-    console.error("❌ Webhook signature verification failed:", err.message);
+  } catch (err: any) {
+    console.error("❌ Webhook signature verification failed:", err?.message);
     return res.status(400).json({ error: "Invalid webhook signature" });
   }
 
@@ -49,12 +49,10 @@ router.post('/stripe', express.raw({ type: 'application/json' }), async (req: Re
     });
 
     try {
-      const id = nanoid(16);
       const orderId = await generateOrderId();
       const activationCode = nanoid(12);
       
-      await db.insert(orderMagnetOrdersTable).values({
-        id,
+      const [order] = await db.insert(orderMagnetOrdersTable).values({
         orderId,
         customerName: session.customer_details?.name || '',
         customerEmail: session.customer_details?.email || '',
@@ -64,27 +62,27 @@ router.post('/stripe', express.raw({ type: 'application/json' }), async (req: Re
         shipCity: session.customer_details?.address?.city || '',
         shipState: session.customer_details?.address?.state || '',
         shipZip: session.customer_details?.address?.postal_code || '',
-        subtotal: String(session.amount_total || 0),
-        total: String(session.amount_total || 0),
+        subtotal: String((session.amount_total || 0) / 100),
+        total: String((session.amount_total || 0) / 100),
         paymentStatus: 'paid',
         paymentProvider: 'stripe',
         paymentRef: session.id,
         status: 'paid'
-      });
+      }).returning();
 
       await db.insert(orderMagnetItemsTable).values({
-        orderId: id,
+        orderId: order.id,
         sku: session.metadata?.sku || 'single',
-        quantity: 1,
-        unitPrice: String(session.amount_total || 0),
+        quantity: parseInt(session.metadata?.quantity || '1'),
+        unitPrice: String((session.amount_total || 0) / 100),
         activationCode: activationCode,
         qrUrl: `${process.env.PUBLIC_BASE_URL}/setup/${activationCode}`,
         activationStatus: 'inactive'
       });
 
-      console.log('✅ Order created:', orderId);
-    } catch (error) {
-      console.error('❌ Error creating order:', error);
+      console.log('✅ Order created:', orderId, 'with UUID:', order.id);
+    } catch (error: any) {
+      console.error('❌ Error creating order:', error?.message);
     }
   }
 
