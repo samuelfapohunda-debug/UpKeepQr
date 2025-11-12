@@ -56,8 +56,7 @@ app.use((req, res, next) => {
   app.use(express.urlencoded({ extended: false }));
   
   registerRoutes(app);
-  
-  startCronJobs();
+  await import("./routes.ts");  // Load magnet orders routes
   
   app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
     console.error("Error:", err);

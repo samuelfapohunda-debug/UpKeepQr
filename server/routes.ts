@@ -3,7 +3,7 @@ import express from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { authenticateAdmin, authenticateAgent } from "./middleware/auth";
-import { sendUserConfirmationEmail, sendAdminAlertEmail, sendStatusUpdateEmail } from "./lib/email";
+import { sendUserConfirmationEmail } from "./lib/email";
 import { insertMagnetBatchSchema, insertBatchSchema, setupActivateSchema, setupPreviewSchema, taskCompleteSchema, agentLoginSchema, checkoutSchema, leadsSchema, smsOptInSchema, smsVerifySchema, createProRequestSchema, updateProRequestStatusSchema, adminProRequestFiltersSchema, createNoteSchema, insertOrderMagnetOrderSchema, insertOrderMagnetItemSchema, insertOrderMagnetBatchSchema, insertOrderMagnetShipmentSchema, insertOrderMagnetAuditEventSchema } from "../shared/schema";
 import { nanoid } from "nanoid";
 import { v4 as uuidv4 } from "uuid";

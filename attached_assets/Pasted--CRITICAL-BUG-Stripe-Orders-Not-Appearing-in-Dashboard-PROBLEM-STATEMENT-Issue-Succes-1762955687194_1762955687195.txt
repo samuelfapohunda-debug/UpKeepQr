@@ -1,0 +1,514 @@
+# 🚨 CRITICAL BUG: Stripe Orders Not Appearing in Dashboard
+
+## PROBLEM STATEMENT
+
+**Issue:** Successful Stripe payments are being processed ($19.00 charges confirmed in Stripe Dashboard), but the corresponding orders are NOT appearing in the "Magnet Orders" dashboard at `/admin/magnets`.
+
+**Current State:**
+- ✅ Stripe payments succeed (multiple $19 payments confirmed)
+- ✅ Stripe webhooks are configured
+- ✅ Database table `order_magnet_orders` exists
+- ✅ Webhook handler code exists in `server/routes/webhooks.ts`
+- ✅ API endpoints exist at `server/routes.ts`
+- ❌ Dashboard shows "0 total orders" despite successful payments
+- ❌ No orders in `order_magnet_orders` table (except 1 manual test order)
+
+---
+
+## ROOT CAUSE ANALYSIS
+
+After extensive debugging, we identified the following issues:
+
+### 1. **Webhook URL Mismatch** ⚠️ CRITICAL
+
+**Current Stripe Configuration:**
+```
+Webhook URL: https://c5fedf65-be2f-48bc-846d-7c943e95ca67-00-3i6x538999e2g.janeway.replit.dev/stripe/webhook
+```
+
+**Expected by Code:**
+```typescript
+// server/routes/webhooks.ts line 20
+router.post('/webhooks/stripe', ...)  // Expects /webhooks/stripe NOT /stripe/webhook
+```
+
+**Impact:** Webhooks are returning 404, so orders never get created in the database.
+
+### 2. **API Routes Not Loading** ⚠️ CRITICAL
+
+**Issue:** The file `server/routes.ts` containing the magnet orders API endpoints is NOT being loaded by the server.
+
+**Current Setup:**
+- `server/src/routes/index.ts` - Loads modular routes (auth, qr, calendar, etc.)
+- `server/routes.ts` - Contains magnet orders endpoints BUT NOT IMPORTED
+
+**Evidence:**
+```bash
+# API returns 404
+curl http://localhost:5000/api/admin/magnets/orders
+# Returns: Cannot GET /api/admin/magnets/orders
+```
+
+**Attempted Fix:**
+```typescript
+// Added to server/index.ts line 59
+await import("./routes.ts");  // Load magnet orders routes
+```
+
+**Result:** Server starts but routes still return 404 (routes.ts not being executed properly)
+
+### 3. **Missing Email Functions** ⚠️ RESOLVED
+
+**Fixed:** Removed non-existent email function imports from `server/routes.ts`
+```typescript
+// OLD (broken)
+import { sendUserConfirmationEmail, sendAdminAlertEmail, sendStatusUpdateEmail }
+
+// NEW (fixed)
+import { sendUserConfirmationEmail }
+```
+
+---
+
+## DATABASE SCHEMA
+
+### **Table: `order_magnet_orders`**
+
+```sql
+CREATE TABLE order_magnet_orders (
+  id character varying NOT NULL PRIMARY KEY,
+  order_id character varying(50) NOT NULL UNIQUE,
+  created_at timestamp DEFAULT now(),
+  updated_at timestamp DEFAULT now(),
+  customer_name character varying(255),      -- Made nullable
+  customer_email character varying(255) NOT NULL,
+  customer_phone character varying(50),      -- Made nullable
+  ship_address_line_1 character varying(255), -- Made nullable
+  ship_address_line_2 character varying(255),
+  ship_city character varying(100),           -- Made nullable
+  ship_state character varying(50),           -- Made nullable
+  ship_zip character varying(5),              -- Made nullable
+  ship_country character varying(10) DEFAULT 'US',
+  subtotal numeric(10,2) NOT NULL,
+  shipping_fee numeric(10,2) DEFAULT 0,
+  discount numeric(10,2) DEFAULT 0,
+  tax numeric(10,2) DEFAULT 0,
+  total numeric(10,2) NOT NULL,
+  payment_status character varying(20) DEFAULT 'unpaid',
+  payment_provider character varying(20) DEFAULT 'stripe',
+  payment_ref character varying(255) UNIQUE,
+  status character varying(20) DEFAULT 'new',
+  source character varying(100),
+  utm_source character varying(100),
+  utm_medium character varying(100),
+  utm_campaign character varying(100),
+  notes text
+);
+```
+
+**Recent Changes:**
+- Made shipping fields nullable to allow Stripe subscription orders (which don't collect shipping info)
+- This change was successful - test order creation now works
+
+---
+
+## WEBHOOK HANDLER CODE
+
+**Location:** `server/routes/webhooks.ts`
+
+**Endpoint:** `POST /webhooks/stripe`
+
+**Logic Flow:**
+```typescript
+1. Receive Stripe webhook
+2. Verify signature using STRIPE_WEBHOOK_SECRET
+3. Handle event.type === 'checkout.session.completed'
+4. Check for duplicate orders (by payment_ref)
+5. Validate customer email and amount
+6. Generate order_id using nanoid(16)
+7. Insert into order_magnet_orders table
+8. Insert into order_magnet_items table
+9. Send confirmation email
+10. Return 200 OK
+```
+
+**Key Code Section:**
+```typescript
+router.post('/webhooks/stripe', express.raw({ type: 'application/json' }), async (req, res) => {
+  // Webhook processing...
+  if (event.type === 'checkout.session.completed') {
+    const session = event.data.object;
+    
+    // Insert order
+    await tx.insert(orderMagnetOrdersTable).values({
+      id: orderId,
+      customerEmail: customerEmail,
+      customerName: customerName,
+      subtotal: String(session.amount_total || 0),
+      total: String(session.amount_total || 0),
+      paymentStatus: 'paid',
+      paymentRef: session.id,
+      status: 'paid'
+    });
+  }
+});
+```
+
+---
+
+## API ENDPOINTS
+
+**Location:** `server/routes.ts`
+
+**Endpoints Required by Dashboard:**
+
+1. **GET `/api/admin/magnets/orders`**
+   - Returns paginated list of orders
+   - Requires `authenticateAgent` middleware
+   - Queries: `storage.getAllOrderMagnetOrders()`
+
+2. **GET `/api/admin/magnets/orders/metrics`**
+   - Returns KPIs (total orders, revenue, status counts)
+   - Requires `authenticateAgent` middleware
+
+3. **GET `/api/admin/magnets/orders/:id`**
+   - Returns single order details
+   - Requires `authenticateAgent` middleware
+
+4. **PATCH `/api/admin/magnets/orders/:id/status`**
+   - Updates order status
+   - Requires `authenticateAgent` middleware
+
+**Current Status:** Endpoints exist in `server/routes.ts` but return 404 (file not loaded)
+
+---
+
+## FRONTEND CODE
+
+**Location:** `client/src/pages/MagnetDashboard.tsx`
+
+**API Calls:**
+```typescript
+// Fetch orders
+queryKey: ["/api/admin/magnets/orders", filters]
+fetch(`/api/admin/magnets/orders?${params}`)
+
+// Fetch metrics
+queryKey: ["/api/admin/magnets/orders/metrics", filters]
+fetch(`/api/admin/magnets/orders/metrics?${params}`)
+
+// Update status
+fetch(`/api/admin/magnets/orders/${id}/status`, {
+  method: 'PATCH',
+  body: JSON.stringify({ status })
+})
+```
+
+---
+
+## ENVIRONMENT VARIABLES
+
+**Required in `.env`:**
+```bash
+DATABASE_URL=postgresql://postgres:password@helium/heliumdb?sslmode=disable
+STRIPE_SECRET_KEY=sk_test_... (currently NOT SET in environment)
+STRIPE_WEBHOOK_SECRET=whsec_w68Lxl2ngFTzaMrfdJMSQi2DXVGFjIbI
+PUBLIC_BASE_URL=https://c5fedf65-be2f-48bc-846d-7c943e95ca67-00-3i6x538999e2g.janeway.replit.dev
+```
+
+**Status:**
+- ✅ DATABASE_URL: Set and working
+- ❌ STRIPE_SECRET_KEY: Not set in current terminal environment
+- ✅ STRIPE_WEBHOOK_SECRET: Recently added
+- ✅ PUBLIC_BASE_URL: Set
+
+---
+
+## WHAT NEEDS TO BE FIXED
+
+### **Priority 1: Fix Webhook URL** 🔴 CRITICAL
+
+**Action Required:**
+1. Update Stripe webhook configuration in TEST mode
+2. Change URL from: `/stripe/webhook` 
+3. To: `/webhooks/stripe`
+4. Ensure it's configured for TEST mode (not live mode)
+
+**Steps:**
+1. Go to: https://dashboard.stripe.com/test/webhooks
+2. Create new webhook endpoint
+3. URL: `https://c5fedf65-be2f-48bc-846d-7c943e95ca67-00-3i6x538999e2g.janeway.replit.dev/webhooks/stripe`
+4. Events: Select `checkout.session.completed`
+5. Copy signing secret to `.env` as `STRIPE_WEBHOOK_SECRET`
+
+### **Priority 2: Fix API Routes Loading** 🔴 CRITICAL
+
+**Current Attempt (not working):**
+```typescript
+// server/index.ts line 59
+await import("./routes.ts");  // Routes not executing
+```
+
+**Possible Solutions:**
+
+**Option A:** Make `server/routes.ts` export a setup function
+```typescript
+// server/routes.ts
+export function setupMagnetOrdersRoutes(app: Express) {
+  app.get("/api/admin/magnets/orders", authenticateAgent, async (req, res) => {
+    // ... existing code
+  });
+  // ... all other endpoints
+}
+
+// server/index.ts
+import { setupMagnetOrdersRoutes } from './routes.ts';
+setupMagnetOrdersRoutes(app);
+```
+
+**Option B:** Add routes to `server/src/routes/index.ts`
+```typescript
+// Create server/src/routes/magnet-orders.ts
+import { Router } from 'express';
+const router = Router();
+// Move all magnet order endpoints here
+export default router;
+
+// server/src/routes/index.ts
+import magnetOrdersRoutes from './magnet-orders';
+app.use('/api/admin/magnets', magnetOrdersRoutes);
+```
+
+**Option C:** Ensure routes.ts actually executes
+```typescript
+// Check if routes.ts is a module vs script
+// Ensure it exports something or has side effects that register routes
+```
+
+### **Priority 3: Fix Environment Variables** 🟡 MEDIUM
+
+**Action:**
+```bash
+# Ensure .env is loaded properly
+# Add to server startup or use dotenv
+export $(cat .env | xargs)
+```
+
+### **Priority 4: Test End-to-End** 🟢 LOW
+
+**After fixes, verify:**
+1. Webhook receives events (check server logs for `💰 Payment successful`)
+2. Orders created in database
+3. Dashboard API returns data
+4. Dashboard displays orders
+
+---
+
+## TESTING CHECKLIST
+
+### **Test 1: Webhook Receipt**
+```bash
+# Check server logs after test payment
+# Should see:
+🔔 Webhook received
+💰 Payment successful: { session_id: '...', customer_email: '...', amount: 1900 }
+```
+
+### **Test 2: Database Order Creation**
+```bash
+psql "$DATABASE_URL" -c "
+SELECT order_id, customer_email, total, payment_status, status, created_at 
+FROM order_magnet_orders 
+ORDER BY created_at DESC 
+LIMIT 5;
+"
+# Should show new orders after payments
+```
+
+### **Test 3: API Endpoints**
+```bash
+# Test orders endpoint
+curl http://localhost:5000/api/admin/magnets/orders
+
+# Should return JSON with orders, not 404
+```
+
+### **Test 4: Dashboard Display**
+1. Navigate to: `/admin/magnets`
+2. Should show:
+   - Total Orders: > 0
+   - Orders list with customer emails
+   - Revenue: $19.00 (or more)
+
+---
+
+## FILES TO MODIFY
+
+### **1. server/index.ts**
+**Current Issue:** Routes import not working
+**Required Fix:** Properly load `server/routes.ts` routes
+
+### **2. Stripe Dashboard Configuration**
+**Current:** Webhook points to `/stripe/webhook` (wrong)
+**Required:** Change to `/webhooks/stripe`
+
+### **3. server/routes/webhooks.ts** (optional)
+**Consider:** Add route alias for backward compatibility
+```typescript
+router.post('/stripe/webhook', webhookHandler);  // Alias
+router.post('/webhooks/stripe', webhookHandler); // Primary
+```
+
+---
+
+## SUCCESS CRITERIA
+
+When fixed, the following should be true:
+
+1. ✅ **Webhook Events Received**
+   - Server logs show `💰 Payment successful` for each payment
+   - No 404 errors in Stripe webhook dashboard
+
+2. ✅ **Orders in Database**
+   - `SELECT COUNT(*) FROM order_magnet_orders` returns > 0
+   - Each Stripe payment has corresponding database record
+
+3. ✅ **API Endpoints Working**
+   - `GET /api/admin/magnets/orders` returns 200 with order data
+   - `GET /api/admin/magnets/orders/metrics` returns KPIs
+
+4. ✅ **Dashboard Displays Orders**
+   - "Total Orders" shows correct count
+   - Orders table populated with customer data
+   - Revenue displays correct amount
+
+---
+
+## TECHNICAL CONTEXT
+
+**Server Setup:**
+- Node.js v20.19.3
+- Express.js server
+- TypeScript with tsx
+- Drizzle ORM for database
+- PostgreSQL database
+
+**Route Registration Flow:**
+```
+server/index.ts (main)
+  ↓
+registerRoutes(app) → server/src/routes/index.ts
+  ↓
+Loads modular routes (auth, qr, calendar, etc.)
+  
+server/routes.ts (ISOLATED - NOT LOADED)
+  ↓
+Contains magnet orders endpoints
+  ↓
+NEEDS TO BE CONNECTED TO MAIN APP
+```
+
+**Current Server Startup:**
+```typescript
+// server/index.ts
+app.use(express.json());
+registerRoutes(app);  // Loads src/routes/index.ts
+await import("./routes.ts");  // Attempt to load routes.ts (NOT WORKING)
+```
+
+---
+
+## DEBUGGING COMMANDS
+
+```bash
+# 1. Check database
+psql "$DATABASE_URL" -c "SELECT COUNT(*) FROM order_magnet_orders;"
+
+# 2. Test webhook endpoint
+curl -X POST http://localhost:5000/webhooks/stripe \
+  -H "Content-Type: application/json" \
+  -d '{"test":"data"}'
+
+# 3. Test API endpoint
+curl http://localhost:5000/api/admin/magnets/orders
+
+# 4. Check Stripe webhooks
+curl -s -u "$STRIPE_SECRET_KEY:" "https://api.stripe.com/v1/webhook_endpoints"
+
+# 5. View server routes
+grep -r "app.get\|app.post\|router.get\|router.post" server/ --include="*.ts" | grep magnet
+```
+
+---
+
+## REPLIT AGENT INSTRUCTIONS
+
+**GOAL:** Fix the issue so that all successful Stripe payments automatically create orders that appear in the Magnet Orders dashboard.
+
+**REQUIRED ACTIONS:**
+
+1. **Fix Route Loading:**
+   - Ensure `server/routes.ts` endpoints are properly registered with the Express app
+   - Choose best approach (export function, move to src/routes, or fix import)
+   - Verify endpoints return 200 (not 404)
+
+2. **Provide Stripe Configuration Instructions:**
+   - Output the exact webhook URL to configure
+   - List required webhook events
+   - Provide step-by-step Stripe dashboard instructions
+
+3. **Test the Complete Flow:**
+   - Verify webhook endpoint is accessible
+   - Check database after webhook simulation
+   - Confirm API returns order data
+   - Validate dashboard displays orders
+
+4. **Document the Fix:**
+   - Explain what was broken
+   - Describe what was changed
+   - Provide testing instructions
+
+---
+
+## EXPECTED OUTCOME
+
+After fixing:
+1. User makes $19 payment via Stripe
+2. Stripe sends webhook to `/webhooks/stripe`
+3. Server receives webhook, creates order in `order_magnet_orders`
+4. Dashboard automatically displays new order
+5. User sees order with customer email, amount, and status
+
+---
+
+## REFERENCE INFORMATION
+
+**Current Replit URL:**
+```
+https://c5fedf65-be2f-48bc-846d-7c943e95ca67-00-3i6x538999e2g.janeway.replit.dev
+```
+
+**Correct Webhook URL:**
+```
+https://c5fedf65-be2f-48bc-846d-7c943e95ca67-00-3i6x538999e2g.janeway.replit.dev/webhooks/stripe
+```
+
+**Test Order in Database:**
+```sql
+-- Manual test order (used for verification)
+order_id: TEST-FIX-2025
+customer_email: test@fix.com
+total: 19.00
+status: new
+```
+
+---
+
+**PRIORITY:** 🔴 CRITICAL - Production issue blocking customer orders from appearing
+
+**ESTIMATED TIME:** 30-60 minutes to fix and test
+
+**DEPENDENCIES:** 
+- Stripe webhook configuration (manual step)
+- Server route registration (code fix)
+- Environment variable loading (verification)
