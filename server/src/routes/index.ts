@@ -8,6 +8,7 @@ import webhookRoutes from './webhook.js';
 import publicHomeExtraRoutes from './publicHomeExtra.js';
 import leadsRoutes from './leads.js';
 import setupRoutes from './setup.ts';
+import magnetOrdersRoutes from './magnet-orders.js';
 
 export function registerRoutes(app: Express) {
   app.use('/health', healthRoutes);
@@ -15,6 +16,7 @@ export function registerRoutes(app: Express) {
   app.use('/api/qr', qrRoutes);
   app.use('/api/calendar', calendarRoutes);
   app.use('/api/admin/home-extra', homeExtraRoutes);
+  app.use('/api/admin/magnets', magnetOrdersRoutes);
   app.use('/api/public', publicHomeExtraRoutes);
   app.use('/api/webhook', webhookRoutes);
   app.use('/api/leads', leadsRoutes);
@@ -25,6 +27,7 @@ export function registerRoutes(app: Express) {
   console.log('✅ QR routes registered at /api/qr');
   console.log('✅ Calendar routes registered at /api/calendar');
   console.log('✅ Admin home extra routes registered at /api/admin/home-extra');
+  console.log('✅ Admin magnet orders routes registered at /api/admin/magnets');
   console.log('✅ Public home extra routes registered at /api/public');
   console.log('✅ Webhook routes registered at /api/webhook');
   console.log('✅ Leads routes registered at /api/leads');
