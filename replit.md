@@ -4,6 +4,16 @@ This is an UpKeepQR Agent Management Platform built as a monorepo TypeScript app
 
 # Recent Changes
 
+## November 12, 2025 - Modular Route Architecture Migration
+- **Magnet Order Endpoints Migration**: Moved all 11 magnet order admin endpoints from legacy `server/routes.ts` to modular system
+- **New Router Module**: Created `server/src/routes/magnet-orders.ts` consolidating all magnet admin routes (metrics, orders, items, batches, shipments)
+- **Shared Utilities**: Created `server/src/routes/utils.ts` with reusable `createAuditLog()` and `handleError()` helpers
+- **Webhook Integration**: Updated `server/src/routes/webhook.ts` to use `generateOrderId()` for sequential Order IDs
+- **Route Registration**: All magnet routes registered at `/api/admin/magnets` base path
+- **Stripe Webhook URL**: Production webhook configured at `/api/webhook/stripe` (verified working)
+- **Code Cleanup**: Removed broken import to legacy routes from `server/index.ts`
+- **Architecture**: Legacy `server/routes.ts` will be deprecated once remaining endpoints are migrated
+
 ## November 11, 2025 - Order ID Format Change Implementation
 - **New Order ID Format**: Changed from UUID to sequential format `{counter}-{year}` (e.g., "1-2025", "2-2025")
 - **Database Schema**: Added `orderId` field (VARCHAR(50), UNIQUE, NOT NULL) to `order_magnet_orders` table
@@ -47,6 +57,8 @@ The backend follows a RESTful API design with Express.js:
 - **Session Management**: In-memory storage pattern with extensible storage interface
 - **Background Jobs**: Node-cron for scheduled tasks like reporting and cleanup
 - **File Structure**: Modular route organization with separate concerns
+- **Route Modules**: Routes organized in `server/src/routes/` directory with dedicated routers for auth, webhooks, magnets, etc.
+- **Shared Utilities**: Common helpers in `server/src/routes/utils.ts` for audit logging and error handling
 
 ## Database Design
 Uses PostgreSQL with Drizzle ORM for type-safe database operations:
@@ -98,3 +110,8 @@ Implements JWT-based authentication for admin access:
 
 ## Communication Services
 - **Email Integration**: Placeholder implementation for agent notifications and onboarding emails (ready for services like SendGrid or AWS SES)
+
+## Payment Integration
+- **Stripe**: Payment processing for magnet orders
+- **Webhook URL**: `/api/webhook/stripe` (production endpoint for checkout.session.completed events)
+- **Order ID Generation**: Sequential format `{counter}-{year}` using PostgreSQL sequence
