@@ -8,6 +8,13 @@ import {
 } from "@shared/schema";
 import { createRequire } from "module";
 import { generateOrderId } from "../../utils/orderIdGenerator.js";
+import { generateQRCodes } from "../../lib/qr.js";
+import {
+  sendPaymentConfirmationEmail,
+  sendWelcomeEmailWithQR,
+  sendAdminOrderNotification,
+  sendAdminErrorAlert
+} from "../../lib/email.js";
 
 const require = createRequire(import.meta.url);
 const { stripe } = require("../lib/stripe.js");
@@ -50,44 +57,146 @@ router.post('/stripe', async (req: Request, res: Response) => {
     });
 
     try {
+      // Determine quantity based on SKU
+      const sku = session.metadata?.sku || 'single';
+      let magnetCount = 1;
+      switch (sku) {
+        case 'single':
+          magnetCount = 1;
+          break;
+        case 'twopack':
+          magnetCount = 2;
+          break;
+        case '100pack':
+          magnetCount = 100;
+          break;
+        default:
+          magnetCount = parseInt(session.metadata?.quantity || '1');
+      }
+
       const orderId = await generateOrderId();
-      const activationCode = nanoid(12);
+      const customerName = session.customer_details?.name || '';
+      const customerEmail = session.customer_details?.email || '';
+      const amountPaid = String((session.amount_total || 0) / 100);
+      const baseUrl = process.env.PUBLIC_BASE_URL || 'https://upkeepqr.com';
       
+      // Create order
       // @ts-expect-error - TypeScript LSP cache issue with Drizzle schema inference, works at runtime
       const [order] = await db.insert(orderMagnetOrdersTable).values({
         orderId,
-        customerName: session.customer_details?.name || '',
-        customerEmail: session.customer_details?.email || '',
+        customerName,
+        customerEmail,
         customerPhone: session.customer_details?.phone || '',
         shipAddressLine1: session.customer_details?.address?.line1 || '',
         shipAddressLine2: session.customer_details?.address?.line2 || '',
         shipCity: session.customer_details?.address?.city || '',
         shipState: session.customer_details?.address?.state || '',
         shipZip: session.customer_details?.address?.postal_code || '',
-        subtotal: String((session.amount_total || 0) / 100),
-        total: String((session.amount_total || 0) / 100),
+        subtotal: amountPaid,
+        total: amountPaid,
         paymentStatus: 'paid',
         paymentProvider: 'stripe',
         paymentRef: session.id,
         status: 'paid'
       }).returning();
 
-      // @ts-expect-error - TypeScript LSP cache issue with Drizzle schema inference, works at runtime
-      await db.insert(orderMagnetItemsTable).values({
-        orderId: order.id,
-        sku: session.metadata?.sku || 'single',
-        quantity: parseInt(session.metadata?.quantity || '1'),
-        unitPrice: String((session.amount_total || 0) / 100),
-        activationCode: activationCode,
-        qrUrl: `${process.env.PUBLIC_BASE_URL}/setup/${activationCode}`,
-        activationStatus: 'inactive'
+      console.log('✅ Order created:', orderId, 'with UUID:', order.id);
+
+      // Generate activation codes for all magnets
+      const activationCodes = Array.from({ length: magnetCount }, () => nanoid(12));
+      
+      // Generate QR codes
+      const qrCodes = await generateQRCodes(activationCodes, baseUrl);
+      
+      console.log(`🎯 Generated ${qrCodes.length} QR codes for order ${orderId}`);
+
+      // Create order items (one per magnet with its activation code)
+      for (let i = 0; i < activationCodes.length; i++) {
+        const code = activationCodes[i];
+        const qr = qrCodes[i];
+        
+        // @ts-expect-error - TypeScript LSP cache issue with Drizzle schema inference, works at runtime
+        await db.insert(orderMagnetItemsTable).values({
+          orderId: order.id,
+          sku,
+          quantity: 1, // Each item is 1 magnet
+          unitPrice: String((session.amount_total || 0) / (100 * magnetCount)), // Split cost per magnet
+          activationCode: code,
+          qrUrl: qr.qrUrl,  // Store the QR image data URL, not the setup URL
+          activationStatus: 'inactive'
+        });
+      }
+
+      console.log(`✅ Created ${activationCodes.length} order items with activation codes`);
+
+      // Send emails (non-blocking - don't fail webhook if emails fail)
+      Promise.all([
+        // Email 1: Payment confirmation
+        sendPaymentConfirmationEmail(
+          customerEmail,
+          customerName,
+          orderId,
+          amountPaid,
+          magnetCount
+        ).catch(error => {
+          console.error('❌ Failed to send payment confirmation:', error);
+          sendAdminErrorAlert(
+            'Payment Confirmation Email Failed',
+            error.message,
+            { orderId, customerEmail, sku, magnetCount }
+          ).catch(e => console.error('Failed to send error alert:', e));
+        }),
+        
+        // Email 2: Welcome email with QR codes
+        sendWelcomeEmailWithQR(
+          customerEmail,
+          customerName,
+          orderId,
+          qrCodes
+        ).catch(error => {
+          console.error('❌ Failed to send welcome email:', error);
+          sendAdminErrorAlert(
+            'Welcome Email Failed',
+            error.message,
+            { orderId, customerEmail, qrCodesCount: qrCodes.length }
+          ).catch(e => console.error('Failed to send error alert:', e));
+        }),
+        
+        // Email 3: Admin notification
+        sendAdminOrderNotification(
+          orderId,
+          customerName,
+          customerEmail,
+          amountPaid,
+          magnetCount,
+          sku
+        ).catch(error => {
+          console.error('❌ Failed to send admin notification:', error);
+        })
+      ]).then(() => {
+        console.log('✅ All emails sent successfully');
+      }).catch(error => {
+        console.error('❌ Some emails failed:', error);
       });
 
-      console.log('✅ Order created:', orderId, 'with UUID:', order.id);
+      // Return success immediately (don't wait for emails)
       res.json({ received: true, orderId: orderId });
+      
     } catch (error: any) {
-      console.error('❌ Error creating order:', error?.message);
+      console.error('❌ Error processing order:', error?.message);
       console.error('Full error:', error);
+      
+      // Send admin alert about critical error
+      sendAdminErrorAlert(
+        'Stripe Webhook Order Creation Failed',
+        error?.message || 'Unknown error',
+        { 
+          sessionId: session.id,
+          customerEmail: session.customer_details?.email,
+          amount: session.amount_total 
+        }
+      ).catch(e => console.error('Failed to send error alert:', e));
+      
       return res.status(500).json({ error: 'Failed to create order', details: error?.message });
     }
   } else {

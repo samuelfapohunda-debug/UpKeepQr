@@ -69,6 +69,47 @@ const Onboarding: React.FC = () => {
     }
   }, [params]);
 
+  // Fetch customer data to pre-fill form when coming from a QR code purchase
+  useEffect(() => {
+    const fetchCustomerData = async () => {
+      if (!token) return;
+      
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/setup/${token}/customer`);
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log('✅ Customer data loaded for pre-fill:', data);
+          
+          // Pre-fill form with customer data from order
+          setFormData(prev => ({
+            ...prev,
+            fullName: data.customerName || prev.fullName,
+            email: data.customerEmail || prev.email,
+            phone: data.customerPhone || prev.phone,
+            streetAddress: data.address?.line1 || prev.streetAddress,
+            city: data.address?.city || prev.city,
+            state: data.address?.state || prev.state,
+            zip: data.address?.zip || prev.zip,
+          }));
+          
+          toast({
+            title: "Welcome!",
+            description: "Your information has been pre-filled. Please review and complete the setup.",
+          });
+        } else if (response.status === 404) {
+          // Activation code not found in orders - this is okay, might be old magnet system
+          console.log('ℹ️ No order found for activation code - using legacy magnet system');
+        }
+      } catch (error) {
+        console.error('❌ Error fetching customer data:', error);
+        // Don't show error to user - they can still fill the form manually
+      }
+    };
+    
+    fetchCustomerData();
+  }, [token, toast]);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));

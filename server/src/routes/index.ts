@@ -9,6 +9,7 @@ import publicHomeExtraRoutes from './publicHomeExtra.js';
 import leadsRoutes from './leads.js';
 import setupRoutes from './setup.ts';
 import magnetOrdersRoutes from './magnet-orders.js';
+import publicRoutes from './public.js';
 
 export function registerRoutes(app: Express) {
   app.use('/health', healthRoutes);
@@ -21,6 +22,7 @@ export function registerRoutes(app: Express) {
   app.use('/api/webhook', webhookRoutes);
   app.use('/api/leads', leadsRoutes);
   app.use('/api/setup', setupRoutes);
+  app.use('/api', publicRoutes);  // Customer data lookup and QR code download
   
   console.log('✅ Health routes registered at /health');
   console.log('✅ Auth routes registered at /api/auth');
