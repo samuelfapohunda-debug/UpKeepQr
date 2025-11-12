@@ -279,7 +279,7 @@ export default function MagnetDashboard() {
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Revenue</p>
                   <p className="text-2xl font-semibold text-gray-900 dark:text-white">
-                    ${(kpis.totalRevenue / 100).toFixed(2)}
+                    ${parseFloat(kpis.totalRevenue || '0').toFixed(2)}
                   </p>
                 </div>
               </div>
@@ -422,7 +422,7 @@ export default function MagnetDashboard() {
                               </div>
                             </TableCell>
                             <TableCell className="font-semibold">
-                              ${(order.total / 100).toFixed(2)}
+                              ${parseFloat(order.total || '0').toFixed(2)}
                             </TableCell>
                             <TableCell>
                               <Badge className={`text-white ${statusColors[order.status] || 'bg-gray-500'}`}>
@@ -554,7 +554,7 @@ export default function MagnetDashboard() {
                 <div>
                   <h3 className="font-semibold mb-2">Order Summary</h3>
                   <div className="space-y-2 text-sm">
-                    <div><strong>Total Amount:</strong> ${(selectedOrder.total / 100).toFixed(2)}</div>
+                    <div><strong>Total Amount:</strong> ${parseFloat(selectedOrder.total || '0').toFixed(2)}</div>
                     <div><strong>Status:</strong> {selectedOrder.status.replace("_", " ")}</div>
                     <div><strong>Payment Status:</strong> {selectedOrder.paymentStatus}</div>
                   </div>
