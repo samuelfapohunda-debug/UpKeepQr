@@ -630,7 +630,6 @@ export const contactMessagesTable = pgTable("contact_messages", {
 // Drizzle-generated insert schemas and types for Order Magnet system
 export const insertOrderMagnetOrderSchema = createInsertSchema(orderMagnetOrdersTable).omit({
   id: true,
-  orderId: true,
   createdAt: true,
   updatedAt: true,
 });
