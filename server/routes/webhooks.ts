@@ -19,6 +19,10 @@ const router = Router();
 console.log('🔧 Webhook router initialized');
 
 router.post('/webhooks/stripe', express.raw({ type: 'application/json' }), async (req: Request, res: Response) => {
+router.post('/stripe/webhook', express.raw({ type: 'application/json' }), async (req: Request, res: Response) => {
+  // Alias for Stripe's configured endpoint - redirect to main handler
+  return router.handle(req, res);
+});
   console.log('�� Real webhook endpoint hit');
   const sig = req.headers['stripe-signature'];
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;

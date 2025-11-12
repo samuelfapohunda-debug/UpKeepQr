@@ -5,7 +5,7 @@ import { db } from "../../db.js";
 import {
   orderMagnetOrdersTable,
   orderMagnetItemsTable,
-} from "@shared/schema.ts";
+} from "@shared/schema";
 import { createRequire } from "module";
 import { generateOrderId } from "../../utils/orderIdGenerator.js";
 
@@ -16,7 +16,8 @@ const router = Router();
 
 console.log('🔧 Webhook router initialized');
 
-router.post('/stripe', express.raw({ type: 'application/json' }), async (req: Request, res: Response) => {
+// Note: Raw body middleware is applied at app level in server/index.ts before express.json()
+router.post('/stripe', async (req: Request, res: Response) => {
   console.log('🔔 Real webhook endpoint hit');
   const sig = req.headers['stripe-signature'];
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
