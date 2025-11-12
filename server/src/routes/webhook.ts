@@ -16,7 +16,7 @@ const router = Router();
 
 console.log('🔧 Webhook router initialized');
 
-router.post('/webhooks/stripe', express.raw({ type: 'application/json' }), async (req: Request, res: Response) => {
+router.post('/stripe', express.raw({ type: 'application/json' }), async (req: Request, res: Response) => {
   console.log('🔔 Real webhook endpoint hit');
   const sig = req.headers['stripe-signature'];
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -92,7 +92,7 @@ router.post('/webhooks/stripe', express.raw({ type: 'application/json' }), async
 });
 
 if (process.env.NODE_ENV === 'development') {
-  router.post('/webhooks/stripe-test', express.json(), async (req: Request, res: Response) => {
+  router.post('/stripe-test', express.json(), async (req: Request, res: Response) => {
     console.log("🧪 Test webhook endpoint hit!");
     const event = req.body;
     if (event.type === 'checkout.session.completed') {
