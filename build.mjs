@@ -1,3 +1,5 @@
+/* eslint-disable no-undef */
+/* eslint-disable no-console */
 import * as esbuild from 'esbuild';
 import { copyFile, mkdir } from 'fs/promises';
 
