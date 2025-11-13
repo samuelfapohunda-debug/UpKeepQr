@@ -1,16 +1,72 @@
 import twilio from 'twilio';
 
-// Check if Twilio credentials are configured
-const twilioConfigured = !!(process.env.TWILIO_SID && process.env.TWILIO_TOKEN && process.env.TWILIO_FROM);
+// Replit Twilio Connector Integration
+// Credentials are managed securely via Replit's connector system
+let twilioClient: any = null;
+let twilioFromNumber: string | null = null;
+let twilioConfigured = false;
 
-if (!twilioConfigured) {
-  console.warn("⚠️ Twilio credentials not configured - SMS features will be disabled");
-  console.warn("   Set TWILIO_SID, TWILIO_TOKEN, and TWILIO_FROM environment variables to enable SMS");
+// Initialize Twilio client using Replit connector
+async function initializeTwilioClient() {
+  if (twilioConfigured) {
+    return { client: twilioClient, fromNumber: twilioFromNumber };
+  }
+
+  try {
+    const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
+    const xReplitToken = process.env.REPL_IDENTITY 
+      ? 'repl ' + process.env.REPL_IDENTITY 
+      : process.env.WEB_REPL_RENEWAL 
+      ? 'depl ' + process.env.WEB_REPL_RENEWAL 
+      : null;
+
+    if (!xReplitToken || !hostname) {
+      console.warn("⚠️ Twilio connector not available - SMS features will be disabled");
+      console.warn("   Replit connector credentials not found in environment");
+      return { client: null, fromNumber: null };
+    }
+
+    const response = await fetch(
+      'https://' + hostname + '/api/v2/connection?include_secrets=true&connector_names=twilio',
+      {
+        headers: {
+          'Accept': 'application/json',
+          'X_REPLIT_TOKEN': xReplitToken
+        }
+      }
+    );
+
+    const data = await response.json();
+    const connectionSettings = data.items?.[0];
+
+    if (!connectionSettings || 
+        !connectionSettings.settings.account_sid || 
+        !connectionSettings.settings.api_key || 
+        !connectionSettings.settings.api_key_secret) {
+      console.warn('⚠️ Twilio not connected via Replit connector');
+      console.warn('   Please set up the Twilio integration in the Replit workspace');
+      return { client: null, fromNumber: null };
+    }
+
+    // Initialize Twilio client with API key authentication (more secure than auth token)
+    twilioClient = twilio(
+      connectionSettings.settings.api_key,
+      connectionSettings.settings.api_key_secret,
+      { accountSid: connectionSettings.settings.account_sid }
+    );
+
+    twilioFromNumber = connectionSettings.settings.phone_number;
+    twilioConfigured = true;
+
+    console.log('✅ Twilio client initialized successfully via Replit connector');
+    console.log(`   From number: ${twilioFromNumber}`);
+
+    return { client: twilioClient, fromNumber: twilioFromNumber };
+  } catch (error: any) {
+    console.error('❌ Failed to initialize Twilio client:', error.message);
+    return { client: null, fromNumber: null };
+  }
 }
-
-const client = twilioConfigured 
-  ? twilio(process.env.TWILIO_SID!, process.env.TWILIO_TOKEN!)
-  : null;
 
 // Store verification codes temporarily (in production, use Redis or similar)
 const verificationCodes = new Map<string, { code: string; expires: Date }>();
@@ -21,9 +77,11 @@ const verificationCodes = new Map<string, { code: string; expires: Date }>();
  */
 export async function sendVerificationCode(phone: string, token: string): Promise<boolean> {
   try {
+    const { client, fromNumber } = await initializeTwilioClient();
+    
     // Check if Twilio is configured
-    if (!client || !twilioConfigured) {
-      console.warn(`⚠️ Verification code NOT SENT: Twilio credentials not configured`);
+    if (!client || !fromNumber) {
+      console.warn(`⚠️ Verification code NOT SENT: Twilio not configured`);
       console.warn(`   Would have sent verification code to: ${phone}`);
       return false; // Gracefully fail - allows non-SMS environments to continue
     }
@@ -33,11 +91,11 @@ export async function sendVerificationCode(phone: string, token: string): Promis
     
     verificationCodes.set(token, { code, expires });
     
-    const message = `Your AgentHub verification code is: ${code}. This code expires in 10 minutes.`;
+    const message = `Your UpKeepQR verification code is: ${code}. This code expires in 10 minutes.`;
     
     await client.messages.create({
       body: message,
-      from: process.env.TWILIO_FROM!,
+      from: fromNumber,
       to: phone,
     });
     
@@ -84,9 +142,11 @@ export function verifyCode(token: string, inputCode: string): boolean {
  */
 export async function sendSMS(phone: string, message: string): Promise<boolean> {
   try {
+    const { client, fromNumber } = await initializeTwilioClient();
+    
     // Check if Twilio is configured
-    if (!client || !twilioConfigured) {
-      console.warn(`⚠️ SMS NOT SENT: Twilio credentials not configured`);
+    if (!client || !fromNumber) {
+      console.warn(`⚠️ SMS NOT SENT: Twilio not configured`);
       console.warn(`   Would have sent to: ${phone}`);
       console.warn(`   Message: ${message.substring(0, 50)}...`);
       return false; // Gracefully fail
@@ -106,7 +166,7 @@ export async function sendSMS(phone: string, message: string): Promise<boolean> 
     // Send via Twilio
     await client.messages.create({
       body: tcpaMessage,
-      from: process.env.TWILIO_FROM!,
+      from: fromNumber,
       to: phone,
     });
     
@@ -136,7 +196,7 @@ export async function sendReminderSMS(
     day: 'numeric'
   });
   
-  const message = `🏠 AgentHub Reminder: ${taskName} is due ${dueDateFormatted}. Complete this task to keep your home in great condition.`;
+  const message = `🏠 UpKeepQR Reminder: ${taskName} is due ${dueDateFormatted}. Complete this task to keep your home in great condition.`;
   
   // Use the new generic sendSMS function
   await sendSMS(phone, message);
