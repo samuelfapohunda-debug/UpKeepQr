@@ -405,7 +405,7 @@ export default function MagnetDashboard() {
                           <TableHead>Total Amount</TableHead>
                           <TableHead>Status</TableHead>
                           <TableHead>Items</TableHead>
-                          <TableHead>Created</TableHead>
+                          <TableHead className="min-w-[180px]">Created</TableHead>
                           <TableHead>Actions</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -430,8 +430,18 @@ export default function MagnetDashboard() {
                               </Badge>
                             </TableCell>
                             <TableCell>-</TableCell>
-                            <TableCell>
-                              {order.createdAt ? new Date(order.createdAt).toLocaleDateString() : 'N/A'}
+                            <TableCell className="whitespace-nowrap">
+                              {order.createdAt 
+                                ? new Date(order.createdAt).toLocaleString('en-US', {
+                                    month: '2-digit',
+                                    day: '2-digit',
+                                    year: 'numeric',
+                                    hour: 'numeric',
+                                    minute: '2-digit',
+                                    hour12: true
+                                  })
+                                : 'N/A'
+                              }
                             </TableCell>
                             <TableCell>
                               <Button
