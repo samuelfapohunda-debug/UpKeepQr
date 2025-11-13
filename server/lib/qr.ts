@@ -32,9 +32,14 @@ export async function generateQRCodes(
   activationCodes: string[],
   baseUrl: string
 ): Promise<Array<{ code: string; qrUrl: string; setupUrl: string }>> {
+  // Use NEW_SITE_URL for customer-facing QR codes if available
+  const qrSiteUrl = process.env.NEW_SITE_URL || baseUrl;
+  
+  console.log(`🔗 Generating QR codes with base URL: ${qrSiteUrl}`);
+  
   const qrCodes = await Promise.all(
     activationCodes.map(async (code) => {
-      const setupUrl = `${baseUrl}/setup/${code}`;
+      const setupUrl = `${qrSiteUrl}/setup/${code}`;
       const qrUrl = await generateQRCode(setupUrl);
       return {
         code,
