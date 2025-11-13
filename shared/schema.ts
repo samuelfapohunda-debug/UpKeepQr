@@ -612,6 +612,16 @@ export const orderMagnetAuditEventsTable = pgTable("order_magnet_audit_events", 
   data: jsonb("data").notNull(),
 });
 
+// Stripe Events table for webhook idempotency
+export const stripeEventsTable = pgTable("stripe_events", {
+  eventId: varchar("event_id", { length: 255 }).primaryKey(),
+  eventType: varchar("event_type", { length: 100 }).notNull(),
+  processedAt: timestamp("processed_at").defaultNow().notNull(),
+  sessionId: varchar("session_id", { length: 255 }),
+  orderId: varchar("order_id", { length: 50 }),
+  metadata: jsonb("metadata"),
+});
+
 // Contact Messages table
 export const contactMessagesTable = pgTable("contact_messages", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
