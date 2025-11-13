@@ -1,10 +1,16 @@
 import twilio from 'twilio';
 
-if (!process.env.TWILIO_SID || !process.env.TWILIO_TOKEN || !process.env.TWILIO_FROM) {
-  throw new Error("TWILIO_SID, TWILIO_TOKEN, and TWILIO_FROM environment variables are required");
+// Check if Twilio credentials are configured
+const twilioConfigured = !!(process.env.TWILIO_SID && process.env.TWILIO_TOKEN && process.env.TWILIO_FROM);
+
+if (!twilioConfigured) {
+  console.warn("⚠️ Twilio credentials not configured - SMS features will be disabled");
+  console.warn("   Set TWILIO_SID, TWILIO_TOKEN, and TWILIO_FROM environment variables to enable SMS");
 }
 
-const client = twilio(process.env.TWILIO_SID, process.env.TWILIO_TOKEN);
+const client = twilioConfigured 
+  ? twilio(process.env.TWILIO_SID!, process.env.TWILIO_TOKEN!)
+  : null;
 
 // Store verification codes temporarily (in production, use Redis or similar)
 const verificationCodes = new Map<string, { code: string; expires: Date }>();
@@ -13,6 +19,13 @@ const verificationCodes = new Map<string, { code: string; expires: Date }>();
  * Generate and send SMS verification code
  */
 export async function sendVerificationCode(phone: string, token: string): Promise<void> {
+  // Check if Twilio is configured
+  if (!client || !twilioConfigured) {
+    console.warn(`⚠️ Verification code NOT SENT: Twilio credentials not configured`);
+    console.warn(`   Would have sent verification code to: ${phone}`);
+    throw new Error('SMS service not configured. Please configure Twilio credentials.');
+  }
+  
   const code = Math.floor(100000 + Math.random() * 900000).toString();
   const expires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
   
@@ -22,7 +35,7 @@ export async function sendVerificationCode(phone: string, token: string): Promis
   
   await client.messages.create({
     body: message,
-    from: process.env.TWILIO_FROM,
+    from: process.env.TWILIO_FROM!,
     to: phone,
   });
 }
@@ -58,6 +71,14 @@ export function verifyCode(token: string, inputCode: string): boolean {
  */
 export async function sendSMS(phone: string, message: string): Promise<boolean> {
   try {
+    // Check if Twilio is configured
+    if (!client || !twilioConfigured) {
+      console.warn(`⚠️ SMS NOT SENT: Twilio credentials not configured`);
+      console.warn(`   Would have sent to: ${phone}`);
+      console.warn(`   Message: ${message.substring(0, 50)}...`);
+      return false; // Gracefully fail
+    }
+    
     // TCPA Compliance: Validate US/Canada phone format (E.164)
     if (!phone.startsWith('+1')) {
       console.error('❌ SMS Error: Only US/Canada phone numbers supported (must start with +1)');
@@ -72,7 +93,7 @@ export async function sendSMS(phone: string, message: string): Promise<boolean> 
     // Send via Twilio
     await client.messages.create({
       body: tcpaMessage,
-      from: process.env.TWILIO_FROM,
+      from: process.env.TWILIO_FROM!,
       to: phone,
     });
     
