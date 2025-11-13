@@ -1,0 +1,71 @@
+Additional Guidance for AI Agent
+Key Points to Emphasize:
+1. Phone Number Format
+typescript// In getHousehold(), format phone to E.164 if not already:
+const formattedPhone = household.phone?.startsWith('+') 
+  ? household.phone 
+  : household.phone ? `+1${household.phone.replace(/\D/g, '')}` 
+  : null;
+2. Preference Migration Strategy
+sql-- After adding column, update based on existing fields
+UPDATE households 
+SET notification_preference = CASE
+  WHEN sms_opt_in = false THEN 'email_only'
+  WHEN preferred_contact = 'email' THEN 'email_only'
+  WHEN preferred_contact = 'text' THEN 'sms_only'
+  ELSE 'both'
+END
+WHERE notification_preference IS NULL;
+3. Backward Compatibility
+typescript// Keep old SMS function working
+export async function sendReminderSMS(
+  phone: string, 
+  taskName: string, 
+  dueDate: string
+): Promise<void> {
+  const message = `🏠 Reminder: ${taskName} is due on ${dueDate}`;
+  await sendSMS(phone, message);
+}
+4. Type Safety Enhancement
+typescript// Add to shared/schema.ts
+export const notificationPreferenceEnum = pgEnum('notification_preference', [
+  'email_only',
+  'sms_only', 
+  'both'
+]);
+
+// Then in households table schema:
+export const households = pgTable('households', {
+  // ... existing fields
+  notificationPreference: notificationPreferenceEnum('notification_preference')
+    .default('both')
+});
+
+⚠️ Watch Out For
+Common Pitfalls:
+
+Don't forget to export sendSMS from sms.ts:
+
+typescript   export { sendSMS, sendReminderSMS };
+
+Handle null phone numbers gracefully:
+
+typescript   if (!household.phone) {
+     errors.push('Phone number not available for SMS channel');
+     // Don't fail entire notification if email can still work
+   }
+
+TCPA message should be on new line:
+
+typescript   const tcpaMessage = message.includes('STOP')
+     ? message
+     : `${message}\n\nReply STOP to opt-out`; // \n\n not just \n
+
+Log both success and failure:
+
+typescript   await this.logNotification(householdId, type, channel, {
+     success,
+     channelsUsed,
+     errors,
+     timestamp: new Date()
+   });

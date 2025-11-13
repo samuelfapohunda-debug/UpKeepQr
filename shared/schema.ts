@@ -622,6 +622,19 @@ export const stripeEventsTable = pgTable("stripe_events", {
   metadata: jsonb("metadata"),
 });
 
+// Households table for PostgreSQL (notification preferences and contact info)
+export const householdsTable = pgTable("households", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name", { length: 255 }).notNull(),
+  email: varchar("email", { length: 255 }).notNull(),
+  phone: varchar("phone", { length: 30 }), // E.164 format: +14155552671
+  notificationPreference: varchar("notification_preference", { length: 20 }).notNull().default('both'), // 'email_only', 'sms_only', 'both'
+  smsOptIn: boolean("sms_opt_in").default(false),
+  preferredContact: varchar("preferred_contact", { length: 20 }), // 'email', 'phone', 'text'
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Contact Messages table
 export const contactMessagesTable = pgTable("contact_messages", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -676,6 +689,15 @@ export const insertOrderMagnetAuditEventSchema = createInsertSchema(orderMagnetA
 });
 export type InsertOrderMagnetAuditEvent = z.infer<typeof insertOrderMagnetAuditEventSchema>;
 export type OrderMagnetAuditEvent = typeof orderMagnetAuditEventsTable.$inferSelect;
+
+// Households schemas and types (PostgreSQL)
+export const insertHouseholdDbSchema = createInsertSchema(householdsTable).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertHouseholdDb = z.infer<typeof insertHouseholdDbSchema>;
+export type HouseholdDb = typeof householdsTable.$inferSelect;
 
 // Contact Message schemas and types
 export const insertContactMessageSchema = createInsertSchema(contactMessagesTable).omit({
