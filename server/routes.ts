@@ -153,6 +153,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }));
   // Setup Routes - Public
 
+  // GET /api/setup/:token/customer-data - Get customer data for pre-population
+  app.get("/api/setup/:token/customer-data", publicApiLimiter, async (req, res) => {
+    await createAuditLog(req, '/api/setup/:token/customer-data');
+    
+    try {
+      const { token } = req.params;
+      
+      console.log(`📋 Looking up customer data for token: ${token}`);
+      
+      // Look up order item by activation code
+      const orderItem = await storage.getOrderItemByActivationCode(token);
+      
+      if (!orderItem) {
+        console.log(`⚠️  Token not found: ${token}`);
+        // Token not found - return empty data (user will fill manually)
+        return res.json({
+          found: false,
+          prefilled: false,
+          data: {},
+          message: 'Token not found. Please fill in your information manually.'
+        });
+      }
+      
+      const { item, order } = orderItem;
+      
+      // Check if QR code already used (one-time use enforcement)
+      if (item.activationStatus === 'activated') {
+        console.log(`❌ Token already activated: ${token}`);
+        return res.status(409).json({
+          found: true,
+          prefilled: false,
+          alreadyActivated: true,
+          activatedAt: item.activatedAt,
+          activatedByEmail: item.activatedByEmail,
+          message: 'This QR code has already been activated and cannot be used again.',
+          data: {}
+        });
+      }
+      
+      // Return customer data for pre-fill
+      console.log(`✅ Found customer data for: ${order.customerEmail}`);
+      
+      res.json({
+        found: true,
+        prefilled: true,
+        alreadyActivated: false,
+        data: {
+          fullName: order.customerName,
+          email: order.customerEmail,
+          phone: order.customerPhone,
+          streetAddress: order.shipAddressLine1,
+          addressLine2: order.shipAddressLine2 || '',
+          city: order.shipCity,
+          state: order.shipState,
+          postalCode: order.shipZip,
+          country: order.shipCountry || 'US',
+        },
+        itemId: item.id,
+        orderId: order.id,
+        activationCode: token
+      });
+      
+    } catch (error: any) {
+      console.error('Error fetching customer data:', error);
+      return handleError(error, 'setup/customer-data lookup', res);
+    }
+  });
+
   // POST /api/setup/activate - Activate household setup
   app.post("/api/setup/activate", publicApiLimiter, async (req, res) => {
     await createAuditLog(req, '/api/setup/activate');
