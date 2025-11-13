@@ -58,6 +58,30 @@ app.use((req, res, next) => {
   app.use(express.json());
   app.use(express.urlencoded({ extended: false }));
   
+  // Bootstrap: Ensure system agent exists for order-based QR codes
+  const { storage, SYSTEM_AGENT_ID } = await import("./storage.js");
+  const ensureSystemAgent = async () => {
+    try {
+      const existingAgent = await storage.getAgent(SYSTEM_AGENT_ID);
+      if (!existingAgent) {
+        console.log('🔧 Creating system agent for order-based QR codes...');
+        await storage.createAgent({
+          id: SYSTEM_AGENT_ID,
+          name: 'UpKeepQR System',
+          email: 'system@upkeepqr.com',
+          password: 'N/A', // System agent cannot log in
+        });
+        console.log('✅ System agent created successfully');
+      } else {
+        console.log('✅ System agent already exists');
+      }
+    } catch (error) {
+      console.error('❌ Failed to ensure system agent exists:', error);
+      throw error; // Fatal error - app cannot work without system agent
+    }
+  };
+  await ensureSystemAgent();
+  
   registerRoutes(app);
   
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {

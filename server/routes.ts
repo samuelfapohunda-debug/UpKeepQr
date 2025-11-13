@@ -260,9 +260,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Use postalCode or fall back to zip for legacy support
       const zipCode = postalCode || zip;
 
-      // Validate token exists in magnets
+      // Try atomic claim for new order system (prevents race conditions)
+      const claimedItem = await storage.claimOrderMagnetItemForActivation(
+        token,
+        email || fullName || 'Unknown',
+        new Date()
+      );
+
+      // Validate token exists in legacy magnet system (or was just claimed from order system)
       const magnet = await storage.getMagnetByToken(token);
-      if (!magnet) {
+      
+      if (!magnet && !claimedItem) {
+        // Token not found in either system - check if it was already activated
+        const existingItem = await storage.getOrderItemByActivationCode(token);
+        if (existingItem && existingItem.item.activationStatus === 'activated') {
+          console.log(`❌ Duplicate activation attempt blocked for token: ${token}`);
+          return res.status(409).json({ 
+            error: "This QR code has already been activated and cannot be used again.",
+            alreadyActivated: true,
+            activatedAt: existingItem.item.activatedAt,
+            activatedByEmail: existingItem.item.activatedByEmail
+          });
+        }
+        
+        // Token doesn't exist at all
         return res.status(404).json({ error: "Invalid or expired token" });
       }
 
@@ -298,10 +319,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       } else {
         // Create new household
+        // Use SYSTEM_AGENT_ID for new order system tokens without legacy magnet
+        const { SYSTEM_AGENT_ID } = await import('./storage');
         household = await storage.createHousehold({
           id: uuidv4(),
           magnetToken: token,
-          agentId: magnet.agentId,
+          agentId: magnet?.agentId ?? SYSTEM_AGENT_ID,
           name: fullName || email?.split('@')[0] || 'User',
           email: email || '',
           phone: phone || '',
@@ -393,6 +416,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Don't fail the activation if email fails
         }
       }
+
+      // Note: QR code status already updated by atomic claim (claimOrderMagnetItemForActivation)
+      // No need to update again here
 
       // Record activation event
       await storage.createEvent({

@@ -37,6 +37,9 @@ import { eq, and, like, sql, desc, asc, or, inArray } from "drizzle-orm";
 import { db } from "./db";
 import { generateOrderId } from "./utils/orderIdGenerator";
 
+// System Agent ID for QR codes from Stripe orders (not tied to specific agent)
+export const SYSTEM_AGENT_ID = 'system-upkeepqr-agent';
+
 export interface IStorage {
   // Agent methods
   getAgent(id: string): Promise<Agent | undefined>;
@@ -140,6 +143,7 @@ export interface IStorage {
   getOrderMagnetItemsByOrder(orderId: string): Promise<OrderMagnetItem[]>;
   getOrderMagnetItemsByBatch(batchId: string): Promise<OrderMagnetItem[]>;
   updateOrderMagnetItemStatus(id: string, activationStatus: string): Promise<OrderMagnetItem | undefined>;
+  claimOrderMagnetItemForActivation(activationCode: string, activatedByEmail: string, activatedAt: Date): Promise<OrderMagnetItem | null>;
   
   // Batch operations
   createOrderMagnetBatch(batch: InsertOrderMagnetBatch): Promise<OrderMagnetBatch>;
@@ -958,6 +962,40 @@ export class FirebaseStorage implements IStorage {
       .where(eq(orderMagnetItemsTable.id, id));
     
     return this.getOrderMagnetItem(id);
+  }
+
+  async claimOrderMagnetItemForActivation(
+    activationCode: string, 
+    activatedByEmail: string, 
+    activatedAt: Date
+  ): Promise<OrderMagnetItem | null> {
+    // Atomic update: only succeeds if activation_status is NOT already 'activated'
+    // This prevents race conditions and ensures one-time use enforcement
+    const result = await db.update(orderMagnetItemsTable)
+      .set({
+        activationStatus: 'activated',
+        activatedByEmail,
+        activatedAt,
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(orderMagnetItemsTable.activationCode, activationCode),
+          sql`${orderMagnetItemsTable.activationStatus} != 'activated'`
+        )
+      )
+      .returning();
+    
+    // If no rows were updated, either:
+    // 1. The token doesn't exist, or
+    // 2. It's already been activated (race condition caught!)
+    if (result.length === 0) {
+      console.log(`⚠️  Atomic claim failed for token ${activationCode} - already activated or not found`);
+      return null;
+    }
+    
+    console.log(`✅ Atomic claim succeeded for token ${activationCode}`);
+    return result[0];
   }
   
   // Batch operations
