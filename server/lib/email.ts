@@ -178,22 +178,160 @@ export async function sendPaymentConfirmationEmail(
 /**
  * Send welcome email with QR codes to customer
  */
-export async function sendWelcomeEmailWithQR(
-  customerEmail: string,
-  customerName: string,
-  orderId: string,
-  qrCodes: Array<{ code: string; qrUrl: string; setupUrl: string }>
-): Promise<boolean> {
-  const subject = `Welcome to UpKeepQR - Your Activation Codes`;
+export async function sendWelcomeEmailWithQR(params: {
+  email: string;
+  customerName: string;
+  orderId: string;
+  items: Array<{
+    activationCode: string;
+    qrCodeImage: string;  // Base64 data URL
+    setupUrl: string;
+  }>;
+  quantity: number;
+  sku: string;
+}): Promise<boolean> {
+  const { email, customerName, orderId, items, quantity, sku } = params;
   
-  const qrCodesHtml = qrCodes.map((qr, index) => `
-    <div style="margin: 30px 0; padding: 20px; background: white; border: 2px solid #A6E22E; border-radius: 8px; text-align: center;">
-      <h3>QR Code #${index + 1}</h3>
-      <img src="${qr.qrUrl}" alt="QR Code ${qr.code}" style="max-width: 250px; margin: 20px auto; display: block;" />
-      <div style="font-size: 20px; font-weight: bold; margin: 10px 0; letter-spacing: 2px; color: #272822;">${qr.code}</div>
-      <div style="font-size: 14px; color: #666; word-break: break-all;">${qr.setupUrl}</div>
-    </div>
-  `).join('');
+  const baseUrl = process.env.PUBLIC_BASE_URL || 'https://upkeepqr.com';
+  const downloadUrl = `${baseUrl}/api/orders/${orderId}/qr-codes`;
+  
+  const subject = `Welcome to UpKeepQR! Your QR Magnet${quantity > 1 ? 's Are' : ' Is'} Ready`;
+  
+  // Special handling for large orders (100-pack)
+  let qrRows;
+  if (quantity > 10) {
+    // Show only first 2 QR codes as preview for large orders
+    const previewItems = items.slice(0, 2);
+    
+    qrRows = previewItems.map((item, index) => `
+      <tr>
+        <td style="padding: 20px; text-align: center; border-bottom: 1px solid #ddd;">
+          <p style="font-size: 18px; font-weight: bold; color: #333333; margin-bottom: 15px;">
+            QR Code #${index + 1}
+          </p>
+          <img 
+            src="${item.qrCodeImage}" 
+            alt="QR Code ${index + 1}" 
+            style="
+              width: 250px; 
+              height: 250px; 
+              margin: 15px auto; 
+              display: block; 
+              border: 3px solid #A6E22E; 
+              border-radius: 8px;
+              box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            " 
+          />
+          <p style="font-size: 14px; color: #666666; margin: 15px 0 5px 0;">
+            Activation Code:
+          </p>
+          <p style="
+            font-family: 'Courier New', Courier, monospace; 
+            font-size: 16px; 
+            font-weight: bold; 
+            color: #333333; 
+            background: #f5f5f5; 
+            padding: 10px 20px; 
+            border-radius: 4px; 
+            display: inline-block;
+            margin: 5px 0 20px 0;
+            letter-spacing: 2px;
+          ">
+            ${item.activationCode}
+          </p>
+          <br/>
+          <a 
+            href="${item.setupUrl}" 
+            style="
+              display: inline-block; 
+              padding: 12px 24px; 
+              background: #A6E22E; 
+              color: white; 
+              text-decoration: none; 
+              border-radius: 6px; 
+              margin-top: 15px; 
+              font-weight: bold; 
+              font-size: 14px;
+              box-shadow: 0 2px 4px rgba(166, 226, 46, 0.3);
+            "
+          >
+            📱 Activate This Magnet
+          </a>
+        </td>
+      </tr>
+    `).join('');
+    
+    // Add note about remaining QR codes
+    qrRows += `
+      <tr>
+        <td style="padding: 20px; text-align: center; background: #f8f9fa;">
+          <p style="font-size: 14px; color: #666; margin: 0;">
+            <strong>Plus ${quantity - 2} more QR codes!</strong><br/>
+            Download the complete PDF below to view all ${quantity} codes.
+          </p>
+        </td>
+      </tr>
+    `;
+  } else {
+    // Show all QR codes inline for small orders (single, twopack)
+    qrRows = items.map((item, index) => `
+      <tr>
+        <td style="padding: 20px; text-align: center; border-bottom: 1px solid #ddd;">
+          <p style="font-size: 18px; font-weight: bold; color: #333333; margin-bottom: 15px;">
+            ${quantity > 1 ? `QR Code #${index + 1}` : 'Your QR Code'}
+          </p>
+          <img 
+            src="${item.qrCodeImage}" 
+            alt="QR Code ${index + 1}" 
+            style="
+              width: 250px; 
+              height: 250px; 
+              margin: 15px auto; 
+              display: block; 
+              border: 3px solid #A6E22E; 
+              border-radius: 8px;
+              box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            " 
+          />
+          <p style="font-size: 14px; color: #666666; margin: 15px 0 5px 0;">
+            Activation Code:
+          </p>
+          <p style="
+            font-family: 'Courier New', Courier, monospace; 
+            font-size: 16px; 
+            font-weight: bold; 
+            color: #333333; 
+            background: #f5f5f5; 
+            padding: 10px 20px; 
+            border-radius: 4px; 
+            display: inline-block;
+            margin: 5px 0 20px 0;
+            letter-spacing: 2px;
+          ">
+            ${item.activationCode}
+          </p>
+          <br/>
+          <a 
+            href="${item.setupUrl}" 
+            style="
+              display: inline-block; 
+              padding: 12px 24px; 
+              background: #A6E22E; 
+              color: white; 
+              text-decoration: none; 
+              border-radius: 6px; 
+              margin-top: 15px; 
+              font-weight: bold; 
+              font-size: 14px;
+              box-shadow: 0 2px 4px rgba(166, 226, 46, 0.3);
+            "
+          >
+            📱 Activate This Magnet
+          </a>
+        </td>
+      </tr>
+    `).join('');
+  }
   
   const html = `
     <!DOCTYPE html>
@@ -206,29 +344,48 @@ export async function sendWelcomeEmailWithQR(
         .content { background: #f5f5f5; padding: 30px; }
         .footer { background: #272822; color: white; padding: 20px; text-align: center; border-radius: 0 0 8px 8px; font-size: 14px; }
         .instructions { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; }
+        .qr-table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; }
+        .download-button {
+          display: inline-block;
+          padding: 15px 30px;
+          background: #272822;
+          color: white;
+          text-decoration: none;
+          border-radius: 6px;
+          font-weight: bold;
+          font-size: 16px;
+          margin: 20px 0;
+        }
         ol { text-align: left; }
       </style>
     </head>
     <body>
       <div class="container">
         <div class="header">
-          <h1>🏡 Welcome to UpKeepQR!</h1>
+          <h1>🎉 Welcome to UpKeepQR!</h1>
         </div>
         <div class="content">
           <p>Hi ${customerName},</p>
-          <p>Your UpKeepQR codes are ready! Below are your unique QR codes and activation links.</p>
+          <p>Your QR magnet${quantity > 1 ? 's are' : ' is'} ready! Below ${quantity > 1 ? 'are' : 'is'} your unique QR code${quantity > 1 ? 's' : ''} and activation link${quantity > 1 ? 's' : ''}.</p>
           
           <div class="instructions">
-            <h3>📱 How to Activate Your QR Codes:</h3>
+            <h3>📱 How to Activate Your Magnet${quantity > 1 ? 's' : ''}:</h3>
             <ol>
-              <li>Scan each QR code with your phone camera</li>
-              <li>Complete the setup form with your home information</li>
-              <li>Attach the QR code sticker to your home in a visible location</li>
-              <li>Service providers can now scan to access your home details</li>
+              <li><strong>Scan the QR code below</strong> with your phone camera (QR code${quantity > 1 ? 's are' : ' is'} displayed in this email)</li>
+              <li><strong>Or click the "Activate" button</strong> under each QR code</li>
+              <li><strong>Complete the setup form</strong> (your info will be pre-filled)</li>
+              <li><strong>Receive personalized maintenance reminders</strong> for your home</li>
             </ol>
+            <p><em>Your QR code${quantity > 1 ? 's are' : ' is'} displayed below. You can also download a PDF with all your codes for printing.</em></p>
           </div>
           
-          ${qrCodesHtml}
+          <table class="qr-table">
+            ${qrRows}
+          </table>
+          
+          <p style="text-align: center; margin-top: 30px;">
+            <a href="${downloadUrl}" class="download-button">📥 Download All QR Codes (PDF)</a>
+          </p>
           
           <p style="margin-top: 30px;"><strong>Order ID:</strong> ${orderId}</p>
           <p>Need help? Contact us at support@upkeepqr.com</p>
@@ -242,7 +399,7 @@ export async function sendWelcomeEmailWithQR(
   `;
   
   return sendEmail({
-    to: customerEmail,
+    to: email,
     from: FROM_EMAIL,
     subject,
     html
