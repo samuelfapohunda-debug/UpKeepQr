@@ -4,6 +4,17 @@ This is an UpKeepQR Agent Management Platform built as a monorepo TypeScript app
 
 # Recent Changes
 
+## November 13, 2025 - CID Attachments for Email Client Compatibility
+- **Feature**: Implemented SendGrid CID (Content-ID) attachments for inline QR code display in welcome emails
+- **Email Client Support**: Ensures QR codes display correctly in Gmail and Outlook (which block data URI images)
+- **Technical Implementation**: Converted from `<img src="data:image/png;base64,...">` to `<img src="cid:qr_code_0">` with inline attachments
+- **EmailParams Extension**: Added optional `attachments?: AttachmentData[]` field to support CID images
+- **Data Validation**: Added try/catch guards to prevent malformed data URLs from causing email send failures
+- **100-Pack Optimization**: Only attach first 2 QR codes as previews for large orders (full set available via PDF download link)
+- **Email Size Management**: Keeps email payload under Gmail limits while providing visual preview
+- **Backwards Compatible**: Existing email functions continue to work without attachments
+- **Architecture Review**: Approved by architect for production deployment
+
 ## November 13, 2025 - Database Schema Fix for QR Code Storage
 - **Critical Fix**: Changed `qrUrl` field from `varchar(500)` to `text` type in `order_magnet_items` table
 - **Issue Resolved**: Base64-encoded QR code data URLs (1000-2000+ chars) were exceeding the 500-character limit
