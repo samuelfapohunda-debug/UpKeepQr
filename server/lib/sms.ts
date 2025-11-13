@@ -1,17 +1,40 @@
 import twilio from 'twilio';
 
-// Replit Twilio Connector Integration
-// Credentials are managed securely via Replit's connector system
+// Replit Twilio Connector Integration with Environment Variable Fallback
+// Credentials are managed securely via Replit's connector system or environment secrets
 let twilioClient: any = null;
 let twilioFromNumber: string | null = null;
 let twilioConfigured = false;
 
-// Initialize Twilio client using Replit connector
+// Initialize Twilio client using Replit connector or environment variables
 async function initializeTwilioClient() {
   if (twilioConfigured) {
     return { client: twilioClient, fromNumber: twilioFromNumber };
   }
 
+  // Try environment variables first (direct credentials)
+  if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_PHONE_NUMBER) {
+    try {
+      twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+      
+      // Ensure phone number has + prefix for E.164 format
+      twilioFromNumber = process.env.TWILIO_PHONE_NUMBER.startsWith('+')
+        ? process.env.TWILIO_PHONE_NUMBER
+        : '+' + process.env.TWILIO_PHONE_NUMBER;
+      
+      twilioConfigured = true;
+
+      console.log('✅ Twilio client initialized via environment variables');
+      console.log(`   From number: ${twilioFromNumber}`);
+
+      return { client: twilioClient, fromNumber: twilioFromNumber };
+    } catch (error: any) {
+      console.error('❌ Failed to initialize Twilio via env vars:', error.message);
+      // Fall through to try connector
+    }
+  }
+
+  // Try Replit connector as fallback
   try {
     const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
     const xReplitToken = process.env.REPL_IDENTITY 
@@ -21,8 +44,8 @@ async function initializeTwilioClient() {
       : null;
 
     if (!xReplitToken || !hostname) {
-      console.warn("⚠️ Twilio connector not available - SMS features will be disabled");
-      console.warn("   Replit connector credentials not found in environment");
+      console.warn("⚠️ Twilio not available - SMS features will be disabled");
+      console.warn("   Set TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_PHONE_NUMBER environment variables");
       return { client: null, fromNumber: null };
     }
 
@@ -44,7 +67,7 @@ async function initializeTwilioClient() {
         !connectionSettings.settings.api_key || 
         !connectionSettings.settings.api_key_secret) {
       console.warn('⚠️ Twilio not connected via Replit connector');
-      console.warn('   Please set up the Twilio integration in the Replit workspace');
+      console.warn('   Please set up the Twilio integration or use environment variables');
       return { client: null, fromNumber: null };
     }
 
