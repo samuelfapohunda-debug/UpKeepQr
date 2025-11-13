@@ -4,6 +4,14 @@ This is an UpKeepQR Agent Management Platform built as a monorepo TypeScript app
 
 # Recent Changes
 
+## November 13, 2025 - Database Schema Fix for QR Code Storage
+- **Critical Fix**: Changed `qrUrl` field from `varchar(500)` to `text` type in `order_magnet_items` table
+- **Issue Resolved**: Base64-encoded QR code data URLs (1000-2000+ chars) were exceeding the 500-character limit
+- **Error Fixed**: Eliminated "value too long for type character varying(500)" database errors during order creation
+- **Email Delivery**: Customers now receive all 3 emails (payment confirmation, welcome with QR codes, admin notification)
+- **Testing**: Verified with successful order processing and email delivery via SendGrid
+- **Schema Migration**: Applied with `npm run db:push --force` to preserve existing data
+
 ## November 12, 2025 - Stripe Webhook Integration & Deployment Fixes  
 - **Database Setup**: Created `order_id_counter` PostgreSQL sequence required for sequential Order ID generation
 - **Webhook Error Handling**: Fixed webhook to return 500 errors on failure (instead of silent 200 OK) enabling proper Stripe retry behavior
