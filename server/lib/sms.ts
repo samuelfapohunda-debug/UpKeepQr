@@ -17,27 +17,40 @@ const verificationCodes = new Map<string, { code: string; expires: Date }>();
 
 /**
  * Generate and send SMS verification code
+ * @returns Promise<boolean> - true if sent successfully, false if Twilio unavailable or send failed
  */
-export async function sendVerificationCode(phone: string, token: string): Promise<void> {
-  // Check if Twilio is configured
-  if (!client || !twilioConfigured) {
-    console.warn(`⚠️ Verification code NOT SENT: Twilio credentials not configured`);
-    console.warn(`   Would have sent verification code to: ${phone}`);
-    throw new Error('SMS service not configured. Please configure Twilio credentials.');
+export async function sendVerificationCode(phone: string, token: string): Promise<boolean> {
+  try {
+    // Check if Twilio is configured
+    if (!client || !twilioConfigured) {
+      console.warn(`⚠️ Verification code NOT SENT: Twilio credentials not configured`);
+      console.warn(`   Would have sent verification code to: ${phone}`);
+      return false; // Gracefully fail - allows non-SMS environments to continue
+    }
+    
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const expires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+    
+    verificationCodes.set(token, { code, expires });
+    
+    const message = `Your AgentHub verification code is: ${code}. This code expires in 10 minutes.`;
+    
+    await client.messages.create({
+      body: message,
+      from: process.env.TWILIO_FROM!,
+      to: phone,
+    });
+    
+    console.log(`✅ Verification code sent successfully to ${phone}`);
+    return true;
+  } catch (error: any) {
+    console.error('❌ Verification code send error:', {
+      phone,
+      error: error.message,
+      code: error.code
+    });
+    return false;
   }
-  
-  const code = Math.floor(100000 + Math.random() * 900000).toString();
-  const expires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
-  
-  verificationCodes.set(token, { code, expires });
-  
-  const message = `Your AgentHub verification code is: ${code}. This code expires in 10 minutes.`;
-  
-  await client.messages.create({
-    body: message,
-    from: process.env.TWILIO_FROM!,
-    to: phone,
-  });
 }
 
 /**

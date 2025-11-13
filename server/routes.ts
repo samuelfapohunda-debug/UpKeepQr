@@ -1581,17 +1581,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Send verification code
-      try {
-        const { sendVerificationCode } = await import('./lib/sms');
-        await sendVerificationCode(phone, token);
-        
+      const { sendVerificationCode } = await import('./lib/sms');
+      const smsSent = await sendVerificationCode(phone, token);
+      
+      if (smsSent) {
         res.json({ 
           success: true, 
           message: "Verification code sent to your phone" 
         });
-      } catch (smsError) {
-        console.error("SMS sending error:", smsError);
-        res.status(500).json({ error: "Failed to send verification code" });
+      } else {
+        // SMS service unavailable (Twilio not configured or send failed)
+        res.status(503).json({ 
+          error: "SMS service is currently unavailable. Please try again later or contact support." 
+        });
       }
     } catch (error: any) {
       console.error("SMS opt-in error:", error);
