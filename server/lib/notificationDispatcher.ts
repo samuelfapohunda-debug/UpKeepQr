@@ -147,6 +147,10 @@ export class NotificationDispatcher {
         errors.push('Phone number not available for SMS');
       } else if (!payload.smsMessage) {
         errors.push('SMS message missing for SMS channel');
+      } else if (!household.smsOptIn) {
+        // TCPA Compliance: Do NOT send SMS if user hasn't opted in
+        errors.push('User has not opted in to SMS notifications');
+        console.warn(`⚠️ SMS NOT SENT: User ${household.id} has not opted in (smsOptIn=false)`);
       } else {
         const smsSent = await this.sendSMSNotification(
           household.phone,
