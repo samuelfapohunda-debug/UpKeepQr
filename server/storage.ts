@@ -1290,3 +1290,98 @@ export async function updateHomeProfileExtraByHomeId(homeId: number, data: Recor
     throw error;
   }
 }
+
+// =============================================================================
+// QR CODE ACTIVATION FUNCTIONS
+// Used for one-time use enforcement and customer data pre-population
+// =============================================================================
+
+/**
+ * Get order item and associated order by activation code
+ * Used for customer data lookup and one-time use enforcement
+ */
+export async function getOrderItemByActivationCode(activationCode: string): Promise<{
+  item: OrderMagnetItem;
+  order: OrderMagnetOrder;
+} | null> {
+  try {
+    console.log(`🔍 Searching for activation code: ${activationCode}`);
+    
+    // Find item by activation code
+    const items = await db
+      .select()
+      .from(orderMagnetItemsTable)
+      .where(eq(orderMagnetItemsTable.activationCode, activationCode))
+      .limit(1);
+    
+    if (!items || items.length === 0) {
+      console.log(`❌ No item found for code: ${activationCode}`);
+      return null;
+    }
+    
+    const item = items[0];
+    console.log(`✅ Found item: ${item.id} for order: ${item.orderId}`);
+    
+    // Get associated order for customer details
+    const orders = await db
+      .select()
+      .from(orderMagnetOrdersTable)
+      .where(eq(orderMagnetOrdersTable.id, item.orderId))
+      .limit(1);
+    
+    if (!orders || orders.length === 0) {
+      console.log(`❌ No order found for item: ${item.id}`);
+      return null;
+    }
+    
+    const order = orders[0];
+    console.log(`✅ Found order: ${order.id} for customer: ${order.customerEmail}`);
+    
+    return {
+      item,
+      order
+    };
+    
+  } catch (error) {
+    console.error('Error fetching order item by activation code:', error);
+    return null;
+  }
+}
+
+/**
+ * Update order magnet item activation status
+ * Used to mark QR code as used (one-time use enforcement)
+ */
+export async function updateOrderMagnetItemStatus(
+  itemId: string,
+  status: 'inactive' | 'activated' | 'deactivated',
+  activatedByEmail?: string
+): Promise<void> {
+  try {
+    console.log(`🔄 Updating item ${itemId} status to: ${status}`);
+    
+    const updateData: any = {
+      activationStatus: status,
+      updatedAt: new Date()
+    };
+    
+    // Set activated timestamp and email if activating
+    if (status === 'activated') {
+      updateData.activatedAt = new Date();
+      if (activatedByEmail) {
+        updateData.activatedByEmail = activatedByEmail;
+      }
+    }
+    
+    await db
+      .update(orderMagnetItemsTable)
+      .set(updateData)
+      .where(eq(orderMagnetItemsTable.id, itemId));
+    
+    console.log(`✅ Successfully updated item ${itemId} to ${status}`);
+    
+  } catch (error) {
+    console.error('Error updating order magnet item status:', error);
+    throw error;
+  }
+}
