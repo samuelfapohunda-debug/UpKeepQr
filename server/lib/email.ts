@@ -1,4 +1,5 @@
-import { MailService } from '@sendgrid/mail';
+import { MailService, MailDataRequired } from '@sendgrid/mail';
+import type { AttachmentData } from '@sendgrid/helpers/classes/attachment';
 
 const mailService = new MailService();
 
@@ -16,6 +17,7 @@ interface EmailParams {
   subject: string;
   text?: string;
   html?: string;
+  attachments?: AttachmentData[];  // For inline CID images (Gmail/Outlook compatibility)
 }
 
 export async function sendEmail(params: EmailParams): Promise<boolean> {
@@ -31,13 +33,20 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
       subject: params.subject
     });
 
-    const result = await mailService.send({
+    const emailData: any = {
       to: params.to,
       from: params.from,
       subject: params.subject,
       text: params.text,
       html: params.html,
-    });
+    };
+    
+    // Add attachments if provided (for CID inline images)
+    if (params.attachments && params.attachments.length > 0) {
+      emailData.attachments = params.attachments;
+    }
+    
+    const result = await mailService.send(emailData);
 
     console.log('✅ Email sent successfully:', {
       to: params.to,
@@ -177,6 +186,7 @@ export async function sendPaymentConfirmationEmail(
 
 /**
  * Send welcome email with QR codes to customer
+ * Uses CID attachments for email client compatibility (Gmail, Outlook)
  */
 export async function sendWelcomeEmailWithQR(params: {
   email: string;
@@ -197,6 +207,34 @@ export async function sendWelcomeEmailWithQR(params: {
   
   const subject = `Welcome to UpKeepQR! Your QR Magnet${quantity > 1 ? 's Are' : ' Is'} Ready`;
   
+  // Prepare CID attachments for inline QR code images
+  // This ensures compatibility with Gmail/Outlook which block data URIs
+  // For large orders (100-pack), only attach preview images to keep email size manageable
+  const itemsToAttach = quantity > 10 ? items.slice(0, 2) : items;
+  
+  const attachments = itemsToAttach.map((item, index) => {
+    // Validate and extract base64 data from data URL
+    if (!item.qrCodeImage || !item.qrCodeImage.includes('base64,')) {
+      console.warn(`⚠️ Invalid QR code image format for item ${index}, skipping attachment`);
+      return null;
+    }
+    
+    try {
+      // Extract base64 data from data URL (remove "data:image/png;base64," prefix)
+      const base64Data = item.qrCodeImage.split(',')[1];
+      return {
+        content: base64Data,
+        filename: `qr-code-${index + 1}.png`,
+        type: 'image/png',
+        disposition: 'inline',
+        content_id: `qr_code_${index}`  // CID for referencing in HTML
+      };
+    } catch (error) {
+      console.error(`❌ Error processing QR code image for item ${index}:`, error);
+      return null;
+    }
+  }).filter(Boolean) as AttachmentData[];  // Remove null entries
+  
   // Special handling for large orders (100-pack)
   let qrRows;
   if (quantity > 10) {
@@ -210,7 +248,7 @@ export async function sendWelcomeEmailWithQR(params: {
             QR Code #${index + 1}
           </p>
           <img 
-            src="${item.qrCodeImage}" 
+            src="cid:qr_code_${index}" 
             alt="QR Code ${index + 1}" 
             style="
               width: 250px; 
@@ -281,7 +319,7 @@ export async function sendWelcomeEmailWithQR(params: {
             ${quantity > 1 ? `QR Code #${index + 1}` : 'Your QR Code'}
           </p>
           <img 
-            src="${item.qrCodeImage}" 
+            src="cid:qr_code_${index}" 
             alt="QR Code ${index + 1}" 
             style="
               width: 250px; 
@@ -402,7 +440,8 @@ export async function sendWelcomeEmailWithQR(params: {
     to: email,
     from: FROM_EMAIL,
     subject,
-    html
+    html,
+    attachments  // Include CID attachments for inline QR images
   });
 }
 

@@ -148,12 +148,18 @@ router.post('/stripe', async (req: Request, res: Response) => {
         }),
         
         // Email 2: Welcome email with QR codes
-        sendWelcomeEmailWithQR(
-          customerEmail,
+        sendWelcomeEmailWithQR({
+          email: customerEmail,
           customerName,
           orderId,
-          qrCodes
-        ).catch(error => {
+          items: qrCodes.map(qr => ({
+            activationCode: qr.code,
+            qrCodeImage: qr.qrUrl,
+            setupUrl: qr.setupUrl
+          })),
+          quantity: magnetCount,
+          sku
+        }).catch(error => {
           console.error('❌ Failed to send welcome email:', error);
           sendAdminErrorAlert(
             'Welcome Email Failed',
