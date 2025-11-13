@@ -51,7 +51,46 @@ export function verifyCode(token: string, inputCode: string): boolean {
 }
 
 /**
- * Send maintenance reminder SMS
+ * Send generic SMS with TCPA compliance (unified function)
+ * @param phone - Phone number in E.164 format (e.g., +14155552671)
+ * @param message - Message content (opt-out text will be added if not present)
+ * @returns Promise<boolean> - true if sent successfully, false otherwise
+ */
+export async function sendSMS(phone: string, message: string): Promise<boolean> {
+  try {
+    // TCPA Compliance: Validate US/Canada phone format (E.164)
+    if (!phone.startsWith('+1')) {
+      console.error('❌ SMS Error: Only US/Canada phone numbers supported (must start with +1)');
+      throw new Error('Only US/Canada phone numbers supported (E.164 format required)');
+    }
+    
+    // TCPA Compliance: Ensure STOP opt-out message is included
+    const tcpaMessage = message.includes('STOP') || message.includes('opt-out') || message.includes('opt out')
+      ? message
+      : `${message}\n\nReply STOP to opt-out`;
+    
+    // Send via Twilio
+    await client.messages.create({
+      body: tcpaMessage,
+      from: process.env.TWILIO_FROM,
+      to: phone,
+    });
+    
+    console.log(`✅ SMS sent successfully to ${phone}`);
+    return true;
+  } catch (error: any) {
+    console.error('❌ SMS send error:', {
+      phone,
+      error: error.message,
+      code: error.code
+    });
+    return false;
+  }
+}
+
+/**
+ * Send maintenance reminder SMS (wrapper for backward compatibility)
+ * @deprecated Use sendSMS() directly for new code
  */
 export async function sendReminderSMS(
   phone: string, 
@@ -63,11 +102,8 @@ export async function sendReminderSMS(
     day: 'numeric'
   });
   
-  const message = `🏠 AgentHub Reminder: ${taskName} is due ${dueDateFormatted}. Complete this task to keep your home in great condition. Reply STOP to opt out.`;
+  const message = `🏠 AgentHub Reminder: ${taskName} is due ${dueDateFormatted}. Complete this task to keep your home in great condition.`;
   
-  await client.messages.create({
-    body: message,
-    from: process.env.TWILIO_FROM,
-    to: phone,
-  });
+  // Use the new generic sendSMS function
+  await sendSMS(phone, message);
 }
