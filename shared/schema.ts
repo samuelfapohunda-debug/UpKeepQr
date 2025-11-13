@@ -561,7 +561,7 @@ export const orderMagnetItemsTable = pgTable("order_magnet_items", {
   quantity: integer("quantity").notNull().default(1),
   unitPrice: numeric("unit_price", { precision: 10, scale: 2 }).notNull(),
   activationCode: varchar("activation_code", { length: 20 }).notNull().unique(),
-  qrUrl: varchar("qr_url", { length: 500 }).notNull(),
+  qrUrl: text("qr_url").notNull(),
   activationStatus: varchar("activation_status", { length: 20 }).notNull().default('inactive'),
   activatedAt: timestamp("activated_at"),
   activatedByEmail: varchar("activated_by_email", { length: 255 }),
