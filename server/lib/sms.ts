@@ -5,12 +5,22 @@ import twilio from 'twilio';
 let twilioClient: any = null;
 let twilioFromNumber: string | null = null;
 let twilioConfigured = false;
+let lastConfigCheck = 0;
+const CONFIG_CACHE_MS = 60000; // Re-check credentials every 60 seconds
 
 // Initialize Twilio client using Replit connector or environment variables
 async function initializeTwilioClient() {
-  if (twilioConfigured) {
+  // Allow periodic re-initialization to pick up credential updates
+  const now = Date.now();
+  if (twilioConfigured && (now - lastConfigCheck) < CONFIG_CACHE_MS) {
     return { client: twilioClient, fromNumber: twilioFromNumber };
   }
+  
+  // Reset state for re-initialization
+  twilioConfigured = false;
+  twilioClient = null;
+  twilioFromNumber = null;
+  lastConfigCheck = now;
 
   // Try environment variables first (direct credentials)
   if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_PHONE_NUMBER) {
