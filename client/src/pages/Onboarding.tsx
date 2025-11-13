@@ -59,6 +59,11 @@ const Onboarding: React.FC = () => {
   const [token, setToken] = useState<string | null>(params?.token || null);
   const [showHomeDetails, setShowHomeDetails] = useState(true);
   const [showInterests, setShowInterests] = useState(true);
+  
+  // QR code one-time use enforcement
+  const [customerDataLoaded, setCustomerDataLoaded] = useState(false);
+  const [customerDataError, setCustomerDataError] = useState('');
+  const [qrAlreadyActivated, setQrAlreadyActivated] = useState(false);
 
   useEffect(() => {
     const setupToken = params?.token;
@@ -72,38 +77,82 @@ const Onboarding: React.FC = () => {
   // Fetch customer data to pre-fill form when coming from a QR code purchase
   useEffect(() => {
     const fetchCustomerData = async () => {
-      if (!token) return;
+      if (!token) {
+        console.log('No token provided');
+        return;
+      }
       
       try {
-        const response = await fetch(`${API_BASE_URL}/api/setup/${token}/customer`);
+        console.log(`🔍 Fetching customer data for token: ${token}`);
         
-        if (response.ok) {
-          const data = await response.json();
-          console.log('✅ Customer data loaded for pre-fill:', data);
+        const response = await fetch(`${API_BASE_URL}/api/setup/${token}/customer-data`);
+        
+        if (!response.ok) {
+          if (response.status === 409) {
+            // QR code already activated
+            const data = await response.json();
+            setQrAlreadyActivated(true);
+            setCustomerDataError(data.message || 'This QR code has already been activated.');
+            
+            // Show toast notification
+            toast({
+              variant: "destructive",
+              title: "❌ Already Activated",
+              description: data.message,
+            });
+            
+            return;
+          }
           
-          // Pre-fill form with customer data from order
-          setFormData(prev => ({
-            ...prev,
-            fullName: data.customerName || prev.fullName,
-            email: data.customerEmail || prev.email,
-            phone: data.customerPhone || prev.phone,
-            streetAddress: data.address?.line1 || prev.streetAddress,
-            city: data.address?.city || prev.city,
-            state: data.address?.state || prev.state,
-            zip: data.address?.zip || prev.zip,
-          }));
+          throw new Error('Failed to fetch customer data');
+        }
+        
+        const result = await response.json();
+        
+        if (result.alreadyActivated) {
+          // Handle already activated state
+          setQrAlreadyActivated(true);
+          setCustomerDataError(result.message);
           
           toast({
-            title: "Welcome!",
-            description: "Your information has been pre-filled. Please review and complete the setup.",
+            variant: "destructive",
+            title: "❌ Already Activated",
+            description: result.message,
           });
-        } else if (response.status === 404) {
-          // Activation code not found in orders - this is okay, might be old magnet system
-          console.log('ℹ️ No order found for activation code - using legacy magnet system');
+          
+          return;
         }
+        
+        if (result.prefilled && result.data) {
+          // Pre-fill form with customer data
+          console.log('✅ Pre-filling form with customer data');
+          
+          setFormData(prev => ({
+            ...prev,
+            fullName: result.data.fullName || prev.fullName,
+            email: result.data.email || prev.email,
+            phone: result.data.phone || prev.phone,
+            streetAddress: result.data.streetAddress || prev.streetAddress,
+            city: result.data.city || prev.city,
+            state: result.data.state || prev.state,
+            zip: result.data.postalCode || prev.zip,
+          }));
+          
+          setCustomerDataLoaded(true);
+          
+          // Show success notification
+          toast({
+            title: "✅ Welcome back!",
+            description: "We've pre-filled your information. Please review and complete the form.",
+          });
+        } else {
+          console.log('ℹ️  No customer data found - user will fill manually');
+        }
+        
       } catch (error) {
-        console.error('❌ Error fetching customer data:', error);
-        // Don't show error to user - they can still fill the form manually
+        console.error('Error fetching customer data:', error);
+        // Fail silently - user can still fill form manually
+        setCustomerDataError('Could not load your information. Please fill in the form manually.');
       }
     };
     
@@ -256,13 +305,37 @@ const Onboarding: React.FC = () => {
             <p className="mt-2 text-gray-600">Help us understand your home and needs better</p>
           </div>
 
+          {/* Already Activated Warning */}
+          {qrAlreadyActivated && (
+            <div className="mb-6 p-6 bg-destructive/10 border-2 border-destructive rounded-lg">
+              <div className="flex items-start gap-3">
+                <div className="text-3xl">🔒</div>
+                <div className="flex-1">
+                  <h2 className="text-xl font-bold text-destructive mb-2">
+                    QR Code Already Activated
+                  </h2>
+                  <p className="text-muted-foreground mb-4">
+                    {customerDataError}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Each QR code can only be activated once for security reasons. 
+                    If you need assistance, please contact support at{' '}
+                    <a href="mailto:support@upkeepqr.com" className="text-primary underline">
+                      support@upkeepqr.com
+                    </a>
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {error && (
             <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
               <p className="text-red-800 text-sm">{error}</p>
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-8">
+          <form onSubmit={handleSubmit} className={`space-y-8 ${qrAlreadyActivated ? 'opacity-50 pointer-events-none' : ''}`}>
             
             {/* Section 1: Personal Detail */}
             <div className="space-y-6">
@@ -695,9 +768,10 @@ const Onboarding: React.FC = () => {
             <Button
               type="submit"
               className="w-full py-6 text-lg"
-              disabled={loading}
+              disabled={loading || qrAlreadyActivated}
+              data-testid="button-submit-setup"
             >
-              {loading ? 'Submitting...' : 'Complete Setup'}
+              {qrAlreadyActivated ? '🔒 Already Activated' : (loading ? 'Submitting...' : 'Complete Setup')}
             </Button>
           </form>
         </div>
