@@ -14,7 +14,7 @@ import { eq } from 'drizzle-orm';
 const TEST_HOUSEHOLD = {
   name: 'Test User',
   email: 'test@upkeepqr.com',
-  phone: '+14155552671', // Valid E.164 format
+  phone: '+14044886739', // Valid E.164 format - User's verified Twilio number
   notificationPreference: 'both' as const,
   smsOptIn: true,
 };
