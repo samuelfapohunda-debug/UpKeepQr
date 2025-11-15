@@ -42,7 +42,7 @@ export default function SetupFormsDashboard() {
   // Filters state
   const [filters, setFilters] = useState<AdminSetupFormFilters>({
     q: "",
-    status: "",
+    status: "all",
     city: "",
     state: "",
     zipcode: "",
@@ -70,7 +70,7 @@ export default function SetupFormsDashboard() {
     queryFn: async () => {
       const params = new URLSearchParams();
       if (filters.q) params.set("q", filters.q);
-      if (filters.status) params.set("status", filters.status);
+      if (filters.status && filters.status !== "all") params.set("status", filters.status);
       if (filters.city) params.set("city", filters.city);
       if (filters.state) params.set("state", filters.state);
       if (filters.zipcode) params.set("zipcode", filters.zipcode);
@@ -313,7 +313,7 @@ export default function SetupFormsDashboard() {
                     <SelectValue placeholder="All statuses" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All statuses</SelectItem>
+                    <SelectItem value="all">All statuses</SelectItem>
                     <SelectItem value="not_started">Not Started</SelectItem>
                     <SelectItem value="in_progress">In Progress</SelectItem>
                     <SelectItem value="completed">Completed</SelectItem>
