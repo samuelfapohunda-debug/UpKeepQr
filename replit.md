@@ -4,6 +4,17 @@ This is an UpKeepQR Agent Management Platform built as a monorepo TypeScript app
 
 # Recent Changes
 
+## November 15, 2025 - Twilio SMS Integration Complete & Database Sequence Fix
+- **SMS Testing Complete**: All 6/6 NotificationDispatcher tests passing with verified Twilio phone number
+- **Twilio Credentials**: Successfully configured TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_PHONE_NUMBER
+- **Credential Cache**: Added 60-second credential refresh in SMS library for dynamic config updates without restart
+- **Production Status**: Email (SendGrid) and SMS (Twilio) fully operational with TCPA compliance
+- **Critical Fix**: Restored missing `order_id_counter` PostgreSQL sequence (was deleted causing webhook failures)
+- **Sequence Recovery**: Created sequence starting at 46 (next order will be 47-2025) after analyzing existing orders
+- **Webhook Resolution**: Stripe webhook order creation now working (sequence error resolved)
+- **Error Notification**: Admin error emails sent successfully when webhooks fail (verified with SendGrid)
+- **Test Configuration**: Updated test suite to use user's verified Twilio number (+14044886739) for reliable SMS testing
+
 ## November 13, 2025 - Unified Notification System (Phase 1 Complete)
 - **Feature**: Implemented unified notification system with preference-based routing (email/SMS/both)
 - **PostgreSQL Integration**: Added `notification_preference` column to households table (default: 'both')
