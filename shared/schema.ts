@@ -888,5 +888,48 @@ export const homeProfileExtras = pgTable("home_profile_extras", {
 export type HomeProfileExtra = typeof homeProfileExtras.$inferSelect;
 export type InsertHomeProfileExtra = typeof homeProfileExtras.$inferInsert;
 
+// Admin Setup Forms API Schemas
+export const adminSetupFormFiltersSchema = z.object({
+  setupStatus: z.array(z.enum(['incomplete', 'complete'])).optional(),
+  state: z.string().length(2).optional(), // Two-letter state code
+  zipcode: z.string().regex(/^\d{5}(-\d{4})?$/).optional(), // 5 or 9-digit ZIP
+  q: z.string().optional(), // Search query (name, email, address)
+  dateFrom: z.string().optional(), // ISO date string for setup_completed_at
+  dateTo: z.string().optional(), // ISO date string for setup_completed_at
+  page: z.number().min(1).default(1),
+  pageSize: z.number().min(1).max(100).default(25),
+  sortBy: z.enum(['name', 'setupCompletedAt', 'createdAt', 'city', 'zipcode']).default('createdAt'),
+  sortDir: z.enum(['asc', 'desc']).default('desc'),
+});
+export type AdminSetupFormFilters = z.infer<typeof adminSetupFormFiltersSchema>;
+
+export const updateSetupFormSchema = z.object({
+  name: z.string().min(1).max(255).optional(),
+  email: z.string().email().max(255).optional(),
+  phone: z.string().max(30).optional(), // E.164 format
+  addressLine1: z.string().max(255).optional(),
+  addressLine2: z.string().max(255).optional(),
+  city: z.string().max(100).optional(),
+  state: z.string().length(2).optional(),
+  zipcode: z.string().max(10).optional(),
+  notificationPreference: z.enum(['email_only', 'sms_only', 'both']).optional(),
+  smsOptIn: z.boolean().optional(),
+  preferredContact: z.string().max(20).optional(),
+  setupStatus: z.enum(['incomplete', 'complete']).optional(),
+  orderId: z.string().max(50).optional(),
+});
+export type UpdateSetupFormData = z.infer<typeof updateSetupFormSchema>;
+
+export const createSetupFormNoteSchema = z.object({
+  noteText: z.string().min(1, "Note text is required").max(10000, "Note must be 10,000 characters or less"),
+});
+export type CreateSetupFormNoteData = z.infer<typeof createSetupFormNoteSchema>;
+
+export const testNotificationSchema = z.object({
+  householdId: z.string().min(1, "Household ID is required"),
+  notificationType: z.enum(['email', 'sms', 'both']),
+});
+export type TestNotificationData = z.infer<typeof testNotificationSchema>;
+
 // Lead Capture
 export * from "./lead-schema";
