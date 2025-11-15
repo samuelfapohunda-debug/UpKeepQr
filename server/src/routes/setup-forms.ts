@@ -87,18 +87,16 @@ router.get('/', requireSystemAdmin, async (req: any, res: Response) => {
 
     const offset = (filters.page - 1) * filters.pageSize;
 
+    const baseQuery = db.select().from(householdsTable);
+    const countQuery = db.select({ count: sql<number>`count(*)` }).from(householdsTable);
+
     const [households, totalCountResult] = await Promise.all([
-      db
-        .select()
-        .from(householdsTable)
-        .where(whereClause)
-        .orderBy(orderClause)
-        .limit(filters.pageSize)
-        .offset(offset),
-      db
-        .select({ count: sql<number>`count(*)` })
-        .from(householdsTable)
-        .where(whereClause),
+      whereClause
+        ? baseQuery.where(whereClause).orderBy(orderClause).limit(filters.pageSize).offset(offset)
+        : baseQuery.orderBy(orderClause).limit(filters.pageSize).offset(offset),
+      whereClause
+        ? countQuery.where(whereClause)
+        : countQuery,
     ]);
 
     const totalCount = Number(totalCountResult[0]?.count || 0);
