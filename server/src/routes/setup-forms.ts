@@ -25,7 +25,8 @@ router.get('/', requireSystemAdmin, async (req: any, res: Response) => {
     await createAuditLog(req, '/api/admin/setup-forms');
 
     const filters = adminSetupFormFiltersSchema.parse({
-      setupStatus: req.query.setupStatus ? (Array.isArray(req.query.setupStatus) ? req.query.setupStatus : [req.query.setupStatus]) : undefined,
+      status: req.query.status as string | undefined,
+      city: req.query.city as string | undefined,
       state: req.query.state as string | undefined,
       zipcode: req.query.zipcode as string | undefined,
       q: req.query.q as string | undefined,
@@ -39,10 +40,12 @@ router.get('/', requireSystemAdmin, async (req: any, res: Response) => {
 
     const conditions = [];
 
-    if (filters.setupStatus && filters.setupStatus.length > 0) {
-      conditions.push(
-        sql`${householdsTable.setupStatus} = ANY(${filters.setupStatus})`
-      );
+    if (filters.status) {
+      conditions.push(eq(householdsTable.setupStatus, filters.status));
+    }
+
+    if (filters.city) {
+      conditions.push(eq(householdsTable.city, filters.city));
     }
 
     if (filters.state) {
@@ -149,10 +152,11 @@ router.get('/:id', requireSystemAdmin, async (req: any, res: Response) => {
         .limit(1),
     ]);
 
+    // Return flat household object with embedded notes/profileExtras
     res.json({
-      household,
+      ...household,
       notes,
-      profileExtras: profileExtras[0] || null,
+      profileExtras: profileExtras[0] ? Object.entries(profileExtras[0]).map(([key, value]) => ({ key, value })) : [],
     });
   } catch (error) {
     handleError(error, req.path || 'admin-setup-forms', res);
@@ -184,11 +188,11 @@ router.put('/:id', requireSystemAdmin, async (req: any, res: Response) => {
         updatedAt: new Date(),
       };
 
-      if (updateData.setupStatus === 'complete' && existing.setupStatus !== 'complete') {
+      if (updateData.setupStatus === 'completed' && existing.setupStatus !== 'completed') {
         updates.setupCompletedAt = new Date();
       }
 
-      if (updateData.setupStatus === 'incomplete' && existing.setupStatus === 'complete') {
+      if (updateData.setupStatus !== 'completed' && existing.setupStatus === 'completed') {
         updates.setupCompletedAt = null;
       }
 
@@ -217,7 +221,7 @@ router.post('/:id/notes', requireSystemAdmin, async (req: any, res: Response) =>
     await createAuditLog(req, `/api/admin/setup-forms/${req.params.id}/notes`);
 
     const householdId = req.params.id;
-    const { noteText } = createSetupFormNoteSchema.parse(req.body);
+    const { content } = createSetupFormNoteSchema.parse(req.body);
 
     const result = await db.transaction(async (tx) => {
       const [household] = await tx
@@ -234,8 +238,8 @@ router.post('/:id/notes', requireSystemAdmin, async (req: any, res: Response) =>
         .insert(setupFormNotesTable)
         .values({
           householdId,
-          authorId: req.agentId || null,
-          noteText,
+          createdBy: req.agentEmail || null,
+          content,
         })
         .returning();
 
@@ -294,7 +298,7 @@ router.post('/:id/test-notification', requireSystemAdmin, async (req: any, res: 
     await createAuditLog(req, `/api/admin/setup-forms/${req.params.id}/test-notification`);
 
     const householdId = req.params.id;
-    const { notificationType } = testNotificationSchema.parse(req.body);
+    const { channel } = testNotificationSchema.parse(req.body);
 
     const [household] = await db
       .select()
@@ -325,12 +329,13 @@ router.post('/:id/test-notification', requireSystemAdmin, async (req: any, res: 
       emailSubject: testSubject,
       emailHtml: testHtml,
       smsMessage: testSms,
+      channelOverride: channel,
     });
 
     res.json({
       message: 'Test notification sent',
       result,
-      notificationType,
+      channel,
     });
   } catch (error) {
     handleError(error, req.path || 'admin-setup-forms', res);

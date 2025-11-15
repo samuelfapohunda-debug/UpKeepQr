@@ -642,11 +642,14 @@ export const householdsTable = pgTable("households", {
   preferredContact: varchar("preferred_contact", { length: 20 }), // 'email', 'phone', 'text'
   
   // Setup tracking
-  setupStatus: varchar("setup_status", { length: 20 }).notNull().default('incomplete'), // 'incomplete', 'complete'
+  setupStatus: varchar("setup_status", { length: 20 }).notNull().default('not_started'), // 'not_started', 'in_progress', 'completed'
   setupCompletedAt: timestamp("setup_completed_at"),
   setupStartedAt: timestamp("setup_started_at"),
+  setupNotes: text("setup_notes"), // Public setup notes visible to homeowner
+  setupIssues: text("setup_issues"), // Setup issues/blockers
   
   // Relationships and audit
+  magnetCode: varchar("magnet_code", { length: 50 }), // QR code identifier
   orderId: varchar("order_id", { length: 50 }), // Links to order_magnet_orders.order_id
   lastModifiedBy: varchar("last_modified_by"), // UUID of admin user who last edited
   
@@ -665,15 +668,15 @@ export const householdsTable = pgTable("households", {
 export const setupFormNotesTable = pgTable("setup_form_notes", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   householdId: varchar("household_id").notNull(), // Links to households.id
-  authorId: varchar("author_id"), // UUID of admin user who created note
-  noteText: text("note_text").notNull(),
+  createdBy: varchar("created_by"), // Email of admin user who created note
+  content: text("content").notNull(),
   deletedAt: timestamp("deleted_at"), // Soft delete support
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => ({
   // Index for fetching notes by household (exclude soft-deleted)
   householdIdx: index("idx_setup_notes_household").on(table.householdId),
-  authorIdx: index("idx_setup_notes_author").on(table.authorId),
+  authorIdx: index("idx_setup_notes_author").on(table.createdBy),
   createdIdx: index("idx_setup_notes_created").on(table.createdAt),
 }));
 
@@ -740,6 +743,7 @@ export const insertHouseholdDbSchema = createInsertSchema(householdsTable).omit(
 });
 export type InsertHouseholdDb = z.infer<typeof insertHouseholdDbSchema>;
 export type HouseholdDb = typeof householdsTable.$inferSelect;
+export type Household = typeof householdsTable.$inferSelect; // Alias for frontend
 
 // Setup Form Notes schemas and types
 export const insertSetupFormNoteSchema = createInsertSchema(setupFormNotesTable).omit({
@@ -890,9 +894,10 @@ export type InsertHomeProfileExtra = typeof homeProfileExtras.$inferInsert;
 
 // Admin Setup Forms API Schemas
 export const adminSetupFormFiltersSchema = z.object({
-  setupStatus: z.array(z.enum(['incomplete', 'complete'])).optional(),
-  state: z.string().length(2).optional(), // Two-letter state code
-  zipcode: z.string().regex(/^\d{5}(-\d{4})?$/).optional(), // 5 or 9-digit ZIP
+  status: z.string().optional(), // 'not_started', 'in_progress', 'completed'
+  city: z.string().optional(),
+  state: z.string().optional(), // Two-letter state code
+  zipcode: z.string().optional(), // 5 or 9-digit ZIP
   q: z.string().optional(), // Search query (name, email, address)
   dateFrom: z.string().optional(), // ISO date string for setup_completed_at
   dateTo: z.string().optional(), // ISO date string for setup_completed_at
@@ -915,19 +920,21 @@ export const updateSetupFormSchema = z.object({
   notificationPreference: z.enum(['email_only', 'sms_only', 'both']).optional(),
   smsOptIn: z.boolean().optional(),
   preferredContact: z.string().max(20).optional(),
-  setupStatus: z.enum(['incomplete', 'complete']).optional(),
+  setupStatus: z.enum(['not_started', 'in_progress', 'completed']).optional(),
+  setupNotes: z.string().max(10000).optional(),
+  setupIssues: z.string().max(10000).optional(),
+  magnetCode: z.string().max(50).optional(),
   orderId: z.string().max(50).optional(),
 });
 export type UpdateSetupFormData = z.infer<typeof updateSetupFormSchema>;
 
 export const createSetupFormNoteSchema = z.object({
-  noteText: z.string().min(1, "Note text is required").max(10000, "Note must be 10,000 characters or less"),
+  content: z.string().min(1, "Note content is required").max(10000, "Note must be 10,000 characters or less"),
 });
 export type CreateSetupFormNoteData = z.infer<typeof createSetupFormNoteSchema>;
 
 export const testNotificationSchema = z.object({
-  householdId: z.string().min(1, "Household ID is required"),
-  notificationType: z.enum(['email', 'sms', 'both']),
+  channel: z.enum(['email', 'sms', 'both']),
 });
 export type TestNotificationData = z.infer<typeof testNotificationSchema>;
 
