@@ -19,6 +19,7 @@ import NotFound from "@/pages/not-found";
 import RequestPro from "@/pages/RequestPro";
 import AdminDashboard from "@/pages/AdminDashboard";
 import MagnetDashboard from "@/pages/MagnetDashboard";
+import SetupFormsDashboard from "@/pages/SetupFormsDashboard";
 import Login from "@/pages/Login";
 
 function Router() {
@@ -47,6 +48,11 @@ function Router() {
         <Route path="/admin/magnets">
           <ProtectedRoute>
             <MagnetDashboard />
+          </ProtectedRoute>
+        </Route>
+        <Route path="/admin/setup-forms">
+          <ProtectedRoute>
+            <SetupFormsDashboard />
           </ProtectedRoute>
         </Route>
         <Route path="/agent" component={AgentLogin} />

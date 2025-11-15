@@ -35,6 +35,9 @@ export interface NotificationPayload {
   
   // SMS-specific fields (required if channel includes SMS)
   smsMessage?: string;
+  
+  // Override household preference (for test notifications)
+  channelOverride?: 'email' | 'sms' | 'both';
 }
 
 /**
@@ -73,8 +76,10 @@ export class NotificationDispatcher {
         };
       }
       
-      // Step 2: Determine channel based on preference
-      const channel = (household.notificationPreference as NotificationChannel) || 'both';
+      // Step 2: Determine channel based on override or preference
+      const channel = payload.channelOverride 
+        ? (payload.channelOverride === 'email' ? 'email_only' : payload.channelOverride === 'sms' ? 'sms_only' : 'both')
+        : (household.notificationPreference as NotificationChannel) || 'both';
       
       // Step 3: Route to appropriate channel(s)
       const result = await this.route(channel, household, payload);
