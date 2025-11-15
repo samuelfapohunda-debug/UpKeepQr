@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { pgTable, serial, varchar, text, integer, boolean, timestamp, json, numeric, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, serial, varchar, text, integer, boolean, timestamp, json, numeric, jsonb, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { sql } from "drizzle-orm";
 
@@ -628,12 +628,54 @@ export const householdsTable = pgTable("households", {
   name: varchar("name", { length: 255 }).notNull(),
   email: varchar("email", { length: 255 }).notNull(),
   phone: varchar("phone", { length: 30 }), // E.164 format: +14155552671
+  
+  // Address fields
+  addressLine1: varchar("address_line_1", { length: 255 }),
+  addressLine2: varchar("address_line_2", { length: 255 }),
+  city: varchar("city", { length: 100 }),
+  state: varchar("state", { length: 2 }),
+  zipcode: varchar("zipcode", { length: 10 }),
+  
+  // Notification preferences
   notificationPreference: varchar("notification_preference", { length: 20 }).notNull().default('both'), // 'email_only', 'sms_only', 'both'
   smsOptIn: boolean("sms_opt_in").default(false),
   preferredContact: varchar("preferred_contact", { length: 20 }), // 'email', 'phone', 'text'
+  
+  // Setup tracking
+  setupStatus: varchar("setup_status", { length: 20 }).notNull().default('incomplete'), // 'incomplete', 'complete'
+  setupCompletedAt: timestamp("setup_completed_at"),
+  setupStartedAt: timestamp("setup_started_at"),
+  
+  // Relationships and audit
+  orderId: varchar("order_id", { length: 50 }), // Links to order_magnet_orders.order_id
+  lastModifiedBy: varchar("last_modified_by"), // UUID of admin user who last edited
+  
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+}, (table) => ({
+  // Performance indexes for search and filtering
+  setupStatusIdx: index("idx_households_setup_status").on(table.setupStatus),
+  completedDateIdx: index("idx_households_completed_date").on(table.setupCompletedAt),
+  orderIdIdx: index("idx_households_order_id").on(table.orderId),
+  // Composite index for location filtering
+  locationIdx: index("idx_households_location").on(table.state, table.zipcode),
+}));
+
+// Setup Form Notes table for admin comments
+export const setupFormNotesTable = pgTable("setup_form_notes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  householdId: varchar("household_id").notNull(), // Links to households.id
+  authorId: varchar("author_id"), // UUID of admin user who created note
+  noteText: text("note_text").notNull(),
+  deletedAt: timestamp("deleted_at"), // Soft delete support
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  // Index for fetching notes by household (exclude soft-deleted)
+  householdIdx: index("idx_setup_notes_household").on(table.householdId),
+  authorIdx: index("idx_setup_notes_author").on(table.authorId),
+  createdIdx: index("idx_setup_notes_created").on(table.createdAt),
+}));
 
 // Contact Messages table
 export const contactMessagesTable = pgTable("contact_messages", {
@@ -698,6 +740,15 @@ export const insertHouseholdDbSchema = createInsertSchema(householdsTable).omit(
 });
 export type InsertHouseholdDb = z.infer<typeof insertHouseholdDbSchema>;
 export type HouseholdDb = typeof householdsTable.$inferSelect;
+
+// Setup Form Notes schemas and types
+export const insertSetupFormNoteSchema = createInsertSchema(setupFormNotesTable).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertSetupFormNote = z.infer<typeof insertSetupFormNoteSchema>;
+export type SetupFormNote = typeof setupFormNotesTable.$inferSelect;
 
 // Contact Message schemas and types
 export const insertContactMessageSchema = createInsertSchema(contactMessagesTable).omit({
