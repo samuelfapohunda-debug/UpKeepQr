@@ -258,6 +258,43 @@ if (process.env.NODE_ENV === 'development') {
     }
     res.json({ received: true, test: true });
   });
+  
+  // Email test endpoint for troubleshooting SendGrid configuration
+  router.get('/test-email', async (req: Request, res: Response) => {
+    try {
+      const testEmail = req.query.email as string || 'samuel.fapohunda@gmail.com';
+      console.log('🧪 Testing email configuration...');
+      
+      const result = await sendPaymentConfirmationEmail(
+        testEmail,
+        'Test Customer',
+        'TEST-2025',
+        '99.99',
+        1
+      );
+      
+      if (result) {
+        res.json({ 
+          success: true, 
+          message: 'Email sent successfully',
+          to: testEmail,
+          from: process.env.FROM_EMAIL || 'noreply@upkeepqr.com'
+        });
+      } else {
+        res.status(500).json({ 
+          success: false, 
+          message: 'Email failed to send',
+          details: 'Check server logs for SendGrid error details'
+        });
+      }
+    } catch (error: any) {
+      res.status(500).json({ 
+        success: false, 
+        message: error.message,
+        details: error.response?.body || 'No details available'
+      });
+    }
+  });
 }
 
 console.log('✅ Webhook routes registered');
