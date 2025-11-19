@@ -14,6 +14,7 @@ const leadLimiter = rateLimit({
   message: { error: "Too many submissions. Please try again later." },
   standardHeaders: true,
   legacyHeaders: false,
+  validate: false, // Disable strict proxy validation for Replit environment
 });
 
 // Validation schema

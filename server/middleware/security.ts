@@ -13,6 +13,7 @@ export const publicApiLimiter = rateLimit({
   },
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  validate: false, // Disable strict proxy validation for Replit environment
 });
 
 export const authApiLimiter = rateLimit({
@@ -23,6 +24,7 @@ export const authApiLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  validate: false, // Disable strict proxy validation for Replit environment
 });
 
 export const smsApiLimiter = rateLimit({
@@ -33,6 +35,7 @@ export const smsApiLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  validate: false, // Disable strict proxy validation for Replit environment
 });
 
 /**
