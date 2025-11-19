@@ -13,6 +13,7 @@ const authApiLimiter = rateLimit({
   message: "Too many login attempts, please try again later.",
   standardHeaders: true,
   legacyHeaders: false,
+  validate: false, // Disable strict proxy validation for Replit environment
 });
 
 const loginSchema = z.object({

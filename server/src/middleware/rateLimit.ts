@@ -13,6 +13,7 @@ export const homeExtraLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  validate: false, // Disable strict proxy validation for Replit environment
   // Use IP + user session for rate limiting
   keyGenerator: (req) => {
     return req.ip + (req.session?.userId || "");
