@@ -23,6 +23,8 @@ The project is set up as a monorepo using Yarn workspaces. It uses Vite for fron
 ## Authentication & Security
 The platform uses JWT-based authentication for admin access, with signed tokens expiring in 24 hours. Admin login is handled at `/api/auth/agent/login` with email/password validation. Tokens are stored client-side, and React route guards protect routes. Login attempts are rate-limited, and environment secrets are stored securely. A separate token-based system is used for homeowner QR setup. Zod schemas provide input validation.
 
+**Rate Limiting**: IP-based rate limiting is enforced using express-rate-limit across all public endpoints. The Express server is configured with `trust proxy: 1` for Replit's single-hop proxy architecture, ensuring accurate client IP detection without enabling IP spoofing vulnerabilities. Never set `validate: false` on rate limiters, as this disables critical security protections.
+
 ## UI/UX Decisions
 The platform uses shadcn/ui and Tailwind CSS for a consistent and modern design. It leverages Radix UI for accessible headless components and Lucide React for iconography.
 
