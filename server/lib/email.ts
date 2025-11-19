@@ -70,6 +70,13 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
 const FROM_EMAIL: string = process.env.FROM_EMAIL || 'noreply@upkeepqr.com';
 const ADMIN_EMAIL: string = process.env.ADMIN_EMAIL || 'admin@upkeepqr.com';
 
+// Log email configuration at startup
+console.log('📧 Email configuration loaded:', {
+  FROM_EMAIL,
+  ADMIN_EMAIL,
+  sendgridConfigured: !!process.env.SENDGRID_API_KEY
+});
+
 export async function sendUserConfirmationEmail(
   userEmail: string,
   userName: string,
