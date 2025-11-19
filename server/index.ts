@@ -9,7 +9,8 @@ import { setupVite, serveStatic, log } from "./vite.js";
 
 const app = express();
 
-app.set('trust proxy', true);
+// Set trust proxy to 1 for Replit's single-hop proxy (more secure than `true`)
+app.set('trust proxy', 1);
 
 app.use((req, res, next) => {
   const start = Date.now();
