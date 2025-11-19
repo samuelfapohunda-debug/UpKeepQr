@@ -58,7 +58,9 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
     console.error('❌ SendGrid email error:', {
       message: error.message,
       code: error.code,
-      response: error.response?.body || 'No response body',
+      statusCode: error.response?.statusCode,
+      errors: error.response?.body?.errors || [],
+      responseBody: JSON.stringify(error.response?.body || {}),
       to: params.to,
       from: params.from
     });
