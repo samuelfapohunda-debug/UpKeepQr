@@ -1,0 +1,274 @@
+1. FRONTEND FIX (REQUIRED)
+Current Frontend Issue:
+File: client/src/pages/Onboarding.tsx
+The admin form currently sends:
+typescript// ❌ PROBLEMATIC - May send token as undefined
+body: JSON.stringify({
+  ...formData, // May include token: undefined
+  adminCreated: adminMode,
+  skipWelcomeEmail: adminMode,
+})
+Required Frontend Fix:
+typescript// File: client/src/pages/Onboarding.tsx
+
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setLoading(true);
+
+  try {
+    // ✅ FIXED: Build payload based on mode
+    let payload;
+    
+    if (adminMode) {
+      // Admin mode: Explicitly exclude token field
+      const { token, ...dataWithoutToken } = formData;
+      
+      payload = {
+        ...dataWithoutToken,
+        adminCreated: true, // Explicit
+        skipWelcomeEmail: true,
+      };
+      
+      console.log('Admin payload (no token):', payload);
+    } else {
+      // Customer mode: Include token
+      payload = {
+        ...formData,
+        token, // From URL params
+        adminCreated: false,
+        skipWelcomeEmail: false,
+      };
+      
+      console.log('Customer payload (with token):', payload);
+    }
+
+    const response = await fetch('/api/setup/activate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Setup failed');
+    }
+
+    const data = await response.json();
+
+    toast({
+      title: adminMode ? "✅ Household Created" : "✅ Setup Complete",
+      description: adminMode 
+        ? `Household created for ${formData.email}`
+        : "Welcome to UpKeepQR! Check your email for next steps.",
+    });
+
+    if (adminMode) {
+      navigate('/admin/households');
+    } else {
+      navigate('/confirmation');
+    }
+
+  } catch (error: any) {
+    console.error('Setup error:', error);
+    
+    toast({
+      variant: "destructive",
+      title: "Setup Failed",
+      description: error.message || "Please try again or contact support.",
+    });
+  } finally {
+    setLoading(false);
+  }
+};
+Frontend Validation Before Submit:
+typescript// File: client/src/pages/Onboarding.tsx
+
+const validateForm = (): boolean => {
+  const errors: Record<string, string> = {};
+
+  // Required fields (both modes)
+  if (!formData.fullName || formData.fullName.length < 2) {
+    errors.fullName = 'Name must be at least 2 characters';
+  }
+  
+  if (!formData.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+    errors.email = 'Valid email required';
+  }
+  
+  if (!formData.phone || formData.phone.length < 10) {
+    errors.phone = 'Valid phone number required';
+  }
+  
+  if (!formData.streetAddress) {
+    errors.streetAddress = 'Street address required';
+  }
+  
+  if (!formData.city) {
+    errors.city = 'City required';
+  }
+  
+  if (!formData.state || formData.state.length !== 2) {
+    errors.state = 'Two-letter state code required';
+  }
+  
+  if (!formData.postalCode || formData.postalCode.length !== 5) {
+    errors.postalCode = '5-digit ZIP code required';
+  }
+
+  // Customer-specific validation
+  if (!adminMode && (!token || token.trim() === '')) {
+    errors.token = 'Invalid activation link - token missing';
+  }
+
+  setValidationErrors(errors);
+  return Object.keys(errors).length === 0;
+};
+
+// Call before submit
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  
+  if (!validateForm()) {
+    toast({
+      variant: "destructive",
+      title: "Validation Error",
+      description: "Please fix the errors and try again.",
+    });
+    return;
+  }
+  
+  // ... rest of submit logic
+};
+
+2. DATABASE SCHEMA VERIFICATION & MIGRATION
+Current Database State Verification:
+sql-- Check households table schema
+DESCRIBE households;
+
+-- Expected columns:
+-- magnet_token VARCHAR(255) NULL  ← Must allow NULL
+-- created_by VARCHAR(20) DEFAULT 'customer'
+-- created_by_user_id VARCHAR(255) NULL
+Required Migration:
+sql-- File: server/migrations/20251122_admin_setup_support.sql
+
+-- Migration: Support admin-created households without QR tokens
+-- Date: 2025-11-22
+
+BEGIN;
+
+-- 1. Make magnet_token nullable (if not already)
+ALTER TABLE households 
+  MODIFY COLUMN magnet_token VARCHAR(255) NULL
+  COMMENT 'QR activation token - NULL for admin-created households';
+
+-- 2. Add created_by column (if not exists)
+ALTER TABLE households 
+  ADD COLUMN IF NOT EXISTS created_by VARCHAR(20) DEFAULT 'customer'
+  COMMENT 'Creation method: customer, admin, or api';
+
+-- 3. Add created_by_user_id column (if not exists)
+ALTER TABLE households 
+  ADD COLUMN IF NOT EXISTS created_by_user_id VARCHAR(255) NULL
+  COMMENT 'User ID of admin who created household (if admin-created)';
+
+-- 4. Add indexes for performance
+CREATE INDEX IF NOT EXISTS idx_households_created_by 
+  ON households(created_by);
+
+CREATE INDEX IF NOT EXISTS idx_households_magnet_token 
+  ON households(magnet_token) 
+  WHERE magnet_token IS NOT NULL;
+
+-- 5. Update existing records (backfill)
+UPDATE households 
+SET created_by = 'customer', 
+    created_by_user_id = NULL
+WHERE created_by IS NULL 
+  OR created_by = '';
+
+-- 6. Add constraint to ensure valid created_by values
+ALTER TABLE households 
+  ADD CONSTRAINT chk_created_by 
+  CHECK (created_by IN ('customer', 'admin', 'api'));
+
+COMMIT;
+
+-- Rollback script (if needed)
+-- BEGIN;
+-- ALTER TABLE households DROP CONSTRAINT IF EXISTS chk_created_by;
+-- ALTER TABLE households DROP COLUMN IF EXISTS created_by_user_id;
+-- ALTER TABLE households DROP COLUMN IF EXISTS created_by;
+-- ALTER TABLE households MODIFY COLUMN magnet_token VARCHAR(255) NOT NULL;
+-- COMMIT;
+Database Schema Requirements Checklist:
+TableColumnRequirementStatushouseholdsmagnet_tokenNullable VARCHAR(255)✅ Requiredhouseholdscreated_byVARCHAR(20) with constraint✅ Requiredhouseholdscreated_by_user_idNullable VARCHAR(255)✅ Requiredorder_magnet_itemsactivation_statusVARCHAR(20) with index✅ Existingorder_magnet_itemsactivation_codeVARCHAR(255) UNIQUE NOT NULL✅ Existingaudit_eventsAll columnsExists for tracking✅ Required
+Verification Script:
+typescript// File: server/scripts/verify-db-schema.ts
+
+import { db } from '../db';
+
+async function verifyDatabaseSchema() {
+  console.log('🔍 Verifying database schema for admin setup support...\n');
+  
+  try {
+    // Check households table structure
+    const householdsColumns = await db.raw(`
+      SELECT COLUMN_NAME, IS_NULLABLE, COLUMN_TYPE, COLUMN_DEFAULT
+      FROM INFORMATION_SCHEMA.COLUMNS
+      WHERE TABLE_NAME = 'households'
+      AND COLUMN_NAME IN ('magnet_token', 'created_by', 'created_by_user_id')
+    `);
+    
+    console.log('Households table columns:');
+    console.table(householdsColumns[0]);
+    
+    // Verify magnet_token is nullable
+    const magnetTokenCol = householdsColumns[0].find(
+      (col: any) => col.COLUMN_NAME === 'magnet_token'
+    );
+    
+    if (magnetTokenCol?.IS_NULLABLE !== 'YES') {
+      console.error('❌ magnet_token must be nullable');
+      return false;
+    }
+    
+    console.log('✅ magnet_token is nullable');
+    
+    // Verify created_by exists
+    const createdByCol = householdsColumns[0].find(
+      (col: any) => col.COLUMN_NAME === 'created_by'
+    );
+    
+    if (!createdByCol) {
+      console.error('❌ created_by column missing');
+      return false;
+    }
+    
+    console.log('✅ created_by column exists');
+    
+    // Verify indexes exist
+    const indexes = await db.raw(`
+      SHOW INDEX FROM households 
+      WHERE Key_name IN ('idx_households_created_by', 'idx_households_magnet_token')
+    `);
+    
+    console.log('\nIndexes:');
+    console.table(indexes[0]);
+    
+    console.log('\n✅ Database schema verification complete');
+    return true;
+    
+  } catch (error) {
+    console.error('❌ Database verification failed:', error);
+    return false;
+  }
+}
+
+// Run verification
+verifyDatabaseSchema()
+  .then(success => process.exit(success ? 0 : 1))
+  .catch(err => {
+    console.error(err);
+    process.exit(1);
+  });
