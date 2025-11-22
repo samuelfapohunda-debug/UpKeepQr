@@ -228,7 +228,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validatedData = setupActivateSchema.parse(req.body);
       const { 
         token, 
-        adminCreated = false,
         skipWelcomeEmail = false,
         // Personal details
         fullName,
@@ -259,32 +258,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         notes
       } = validatedData;
 
-      // ==== SECURITY: Admin Mode Validation ====
+      // ==== SECURITY: Derive Admin Mode from Authentication (NEVER trust client) ====
       const { getUserFromAuth } = await import('./middleware/auth');
-      let authUser = null;
-      let createdBy = 'customer';
-      let createdByUserId = null;
+      const authUser = await getUserFromAuth(req);
       
-      if (adminCreated) {
-        // Check feature flag
-        const allowAdminCreation = process.env.ALLOW_ADMIN_SETUP_CREATION === 'true';
-        if (!allowAdminCreation) {
-          return res.status(403).json({ 
-            error: "Admin household creation is not enabled on this system" 
-          });
-        }
-
-        // Verify admin authentication
-        authUser = await getUserFromAuth(req);
-        if (!authUser || authUser.role !== 'admin') {
-          return res.status(403).json({ 
-            error: "Admin authentication required for admin-created households" 
-          });
-        }
-
-        createdBy = 'admin';
-        createdByUserId = authUser.id;
-        console.log(`🔒 Admin-created household by ${authUser.email}`);
+      // Check if this is an authenticated admin (server-derived, never from client)
+      const isAuthenticatedAdmin = authUser && authUser.role === 'admin';
+      const allowAdminCreation = process.env.ALLOW_ADMIN_SETUP_CREATION === 'true';
+      
+      // Admin mode is ONLY enabled if:
+      // 1. User is authenticated as admin
+      // 2. Feature flag allows it
+      // 3. No token provided (admin creates without QR)
+      const isAdminMode = isAuthenticatedAdmin && allowAdminCreation && !token;
+      
+      const createdBy = isAdminMode ? 'admin' : 'customer';
+      const createdByUserId = isAdminMode ? authUser.id : null;
+      
+      if (isAdminMode) {
+        console.log(`🔒 Admin-created household by ${authUser.email} (server-verified)`);
       }
 
       // Use postalCode or fall back to zip for legacy support
@@ -294,7 +286,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let magnet = null;
       let claimedItem = null;
 
-      if (!adminCreated) {
+      if (!isAdminMode) {
         if (!token) {
           return res.status(400).json({ error: "Token required for customer activation" });
         }
@@ -331,7 +323,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let household = null;
       
       // For admin-created households, skip token lookup
-      if (!adminCreated && token) {
+      if (!isAdminMode && token) {
         household = await storage.getHouseholdByToken(token);
       }
       
@@ -366,13 +358,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Audit event for household update
         await storage.createAuditEvent({
           eventType: 'household_updated',
-          actorType: adminCreated ? 'admin' : 'customer',
+          actorType: isAdminMode ? 'admin' : 'customer',
           actorId: createdByUserId || 'customer',
           actorEmail: authUser?.email || email || '',
           householdId: household.id,
           metadata: JSON.stringify({
-            updatedFields: Object.keys(validatedData).filter(k => k !== 'token' && k !== 'adminCreated'),
-            adminCreated
+            updatedFields: Object.keys(validatedData).filter(k => k !== 'token'),
+            adminMode: isAdminMode
           }),
         });
       } else {
@@ -383,7 +375,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // This prevents QR inventory collisions and maintains referential integrity
         let householdToken: string;
         
-        if (adminCreated) {
+        if (isAdminMode) {
           // Generate collision-resistant token for admin-created households
           // Loop until we find an unused token (extremely unlikely to iterate)
           let attempts = 0;
@@ -441,20 +433,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
 
         // Audit event for household creation
-        const eventType = adminCreated ? 'admin_household_created' : 'qr_activated';
+        const eventType = isAdminMode ? 'admin_household_created' : 'qr_activated';
         await storage.createAuditEvent({
           eventType,
-          actorType: adminCreated ? 'admin' : 'customer',
+          actorType: isAdminMode ? 'admin' : 'customer',
           actorId: createdByUserId || 'customer',
           actorEmail: authUser?.email || email || '',
           householdId: household.id,
           metadata: JSON.stringify({
-            adminCreated,
+            adminMode: isAdminMode,
             skipWelcomeEmail,
-            source: adminCreated ? 'admin_dashboard' : 'qr_activation',
+            source: isAdminMode ? 'admin_dashboard' : 'qr_activation',
             magnetToken: householdToken,
-            qrInventoryAffected: !adminCreated, // Admin-created households don't affect QR inventory
-            placeholderToken: adminCreated, // Indicates this is an admin-generated placeholder
+            qrInventoryAffected: !isAdminMode, // Admin-created households don't affect QR inventory
+            placeholderToken: isAdminMode, // Indicates this is an admin-generated placeholder
             welcomeEmailScheduled: !skipWelcomeEmail && !!household.email
           }),
         });
@@ -507,7 +499,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Send welcome email (skip for admin-created unless explicitly requested)
-      const shouldSendWelcomeEmail = household.email && (!adminCreated || !skipWelcomeEmail);
+      const shouldSendWelcomeEmail = household.email && (!isAdminMode || !skipWelcomeEmail);
       let welcomeEmailSent = false;
       let welcomeEmailError = null;
       
@@ -534,7 +526,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Audit event for welcome email outcome (compliance requirement)
-      if (adminCreated) {
+      if (isAdminMode) {
         await storage.createAuditEvent({
           eventType: 'household_updated',
           actorType: 'system',
@@ -548,7 +540,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             welcomeEmailSent,
             welcomeEmailError,
             recipientEmail: household.email || 'none',
-            adminCreated: true
+            adminMode: true
           }),
         });
       }
@@ -566,7 +558,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           climate_zone: climateZone,
           tasks_created: schedules.length,
           welcome_email_sent: shouldSendWelcomeEmail,
-          admin_created: adminCreated
+          admin_created: isAdminMode
         }),
       });
 
