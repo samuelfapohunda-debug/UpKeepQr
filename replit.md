@@ -17,6 +17,8 @@ The backend is a RESTful API built with Express.js and TypeScript. It uses Drizz
 ## Database Design
 The project utilizes PostgreSQL with Drizzle ORM for type-safe operations. It connects via Neon serverless PostgreSQL, defines schemas in a shared directory, and manages migrations with Drizzle Kit.
 
+**Database Sequences**: The `order_id_counter` sequence is required for generating unique order IDs in format `{counter}-{year}`. This sequence is created automatically via the migration script at `server/migrations/create_order_id_counter.ts`. If the sequence is missing, Stripe webhook order creation will fail.
+
 ## Development Environment
 The project is set up as a monorepo using Yarn workspaces. It uses Vite for frontend development with HMR and tsx for backend development. Separate build processes are configured for the client (Vite) and server (esbuild), with shared TypeScript configuration across the monorepo.
 
