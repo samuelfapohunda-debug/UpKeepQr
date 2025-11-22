@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Search, Filter, Eye, Bell, Trash2, Plus, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ArrowUpDown } from "lucide-react";
 
 const statusColors: Record<string, string> = {
@@ -36,6 +37,7 @@ export default function SetupFormsDashboard() {
   const { logout } = useAuth();
   const [selectedHousehold, setSelectedHousehold] = useState<HouseholdDetail | null>(null);
   const [showDetail, setShowDetail] = useState(false);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [newNote, setNewNote] = useState("");
   const [searchDebounce, setSearchDebounce] = useState("");
 
@@ -55,6 +57,16 @@ export default function SetupFormsDashboard() {
   });
 
   const { toast } = useToast();
+
+  // Create household form state
+  const [createForm, setCreateForm] = useState({
+    fullName: "",
+    email: "",
+    phone: "",
+    zip: "",
+    homeType: "single_family" as "single_family" | "condo" | "townhouse" | "apartment",
+    skipWelcomeEmail: false,
+  });
 
   // Debounce search input
   useEffect(() => {
@@ -201,6 +213,45 @@ export default function SetupFormsDashboard() {
     },
   });
 
+  // Create household mutation
+  const createHouseholdMutation = useMutation({
+    mutationFn: async (data: typeof createForm) => {
+      const res = await apiRequest("POST", "/api/setup/activate", {
+        adminCreated: true,
+        skipWelcomeEmail: data.skipWelcomeEmail,
+        full_name: data.fullName,
+        email: data.email,
+        phone: data.phone,
+        zip: data.zip,
+        home_type: data.homeType,
+      });
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Household created",
+        description: "New household has been created successfully",
+      });
+      setShowCreateDialog(false);
+      setCreateForm({
+        fullName: "",
+        email: "",
+        phone: "",
+        zip: "",
+        homeType: "single_family",
+        skipWelcomeEmail: false,
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/setup-forms"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to create household",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleSort = (column: string) => {
     setFilters((prev) => ({
       ...prev,
@@ -269,9 +320,18 @@ export default function SetupFormsDashboard() {
               Manage household setup workflows and track completion
             </p>
           </div>
-          <Button variant="outline" onClick={logout} data-testid="button-logout">
-            Logout
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button 
+              onClick={() => setShowCreateDialog(true)} 
+              data-testid="button-create-household"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Create Household
+            </Button>
+            <Button variant="outline" onClick={logout} data-testid="button-logout">
+              Logout
+            </Button>
+          </div>
         </div>
 
         {/* Filters Card */}
@@ -825,6 +885,141 @@ export default function SetupFormsDashboard() {
           <DialogFooter>
             <Button variant="outline" onClick={handleCloseDetail} data-testid="button-close-dialog">
               Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Household Dialog */}
+      <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle data-testid="text-create-dialog-title">
+              Create New Household
+            </DialogTitle>
+            <DialogDescription>
+              Create a household directly without QR code activation
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="create-fullName">Full Name *</Label>
+                <Input
+                  id="create-fullName"
+                  data-testid="input-create-name"
+                  placeholder="John Doe"
+                  value={createForm.fullName}
+                  onChange={(e) =>
+                    setCreateForm((prev) => ({ ...prev, fullName: e.target.value }))
+                  }
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="create-email">Email *</Label>
+                <Input
+                  id="create-email"
+                  data-testid="input-create-email"
+                  type="email"
+                  placeholder="john@example.com"
+                  value={createForm.email}
+                  onChange={(e) =>
+                    setCreateForm((prev) => ({ ...prev, email: e.target.value }))
+                  }
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="create-phone">Phone</Label>
+                <Input
+                  id="create-phone"
+                  data-testid="input-create-phone"
+                  type="tel"
+                  placeholder="+1 555-0123"
+                  value={createForm.phone}
+                  onChange={(e) =>
+                    setCreateForm((prev) => ({ ...prev, phone: e.target.value }))
+                  }
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="create-zip">ZIP Code *</Label>
+                <Input
+                  id="create-zip"
+                  data-testid="input-create-zip"
+                  placeholder="12345"
+                  value={createForm.zip}
+                  onChange={(e) =>
+                    setCreateForm((prev) => ({ ...prev, zip: e.target.value }))
+                  }
+                  required
+                />
+              </div>
+
+              <div className="space-y-2 col-span-2">
+                <Label htmlFor="create-homeType">Home Type *</Label>
+                <Select
+                  value={createForm.homeType}
+                  onValueChange={(value: typeof createForm.homeType) =>
+                    setCreateForm((prev) => ({ ...prev, homeType: value }))
+                  }
+                >
+                  <SelectTrigger id="create-homeType" data-testid="select-create-hometype">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="single_family">Single Family Home</SelectItem>
+                    <SelectItem value="condo">Condo</SelectItem>
+                    <SelectItem value="townhouse">Townhouse</SelectItem>
+                    <SelectItem value="apartment">Apartment</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-2 pt-2">
+              <Checkbox
+                id="skipWelcomeEmail"
+                data-testid="checkbox-skip-welcome"
+                checked={createForm.skipWelcomeEmail}
+                onCheckedChange={(checked) =>
+                  setCreateForm((prev) => ({ ...prev, skipWelcomeEmail: !!checked }))
+                }
+              />
+              <Label
+                htmlFor="skipWelcomeEmail"
+                className="text-sm font-normal cursor-pointer"
+              >
+                Skip welcome email
+              </Label>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowCreateDialog(false)}
+              data-testid="button-cancel-create"
+              disabled={createHouseholdMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => createHouseholdMutation.mutate(createForm)}
+              data-testid="button-submit-create"
+              disabled={
+                !createForm.fullName ||
+                !createForm.email ||
+                !createForm.zip ||
+                createHouseholdMutation.isPending
+              }
+            >
+              {createHouseholdMutation.isPending ? "Creating..." : "Create Household"}
             </Button>
           </DialogFooter>
         </DialogContent>
