@@ -190,14 +190,14 @@ export const setupActivateSchema = z.object({
   streetAddress: z.string().optional(),
   city: z.string().optional(),
   state: z.string().optional(),
-  postalCode: z.string().min(1), // Supports both ZIP and postal codes
+  postalCode: z.string().min(1).optional(), // Optional - backend supports both postalCode and zip
   
   // Security fields (admin mode)
   adminCreated: z.boolean().optional().default(false),
   skipWelcomeEmail: z.boolean().optional().default(false),
   // DO NOT include createdByUserId - server derives it from auth
-  zip: z.string().optional(), // Legacy support
-  home_type: z.string().min(1),
+  zip: z.string().optional(), // Legacy support - backend uses postalCode || zip
+  home_type: z.string().optional(), // Optional since admin mode may not send it
   sqft: z.number().positive().optional(),
   hvac_type: z.string().optional(),
   heatPump: z.enum(['yes', 'no', 'unknown']).optional(),

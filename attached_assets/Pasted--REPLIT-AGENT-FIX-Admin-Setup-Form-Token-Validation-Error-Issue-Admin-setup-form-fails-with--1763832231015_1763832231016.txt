@@ -1,0 +1,432 @@
+# REPLIT AGENT FIX: Admin Setup Form Token Validation Error
+
+**Issue:** Admin setup form fails with "token required" error  
+**Error Code:** 400 - Invalid data, token field required  
+**Priority:** CRITICAL (Blocking admin functionality)  
+**Estimated Time:** 10 minutes  
+**Complexity:** LOW (Schema fix)
+
+---
+
+## 1. ERROR DETAILS
+
+### Error Message:
+```json
+400: {
+  "error": "Invalid data",
+  "details": [{
+    "code": "invalid_type",
+    "expected": "string",
+    "received": "undefined",
+    "path": ["token"],
+    "message": "Required"
+  }]
+}
+```
+
+### Root Cause:
+The `setupActivateSchema` in `shared/schema.ts` requires `token` field, but admin mode doesn't send a token (no QR code involved).
+
+### Current Schema (BROKEN):
+```typescript
+export const setupActivateSchema = z.object({
+  token: z.string(), // ❌ REQUIRED - breaks admin mode
+  fullName: z.string(),
+  email: z.string().email(),
+  // ... other fields
+});
+```
+
+---
+
+## 2. THE FIX
+
+### STEP 1: Make Token Optional in Schema
+
+**File:** `shared/schema.ts`
+
+**Find this code:**
+```typescript
+export const setupActivateSchema = z.object({
+  token: z.string(), // ❌ Current: Required
+  fullName: z.string().min(1),
+  email: z.string().email(),
+  phone: z.string().optional(),
+  // ... rest of fields
+});
+```
+
+**Replace with:**
+```typescript
+export const setupActivateSchema = z.object({
+  token: z.string().optional(), // ✅ Fixed: Optional
+  fullName: z.string().min(1),
+  email: z.string().email(),
+  phone: z.string().optional(),
+  
+  // Admin-specific fields (also optional)
+  adminCreated: z.boolean().optional().default(false),
+  skipWelcomeEmail: z.boolean().optional().default(false),
+  
+  // ... rest of fields
+});
+```
+
+### STEP 2: Update Backend Validation Logic
+
+**File:** `server/routes.ts`
+
+**Find the `/api/setup/activate` endpoint and update validation:**
+
+```typescript
+app.post("/api/setup/activate", publicApiLimiter, async (req, res) => {
+  await createAuditLog(req, '/api/setup/activate');
+  
+  try {
+    const validatedData = setupActivateSchema.parse(req.body);
+    const { 
+      token, 
+      adminCreated = false,
+      skipWelcomeEmail = false,
+      ...householdData 
+    } = validatedData;
+
+    // ✅ Server-side admin validation (security critical)
+    const requester = await getUserFromAuth(req);
+    const isAdminMode = requester?.role === 'admin' && adminCreated === true;
+    
+    // Block non-admins from using admin mode
+    if (adminCreated && !isAdminMode) {
+      console.warn(`Unauthorized admin access attempt`);
+      return res.status(403).json({ 
+        error: "Admin authorization required" 
+      });
+    }
+
+    // ✅ UPDATED: Token validation - only for customer mode
+    let orderItem = null;
+
+    if (!isAdminMode) {
+      // Customer mode: token is REQUIRED
+      if (!token) {
+        return res.status(400).json({ 
+          error: "Activation token required for customer setup" 
+        });
+      }
+
+      // Lookup and validate token
+      orderItem = await storage.getOrderItemByActivationCode(token);
+      
+      if (!orderItem) {
+        return res.status(404).json({ 
+          error: "Invalid activation token" 
+        });
+      }
+
+      if (orderItem.item.activationStatus === 'activated') {
+        return res.status(409).json({ 
+          error: "This QR code has already been activated",
+          alreadyActivated: true
+        });
+      }
+    } else {
+      // Admin mode: token is NOT required
+      console.log('Admin mode: Skipping token validation');
+    }
+
+    // ... rest of existing code (household creation, etc.)
+  } catch (error: any) {
+    console.error('Setup activation error:', error);
+    return handleError(error, 'setup/activate', res);
+  }
+});
+```
+
+---
+
+## 3. REPLIT AGENT PROMPT
+
+**Copy and paste this into Replit Agent:**
+
+```
+Fix admin setup form token validation error.
+
+ISSUE:
+Admin setup form fails with 400 error: "token required"
+Admin mode doesn't use QR codes, so token shouldn't be required.
+
+FIX PART 1: UPDATE SCHEMA
+File: shared/schema.ts
+
+Find:
+export const setupActivateSchema = z.object({
+  token: z.string(),
+
+Replace with:
+export const setupActivateSchema = z.object({
+  token: z.string().optional(),
+
+Also ensure these fields are in the schema:
+  adminCreated: z.boolean().optional().default(false),
+  skipWelcomeEmail: z.boolean().optional().default(false),
+
+FIX PART 2: UPDATE BACKEND VALIDATION
+File: server/routes.ts
+
+In the POST /api/setup/activate endpoint:
+
+Find the token validation section (around line 50-70 in the endpoint):
+
+CURRENT (BROKEN):
+if (!token) {
+  return res.status(400).json({ error: "Activation token required" });
+}
+
+REPLACE WITH (FIXED):
+// Only validate token for customer mode, not admin mode
+if (!isAdminMode) {
+  // Customer mode: token is REQUIRED
+  if (!token) {
+    return res.status(400).json({ 
+      error: "Activation token required for customer setup" 
+    });
+  }
+
+  // Lookup and validate token
+  orderItem = await storage.getOrderItemByActivationCode(token);
+  
+  if (!orderItem) {
+    return res.status(404).json({ error: "Invalid activation token" });
+  }
+
+  if (orderItem.item.activationStatus === 'activated') {
+    return res.status(409).json({ 
+      error: "This QR code has already been activated",
+      alreadyActivated: true
+    });
+  }
+} else {
+  // Admin mode: token is NOT required
+  console.log('Admin mode: Skipping token validation');
+}
+
+CRITICAL: Ensure the isAdminMode variable is already defined earlier in the function:
+const requester = await getUserFromAuth(req);
+const isAdminMode = requester?.role === 'admin' && adminCreated === true;
+
+TESTING:
+1. Login as admin
+2. Navigate to /setup/new
+3. Fill in required fields:
+   - Name: Test User
+   - Phone: 1234567890
+   - Email: test@example.com
+   - Street Address: 123 Main St
+   - City: Stockbridge
+   - State: GA
+   - ZIP: 30281
+4. Click "Create Household"
+5. Should succeed without token error
+6. Verify household created in database
+7. Verify no welcome email sent (admin mode)
+
+EXPECTED RESULT:
+Admin can create households without QR token.
+Customer QR flow still requires valid token.
+```
+
+---
+
+## 4. ROOT CAUSE ANALYSIS
+
+### Why This Happened:
+
+The schema validation was set up for **customer QR flow only**, where token is always required. When we added admin access, we didn't make the token optional.
+
+### The Flow:
+
+**Customer Mode (QR):**
+```
+Scan QR → token = "ABC123" → Form pre-fills → Submit → 
+Backend validates token ✅ → Creates household
+```
+
+**Admin Mode (Manual):**
+```
+Login → /setup/new → token = undefined → Form empty → Submit → 
+Backend validates token ❌ → ERROR: "token required"
+```
+
+### The Fix:
+
+Make token **optional** in schema, then validate conditionally:
+- Customer mode: Require token ✅
+- Admin mode: Skip token validation ✅
+
+---
+
+## 5. VERIFICATION STEPS
+
+After implementing the fix:
+
+### Test 1: Admin Setup (Should Work Now)
+```bash
+1. Login as admin
+2. Go to /setup/new
+3. Fill required fields
+4. Submit form
+5. ✅ Should succeed
+6. ✅ Check database: household created with createdBy='admin'
+7. ✅ Check email: NO welcome email sent
+```
+
+### Test 2: Customer QR (Should Still Work)
+```bash
+1. Get QR code with valid token
+2. Scan QR code
+3. Go to /setup/ABC123XYZ
+4. Form pre-fills
+5. Submit form
+6. ✅ Should succeed
+7. ✅ Check database: household created with createdBy='customer'
+8. ✅ Check email: Welcome email sent
+9. ✅ QR marked as activated
+```
+
+### Test 3: Security Check (Should Block)
+```bash
+1. Logout (no admin auth)
+2. Try to POST to /api/setup/activate with:
+   { "adminCreated": true, "fullName": "Hacker", ... }
+3. ✅ Should return 403: "Admin authorization required"
+```
+
+---
+
+## 6. EXPECTED DATABASE STATE AFTER FIX
+
+### Admin-Created Household:
+```sql
+SELECT 
+  id,
+  name,
+  email,
+  magnet_token,
+  created_by,
+  created_by_user_id
+FROM households
+WHERE created_by = 'admin'
+LIMIT 1;
+
+-- Expected:
+-- magnet_token: NULL (no QR code)
+-- created_by: 'admin'
+-- created_by_user_id: <admin-user-id>
+```
+
+### Customer-Created Household:
+```sql
+SELECT 
+  id,
+  name,
+  email,
+  magnet_token,
+  created_by,
+  created_by_user_id
+FROM households
+WHERE created_by = 'customer'
+LIMIT 1;
+
+-- Expected:
+-- magnet_token: 'ABC123XYZ' (has QR code)
+-- created_by: 'customer'
+-- created_by_user_id: NULL
+```
+
+---
+
+## 7. CONSOLE LOGS TO VERIFY
+
+### Admin Mode Success:
+```
+📝 Admin mode: Skipping token validation
+✅ Admin-created household: <household-id> by admin@example.com
+📝 Audit event created: admin_household_created
+```
+
+### Customer Mode Success:
+```
+🔍 Searching for activation code: ABC123XYZ
+✅ Found item: <item-id> for order: <order-id>
+🔒 Marked QR code as activated: ABC123XYZ
+✅ Welcome email sent to: customer@example.com
+```
+
+---
+
+## 8. DEBUGGING TIPS
+
+### If Error Persists:
+
+**Check 1: Schema Updated?**
+```bash
+# In Replit console
+cat shared/schema.ts | grep "token:"
+
+# Should show:
+# token: z.string().optional(),
+```
+
+**Check 2: Backend Validation Logic?**
+```bash
+# In Replit console
+cat server/routes.ts | grep -A 5 "if (!isAdminMode)"
+
+# Should show the conditional token validation
+```
+
+**Check 3: Frontend Sending adminCreated?**
+```bash
+# Check browser Network tab
+# POST /api/setup/activate payload should include:
+{
+  "adminCreated": true,
+  "fullName": "...",
+  "email": "...",
+  // token field should NOT be present or be undefined
+}
+```
+
+---
+
+## 9. SUMMARY
+
+### The Problem:
+- ❌ Schema required `token` field
+- ❌ Admin doesn't have token
+- ❌ Validation failed with 400 error
+
+### The Solution:
+- ✅ Make `token` optional in schema
+- ✅ Validate token only in customer mode
+- ✅ Skip token validation in admin mode
+
+### Files Changed:
+1. `shared/schema.ts` - Make token optional
+2. `server/routes.ts` - Conditional token validation
+
+### Time Required:
+- Implementation: 10 minutes
+- Testing: 5 minutes
+- **Total: 15 minutes**
+
+---
+
+**Status:** ✅ FIX READY TO IMPLEMENT  
+**Priority:** CRITICAL  
+**Complexity:** LOW  
+**Impact:** Unblocks admin household creation
+
+---
+
+**Copy the Replit Agent prompt from Section 3 and paste it now to fix the issue!** 🚀
