@@ -192,11 +192,12 @@ export const setupActivateSchema = z.object({
   state: z.string().optional(),
   postalCode: z.string().min(1).optional(), // Optional - backend supports both postalCode and zip
   
-  // Security fields (admin mode)
-  adminCreated: z.boolean().optional().default(false),
+  // Legacy support
+  zip: z.string().optional(), // Backend uses postalCode || zip
+  
+  // Admin fields (server-only, not sent by client)
   skipWelcomeEmail: z.boolean().optional().default(false),
-  // DO NOT include createdByUserId - server derives it from auth
-  zip: z.string().optional(), // Legacy support - backend uses postalCode || zip
+  // NOTE: adminCreated removed - server derives admin mode from auth, never trusts client
   home_type: z.string().optional(), // Optional since admin mode may not send it
   sqft: z.number().positive().optional(),
   hvac_type: z.string().optional(),
