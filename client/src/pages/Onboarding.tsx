@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Smartphone, ShieldCheck } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
+import { apiRequest } from '@/lib/queryClient';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -238,8 +239,6 @@ const Onboarding: React.FC<OnboardingProps> = ({ adminMode = false }) => {
     try {
       if (adminMode) {
         // ADMIN MODE: Direct household creation
-        const authToken = localStorage.getItem('token');
-        
         // Use backend-compatible payload format (matching createHouseholdMutation in SetupFormsDashboard)
         const adminData = {
           adminCreated: true,
@@ -251,15 +250,7 @@ const Onboarding: React.FC<OnboardingProps> = ({ adminMode = false }) => {
           home_type: formData.home_type,
         };
 
-        const response = await fetch(`${API_BASE_URL}/api/setup/activate`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authToken}`,
-          },
-          body: JSON.stringify(adminData),
-        });
-
+        const response = await apiRequest("POST", "/api/setup/activate", adminData);
         const result = await response.json();
 
         if (!response.ok || !result.success) {
