@@ -314,7 +314,7 @@ export default function SetupFormsDashboard() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold" data-testid="text-page-title">
-              Admin Setup Forms
+              Setup Forms Dashboard
             </h1>
             <p className="text-muted-foreground">
               Manage household setup workflows and track completion
