@@ -1,0 +1,301 @@
+SECURITY HARDENED: Enable admin access to Setup form with proper authentication.
+
+CRITICAL SECURITY REQUIREMENTS:
+This implementation addresses 9 security and quality improvements identified in code review.
+
+PART 1: CREATE/UPDATE AUTH MIDDLEWARE
+File: server/middleware/auth.ts
+
+Add these functions:
+```typescript
+import type { Request } from 'express';
+
+export async function getUserFromAuth(req: Request): Promise<User | null> {
+  try {
+    // Use your existing auth mechanism
+    if (req.session?.userId) {
+      return await storage.getUserById(req.session.userId);
+    }
+    return null;
+  } catch (error) {
+    console.error('Auth error:', error);
+    return null;
+  }
+}
+```
+
+PART 2: UPDATE SCHEMA VALIDATION
+File: shared/schema.ts
+
+Add to setupActivateSchema:
+```typescript
+adminCreated: z.boolean().optional().default(false),
+skipWelcomeEmail: z.boolean().optional().default(false),
+// DO NOT include createdByUserId - server derives it
+```
+
+Add to householdSchema:
+```typescript
+createdBy: z.enum(['customer', 'admin', 'api']).default('customer'),
+createdByUserId: z.string().nullable().optional(),
+magnetToken: z.string().nullable().optional(),
+```
+
+Add new schema:
+```typescript
+export const auditEventSchema = z.object({
+  id: z.string().optional(),
+  type: z.enum(['qr_activated', 'admin_household_created', 'household_updated', 'household_deleted']),
+  actor: z.string(),
+  householdId: z.string().optional(),
+  orderId: z.string().optional(),
+  data: z.record(z.any()).optional(),
+  createdAt: z.date().or(z.string()),
+});
+```
+
+PART 3: SECURITY HARDENED BACKEND
+File: server/routes.ts
+
+CRITICAL: Replace the entire /api/setup/activate endpoint with this SECURE version:
+```typescript
+import { getUserFromAuth } from './middleware/auth';
+
+app.post("/api/setup/activate", publicApiLimiter, async (req, res) => {
+  await createAuditLog(req, '/api/setup/activate');
+  
+  try {
+    const validatedData = setupActivateSchema.parse(req.body);
+    const { 
+      token, 
+      adminCreated = false,
+      skipWelcomeEmail = false,
+      ...householdData 
+    } = validatedData;
+
+    // ① CRITICAL: Server-side admin validation (not client trust)
+    const requester = await getUserFromAuth(req);
+    const isAdminMode = requester?.role === 'admin' && adminCreated === true;
+    
+    if (adminCreated && !isAdminMode) {
+      console.warn(`Unauthorized admin access attempt by: ${requester?.id || 'anonymous'}`);
+      return res.status(403).json({ 
+        error: "Admin authorization required to create manual setups" 
+      });
+    }
+
+    const createdBy = isAdminMode ? 'admin' : 'customer';
+    const createdByUserId = isAdminMode ? requester.id : null;
+
+    // ⑦ Feature flag check
+    if (isAdminMode && process.env.ALLOW_ADMIN_SETUP_CREATION !== 'true') {
+      return res.status(403).json({ 
+        error: 'Admin setup creation is disabled in this environment' 
+      });
+    }
+
+    // Validate token for customer mode
+    let orderItem = null;
+    if (!isAdminMode) {
+      if (!token) {
+        return res.status(400).json({ error: "Activation token required" });
+      }
+
+      orderItem = await storage.getOrderItemByActivationCode(token);
+      
+      if (!orderItem) {
+        return res.status(404).json({ error: "Invalid activation token" });
+      }
+
+      if (orderItem.item.activationStatus === 'activated') {
+        return res.status(409).json({ 
+          error: "This QR code has already been activated",
+          alreadyActivated: true
+        });
+      }
+    }
+
+    // ⑨ Structured logging
+    console.log({
+      event: 'setup_activation_start',
+      adminCreated: isAdminMode,
+      tokenProvided: !!token,
+      createdByUserId,
+      requesterRole: requester?.role || 'anonymous'
+    });
+
+    // Create household with ⑥ NULL (not undefined)
+    const household = await storage.createHousehold({
+      ...householdData,
+      magnetToken: isAdminMode ? null : token,
+      createdBy,
+      createdByUserId,
+    });
+
+    if (!household) {
+      return res.status(500).json({ error: "Failed to create household" });
+    }
+
+    // Mark QR as activated (customer only)
+    if (!isAdminMode && token && orderItem) {
+      await storage.updateOrderMagnetItemStatus(
+        orderItem.item.id,
+        'activated',
+        household.email || 'unknown'
+      );
+      
+      await storage.createAuditEvent({
+        type: 'qr_activated',
+        actor: 'customer',
+        householdId: household.id,
+        orderId: orderItem.order.id,
+        data: { activationCode: token }
+      });
+    }
+
+    // ③ Audit logging for admin creation
+    if (isAdminMode) {
+      await storage.createAuditEvent({
+        type: 'admin_household_created',
+        actor: createdByUserId!,
+        householdId: household.id,
+        data: {
+          adminEmail: requester?.email,
+          householdEmail: household.email
+        }
+      });
+    }
+
+    // Send welcome email (customer only)
+    if (!skipWelcomeEmail && !isAdminMode && household.email) {
+      await sendWelcomeEmail(household);
+    }
+
+    // Generate schedules
+    await generateMaintenanceSchedules(household);
+
+    console.log({
+      event: 'setup_activation_complete',
+      householdId: household.id,
+      createdBy
+    });
+
+    res.json({
+      success: true,
+      household: {
+        id: household.id,
+        email: household.email,
+        createdBy,
+      }
+    });
+
+  } catch (error: any) {
+    console.error({
+      event: 'setup_activation_error',
+      error: error.message
+    });
+    return handleError(error, 'setup/activate', res);
+  }
+});
+```
+
+PART 4: ADD AUDIT EVENT FUNCTION
+File: server/storage.ts
+```typescript
+export async function createAuditEvent(event: {
+  type: 'qr_activated' | 'admin_household_created' | 'household_updated' | 'household_deleted';
+  actor: string;
+  householdId?: string;
+  orderId?: string;
+  data?: Record<string, any>;
+}): Promise<void> {
+  const { db } = await import('./db');
+  const { auditEventsTable } = await import('../shared/schema');
+  
+  await db.insert(auditEventsTable).values({
+    id: nanoid(),
+    ...event,
+    data: event.data ? JSON.stringify(event.data) : null,
+    createdAt: new Date()
+  });
+}
+```
+
+PART 5: IMPROVE PROTECTED ROUTE UI
+File: client/src/components/ProtectedRoute.tsx
+
+Add proper error message for non-admin users:
+```typescript
+if (requireAdmin && user.role !== 'admin') {
+  return (
+    <div className="flex items-center justify-center min-h-screen p-6">
+      <Card className="p-8 max-w-md">
+        <h2 className="text-2xl font-bold text-destructive mb-2">Access Denied</h2>
+        <p className="text-muted-foreground mb-4">
+          You do not have permission to access this page.
+        </p>
+        <button onClick={() => setLocation('/')}>Return to Home</button>
+      </Card>
+    </div>
+  );
+}
+```
+
+PART 6: REMOVE SENSITIVE DATA FROM FRONTEND
+File: client/src/pages/Onboarding.tsx
+
+In handleSubmit, DO NOT send createdByUserId (server derives it):
+```typescript
+body: JSON.stringify({
+  ...formData,
+  token: adminMode ? undefined : token,
+  adminCreated: adminMode,
+  // REMOVED: createdByUserId (server sets from auth)
+  skipWelcomeEmail: adminMode,
+})
+```
+
+PART 7: ADD FEATURE FLAG
+File: .env
+```env
+ALLOW_ADMIN_SETUP_CREATION=true
+```
+
+PART 8: CREATE AUDIT EVENTS TABLE
+Create database migration:
+```sql
+CREATE TABLE audit_events (
+  id VARCHAR(255) PRIMARY KEY,
+  type VARCHAR(50) NOT NULL,
+  actor VARCHAR(255) NOT NULL,
+  household_id VARCHAR(255),
+  order_id VARCHAR(255),
+  data JSONB,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+ALTER TABLE households 
+  ADD COLUMN created_by VARCHAR(20) DEFAULT 'customer',
+  ADD COLUMN created_by_user_id VARCHAR(255),
+  ALTER COLUMN magnet_token DROP NOT NULL;
+```
+
+CRITICAL TESTING:
+1. Test unauthorized admin access → Should return 403
+2. Test non-admin using adminCreated → Should return 403
+3. Test admin creation → Should create household + audit event
+4. Check audit_events table → Should have admin_household_created
+5. Test feature flag disabled → Should return 403
+6. Verify magnet_token is NULL for admin-created households
+
+SECURITY IMPROVEMENTS IMPLEMENTED:
+✅ Server-side authentication (not client trust)
+✅ Schema validation for new fields
+✅ Audit logging for admin actions
+✅ Better UI error handling
+✅ Proper NULL handling
+✅ Feature flag support
+✅ Structured logging
+✅ Access control validation
+
+This is a SECURITY CRITICAL implementation. Test thoroughly before deploying.
