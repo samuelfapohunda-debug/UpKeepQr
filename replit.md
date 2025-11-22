@@ -30,10 +30,12 @@ The platform uses shadcn/ui and Tailwind CSS for a consistent and modern design.
 
 ## Feature Specifications
 - **Admin Setup Forms**: Comprehensive admin dashboard for managing homeowner setup forms, including status tracking, multi-author notes, and test notification capabilities.
+- **Security-Hardened Setup Form Creation**: Admins can create households directly without QR codes. Features role-based authentication (JWT + ADMIN_EMAIL verification), audit event tracking for all CRUD operations, and optional welcome email control. Controlled by `ALLOW_ADMIN_SETUP_CREATION` environment variable.
 - **Unified Notification System**: Implemented with preference-based routing (email/SMS/both) using Twilio for SMS and SendGrid for email (planned). Includes TCPA compliance and graceful degradation for failures.
 - **CID Attachments**: For email client compatibility, enabling inline QR code display in welcome emails.
 - **Stripe Webhook Integration**: Handles `checkout.session.completed` events, creating orders with a sequential ID format (`{counter}-{year}`).
 - **Modular Route Architecture**: All routes are being migrated to a modular system for better organization and maintainability.
+- **Audit Event System**: All household CRUD operations are tracked with actor type (admin/customer/system), actor ID, email, timestamp, and contextual metadata for compliance and debugging.
 
 # External Dependencies
 

@@ -221,13 +221,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // POST /api/setup/activate - Activate household setup
+  // POST /api/setup/activate - Activate household setup (with admin mode support)
   app.post("/api/setup/activate", publicApiLimiter, async (req, res) => {
     await createAuditLog(req, '/api/setup/activate');
     try {
       const validatedData = setupActivateSchema.parse(req.body);
       const { 
         token, 
+        adminCreated = false,
+        skipWelcomeEmail = false,
         // Personal details
         fullName,
         phone,
@@ -257,38 +259,81 @@ export async function registerRoutes(app: Express): Promise<Server> {
         notes
       } = validatedData;
 
+      // ==== SECURITY: Admin Mode Validation ====
+      const { getUserFromAuth } = await import('./middleware/auth');
+      let authUser = null;
+      let createdBy = 'customer';
+      let createdByUserId = null;
+      
+      if (adminCreated) {
+        // Check feature flag
+        const allowAdminCreation = process.env.ALLOW_ADMIN_SETUP_CREATION === 'true';
+        if (!allowAdminCreation) {
+          return res.status(403).json({ 
+            error: "Admin household creation is not enabled on this system" 
+          });
+        }
+
+        // Verify admin authentication
+        authUser = await getUserFromAuth(req);
+        if (!authUser || authUser.role !== 'admin') {
+          return res.status(403).json({ 
+            error: "Admin authentication required for admin-created households" 
+          });
+        }
+
+        createdBy = 'admin';
+        createdByUserId = authUser.id;
+        console.log(`🔒 Admin-created household by ${authUser.email}`);
+      }
+
       // Use postalCode or fall back to zip for legacy support
       const zipCode = postalCode || zip;
 
-      // Try atomic claim for new order system (prevents race conditions)
-      const claimedItem = await storage.claimOrderMagnetItemForActivation(
-        token,
-        email || fullName || 'Unknown',
-        new Date()
-      );
+      // ==== Token Validation (Skip for admin-created households) ====
+      let magnet = null;
+      let claimedItem = null;
 
-      // Validate token exists in legacy magnet system (or was just claimed from order system)
-      const magnet = await storage.getMagnetByToken(token);
-      
-      if (!magnet && !claimedItem) {
-        // Token not found in either system - check if it was already activated
-        const existingItem = await storage.getOrderItemByActivationCode(token);
-        if (existingItem && existingItem.item.activationStatus === 'activated') {
-          console.log(`❌ Duplicate activation attempt blocked for token: ${token}`);
-          return res.status(409).json({ 
-            error: "This QR code has already been activated and cannot be used again.",
-            alreadyActivated: true,
-            activatedAt: existingItem.item.activatedAt,
-            activatedByEmail: existingItem.item.activatedByEmail
-          });
+      if (!adminCreated) {
+        if (!token) {
+          return res.status(400).json({ error: "Token required for customer activation" });
         }
+
+        // Try atomic claim for new order system (prevents race conditions)
+        claimedItem = await storage.claimOrderMagnetItemForActivation(
+          token,
+          email || fullName || 'Unknown',
+          new Date()
+        );
+
+        // Validate token exists in legacy magnet system (or was just claimed from order system)
+        magnet = await storage.getMagnetByToken(token);
         
-        // Token doesn't exist at all
-        return res.status(404).json({ error: "Invalid or expired token" });
+        if (!magnet && !claimedItem) {
+          // Token not found in either system - check if it was already activated
+          const existingItem = await storage.getOrderItemByActivationCode(token);
+          if (existingItem && existingItem.item.activationStatus === 'activated') {
+            console.log(`❌ Duplicate activation attempt blocked for token: ${token}`);
+            return res.status(409).json({ 
+              error: "This QR code has already been activated and cannot be used again.",
+              alreadyActivated: true,
+              activatedAt: existingItem.item.activatedAt,
+              activatedByEmail: existingItem.item.activatedByEmail
+            });
+          }
+          
+          // Token doesn't exist at all
+          return res.status(404).json({ error: "Invalid or expired token" });
+        }
       }
 
-      // Check if household already exists (upsert behavior)
-      let household = await storage.getHouseholdByToken(token);
+      // ==== Household Creation/Update ====
+      let household = null;
+      
+      // For admin-created households, skip token lookup
+      if (!adminCreated && token) {
+        household = await storage.getHouseholdByToken(token);
+      }
       
       if (household) {
         // Update existing household
@@ -317,13 +362,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
           notes,
           activatedAt: new Date(),
         });
+
+        // Audit event for household update
+        await storage.createAuditEvent({
+          eventType: 'household_updated',
+          actorType: adminCreated ? 'admin' : 'customer',
+          actorId: createdByUserId || 'customer',
+          actorEmail: authUser?.email || email || '',
+          householdId: household.id,
+          metadata: JSON.stringify({
+            updatedFields: Object.keys(validatedData).filter(k => k !== 'token' && k !== 'adminCreated'),
+            adminCreated
+          }),
+        });
       } else {
         // Create new household
-        // Use SYSTEM_AGENT_ID for new order system tokens without legacy magnet
         const { SYSTEM_AGENT_ID } = await import('./storage');
+        
+        // Generate unique token placeholder for admin-created households
+        // This prevents QR inventory collisions and maintains referential integrity
+        let householdToken: string;
+        
+        if (adminCreated) {
+          // Generate collision-resistant token for admin-created households
+          // Loop until we find an unused token (extremely unlikely to iterate)
+          let attempts = 0;
+          const MAX_ATTEMPTS = 10;
+          
+          do {
+            householdToken = `admin-${uuidv4()}`;
+            const existing = await storage.getHouseholdByToken(householdToken);
+            
+            if (!existing) {
+              break; // Token is unique
+            }
+            
+            attempts++;
+            if (attempts >= MAX_ATTEMPTS) {
+              console.error('Failed to generate unique admin token after', MAX_ATTEMPTS, 'attempts');
+              return res.status(500).json({ error: "Failed to generate unique household identifier" });
+            }
+          } while (true);
+          
+          console.log(`✅ Generated unique admin token: ${householdToken}`);
+        } else {
+          householdToken = token;
+        }
+        
         household = await storage.createHousehold({
           id: uuidv4(),
-          magnetToken: token,
+          magnetToken: householdToken,
           agentId: magnet?.agentId ?? SYSTEM_AGENT_ID,
           name: fullName || email?.split('@')[0] || 'User',
           email: email || '',
@@ -348,6 +436,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
           notes,
           smsOptIn: smsOptIn ?? false,
           activatedAt: new Date(),
+          createdBy,
+          createdByUserId,
+        });
+
+        // Audit event for household creation
+        const eventType = adminCreated ? 'admin_household_created' : 'qr_activated';
+        await storage.createAuditEvent({
+          eventType,
+          actorType: adminCreated ? 'admin' : 'customer',
+          actorId: createdByUserId || 'customer',
+          actorEmail: authUser?.email || email || '',
+          householdId: household.id,
+          metadata: JSON.stringify({
+            adminCreated,
+            skipWelcomeEmail,
+            source: adminCreated ? 'admin_dashboard' : 'qr_activation',
+            magnetToken: householdToken,
+            qrInventoryAffected: !adminCreated, // Admin-created households don't affect QR inventory
+            placeholderToken: adminCreated, // Indicates this is an admin-generated placeholder
+            welcomeEmailScheduled: !skipWelcomeEmail && !!household.email
+          }),
         });
       }
 
@@ -397,8 +506,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Send welcome email if email provided
-      if (household.email) {
+      // Send welcome email (skip for admin-created unless explicitly requested)
+      const shouldSendWelcomeEmail = household.email && (!adminCreated || !skipWelcomeEmail);
+      let welcomeEmailSent = false;
+      let welcomeEmailError = null;
+      
+      if (shouldSendWelcomeEmail) {
         try {
           const dashboardUrl = process.env.PUBLIC_BASE_URL 
             ? `${process.env.PUBLIC_BASE_URL}/admin`
@@ -411,14 +524,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
             taskCount: schedules.length,
             dashboardUrl,
           });
+          welcomeEmailSent = true;
+          console.log(`✅ Welcome email sent to ${household.email}`);
         } catch (emailError) {
           console.error("Failed to send welcome email:", emailError);
+          welcomeEmailError = emailError instanceof Error ? emailError.message : 'Unknown error';
           // Don't fail the activation if email fails
         }
       }
+      
+      // Audit event for welcome email outcome (compliance requirement)
+      if (adminCreated) {
+        await storage.createAuditEvent({
+          eventType: 'household_updated',
+          actorType: 'system',
+          actorId: 'system',
+          actorEmail: authUser?.email || 'system',
+          householdId: household.id,
+          metadata: JSON.stringify({
+            action: 'welcome_email_processing',
+            skipWelcomeEmailRequested: skipWelcomeEmail,
+            shouldSendWelcomeEmail,
+            welcomeEmailSent,
+            welcomeEmailError,
+            recipientEmail: household.email || 'none',
+            adminCreated: true
+          }),
+        });
+      }
 
       // Note: QR code status already updated by atomic claim (claimOrderMagnetItemForActivation)
-      // No need to update again here
+      // No need to update again here (only for customer activations)
 
       // Record activation event
       await storage.createEvent({
@@ -429,7 +565,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           home_type, 
           climate_zone: climateZone,
           tasks_created: schedules.length,
-          welcome_email_sent: !!household.email
+          welcome_email_sent: shouldSendWelcomeEmail,
+          admin_created: adminCreated
         }),
       });
 
