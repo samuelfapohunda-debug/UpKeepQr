@@ -7,6 +7,49 @@ interface AuthRequest extends Request {
   agentEmail?: string;
 }
 
+export interface User {
+  id: string;
+  email: string;
+  role: 'admin' | 'agent' | 'customer';
+}
+
+/**
+ * Extract authenticated user from request
+ * Returns null if not authenticated or token invalid
+ * Used for authorization checks in route handlers
+ */
+export async function getUserFromAuth(req: Request): Promise<User | null> {
+  try {
+    const authHeader = req.headers.authorization;
+    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+
+    if (!token) {
+      return null;
+    }
+
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      console.error('JWT_SECRET not configured');
+      return null;
+    }
+
+    const decoded = jwt.verify(token, jwtSecret) as { agentId: string; email: string };
+    
+    // Check if user is system admin
+    const adminEmail = process.env.ADMIN_EMAIL;
+    const isAdmin = adminEmail && decoded.email === adminEmail;
+
+    return {
+      id: decoded.agentId,
+      email: decoded.email,
+      role: isAdmin ? 'admin' : 'agent'
+    };
+  } catch (error) {
+    console.error('Auth error:', error);
+    return null;
+  }
+}
+
 export function authenticateAdmin(req: AuthRequest, res: Response, next: NextFunction) {
   const authHeader = req.headers.authorization;
   const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
