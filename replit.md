@@ -31,6 +31,7 @@ The platform uses shadcn/ui and Tailwind CSS for a consistent and modern design.
 ## Feature Specifications
 - **Admin Setup Forms**: Comprehensive admin dashboard for managing homeowner setup forms, including status tracking, multi-author notes, and test notification capabilities.
 - **Security-Hardened Setup Form Creation**: Admins can create households directly without QR codes. Features role-based authentication (JWT + ADMIN_EMAIL verification), audit event tracking for all CRUD operations, and optional welcome email control. Controlled by `ALLOW_ADMIN_SETUP_CREATION` environment variable.
+- **Admin Setup Form Field Visibility**: Admins can access the full onboarding form (all 32 fields) via `/setup/new` route for comprehensive household creation. Features admin-specific UI badge, field count indicator, and direct submission to `/api/setup/activate` with `adminCreated: true` flag. The form displays all fields including Personal Detail (11 fields), Home Detail (11 fields), and Interests & Needs (10 fields), allowing admins complete control over household data entry.
 - **Unified Notification System**: Implemented with preference-based routing (email/SMS/both) using Twilio for SMS and SendGrid for email (planned). Includes TCPA compliance and graceful degradation for failures.
 - **CID Attachments**: For email client compatibility, enabling inline QR code display in welcome emails.
 - **Stripe Webhook Integration**: Handles `checkout.session.completed` events, creating orders with a sequential ID format (`{counter}-{year}`).

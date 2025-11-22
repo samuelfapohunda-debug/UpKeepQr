@@ -32,6 +32,11 @@ function Router() {
         <Route path="/contact" component={Contact} />
         <Route path="/login" component={Login} />
         <Route path="/setup/success" component={SetupSuccess} />
+        <Route path="/setup/new">
+          <ProtectedRoute>
+            <Onboarding adminMode={true} />
+          </ProtectedRoute>
+        </Route>
         <Route path="/setup/:token" component={Onboarding} />
         <Route path="/task/:token/:taskId" component={TaskDetail} />
         <Route path="/request-pro" component={RequestPro} />
