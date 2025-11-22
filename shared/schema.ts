@@ -176,9 +176,9 @@ export const insertBatchSchema = z.object({
 
 // Setup and API schemas
 export const setupActivateSchema = z.object({
-  token: z.string().min(1).optional(), // Optional for admin-created households
+  token: z.string().optional(), // Optional for admin-created households
   // Personal Details
-  fullName: z.string().min(2).optional(),
+  fullName: z.string().optional(),
   phone: z.string().optional(),
   email: z.string().email().optional(),
   preferredContact: z.enum(['email', 'phone', 'text']).optional(),
@@ -190,7 +190,7 @@ export const setupActivateSchema = z.object({
   streetAddress: z.string().optional(),
   city: z.string().optional(),
   state: z.string().optional(),
-  postalCode: z.string().min(1).optional(), // Optional - backend supports both postalCode and zip
+  postalCode: z.string().optional(), // Optional - backend supports both postalCode and zip
   
   // Legacy support
   zip: z.string().optional(), // Backend uses postalCode || zip
