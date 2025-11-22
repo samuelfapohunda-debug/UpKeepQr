@@ -198,12 +198,12 @@ export const setupActivateSchema = z.object({
   // Admin fields (server-only, not sent by client)
   skipWelcomeEmail: z.boolean().optional().default(false),
   // NOTE: adminCreated removed - server derives admin mode from auth, never trusts client
-  home_type: z.string().optional(), // Optional since admin mode may not send it
+  homeType: z.string().optional(), // Optional since admin mode may not send it
   sqft: z.number().positive().optional(),
-  hvac_type: z.string().optional(),
+  hvacType: z.string().optional(),
   heatPump: z.enum(['yes', 'no', 'unknown']).optional(),
-  water_heater: z.string().optional(),
-  roof_age_years: z.number().min(0).max(100).optional(),
+  waterHeater: z.string().optional(),
+  roofAgeYears: z.number().min(0).max(100).optional(),
   isOwner: z.boolean().optional(),
   
   // Interest Details
@@ -222,11 +222,11 @@ export const setupActivateSchema = z.object({
 
 export const setupPreviewSchema = z.object({
   zip: z.string().regex(/^\d{5}$/, "ZIP code must be 5 digits"),
-  home_type: z.string().min(1),
+  homeType: z.string().min(1),
   sqft: z.number().positive().optional(),
-  hvac_type: z.string().optional(),
-  water_heater: z.string().optional(),
-  roof_age_years: z.number().min(0).max(100).optional(),
+  hvacType: z.string().optional(),
+  waterHeater: z.string().optional(),
+  roofAgeYears: z.number().min(0).max(100).optional(),
 });
 
 export const taskCompleteSchema = z.object({
