@@ -444,9 +444,19 @@ export type UpdateProRequestStatusRequest = z.infer<typeof updateProRequestStatu
 // Audit Event schema for tracking changes
 export const auditEventSchema = z.object({
   id: z.string(), // UUID
-  requestId: z.string(), // Foreign key to pro_requests
+  requestId: z.string().nullable().optional(), // Foreign key to pro_requests (nullable for household events)
+  householdId: z.string().nullable().optional(), // Foreign key to households
+  orderId: z.string().nullable().optional(), // Foreign key to orders
   actor: z.string().default('admin'),
-  type: z.enum(['status_change', 'provider_assignment', 'note_created']),
+  type: z.enum([
+    'status_change', 
+    'provider_assignment', 
+    'note_created',
+    'qr_activated',
+    'admin_household_created',
+    'household_updated',
+    'household_deleted'
+  ]),
   data: z.record(z.any()), // JSON data for storing diff or payload
   createdAt: z.date().optional(),
 });
@@ -467,7 +477,9 @@ export type Note = z.infer<typeof noteSchema>;
 // Audit Event Drizzle table definition
 export const auditEventsTable = pgTable("audit_events", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  requestId: varchar("request_id", { length: 255 }).notNull(),
+  requestId: varchar("request_id", { length: 255 }), // Nullable for household events
+  householdId: varchar("household_id", { length: 255 }), // For household-related events
+  orderId: varchar("order_id", { length: 255 }), // For order-related events
   actor: varchar("actor", { length: 100 }).notNull().default('admin'),
   type: varchar("type", { length: 50 }).notNull(),
   data: json("data").$type<Record<string, unknown>>().notNull(),
@@ -650,8 +662,13 @@ export const householdsTable = pgTable("households", {
   
   // Relationships and audit
   magnetCode: varchar("magnet_code", { length: 50 }), // QR code identifier
+  magnetToken: varchar("magnet_token", { length: 50 }), // Activation token (nullable for admin-created)
   orderId: varchar("order_id", { length: 50 }), // Links to order_magnet_orders.order_id
   lastModifiedBy: varchar("last_modified_by"), // UUID of admin user who last edited
+  
+  // Security and tracking fields
+  createdBy: varchar("created_by", { length: 20 }).notNull().default('customer'), // 'customer', 'admin', 'api'
+  createdByUserId: varchar("created_by_user_id", { length: 255 }), // UUID of admin who created (if admin-created)
   
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
