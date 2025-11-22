@@ -25,15 +25,19 @@ The project is set up as a monorepo using Yarn workspaces. It uses Vite for fron
 ## Authentication & Security
 The platform uses JWT-based authentication for admin access, with signed tokens expiring in 24 hours. Admin login is handled at `/api/auth/agent/login` with email/password validation. Tokens are stored client-side, and React route guards protect routes. Login attempts are rate-limited, and environment secrets are stored securely. A separate token-based system is used for homeowner QR setup. Zod schemas provide input validation.
 
+**Admin Mode Verification**: Admin privileges are derived exclusively from server-side authentication. The backend checks JWT tokens and validates admin role before enabling admin-only features. Client payloads can never control admin mode, preventing privilege escalation attacks.
+
 **Rate Limiting**: IP-based rate limiting is enforced using express-rate-limit across all public endpoints. The Express server is configured with `trust proxy: 1` for Replit's single-hop proxy architecture, ensuring accurate client IP detection without enabling IP spoofing vulnerabilities. Never set `validate: false` on rate limiters, as this disables critical security protections.
+
+**Schema Consistency**: All API validation schemas use camelCase field naming (homeType, hvacType, waterHeater, roofAgeYears) for consistency between client and server. Both admin and customer activation flows send matching camelCase payloads.
 
 ## UI/UX Decisions
 The platform uses shadcn/ui and Tailwind CSS for a consistent and modern design. It leverages Radix UI for accessible headless components and Lucide React for iconography.
 
 ## Feature Specifications
 - **Admin Setup Forms**: Comprehensive admin dashboard for managing homeowner setup forms, including status tracking, multi-author notes, and test notification capabilities.
-- **Security-Hardened Setup Form Creation**: Admins can create households directly without QR codes. Features role-based authentication (JWT + ADMIN_EMAIL verification), audit event tracking for all CRUD operations, and optional welcome email control. Controlled by `ALLOW_ADMIN_SETUP_CREATION` environment variable.
-- **Admin Setup Form Field Visibility**: Admins can access the full onboarding form (all 32 fields) via `/setup/new` route for comprehensive household creation. Features admin-specific UI badge, field count indicator, and direct submission to `/api/setup/activate` with `adminCreated: true` flag. The form displays all fields including Personal Detail (11 fields), Home Detail (11 fields), and Interests & Needs (10 fields), allowing admins complete control over household data entry.
+- **Security-Hardened Setup Form Creation**: Admins can create households directly without QR codes. Features role-based authentication (JWT + ADMIN_EMAIL verification), audit event tracking for all CRUD operations, and optional welcome email control. Controlled by `ALLOW_ADMIN_SETUP_CREATION` environment variable. **Critical security fix (Nov 2025)**: Admin mode is now derived exclusively from server-side authentication, never from client input. The backend validates JWT tokens and checks admin role before enabling admin privileges.
+- **Admin Setup Form Field Visibility**: Admins can access the full onboarding form (all 32 fields) via `/setup/new` route for comprehensive household creation. Features admin-specific UI badge, field count indicator, and direct submission to `/api/setup/activate`. The form displays all fields including Personal Detail (11 fields), Home Detail (11 fields), and Interests & Needs (10 fields), allowing admins complete control over household data entry. Admin mode is server-verified, not client-controlled.
 - **Unified Notification System**: Implemented with preference-based routing (email/SMS/both) using Twilio for SMS and SendGrid for email (planned). Includes TCPA compliance and graceful degradation for failures.
 - **CID Attachments**: For email client compatibility, enabling inline QR code display in welcome emails.
 - **Stripe Webhook Integration**: Handles `checkout.session.completed` events, creating orders with a sequential ID format (`{counter}-{year}`).
