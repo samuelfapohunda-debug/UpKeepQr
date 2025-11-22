@@ -8,13 +8,20 @@ import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
-import { Smartphone } from 'lucide-react';
+import { Smartphone, ShieldCheck } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useAuth } from '@/contexts/AuthContext';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
-const Onboarding: React.FC = () => {
+interface OnboardingProps {
+  adminMode?: boolean;
+}
+
+const Onboarding: React.FC<OnboardingProps> = ({ adminMode = false }) => {
   const [location, setLocation] = useLocation();
   const [match, params] = useRoute('/setup/:token');
+  const { user } = useAuth();
   
   const { toast } = useToast();
   
@@ -66,17 +73,29 @@ const Onboarding: React.FC = () => {
   const [qrAlreadyActivated, setQrAlreadyActivated] = useState(false);
 
   useEffect(() => {
+    // Skip token requirement if in admin mode
+    if (adminMode) {
+      setToken('admin-setup');
+      return;
+    }
+    
     const setupToken = params?.token;
     if (!setupToken) {
       setError('Invalid setup link');
     } else {
       setToken(setupToken);
     }
-  }, [params]);
+  }, [params, adminMode]);
 
   // Fetch customer data to pre-fill form when coming from a QR code purchase
   useEffect(() => {
     const fetchCustomerData = async () => {
+      // Skip pre-fill data fetch if in admin mode
+      if (adminMode) {
+        console.log('Admin mode: skipping customer data pre-fill');
+        return;
+      }
+      
       if (!token) {
         console.log('No token provided');
         return;
@@ -208,7 +227,7 @@ const Onboarding: React.FC = () => {
       return;
     }
 
-    if (!token) {
+    if (!token && !adminMode) {
       setError('Invalid setup token');
       return;
     }
@@ -217,73 +236,119 @@ const Onboarding: React.FC = () => {
     setError('');
 
     try {
-      // 1. Submit original onboarding data
-      const onboardingData: Record<string, string | boolean | number | undefined> = {
-        token,
-        zip: formData.zip,
-        smsOptIn: formData.smsOptIn,
-      };
+      if (adminMode) {
+        // ADMIN MODE: Direct household creation
+        const authToken = localStorage.getItem('token');
+        
+        // Use backend-compatible payload format (matching createHouseholdMutation in SetupFormsDashboard)
+        const adminData = {
+          adminCreated: true,
+          skipWelcomeEmail: true, // Admin creation skips welcome email by default
+          full_name: formData.fullName.trim(),
+          email: formData.email.trim().toLowerCase(),
+          phone: formData.phone,
+          zip: formData.zip.trim(),
+          home_type: formData.home_type,
+        };
 
-      if (formData.home_type) onboardingData.home_type = formData.home_type;
-      if (formData.sqft) onboardingData.sqft = formData.sqft;
-      if (formData.hvac_type) onboardingData.hvac_type = formData.hvac_type;
-      if (formData.water_heater) onboardingData.water_heater = formData.water_heater;
-      if (formData.roof_age_years) onboardingData.roof_age_years = formData.roof_age_years;
-      if (formData.email) onboardingData.email = formData.email;
+        const response = await fetch(`${API_BASE_URL}/api/setup/activate`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`,
+          },
+          body: JSON.stringify(adminData),
+        });
 
-      const setupResponse = await fetch(`${API_BASE_URL}/api/setup/activate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(onboardingData),
-      });
+        const result = await response.json();
 
-      const setupResult = await setupResponse.json();
+        if (!response.ok || !result.success) {
+          setError(result.error || 'Household creation failed');
+          toast({
+            title: "Error",
+            description: result.error || "Failed to create household.",
+            variant: "destructive",
+          });
+          setLoading(false);
+          return;
+        }
 
-      if (!setupResponse.ok || !setupResult.success) {
-        setError(setupResult.error || 'Setup activation failed');
-        setLoading(false);
-        return;
+        toast({
+          title: "Success!",
+          description: "Household created successfully.",
+        });
+
+        setLocation('/admin/setup-forms');
+      } else {
+        // CUSTOMER MODE: Regular QR code activation
+        // 1. Submit original onboarding data
+        const onboardingData: Record<string, string | boolean | number | undefined> = {
+          token,
+          zip: formData.zip,
+          smsOptIn: formData.smsOptIn,
+        };
+
+        if (formData.home_type) onboardingData.home_type = formData.home_type;
+        if (formData.sqft) onboardingData.sqft = formData.sqft;
+        if (formData.hvac_type) onboardingData.hvac_type = formData.hvac_type;
+        if (formData.water_heater) onboardingData.water_heater = formData.water_heater;
+        if (formData.roof_age_years) onboardingData.roof_age_years = formData.roof_age_years;
+        if (formData.email) onboardingData.email = formData.email;
+
+        const setupResponse = await fetch(`${API_BASE_URL}/api/setup/activate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(onboardingData),
+        });
+
+        const setupResult = await setupResponse.json();
+
+        if (!setupResponse.ok || !setupResult.success) {
+          setError(setupResult.error || 'Setup activation failed');
+          setLoading(false);
+          return;
+        }
+
+        // 2. Submit lead capture data
+        const leadData = {
+          fullName: formData.fullName.trim(),
+          email: formData.email.trim().toLowerCase(),
+          phone: formData.phone,
+          preferredContact: formData.preferredContact,
+          hearAboutUs: formData.hearAboutUs,
+          streetAddress: formData.streetAddress.trim(),
+          city: formData.city.trim(),
+          state: formData.state.trim().toUpperCase(),
+          zipCode: formData.zip.trim(),
+          propertyType: formData.propertyType,
+          homeType: formData.home_type,
+          interestType: formData.interestType,
+          needConsultation: formData.needConsultation,
+          isOwner: formData.isOwner,
+          activationCode: token,  // Fixed: Added activationCode
+          budgetRange: formData.budgetRange,
+          timelineToProceed: formData.timelineToProceed,
+          preferredContactTime: formData.preferredContactTime,
+          notes: formData.notes,
+        };
+
+        const leadResponse = await fetch(`${API_BASE_URL}/api/leads`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(leadData),
+        });
+
+        if (!leadResponse.ok) {
+          console.error('Lead capture failed, but continuing...');
+        }
+
+        toast({
+          title: "Success!",
+          description: "Your home has been registered successfully.",
+        });
+
+        setLocation('/dashboard');
       }
-
-      // 2. Submit lead capture data
-      const leadData = {
-        fullName: formData.fullName.trim(),
-        email: formData.email.trim().toLowerCase(),
-        phone: formData.phone,
-        preferredContact: formData.preferredContact,
-        hearAboutUs: formData.hearAboutUs,
-        streetAddress: formData.streetAddress.trim(),
-        city: formData.city.trim(),
-        state: formData.state.trim().toUpperCase(),
-        zipCode: formData.zip.trim(),
-        propertyType: formData.propertyType,
-        homeType: formData.home_type,
-        interestType: formData.interestType,
-        needConsultation: formData.needConsultation,
-        isOwner: formData.isOwner,
-        activationCode: token,  // Fixed: Added activationCode
-        budgetRange: formData.budgetRange,
-        timelineToProceed: formData.timelineToProceed,
-        preferredContactTime: formData.preferredContactTime,
-        notes: formData.notes,
-      };
-
-      const leadResponse = await fetch(`${API_BASE_URL}/api/leads`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(leadData),
-      });
-
-      if (!leadResponse.ok) {
-        console.error('Lead capture failed, but continuing...');
-      }
-
-      toast({
-        title: "Success!",
-        description: "Your home has been registered successfully.",
-      });
-
-      setLocation('/dashboard');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
       toast({
@@ -299,10 +364,37 @@ const Onboarding: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto">
+        {/* Admin Mode Badge */}
+        {adminMode && (
+          <Card className="mb-6 border-amber-500 bg-amber-50">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="h-6 w-6 text-amber-600" />
+                <CardTitle className="text-amber-900">Admin Mode - Manual Setup Creation</CardTitle>
+              </div>
+              <CardDescription className="text-amber-700">
+                <div className="space-y-1">
+                  <p>Creating household manually. No QR code activation required.</p>
+                  <p className="text-xs">
+                    📋 Total: 32 fields available | ⭐ Required: 8-9 fields (marked with *)
+                  </p>
+                </div>
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        )}
+
         <div className="bg-white rounded-lg shadow-xl p-8">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">Complete Your Home Setup</h1>
-            <p className="mt-2 text-gray-600">Help us understand your home and needs better</p>
+            <h1 className="text-3xl font-bold text-gray-900">
+              {adminMode ? "Create New Household" : "Complete Your Home Setup"}
+            </h1>
+            <p className="mt-2 text-gray-600">
+              {adminMode 
+                ? "Enter customer information to create household record"
+                : "Help us understand your home and needs better"
+              }
+            </p>
           </div>
 
           {/* Already Activated Warning */}

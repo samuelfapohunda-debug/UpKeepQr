@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { Link } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth, getAuthToken } from "@/contexts/AuthContext";
@@ -321,13 +322,12 @@ export default function SetupFormsDashboard() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Button 
-              onClick={() => setShowCreateDialog(true)} 
-              data-testid="button-create-household"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Create Household
-            </Button>
+            <Link href="/setup/new">
+              <Button data-testid="button-create-household">
+                <Plus className="h-4 w-4 mr-2" />
+                Create Household
+              </Button>
+            </Link>
             <Button variant="outline" onClick={logout} data-testid="button-logout">
               Logout
             </Button>

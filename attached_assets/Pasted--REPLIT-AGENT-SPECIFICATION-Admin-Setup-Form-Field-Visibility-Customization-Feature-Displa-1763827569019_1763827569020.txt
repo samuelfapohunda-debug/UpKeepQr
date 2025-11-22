@@ -1,0 +1,676 @@
+# REPLIT AGENT SPECIFICATION: Admin Setup Form - Field Visibility Customization
+
+**Feature:** Display Specific Fields on Setup Form for Admin  
+**Priority:** HIGH (Admin UX)  
+**Estimated Time:** 1-2 hours  
+**Complexity:** MEDIUM  
+**Related:** Admin Setup Access Specification
+
+---
+
+## 1. OBJECTIVE
+
+Customize the Setup/Onboarding form to show only relevant fields when admin accesses `/setup/new` for creating manual household setups.
+
+---
+
+## 2. CLARIFYING QUESTIONS (CRITICAL - MUST ANSWER)
+
+### Question 1: Which Fields Should Admin See?
+
+**Option A: Show ONLY Essential Fields (Recommended)**
+```
+Personal Detail:
+✅ Name *
+✅ Phone *
+✅ Email *
+✅ Street Address *
+✅ City *
+✅ State *
+✅ ZIP Code *
+❌ Preferred Contact Method (hide)
+❌ Preferred Contact Time (hide)
+❌ How did you hear about us? (hide)
+❌ Notification Preference (hide)
+❌ SMS Consent (hide)
+
+Home Detail:
+✅ Home Type
+✅ HVAC Type
+✅ Year Built
+❌ Everything else (hide)
+
+Interests & Needs:
+❌ Hide entire section
+```
+
+**Option B: Show ALL Fields (Current Behavior)**
+```
+Admin sees exact same form as customer
+All 32 fields visible
+```
+
+**Option C: Show Core + Some Optional**
+```
+Personal Detail: All fields
+Home Detail: Show but pre-collapsed
+Interests & Needs: Hide completely
+```
+
+**Option D: Custom Minimal Admin Form**
+```
+Only show:
+- Name *
+- Email *
+- Phone *
+- ZIP Code *
+- Home Type
+- HVAC Type
+
+(6 fields total - super quick entry)
+```
+
+**My Recommendation:** **Option D (Custom Minimal)** - fastest for admin, captures essentials
+
+---
+
+### Question 2: Should Admin See Different Section Titles?
+
+**Option A: Same Titles as Customer**
+```
+1. Personal Detail
+2. Home Detail
+3. Interests & Needs
+```
+
+**Option B: Admin-Specific Titles**
+```
+1. Customer Information
+2. Property Details
+3. (hidden)
+```
+
+**My Recommendation:** **Option A** (Keep same) - consistency
+
+---
+
+### Question 3: Should Optional Sections Be Pre-Collapsed for Admin?
+
+**Option A: All sections expanded (easy to see all fields)**
+**Option B: Optional sections collapsed (cleaner, faster)**
+**Option C: All collapsed except Personal Detail**
+
+**My Recommendation:** **Option B** - admin can expand if needed
+
+---
+
+### Question 4: Should Some Fields Have Different Defaults for Admin?
+
+**Example:**
+```
+Customer mode: Notification Preference defaults to "Email only"
+Admin mode: Notification Preference defaults to "None" or hidden
+
+Customer mode: All sections expanded
+Admin mode: Only required section expanded
+```
+
+**Your preference?**
+
+---
+
+### Question 5: Should Admin Form Indicate Which Fields Are Pre-Filled in Customer Mode?
+
+**Option A: Show indicator**
+```
+Name * (auto-filled for customers)
+Email * (auto-filled for customers)
+```
+
+**Option B: No indicator**
+```
+Name *
+Email *
+```
+
+**My Recommendation:** **Option B** - keeps form clean
+
+---
+
+## 3. CONFIRMED SPECIFICATIONS ✅
+
+**You have selected: Option B - Show ALL 32 fields to admin**
+
+### Admin Form Will Display:
+
+**SECTION 1: Personal Detail** (11 fields)
+- ✅ Name *
+- ✅ Phone Number *
+- ✅ Email *
+- ✅ Street Address *
+- ✅ Address Line 2
+- ✅ City *
+- ✅ State *
+- ✅ ZIP Code *
+- ✅ Preferred Contact Method
+- ✅ Preferred Contact Time
+- ✅ How did you hear about us?
+- ✅ Notification Preference *
+- ✅ SMS Consent (conditional)
+
+**SECTION 2: Home Detail** (11 fields)
+- ✅ Home Type
+- ✅ Square Footage
+- ✅ HVAC Type
+- ✅ Water Heater Type
+- ✅ Roof Age (Years)
+- ✅ Are you the homeowner?
+- ✅ Year Built
+- ✅ Heat Pump
+- ✅ Lot Size
+- ✅ Flooring Type
+- ✅ Pool/Spa
+
+**SECTION 3: Interests & Needs** (10 fields)
+- ✅ What are you interested in?
+- ✅ Would you like a Consultation?
+- ✅ Budget Range
+- ✅ Timeline to Proceed
+- ✅ Additional Notes
+
+**Total: All 32 fields visible to admin (same as customer)**
+
+### Key Differences:
+
+| Aspect | Customer Mode | Admin Mode |
+|--------|---------------|------------|
+| Fields Shown | All 32 | All 32 ✅ |
+| Pre-fill Data | Yes (from order) | No (empty form) |
+| Required Fields | 8-9 | 8-9 |
+| Form Appearance | Normal | Admin badge shown |
+| Welcome Email | Sent | Not sent |
+
+### Implementation Approach:
+
+Since admin sees the same form as customers, we only need:
+1. ✅ Show admin badge at top
+2. ✅ Form starts empty (no pre-fill)
+3. ✅ Same validation rules
+4. ✅ Different submission logic (no email, tracking)
+
+**This is the simplest implementation!**
+
+---
+
+## 4. IMPLEMENTATION PLAN
+
+**File:** `client/src/pages/Onboarding.tsx`
+
+```typescript
+export default function Onboarding({ adminMode = false }: { adminMode?: boolean }) {
+  // ... existing state ...
+
+  // Define which fields to show based on mode
+  const fieldVisibility = {
+    // Personal Detail
+    addressLine2: !adminMode, // Hide address line 2 for admin
+    city: !adminMode, // Hide city for admin
+    state: !adminMode, // Hide state for admin
+    preferredContact: !adminMode, // Hide for admin
+    preferredContactTime: !adminMode, // Hide for admin
+    referralSource: !adminMode, // Hide for admin
+    notificationPreference: !adminMode, // Hide for admin
+    smsConsent: !adminMode, // Hide for admin
+    
+    // Home Detail - show only key fields for admin
+    squareFootage: !adminMode,
+    waterHeater: !adminMode,
+    roofAge: !adminMode,
+    isOwner: !adminMode,
+    yearBuilt: !adminMode, // Keep this one
+    
+    // Interests & Needs - hide entire section for admin
+    interestsSection: !adminMode,
+  };
+
+  return (
+    // ... JSX with conditional rendering ...
+  );
+}
+```
+
+### Approach B: Separate Admin Form Component
+
+**Files:**
+- `client/src/pages/Onboarding.tsx` (customer form)
+- `client/src/pages/AdminOnboarding.tsx` (admin form - NEW)
+
+**Route:**
+```typescript
+<Route path="/setup/new">
+  <ProtectedRoute requireAdmin>
+    <AdminOnboarding /> {/* Separate component */}
+  </ProtectedRoute>
+</Route>
+```
+
+**My Recommendation:** **Approach A** (Conditional rendering) - DRY principle
+
+---
+
+## 5. DETAILED IMPLEMENTATION (Conditional Rendering)
+
+### STEP 1: Update Onboarding Component Structure
+
+## 4. IMPLEMENTATION PLAN
+
+Since admin sees the SAME form as customers, implementation is very simple:
+
+### What Changes:
+1. ✅ Admin badge displayed at top
+2. ✅ Form starts empty (no pre-fill)
+3. ✅ Section titles can optionally stay the same
+4. ✅ All 32 fields visible and editable
+5. ✅ Same validation rules apply
+
+### What Stays the Same:
+- ✅ Form structure (3 sections)
+- ✅ Field list (all 32 fields)
+- ✅ Validation (same required fields)
+- ✅ Layout and styling
+
+### Backend Changes:
+- ✅ Admin submission skips welcome email
+- ✅ Tracks createdBy = 'admin'
+- ✅ No QR code association
+
+**This is already implemented in the Security Hardened Admin Setup spec!**
+
+---
+
+## 5. SIMPLIFIED IMPLEMENTATION
+
+### Current State (Already Working):
+
+**File:** `client/src/pages/Onboarding.tsx`
+
+The form already exists with all 32 fields. The only visual difference for admin:
+
+```typescript
+{/* Admin Mode Badge - Already implemented */}
+{adminMode && (
+  <div className="mb-6 p-4 bg-amber-50 border-2 border-amber-500 rounded-lg">
+    <h3 className="font-bold">Admin Mode - Manual Setup Creation</h3>
+    <p className="text-sm">
+      Creating household manually. No QR code activation required.
+    </p>
+  </div>
+)}
+
+{/* Rest of form - UNCHANGED */}
+<form onSubmit={handleSubmit}>
+  {/* Section 1: Personal Detail - All 11 fields */}
+  {/* Section 2: Home Detail - All 11 fields */}
+  {/* Section 3: Interests & Needs - All 10 fields */}
+</form>
+```
+
+### Optional Enhancement: Show Field Count
+
+**Add helper text for admin:**
+
+```typescript
+{adminMode && (
+  <CardDescription>
+    Complete form - all 32 fields available. 
+    Required fields: 8-9 (marked with *)
+  </CardDescription>
+)}
+```
+
+---
+
+## 6. REPLIT AGENT PROMPT ✅ (Simplified Version)
+
+**Since you want all fields shown, the admin form is already complete!**
+
+**The admin setup access spec already implements this. However, if you want to add a field count indicator:**
+
+```
+Add field count indicator to admin setup form for better UX.
+
+OBJECTIVE:
+When admin accesses /setup/new, show a helpful message indicating total fields available.
+
+IMPLEMENTATION:
+File: client/src/pages/Onboarding.tsx
+
+Update the CardDescription section to show field information for admin:
+
+FIND THIS CODE:
+```typescript
+<CardHeader>
+  <CardTitle>
+    {adminMode ? "Create New Household" : "Complete Your Setup"}
+  </CardTitle>
+  <CardDescription>
+    {adminMode 
+      ? "Enter customer information to create household record"
+      : "Help us understand your home and needs better"
+    }
+  </CardDescription>
+</CardHeader>
+```
+
+REPLACE WITH:
+```typescript
+<CardHeader>
+  <CardTitle>
+    {adminMode ? "Create New Household" : "Complete Your Setup"}
+  </CardTitle>
+  <CardDescription>
+    {adminMode 
+      ? (
+          <div className="space-y-1">
+            <p>Complete household setup form with all available fields.</p>
+            <p className="text-xs text-muted-foreground">
+              📋 Total: 32 fields available | ⭐ Required: 8-9 fields (marked with *)
+            </p>
+          </div>
+        )
+      : "Help us understand your home and needs better"
+    }
+  </CardDescription>
+</CardHeader>
+```
+
+EXPECTED RESULT:
+Admin sees message: "Complete household setup form with all available fields."
+Sub-text: "📋 Total: 32 fields available | ⭐ Required: 8-9 fields (marked with *)"
+
+This provides context that admin has full form access.
+
+TESTING:
+1. Login as admin
+2. Navigate to /setup/new
+3. Verify message shows field count
+4. Verify all 32 fields visible
+5. Verify can fill and submit form
+```
+
+---
+
+## 7. ALTERNATIVE: NO CHANGES NEEDED
+
+**Since the admin form already shows all fields by default, you may not need any additional implementation!**
+
+The existing admin setup access spec (Security Hardened version) already:
+- ✅ Shows all 32 fields
+- ✅ Displays admin badge
+- ✅ Starts with empty form
+- ✅ Handles submission correctly
+- ✅ Skips welcome email
+- ✅ Tracks admin creation
+
+**Current behavior is exactly what you requested: Show all 32 fields ✅**
+
+---
+
+## 8. VISUAL REFERENCE
+
+### Admin Form View (with all fields):
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ 🛡️ Admin Mode - Manual Setup Creation                      │
+│ Creating household manually. No QR code required.           │
+└─────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────┐
+│ Create New Household                                        │
+│ Enter customer information to create household record       │
+│ 📋 Total: 32 fields | ⭐ Required: 8-9 fields              │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│ 1️⃣ Personal Detail                          * Required     │
+│ ──────────────────────────────────────────────────────────  │
+│                                                             │
+│ Name *                 [_________________]                  │
+│ Phone Number *         [_________________]                  │
+│ Email *                [_________________]                  │
+│ Street Address *       [_________________]                  │
+│ Address Line 2         [_________________]                  │
+│ City *                 [_________________]                  │
+│ State *                [__]                                 │
+│ ZIP Code *             [_____]                              │
+│ Preferred Contact      [Email ▼]                            │
+│ Preferred Time         [Select... ▼]                        │
+│ How did you hear?      [Select... ▼]                        │
+│                                                             │
+│ Notification Preference: * Required                         │
+│ ○ Email only  ○ SMS only  ○ Both Email and SMS             │
+│                                                             │
+│ ☐ I consent to receive SMS notifications                   │
+│                                                             │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│ 2️⃣ Home Detail                              Optional      │
+│ ──────────────────────────────────────────────────────────  │
+│                                                             │
+│ Home Type              [Single Family ▼]                    │
+│ Square Footage         [_________________]                  │
+│ HVAC Type              [Central AC ▼]                       │
+│ Water Heater           [Tank (Gas) ▼]                       │
+│ Roof Age (Years)       [___]                                │
+│ Are you the owner?     ○ Yes  ○ No                         │
+│ Year Built             [____]                               │
+│ [... 4 more fields ...]                                     │
+│                                                             │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│ 3️⃣ Interests & Needs                       Optional       │
+│ ──────────────────────────────────────────────────────────  │
+│                                                             │
+│ What interests you?    ○ Products  ○ Rental  ○ Services   │
+│ Need consultation?     ○ Yes  ○ No                         │
+│ Budget Range           [Select... ▼]                        │
+│ Timeline               [Select... ▼]                        │
+│ Notes                  [_____________________]              │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+
+                    [Create Household]
+```
+
+---
+
+## 9. SUMMARY
+
+### What You Requested:
+✅ **Show all 32 fields to admin** - CONFIRMED
+
+### Implementation Status:
+✅ **Already implemented** in Security Hardened Admin Setup spec
+
+### Optional Enhancement Available:
+- Add field count indicator (32 total, 8-9 required)
+- See Section 6 for simple prompt
+
+### No Code Changes Required:
+The existing implementation already shows all fields to admin!
+
+---
+
+**Status:** ✅ REQUIREMENT ALREADY IMPLEMENTED  
+**Optional Enhancement:** Field count indicator available (5 minutes)  
+**Last Updated:** 2025-11-11
+```
+
+---
+
+## 6. REPLIT AGENT PROMPT
+
+**IMPORTANT: Before providing the final prompt, I need you to answer the 5 questions in Section 2!**
+
+**For now, here's a DRAFT prompt based on my recommendations:**
+
+```
+Customize admin setup form to show minimal fields for quick household creation.
+
+OBJECTIVE:
+When admin accesses /setup/new, show simplified form with only essential fields.
+
+REQUIREMENTS:
+
+ADMIN FORM FIELDS (Minimal - 6 fields total):
+Section 1 - Customer Information:
+✅ Name * (required)
+✅ Email * (required)  
+✅ Phone * (required)
+✅ ZIP Code * (required)
+
+Section 2 - Property Details (optional, collapsed by default):
+✅ Home Type (optional)
+✅ HVAC Type (optional)
+
+HIDDEN FOR ADMIN:
+❌ Full street address (only ZIP required)
+❌ City, State (derived from ZIP if needed)
+❌ Address Line 2
+❌ Preferred Contact Method/Time
+❌ How did you hear about us
+❌ Notification Preference
+❌ SMS Consent
+❌ All extra Home Detail fields (sqft, water heater, roof age, etc.)
+❌ Entire Interests & Needs section
+
+IMPLEMENTATION:
+File: client/src/pages/Onboarding.tsx
+
+Add conditional rendering based on adminMode prop:
+
+```typescript
+export default function Onboarding({ adminMode = false }: { adminMode?: boolean }) {
+  // Show field helper
+  const showForAdmin = (field: string) => {
+    if (!adminMode) return true; // Customer: show all
+    
+    // Admin: show only these
+    const adminFields = ['fullName', 'email', 'phone', 'postalCode', 'homeType', 'hvacType'];
+    return adminFields.includes(field);
+  };
+
+  return (
+    <div>
+      {/* Admin badge */}
+      {adminMode && (
+        <div className="mb-6 p-4 bg-amber-50 border-2 border-amber-500 rounded-lg">
+          <h3 className="font-bold">Quick Setup Mode</h3>
+          <p className="text-sm">Simplified form - only essential fields shown</p>
+        </div>
+      )}
+
+      {/* Section 1: Customer Information */}
+      <div>
+        <h2>{adminMode ? "Customer Information" : "Personal Detail"}</h2>
+        
+        {/* Always show */}
+        <Input name="fullName" label="Name *" required />
+        <Input name="email" label="Email *" type="email" required />
+        <Input name="phone" label="Phone *" type="tel" required />
+        <Input name="postalCode" label="ZIP Code *" required maxLength={5} />
+        
+        {/* Customer only */}
+        {!adminMode && (
+          <>
+            <Input name="streetAddress" label="Street Address *" required />
+            <Input name="city" label="City *" required />
+            <Input name="state" label="State *" required />
+            <Select name="preferredContact" label="Preferred Contact Method" />
+            {/* ... more customer fields */}
+          </>
+        )}
+      </div>
+
+      {/* Section 2: Property Details (optional) */}
+      <div>
+        <button onClick={() => setShowHomeDetails(!showHomeDetails)}>
+          <h2>{adminMode ? "Property Details (Optional)" : "Home Detail"}</h2>
+        </button>
+        
+        {showHomeDetails && (
+          <>
+            <Select name="homeType" label="Home Type" />
+            <Select name="hvacType" label="HVAC Type" />
+            
+            {/* Customer only */}
+            {!adminMode && (
+              <>
+                <Input name="sqft" label="Square Footage" />
+                {/* ... more customer fields */}
+              </>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* Section 3: Interests & Needs (customer only) */}
+      {!adminMode && (
+        <div>
+          {/* Existing interests section */}
+        </div>
+      )}
+
+      <Button type="submit">
+        {adminMode ? "Create Household" : "Complete Setup"}
+      </Button>
+    </div>
+  );
+}
+```
+
+VALIDATION:
+- Admin form: Require only Name, Email, Phone, ZIP (4 fields)
+- Customer form: Require all current required fields (8-9 fields)
+
+TESTING:
+1. Login as admin
+2. Navigate to /setup/new  
+3. Verify only 6 fields visible (4 required + 2 optional collapsed)
+4. Verify can submit with just 4 fields
+5. Customer QR scan shows full form
+
+EXPECTED RESULT:
+Admin sees minimal quick-entry form, customers see full detailed form.
+```
+
+---
+
+**Status:** ✅ CONFIRMED - SHOW ALL 32 FIELDS  
+**Implementation:** Already complete in Security Hardened spec  
+**Optional Enhancement:** Field count indicator (see Section 6)  
+**Priority:** LOW (Already working)  
+**Estimated Time:** 0 minutes (no changes) or 5 minutes (add indicator)
+
+---
+
+## QUICK SUMMARY
+
+### What You Requested:
+✅ **Admin sees all 32 fields** (same as customer)
+
+### Current Status:
+✅ **Already implemented** - Admin form shows all fields by default
+
+### Only Difference:
+- ✅ Admin badge at top ("Admin Mode")
+- ✅ Form starts empty (no pre-fill)
+- ✅ Backend skips welcome email
+- ✅ Backend tracks createdBy = 'admin'
+
+### Optional Enhancement:
+- Add field count helper text
+- Shows "32 fields available, 8-9 required"
+- 5-minute implementation
+
+**No code changes required unless you want the helper text!** 🎉
