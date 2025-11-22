@@ -84,8 +84,8 @@ export const householdSchema = z.object({
   updatedAt: z.date().optional(),
 });
 
-export type Household = z.infer<typeof householdSchema>;
-export type InsertHousehold = z.infer<typeof householdSchema>;
+export type HouseholdFirebase = z.infer<typeof householdSchema>;
+export type InsertHouseholdFirebase = z.infer<typeof householdSchema>;
 
 // Task schema for Firebase
 export const taskSchema = z.object({
