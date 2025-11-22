@@ -239,15 +239,14 @@ const Onboarding: React.FC<OnboardingProps> = ({ adminMode = false }) => {
     try {
       if (adminMode) {
         // ADMIN MODE: Direct household creation
-        // Use backend-compatible payload format (matching createHouseholdMutation in SetupFormsDashboard)
+        // Security: Backend derives admin mode from authentication, not from client flag
         const adminData = {
-          adminCreated: true,
           skipWelcomeEmail: true, // Admin creation skips welcome email by default
-          full_name: formData.fullName.trim(),
+          fullName: formData.fullName.trim(),
           email: formData.email.trim().toLowerCase(),
           phone: formData.phone,
           zip: formData.zip.trim(),
-          home_type: formData.home_type,
+          homeType: formData.home_type,
         };
 
         const response = await apiRequest("POST", "/api/setup/activate", adminData);
@@ -279,11 +278,11 @@ const Onboarding: React.FC<OnboardingProps> = ({ adminMode = false }) => {
           smsOptIn: formData.smsOptIn,
         };
 
-        if (formData.home_type) onboardingData.home_type = formData.home_type;
+        if (formData.home_type) onboardingData.homeType = formData.home_type;
         if (formData.sqft) onboardingData.sqft = formData.sqft;
-        if (formData.hvac_type) onboardingData.hvac_type = formData.hvac_type;
-        if (formData.water_heater) onboardingData.water_heater = formData.water_heater;
-        if (formData.roof_age_years) onboardingData.roof_age_years = formData.roof_age_years;
+        if (formData.hvac_type) onboardingData.hvacType = formData.hvac_type;
+        if (formData.water_heater) onboardingData.waterHeater = formData.water_heater;
+        if (formData.roof_age_years) onboardingData.roofAgeYears = formData.roof_age_years;
         if (formData.email) onboardingData.email = formData.email;
 
         const setupResponse = await fetch(`${API_BASE_URL}/api/setup/activate`, {

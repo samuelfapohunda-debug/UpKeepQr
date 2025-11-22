@@ -243,12 +243,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         state,
         postalCode,
         zip, // Legacy support
-        home_type, 
+        homeType, 
         sqft, 
-        hvac_type, 
+        hvacType, 
         heatPump,
-        water_heater, 
-        roof_age_years,
+        waterHeater, 
+        roofAgeYears,
         isOwner,
         // Interest details
         interestType,
@@ -412,15 +412,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           city: city || '',
           state: state || '',
           zip: zipCode || '',
-          homeType: home_type as 'single_family' | 'condo' | 'townhouse' | 'apartment' | 'mobile' | 'other',
+          homeType: homeType as 'single_family' | 'condo' | 'townhouse' | 'apartment' | 'mobile' | 'other',
           country: country || 'US',
           preferredContact,
           preferredContactTime,
           sqft,
-          hvacType: hvac_type,
+          hvacType: hvacType,
           heatPump,
-          waterHeater: water_heater,
-          roofAgeYears: roof_age_years,
+          waterHeater: waterHeater,
+          roofAgeYears: roofAgeYears,
           interestType,
           needConsultation,
           budgetRange,
@@ -554,7 +554,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         eventType: 'activated',
         eventData: JSON.stringify({ 
           zip, 
-          home_type, 
+          homeType, 
           climate_zone: climateZone,
           tasks_created: schedules.length,
           welcome_email_sent: shouldSendWelcomeEmail,
@@ -591,7 +591,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     await createAuditLog(req, '/api/setup/preview');
     try {
       const validatedData = setupPreviewSchema.parse(req.body);
-      const { zip, home_type } = validatedData;
+      const { zip, homeType } = validatedData;
 
       // Get climate zone and generate schedule
       const climateZone = getClimateZone(zip);
@@ -601,7 +601,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const previewHousehold: ClimateHousehold = {
         id: 'preview',
         zip,
-        homeType: home_type,
+        homeType: homeType,
         climateZone,
       };
       const scheduledTasks = buildInitialSchedule(previewHousehold, coreTasks);
