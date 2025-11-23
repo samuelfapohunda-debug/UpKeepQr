@@ -12,6 +12,7 @@ import magnetOrdersRoutes from './magnet-orders.js';
 import setupFormsRoutes from './setup-forms.js';
 import publicRoutes from './public.js';
 import contactRoutes from './contact.js';
+import proRequestsRoutes from './proRequests.js';
 
 export function registerRoutes(app: Express) {
   app.use('/health', healthRoutes);
@@ -25,6 +26,7 @@ export function registerRoutes(app: Express) {
   app.use('/api/webhook', webhookRoutes);
   app.use('/api/leads', leadsRoutes);
   app.use('/api/setup', setupRoutes);
+  app.use('/api/pro-requests', proRequestsRoutes);  // Professional service requests
   app.use('/api', contactRoutes);  // Contact form
   app.use('/api', publicRoutes);  // Customer data lookup and QR code download
   
@@ -39,6 +41,7 @@ export function registerRoutes(app: Express) {
   console.log('✅ Webhook routes registered at /api/webhook');
   console.log('✅ Leads routes registered at /api/leads');
   console.log('✅ Setup routes registered at /api/setup');
+  console.log('✅ Pro requests routes registered at /api/pro-requests');
   console.log('✅ Contact routes registered at /api/contact');
   console.log('🚀 All routes setup complete');
 }
