@@ -3,6 +3,7 @@ import rateLimit from "express-rate-limit";
 import sgMail from "@sendgrid/mail";
 import { storage } from "../../storage.js";
 import { createProRequestSchema } from "@shared/schema";
+import { createAuditLog } from "./utils.js";
 
 const router = Router();
 
@@ -193,6 +194,14 @@ This is an automated notification from UpKeepQR.
  * Create a new professional service request
  */
 router.post("/", proRequestLimiter, async (req: Request, res: Response) => {
+  // Best-effort audit logging (don't abort request if logging fails)
+  try {
+    await createAuditLog(req, '/api/pro-requests');
+  } catch (auditError) {
+    console.warn('⚠️ Audit logging failed for pro-request:', auditError);
+    // Continue processing request even if audit logging fails
+  }
+  
   try {
     // Validate request body
     const validatedData = createProRequestSchema.parse(req.body);
