@@ -1,7 +1,7 @@
 import { Router, Request, Response } from "express";
 import { z } from "zod";
 import { getUserFromAuth } from "../../middleware/auth";
-import { storage } from "../index";
+import { storage } from "../../storage";
 import { nanoid } from "nanoid";
 
 const router = Router();
