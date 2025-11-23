@@ -15,6 +15,13 @@ export async function apiRequest(
   // Get JWT token from localStorage
   const token = localStorage.getItem('token');
   
+  console.log('🔍 apiRequest DEBUG:', { 
+    method, 
+    url, 
+    hasToken: !!token,
+    tokenPreview: token ? token.substring(0, 20) + '...' : 'none'
+  });
+  
   // Build headers with Content-Type and Authorization
   const headers: Record<string, string> = {};
   if (data) {
@@ -22,7 +29,12 @@ export async function apiRequest(
   }
   if (token) {
     headers["Authorization"] = `Bearer ${token}`;
+    console.log('✅ Authorization header added to request');
+  } else {
+    console.warn('⚠️ No token found in localStorage - Authorization header NOT added');
   }
+  
+  console.log('📤 Request headers:', headers);
   
   const res = await fetch(url, {
     method,
