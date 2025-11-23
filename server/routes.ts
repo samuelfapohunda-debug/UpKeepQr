@@ -225,6 +225,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/setup/activate", publicApiLimiter, async (req, res) => {
     await createAuditLog(req, '/api/setup/activate');
     try {
+      // DEBUG: Check if token field is actually optional in the loaded schema
+      console.log('🔍 Schema token field:', setupActivateSchema.shape.token._def);
+      console.log('🔍 Is optional?:', setupActivateSchema.shape.token.isOptional());
+      
       const validatedData = setupActivateSchema.parse(req.body);
       const { 
         token, 
