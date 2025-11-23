@@ -1,13 +1,13 @@
 import { Router, Request, Response } from "express";
 import { z } from "zod";
+import { getUserFromAuth } from "../../middleware/auth";
 
 const router = Router();
 
-// Validation schema for activation
-// NOTE: token is optional to support admin-created households (no QR code)
-const activateSchema = z.object({
-  token: z.string().optional(),  // Optional for admin mode
-  zip: z.string().min(5).max(10).optional(),  // Also optional for admin
+// Base validation schema (all fields optional initially)
+const baseActivateSchema = z.object({
+  token: z.string().optional(),
+  zip: z.string().min(5).max(10).optional(),
   home_type: z.string().optional(),
   sqft: z.number().optional(),
   hvac_type: z.string().optional(),
@@ -19,8 +19,22 @@ const activateSchema = z.object({
 router.post("/activate", async (req: Request, res: Response) => {
   try {
     console.log("📥 Received setup activation request:", req.body);
-    console.log("📋 Headers:", req.headers);
-    const validated = activateSchema.safeParse(req.body);
+    
+    // Check if user is authenticated as admin
+    const authUser = await getUserFromAuth(req);
+    const isAdmin = authUser && authUser.role === 'admin';
+    const allowAdminCreation = process.env.ALLOW_ADMIN_SETUP_CREATION === 'true';
+    
+    // Admin mode is only enabled if:
+    // 1. User is authenticated as admin
+    // 2. Feature flag allows it
+    // 3. No token provided (admin creates without QR)
+    const isAdminMode = isAdmin && allowAdminCreation && !req.body.token;
+    
+    console.log(`🔐 Authentication check: ${isAdminMode ? 'Admin mode' : 'Customer mode'}`);
+    
+    // Validate base schema first
+    const validated = baseActivateSchema.safeParse(req.body);
 
     if (!validated.success) {
       console.warn("❌ Validation failed:", validated.error.errors);
@@ -31,6 +45,21 @@ router.post("/activate", async (req: Request, res: Response) => {
     }
 
     const data = validated.data;
+    
+    // CONDITIONAL VALIDATION: Require token for non-admin users
+    if (!isAdminMode && !data.token) {
+      console.warn("❌ Token required for customer activation");
+      return res.status(400).json({
+        error: "Invalid data",
+        details: [{
+          code: "invalid_type",
+          expected: "string",
+          received: "undefined",
+          path: ["token"],
+          message: "Token is required for customer activation"
+        }]
+      });
+    }
 
     console.log("✅ Setup activation received:", {
       token: data.token,

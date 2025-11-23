@@ -31,7 +31,13 @@ The platform uses JWT-based authentication for admin access, with signed tokens 
 
 **Schema Consistency**: All API validation schemas use camelCase field naming (homeType, hvacType, waterHeater, roofAgeYears) for consistency between client and server. Both admin and customer activation flows send matching camelCase payloads.
 
-**Zod Validation Pattern**: For optional fields in shared schemas, use `.optional()` without chaining `.min()` constraints. Pattern `.string().min(1).optional()` incorrectly validates min constraint on undefined values. Correct pattern: `.string().optional()`. The `token` field in `setupActivateSchema` is optional to support both admin-created households (no token) and customer QR activations (with token).
+**Zod Validation Pattern**: For optional fields in shared schemas, use `.optional()` without chaining `.min()` constraints. Pattern `.string().min(1).optional()` incorrectly validates min constraint on undefined values. Correct pattern: `.string().optional()`.
+
+**Conditional Token Validation**: The `token` field uses conditional validation based on authentication:
+- **Customers (via QR code)**: Token is **required** - must scan QR code with embedded token
+- **Admins (via `/setup/new`)**: Token is **optional** - can create households manually without QR codes
+- Implementation: `server/src/routes/setup.ts` checks authentication status and enforces token requirement for non-admin users
+- Security: Admin mode requires JWT authentication (`role === 'admin'`) AND `ALLOW_ADMIN_SETUP_CREATION=true` environment variable
 
 ## UI/UX Decisions
 The platform uses shadcn/ui and Tailwind CSS for a consistent and modern design. It leverages Radix UI for accessible headless components and Lucide React for iconography.
