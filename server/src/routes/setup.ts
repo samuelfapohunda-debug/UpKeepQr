@@ -19,11 +19,22 @@ const baseActivateSchema = z.object({
 router.post("/activate", async (req: Request, res: Response) => {
   try {
     console.log("📥 Received setup activation request:", req.body);
+    console.log("🔑 Authorization header:", req.headers.authorization ? "Present" : "Missing");
     
     // Check if user is authenticated as admin
     const authUser = await getUserFromAuth(req);
+    console.log("👤 Authenticated user:", authUser ? `${authUser.email} (${authUser.role})` : "None");
+    
     const isAdmin = authUser && authUser.role === 'admin';
     const allowAdminCreation = process.env.ALLOW_ADMIN_SETUP_CREATION === 'true';
+    const hasToken = !!req.body.token;
+    
+    console.log("🔍 Admin check breakdown:", {
+      isAdmin,
+      allowAdminCreation,
+      hasToken,
+      wouldBeAdminMode: isAdmin && allowAdminCreation && !hasToken
+    });
     
     // Admin mode is only enabled if:
     // 1. User is authenticated as admin
