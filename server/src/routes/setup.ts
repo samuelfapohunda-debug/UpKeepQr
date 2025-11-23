@@ -4,10 +4,11 @@ import { z } from "zod";
 const router = Router();
 
 // Validation schema for activation
+// NOTE: token is optional to support admin-created households (no QR code)
 const activateSchema = z.object({
-  token: z.string().min(1),
-  zip: z.string().min(5).max(10),
-  home_type: z.string().optional(),  // Fixed: Made optional
+  token: z.string().optional(),  // Optional for admin mode
+  zip: z.string().min(5).max(10).optional(),  // Also optional for admin
+  home_type: z.string().optional(),
   sqft: z.number().optional(),
   hvac_type: z.string().optional(),
   water_heater: z.string().optional(),
