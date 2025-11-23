@@ -28,6 +28,7 @@ import {
   orderMagnetShipmentsTable,
   orderMagnetAuditEventsTable,
   contactMessagesTable,
+  householdsTable,
   COLLECTIONS,
   timestampToDate 
 } from "@shared/schema";
@@ -66,13 +67,19 @@ export interface IStorage {
   getMagnetById(id: string): Promise<Magnet | undefined>;
 
   // Household methods
-  createHousehold(household: InsertHousehold): Promise<Household>;
+  createHousehold(household: InsertHousehold, trx?: any): Promise<Household>;
   getHousehold(id: string): Promise<Household | undefined>;
   getHouseholdByToken(magnetToken: string): Promise<Household | undefined>;
   getHouseholdsByAgent(agentId: string): Promise<Household[]>;
   // Additional household methods
   updateHousehold(id: string, data: Partial<Household>): Promise<Household | undefined>;
   getActivatedHouseholdsByAgentId(agentId: string): Promise<Household[]>;
+  getAllHouseholds(filters?: { 
+    setupStatus?: string; 
+    createdBy?: string;
+    limit?: number; 
+    offset?: number; 
+  }): Promise<{ households: Household[]; total: number }>;
 
   // Task methods
   createTask(task: InsertTask): Promise<Task>;
@@ -322,20 +329,53 @@ export class FirebaseStorage implements IStorage {
     }
   }
 
-  // Household methods
-  async createHousehold(household: InsertHousehold): Promise<Household> {
-    const id = household.id || uuidv4();
+  // Household methods (PostgreSQL)
+  async createHousehold(household: InsertHousehold, trx?: any): Promise<Household> {
+    const dbConnection = trx || db;
+    const id = nanoid();
     const now = new Date();
     
-    const newHousehold: Household = {
-      ...household,
+    const newHousehold = {
       id,
+      name: household.name,
+      email: household.email.toLowerCase().trim(),
+      phone: household.phone || null,
+      addressLine1: household.addressLine1 || null,
+      addressLine2: household.addressLine2 || null,
+      city: household.city || null,
+      state: household.state?.toUpperCase() || null,
+      zipcode: household.zipcode || null,
+      notificationPreference: household.notificationPreference || 'both',
+      smsOptIn: household.smsOptIn ?? false,
+      preferredContact: household.preferredContact || null,
+      setupStatus: household.setupStatus || 'in_progress',
+      setupStartedAt: household.setupStartedAt || now,
+      setupCompletedAt: household.setupCompletedAt || null,
+      setupNotes: household.setupNotes || null,
+      setupIssues: household.setupIssues || null,
+      magnetToken: household.magnetToken || null,
+      magnetCode: household.magnetCode || null,
+      orderId: household.orderId || null,
+      lastModifiedBy: household.lastModifiedBy || null,
+      createdBy: household.createdBy || 'customer',
+      createdByUserId: household.createdByUserId || null,
       createdAt: now,
-      updatedAt: now
+      updatedAt: now,
     };
 
-    await adminDb.collection(COLLECTIONS.HOUSEHOLDS).doc(id).set(newHousehold);
-    return newHousehold;
+    const [result] = await dbConnection
+      .insert(householdsTable)
+      .values(newHousehold)
+      .returning();
+    
+    console.log('✅ Household created in PostgreSQL:', {
+      id: result.id,
+      email: result.email,
+      setupStatus: result.setupStatus,
+      createdBy: result.createdBy
+    });
+    
+    return result;
   }
 
   async getHousehold(id: string): Promise<Household | undefined> {
@@ -361,6 +401,53 @@ export class FirebaseStorage implements IStorage {
     const households = query.docs.map(doc => this.convertFirestoreData<Household>(doc)!);
     // Sort in memory instead of using orderBy to avoid index requirement
     return households.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  }
+
+  async getAllHouseholds(filters?: { 
+    setupStatus?: string; 
+    createdBy?: string;
+    limit?: number; 
+    offset?: number; 
+  }): Promise<{ households: Household[]; total: number }> {
+    const limit = filters?.limit || 50;
+    const offset = filters?.offset || 0;
+    
+    // Build conditions array
+    const conditions = [];
+    if (filters?.setupStatus) {
+      conditions.push(eq(householdsTable.setupStatus, filters.setupStatus));
+    }
+    if (filters?.createdBy) {
+      conditions.push(eq(householdsTable.createdBy, filters.createdBy));
+    }
+    
+    // ✅ CORRECT - Conditional where clause (avoid .where(undefined))
+    let query = db.select().from(householdsTable);
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+    
+    // ✅ CORRECT - Conditional where for count
+    let countQuery = db
+      .select({ count: sql<number>`count(*)` })
+      .from(householdsTable);
+    
+    if (conditions.length > 0) {
+      countQuery = countQuery.where(and(...conditions));
+    }
+    
+    const [{ count }] = await countQuery;
+    
+    // Get paginated results
+    const householdsList = await query
+      .orderBy(desc(householdsTable.createdAt))
+      .limit(limit)
+      .offset(offset);
+    
+    return {
+      households: householdsList,
+      total: Number(count)
+    };
   }
 
   // Task methods

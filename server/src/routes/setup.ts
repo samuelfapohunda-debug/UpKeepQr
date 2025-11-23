@@ -1,19 +1,22 @@
 import { Router, Request, Response } from "express";
 import { z } from "zod";
 import { getUserFromAuth } from "../../middleware/auth";
+import { storage } from "../index";
+import { nanoid } from "nanoid";
 
 const router = Router();
 
 // Base validation schema (all fields optional initially)
 const baseActivateSchema = z.object({
-  token: z.string().optional(),
-  zip: z.string().min(5).max(10).optional(),
-  home_type: z.string().optional(),
-  sqft: z.number().optional(),
-  hvac_type: z.string().optional(),
-  water_heater: z.string().optional(),
-  roof_age_years: z.number().optional(),
+  // Personal details (from Onboarding form)
+  fullName: z.string().min(1).optional(),
   email: z.string().email().optional(),
+  phone: z.string().optional(),
+  zip: z.string().min(5).max(10).optional(),
+  homeType: z.string().optional(),
+  
+  // Optional admin flag
+  skipWelcomeEmail: z.boolean().optional(),
 });
 
 router.post("/activate", async (req: Request, res: Response) => {
@@ -58,7 +61,7 @@ router.post("/activate", async (req: Request, res: Response) => {
     const data = validated.data;
     
     // CONDITIONAL VALIDATION: Require token for non-admin users
-    if (!isAdminMode && !data.token) {
+    if (!isAdminMode && !req.body.token) {
       console.warn("❌ Token required for customer activation");
       return res.status(400).json({
         error: "Invalid data",
@@ -72,18 +75,53 @@ router.post("/activate", async (req: Request, res: Response) => {
       });
     }
 
-    console.log("✅ Setup activation received:", {
-      token: data.token,
-      zip: data.zip,
+    // STEP 1: Validate required fields
+    if (!data.fullName || !data.email) {
+      return res.status(400).json({
+        error: "Full name and email are required"
+      });
+    }
+
+    console.log("✅ Setup activation data validated:", {
+      fullName: data.fullName,
       email: data.email,
+      zip: data.zip,
+      isAdminMode
     });
 
-    // Return success - the actual home profile will be created later
-    // This just validates the token and stores basic info
+    // STEP 2: Create household record
+    const household = await storage.createHousehold({
+      name: data.fullName,
+      email: data.email,
+      phone: data.phone || null,
+      zipcode: data.zip || null,
+      setupStatus: 'in_progress',
+      magnetToken: isAdminMode ? null : req.body.token,
+      createdBy: isAdminMode ? 'admin' : 'customer',
+      createdByUserId: isAdminMode ? authUser.id : null,
+    });
+
+    console.log("🎉 Household created successfully:", {
+      id: household.id,
+      email: household.email,
+      setupStatus: household.setupStatus,
+      createdBy: household.createdBy
+    });
+
+    // TODO: Send welcome email if not skipped and not admin mode
+    // TODO: Generate maintenance schedules
+    // TODO: Mark QR code token as used (for customer mode)
+
+    // Return success response
     res.json({
       success: true,
-      message: "Setup activation complete",
-      token: data.token,
+      household: {
+        id: household.id,
+        email: household.email,
+        status: household.setupStatus,
+        createdBy: household.createdBy,
+        createdAt: household.createdAt,
+      }
     });
 
   } catch (error: unknown) {
