@@ -12,8 +12,8 @@ export async function apiRequest(
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
-  // Get JWT token from localStorage
-  const token = localStorage.getItem('token');
+  // Get JWT token from localStorage (must match AuthContext TOKEN_KEY)
+  const token = localStorage.getItem('upkeepqr_admin_token');
   
   console.log('🔍 apiRequest DEBUG:', { 
     method, 
