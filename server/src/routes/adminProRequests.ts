@@ -11,9 +11,7 @@ const router = Router();
  */
 router.get("/", authenticateAgent, async (req: Request, res: Response) => {
   try {
-    await createAuditLog(req, '/api/admin/pro-requests');
-    
-    // Parse and validate query parameters
+    // Parse and validate query parameters FIRST
     const filters = adminProRequestFiltersSchema.parse({
       status: req.query.status ? (Array.isArray(req.query.status) ? req.query.status : [req.query.status]) : undefined,
       trade: req.query.trade,
@@ -26,6 +24,9 @@ router.get("/", authenticateAgent, async (req: Request, res: Response) => {
       sortBy: req.query.sortBy || 'createdAt',
       sortDir: req.query.sortDir || 'desc'
     });
+
+    // Only log audit after validation succeeds
+    await createAuditLog(req, '/api/admin/pro-requests');
 
     const result = await storage.getAdminProRequests(filters);
     res.json(result);
@@ -74,6 +75,12 @@ router.patch("/:id/status", authenticateAgent, async (req: Request, res: Respons
     const { id } = req.params;
     const validatedData = updateProRequestStatusSchema.parse(req.body);
     
+    // Fetch current state BEFORE update for accurate audit trail
+    const currentRequest = await storage.getProRequest(id);
+    if (!currentRequest) {
+      return res.status(404).json({ error: "Pro request not found" });
+    }
+
     const updatedRequest = await storage.updateProRequestStatus(
       id,
       validatedData.status,
@@ -84,13 +91,13 @@ router.patch("/:id/status", authenticateAgent, async (req: Request, res: Respons
       return res.status(404).json({ error: "Pro request not found" });
     }
 
-    // Create audit event for status update
+    // Create audit event with accurate old/new status
     await storage.createAuditEvent({
       requestId: id,
       actor: 'admin',
       type: 'status_updated',
       data: {
-        oldStatus: updatedRequest.status,
+        oldStatus: currentRequest.status,
         newStatus: validatedData.status,
         providerAssigned: validatedData.providerAssigned
       }
