@@ -64,7 +64,18 @@ The platform uses shadcn/ui and Tailwind CSS for a consistent and modern design.
     - **Ownership**: ownerType (converted from isOwner boolean)
     - **Preferences**: budgetBand (from budgetRange), contactPrefChannel (from preferredContact)
   - **Database Schema**: Added 4 new columns to home_profile_extras (homeType, squareFootage, bedrooms, bathrooms) to support Phase 1 field capture
-  - **Additional Fields**: Advanced features (appliances array, roofMaterial, HOA info, smart home gear, planned projects, heatPump, interestType, needConsultation, timelineToProceed) can be added in Phase 2 when needed
+  - **Additional Fields**: Advanced features (appliances array, roofMaterial, HOA info, smart home gear, planned projects, heatPump, interestType, needConsultation, timelineToProceed) can be added in future phases when needed
+- **Phase 2: Email Notifications & Scan Tracking** (Nov 24, 2025): Production-ready email notification system and QR scan analytics. Features include:
+  - **Customer Confirmation Emails**: Professional HTML emails sent to customers after successful household setup, including home details summary and next steps (via SendGrid)
+  - **Admin Notification Emails**: Comprehensive setup notifications sent to admin with full customer and home details, household/order IDs, and direct link to admin panel
+  - **HTML Security**: All user-provided data (names, addresses) properly escaped using escapeHtml() helper to prevent HTML injection attacks
+  - **Fire-and-Forget Email Dispatch**: Emails sent asynchronously after transaction completion using void Promise.all() with individual .catch() handlers - setup returns immediately without waiting for email delivery
+  - **QR Scan Tracking**: Automatic tracking of QR code scans on GET /setup/:token/customer endpoint - increments scan_count and updates last_scan_at timestamp using concurrency-safe SQL increment
+  - **Design Compliance**: All email templates use text only (no emoji) per universal design guidelines
+  - **Non-Blocking Pattern**: Email and scan tracking failures logged but never break the setup or form loading flows
+  - **SendGrid Integration**: Uses categories 'customer_setup_confirmation' and 'admin_setup_notification' for email tracking and analytics
+  - **Environment Variables**: Requires FROM_EMAIL, ADMIN_EMAIL for email dispatch; SUPPORT_EMAIL and BASE_URL for email content
+  - **Architect Approved**: Complete implementation reviewed and approved with no security issues
 - **Contact Form API** (Nov 23, 2025): Fully functional contact form endpoint at `/api/contact` with rate limiting, email validation, and SendGrid integration. Features include: POST endpoint accepting name, email, phone (optional), subject, and message; validation for required fields and email format; rate limiting (5 requests per 15 minutes per IP); SendGrid email delivery to admin with HTML and text formats; structured JSON responses for success/error states. Architect reviewed with no security issues.
 - **Professional Service Requests API** (Nov 23, 2025): Fully functional professional service request endpoint at `/api/pro-requests` with modular architecture, rate limiting, and dual email notifications. Features include: POST endpoint accepting trade (roofing/plumbing/electrical/hvac/general), urgency (emergency/24h/3days/flexible), description, address, and contact details; Zod validation for all fields including 5-digit ZIP regex; rate limiting (10 requests per 10 minutes per IP); best-effort audit logging (wrapped in try/catch to prevent failures from aborting requests); dual SendGrid email delivery (user confirmation + admin alert with urgency indicators); public tracking code generation; database persistence; structured JSON responses. Migrated from monolithic routes.ts to modular `server/src/routes/proRequests.ts`. Architect reviewed and approved with no security issues.
 - **Unified Notification System**: Implemented with preference-based routing (email/SMS/both) using Twilio for SMS and SendGrid for email (planned). Includes TCPA compliance and graceful degradation for failures.
@@ -98,7 +109,7 @@ The platform uses shadcn/ui and Tailwind CSS for a consistent and modern design.
 
 ## Communication Services
 - **Twilio**: SMS integration for notifications.
-- **SendGrid**: Email integration (placeholder implemented, ready for full integration).
+- **SendGrid**: Email integration fully implemented for customer confirmation and admin notification emails.
 
 ## Payment Integration
 - **Stripe**: Payment processing.
