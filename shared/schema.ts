@@ -888,23 +888,43 @@ export const homeProfileExtras = pgTable("home_profile_extras", {
   householdId: text("household_id").notNull().unique(),
   ownerType: text("owner_type"),
   sellWindow: text("sell_window"),
+  
+  // Property Details (Phase 1 fields)
+  homeType: text("home_type"), // single_family, condo, townhouse, apartment, mobile, other
   yearBuilt: integer("year_built"),
+  squareFootage: integer("square_footage"), // House square footage (different from lot)
+  bedrooms: integer("bedrooms"),
+  bathrooms: integer("bathrooms"),
+  
+  // Roof
   roofMaterial: text("roof_material"),
   roofAgeYears: integer("roof_age_years"),
+  
+  // HVAC
   hvacType: text("hvac_type"),
   hvacAgeYears: integer("hvac_age_years"),
   hvacLastServiceMonth: text("hvac_last_service_month"),
+  
+  // Water Heater
   waterHeaterType: text("water_heater_type"),
   waterHeaterAgeYears: integer("water_heater_age_years"),
   waterHeaterCapacityGal: integer("water_heater_capacity_gal"),
+  
+  // Exterior and Lot
   exteriorType: text("exterior_type"),
   lotSqFt: integer("lot_sq_ft"),
+  
+  // Insurance and Utilities
   insuranceProvider: text("insurance_provider"),
   insuranceRenewalMonth: integer("insurance_renewal_month"),
   electricProvider: text("electric_provider"),
   gasProvider: text("gas_provider"),
+  
+  // HOA
   hasHoa: boolean("has_hoa").default(false),
   hoaName: text("hoa_name"),
+  
+  // Planning and Preferences
   plannedProjects: text("planned_projects").array(),
   smartHomeGear: text("smart_home_gear").array(),
   budgetBand: text("budget_band"),
@@ -912,6 +932,7 @@ export const homeProfileExtras = pgTable("home_profile_extras", {
   contactPrefCadence: text("contact_pref_cadence"),
   marketingConsent: boolean("marketing_consent").default(true),
   appliances: jsonb("appliances"),
+  
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
