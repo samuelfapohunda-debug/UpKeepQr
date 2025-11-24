@@ -553,3 +553,433 @@ export async function sendAdminErrorAlert(
     html
   });
 }
+
+/**
+ * HTML escape function for email template security
+ * Prevents HTML injection in user-provided data
+ */
+function escapeHtml(unsafe: string): string {
+  if (!unsafe) return '';
+  return unsafe
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+/**
+ * Send setup confirmation email to customer
+ * Called after household setup completes successfully
+ */
+export async function sendSetupConfirmationEmail(
+  customerEmail: string,
+  customerName: string,
+  householdId: string,
+  homeDetails: {
+    address: string;
+    homeType?: string;
+    sqft?: number;
+  }
+): Promise<void> {
+  try {
+    const msg = {
+      to: customerEmail,
+      from: process.env.FROM_EMAIL || 'noreply@upkeepqr.com',
+      replyTo: process.env.SUPPORT_EMAIL || 'support@upkeepqr.com',
+      subject: 'Your Home Profile is Ready! - UpKeepQR',
+      categories: ['customer_setup_confirmation'],
+      text: `
+Hi ${customerName},
+
+Great news! Your home maintenance profile is now set up and ready.
+
+Home Details:
+- Address: ${homeDetails.address}
+${homeDetails.homeType ? `- Home Type: ${homeDetails.homeType}` : ''}
+${homeDetails.sqft ? `- Square Footage: ${Number(homeDetails.sqft).toLocaleString()} sq ft` : ''}
+
+What's Next:
+You'll start receiving personalized maintenance reminders to help keep your home in top condition. These timely reminders will help you stay on top of important tasks like HVAC filter changes, seasonal maintenance, and more.
+
+Questions or need help? Reply to this email or contact us at support@upkeepqr.com.
+
+Best regards,
+The UpKeepQR Team
+`.trim(),
+      html: `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Your Home Profile is Ready</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f4f4f4;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f4f4f4; padding: 20px 0;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+          
+          <!-- Header -->
+          <tr>
+            <td style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 30px; text-align: center; border-radius: 8px 8px 0 0;">
+              <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 600;">
+                Your Home Profile is Ready!
+              </h1>
+            </td>
+          </tr>
+          
+          <!-- Body -->
+          <tr>
+            <td style="padding: 40px 30px;">
+              
+              <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 20px;">
+                Hi <strong>${escapeHtml(customerName)}</strong>,
+              </p>
+              
+              <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 30px;">
+                Great news! Your home maintenance profile is now set up and ready to help you keep your home in top condition.
+              </p>
+              
+              <!-- Home Details Box -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f8f9fa; border-radius: 6px; margin-bottom: 30px;">
+                <tr>
+                  <td style="padding: 25px;">
+                    <h2 style="color: #667eea; margin: 0 0 15px; font-size: 18px; font-weight: 600;">
+                      Your Home Details
+                    </h2>
+                    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <td style="color: #666666; font-size: 14px; padding: 5px 0;">
+                          <strong>Address:</strong> ${escapeHtml(homeDetails.address)}
+                        </td>
+                      </tr>
+                      ${homeDetails.homeType ? `
+                      <tr>
+                        <td style="color: #666666; font-size: 14px; padding: 5px 0;">
+                          <strong>Home Type:</strong> ${escapeHtml(homeDetails.homeType)}
+                        </td>
+                      </tr>
+                      ` : ''}
+                      ${homeDetails.sqft ? `
+                      <tr>
+                        <td style="color: #666666; font-size: 14px; padding: 5px 0;">
+                          <strong>Square Footage:</strong> ${Number(homeDetails.sqft).toLocaleString()} sq ft
+                        </td>
+                      </tr>
+                      ` : ''}
+                    </table>
+                  </td>
+                </tr>
+              </table>
+              
+              <!-- What's Next -->
+              <h2 style="color: #333333; margin: 0 0 15px; font-size: 20px; font-weight: 600;">
+                What's Next?
+              </h2>
+              
+              <ul style="color: #666666; font-size: 15px; line-height: 1.8; margin: 0 0 30px; padding-left: 20px;">
+                <li>You'll start receiving <strong>personalized maintenance reminders</strong></li>
+                <li>Get timely alerts for <strong>HVAC filter changes</strong></li>
+                <li>Never miss important <strong>seasonal maintenance tasks</strong></li>
+                <li>Keep your home running smoothly year-round</li>
+              </ul>
+              
+              <!-- CTA Button -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td align="center" style="padding: 20px 0;">
+                    <a href="https://upkeepqr.com" style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 6px; font-size: 16px; font-weight: 600;">
+                      Learn More About UpKeepQR
+                    </a>
+                  </td>
+                </tr>
+              </table>
+              
+            </td>
+          </tr>
+          
+          <!-- Footer -->
+          <tr>
+            <td style="background-color: #f8f9fa; padding: 30px; text-align: center; border-radius: 0 0 8px 8px; border-top: 1px solid #e9ecef;">
+              <p style="color: #999999; font-size: 14px; margin: 0 0 10px;">
+                Questions? We're here to help!
+              </p>
+              <p style="color: #666666; font-size: 14px; margin: 0;">
+                Email us at <a href="mailto:support@upkeepqr.com" style="color: #667eea; text-decoration: none;">support@upkeepqr.com</a>
+              </p>
+              <p style="color: #999999; font-size: 12px; margin: 15px 0 0;">
+                © ${new Date().getFullYear()} UpKeepQR. All rights reserved.
+              </p>
+            </td>
+          </tr>
+          
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+      `
+    };
+
+    await mailService.send(msg);
+    console.log(`✅ Setup confirmation email sent to ${customerEmail}`);
+    
+  } catch (error) {
+    console.error('❌ Failed to send setup confirmation email:', error);
+    throw error;
+  }
+}
+
+/**
+ * Send notification to admin about new household setup
+ * Called after household setup completes successfully
+ */
+export async function sendAdminSetupNotification(
+  householdName: string,
+  householdEmail: string,
+  householdId: string,
+  orderId: string | null,
+  homeDetails: {
+    address: string;
+    city?: string;
+    state?: string;
+    zip?: string;
+    homeType?: string;
+    sqft?: number;
+    hvacType?: string;
+    waterHeaterType?: string;
+  }
+): Promise<void> {
+  try {
+    const adminEmail = process.env.ADMIN_EMAIL || 'support@upkeepqr.com';
+    const baseUrl = process.env.BASE_URL || 'https://upkeepqr.com';
+    
+    const msg = {
+      to: adminEmail,
+      from: process.env.FROM_EMAIL || 'noreply@upkeepqr.com',
+      subject: `New Home Setup Completed - ${householdName}`,
+      categories: ['admin_setup_notification'],
+      text: `
+New Household Setup Completed
+
+Customer Information:
+- Name: ${householdName}
+- Email: ${householdEmail}
+- Household ID: ${householdId}
+${orderId ? `- Order ID: ${orderId}` : ''}
+
+Home Details:
+- Address: ${homeDetails.address}
+${homeDetails.city ? `- City: ${homeDetails.city}` : ''}
+${homeDetails.state ? `- State: ${homeDetails.state}` : ''}
+${homeDetails.zip ? `- ZIP: ${homeDetails.zip}` : ''}
+${homeDetails.homeType ? `- Home Type: ${homeDetails.homeType}` : ''}
+${homeDetails.sqft ? `- Square Footage: ${Number(homeDetails.sqft).toLocaleString()} sq ft` : ''}
+${homeDetails.hvacType ? `- HVAC Type: ${homeDetails.hvacType}` : ''}
+${homeDetails.waterHeaterType ? `- Water Heater: ${homeDetails.waterHeaterType}` : ''}
+
+View in Admin Panel:
+${baseUrl}/admin/setup-forms/${householdId}
+
+Setup completed at: ${new Date().toLocaleString()}
+`.trim(),
+      html: `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>New Home Setup Completed</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f4f4f4;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f4f4f4; padding: 20px 0;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+          
+          <!-- Header -->
+          <tr>
+            <td style="background-color: #10b981; padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
+              <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 600;">
+                New Home Setup Completed
+              </h1>
+            </td>
+          </tr>
+          
+          <!-- Body -->
+          <tr>
+            <td style="padding: 30px;">
+              
+              <!-- Customer Info -->
+              <h2 style="color: #333333; margin: 0 0 15px; font-size: 18px; font-weight: 600; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px;">
+                Customer Information
+              </h2>
+              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 25px;">
+                <tr>
+                  <td style="color: #666666; font-size: 14px; padding: 8px 0; width: 180px;">
+                    <strong>Name:</strong>
+                  </td>
+                  <td style="color: #333333; font-size: 14px; padding: 8px 0;">
+                    ${escapeHtml(householdName)}
+                  </td>
+                </tr>
+                <tr>
+                  <td style="color: #666666; font-size: 14px; padding: 8px 0;">
+                    <strong>Email:</strong>
+                  </td>
+                  <td style="color: #333333; font-size: 14px; padding: 8px 0;">
+                    <a href="mailto:${householdEmail}" style="color: #10b981; text-decoration: none;">${escapeHtml(householdEmail)}</a>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="color: #666666; font-size: 14px; padding: 8px 0;">
+                    <strong>Household ID:</strong>
+                  </td>
+                  <td style="color: #333333; font-size: 14px; padding: 8px 0; font-family: monospace;">
+                    ${escapeHtml(householdId)}
+                  </td>
+                </tr>
+                ${orderId ? `
+                <tr>
+                  <td style="color: #666666; font-size: 14px; padding: 8px 0;">
+                    <strong>Order ID:</strong>
+                  </td>
+                  <td style="color: #333333; font-size: 14px; padding: 8px 0; font-family: monospace;">
+                    ${escapeHtml(orderId)}
+                  </td>
+                </tr>
+                ` : ''}
+              </table>
+              
+              <!-- Home Details -->
+              <h2 style="color: #333333; margin: 0 0 15px; font-size: 18px; font-weight: 600; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px;">
+                Home Details
+              </h2>
+              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 25px;">
+                <tr>
+                  <td style="color: #666666; font-size: 14px; padding: 8px 0; width: 180px;">
+                    <strong>Address:</strong>
+                  </td>
+                  <td style="color: #333333; font-size: 14px; padding: 8px 0;">
+                    ${escapeHtml(homeDetails.address)}
+                  </td>
+                </tr>
+                ${homeDetails.city ? `
+                <tr>
+                  <td style="color: #666666; font-size: 14px; padding: 8px 0;">
+                    <strong>City:</strong>
+                  </td>
+                  <td style="color: #333333; font-size: 14px; padding: 8px 0;">
+                    ${escapeHtml(homeDetails.city)}
+                  </td>
+                </tr>
+                ` : ''}
+                ${homeDetails.state ? `
+                <tr>
+                  <td style="color: #666666; font-size: 14px; padding: 8px 0;">
+                    <strong>State:</strong>
+                  </td>
+                  <td style="color: #333333; font-size: 14px; padding: 8px 0;">
+                    ${escapeHtml(homeDetails.state)}
+                  </td>
+                </tr>
+                ` : ''}
+                ${homeDetails.zip ? `
+                <tr>
+                  <td style="color: #666666; font-size: 14px; padding: 8px 0;">
+                    <strong>ZIP Code:</strong>
+                  </td>
+                  <td style="color: #333333; font-size: 14px; padding: 8px 0;">
+                    ${escapeHtml(homeDetails.zip)}
+                  </td>
+                </tr>
+                ` : ''}
+                ${homeDetails.homeType ? `
+                <tr>
+                  <td style="color: #666666; font-size: 14px; padding: 8px 0;">
+                    <strong>Home Type:</strong>
+                  </td>
+                  <td style="color: #333333; font-size: 14px; padding: 8px 0;">
+                    ${escapeHtml(homeDetails.homeType)}
+                  </td>
+                </tr>
+                ` : ''}
+                ${homeDetails.sqft ? `
+                <tr>
+                  <td style="color: #666666; font-size: 14px; padding: 8px 0;">
+                    <strong>Square Footage:</strong>
+                  </td>
+                  <td style="color: #333333; font-size: 14px; padding: 8px 0;">
+                    ${Number(homeDetails.sqft).toLocaleString()} sq ft
+                  </td>
+                </tr>
+                ` : ''}
+                ${homeDetails.hvacType ? `
+                <tr>
+                  <td style="color: #666666; font-size: 14px; padding: 8px 0;">
+                    <strong>HVAC Type:</strong>
+                  </td>
+                  <td style="color: #333333; font-size: 14px; padding: 8px 0;">
+                    ${escapeHtml(homeDetails.hvacType)}
+                  </td>
+                </tr>
+                ` : ''}
+                ${homeDetails.waterHeaterType ? `
+                <tr>
+                  <td style="color: #666666; font-size: 14px; padding: 8px 0;">
+                    <strong>Water Heater:</strong>
+                  </td>
+                  <td style="color: #333333; font-size: 14px; padding: 8px 0;">
+                    ${escapeHtml(homeDetails.waterHeaterType)}
+                  </td>
+                </tr>
+                ` : ''}
+              </table>
+              
+              <!-- Action Button -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td align="center" style="padding: 20px 0;">
+                    <a href="${baseUrl}/admin/setup-forms/${householdId}" style="display: inline-block; background-color: #10b981; color: #ffffff; text-decoration: none; padding: 12px 30px; border-radius: 6px; font-size: 15px; font-weight: 600;">
+                      View in Admin Panel →
+                    </a>
+                  </td>
+                </tr>
+              </table>
+              
+              <p style="color: #999999; font-size: 13px; text-align: center; margin: 20px 0 0;">
+                Setup completed at ${new Date().toLocaleString()}
+              </p>
+              
+            </td>
+          </tr>
+          
+          <!-- Footer -->
+          <tr>
+            <td style="background-color: #f9fafb; padding: 20px; text-align: center; border-radius: 0 0 8px 8px; border-top: 1px solid #e5e7eb;">
+              <p style="color: #999999; font-size: 12px; margin: 0;">
+                UpKeepQR Admin Notification System
+              </p>
+            </td>
+          </tr>
+          
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+      `
+    };
+
+    await mailService.send(msg);
+    console.log(`✅ Admin notification sent for household ${householdId}`);
+    
+  } catch (error) {
+    console.error('❌ Failed to send admin notification:', error);
+    throw error;
+  }
+}

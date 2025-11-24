@@ -6,6 +6,10 @@ import { nanoid } from "nanoid";
 import { db } from "../../db";
 import { householdsTable, orderMagnetItemsTable, homeProfileExtras, setupActivateSchema } from "@shared/schema";
 import { eq } from "drizzle-orm";
+import { 
+  sendSetupConfirmationEmail,
+  sendAdminSetupNotification
+} from '../../lib/email.js';
 
 const router = Router();
 
@@ -215,7 +219,58 @@ router.post("/activate", async (req: Request, res: Response) => {
       setupStatus: result.setupStatus
     });
 
-    // Return success response
+    // Query home profile data for emails (non-blocking)
+    const homeProfile = await db
+      .select()
+      .from(homeProfileExtras)
+      .where(eq(homeProfileExtras.householdId, result.id))
+      .limit(1)
+      .then(rows => rows[0] || null)
+      .catch(err => {
+        console.error('❌ Failed to fetch home profile for emails:', err);
+        return null;
+      });
+
+    // Send emails (fire-and-forget - don't wait for completion)
+    void Promise.all([
+      // Customer confirmation email
+      sendSetupConfirmationEmail(
+        result.email,
+        result.name,
+        result.id,
+        {
+          address: result.addressLine1 
+            ? `${result.addressLine1}${result.city ? ', ' + result.city : ''}${result.state ? ', ' + result.state : ''}`
+            : 'Your home',
+          homeType: homeProfile?.homeType || undefined,
+          sqft: homeProfile?.squareFootage || undefined
+        }
+      ).catch(err => {
+        console.error('❌ Failed to send setup confirmation email:', err);
+      }),
+      
+      // Admin notification email
+      sendAdminSetupNotification(
+        result.name,
+        result.email,
+        result.id,
+        result.orderId,
+        {
+          address: result.addressLine1 || 'Not provided',
+          city: result.city || undefined,
+          state: result.state || undefined,
+          zip: result.zipcode || undefined,
+          homeType: homeProfile?.homeType || undefined,
+          sqft: homeProfile?.squareFootage || undefined,
+          hvacType: homeProfile?.hvacType || undefined,
+          waterHeaterType: homeProfile?.waterHeaterType || undefined
+        }
+      ).catch(err => {
+        console.error('❌ Failed to send admin notification email:', err);
+      })
+    ]);
+
+    // Return success response immediately (don't wait for emails)
     res.json({
       success: true,
       household: {

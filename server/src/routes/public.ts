@@ -1,6 +1,9 @@
 import { Router, Request, Response } from "express";
 import { storage } from "../../storage.js";
 import { generateQRCodesPDF } from "../../lib/qr.js";
+import { db } from "../../db.js";
+import { orderMagnetItemsTable } from "@shared/schema";
+import { eq, sql } from "drizzle-orm";
 
 const router = Router();
 
@@ -16,8 +19,19 @@ router.get('/setup/:token/customer', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Activation code required' });
     }
 
+    // Track QR code scan (non-blocking, don't fail if tracking fails)
+    void db.update(orderMagnetItemsTable)
+      .set({
+        scanCount: sql`${orderMagnetItemsTable.scanCount} + 1`,
+        lastScanAt: new Date()
+      })
+      .where(eq(orderMagnetItemsTable.activationCode, token))
+      .catch(err => {
+        console.error('❌ Failed to track QR scan:', err);
+      });
+
     // Find the order item by activation code
-    const item = await storage.getOrderItemByActivationCode(token);
+    const item = await storage.getOrderMagnetItemByActivationCode(token);
     
     if (!item) {
       return res.status(404).json({ error: 'Activation code not found' });
