@@ -199,7 +199,10 @@ export const setupActivateSchema = z.object({
   skipWelcomeEmail: z.boolean().optional().default(false),
   // NOTE: adminCreated removed - server derives admin mode from auth, never trusts client
   homeType: z.string().optional(), // Optional since admin mode may not send it
+  yearBuilt: z.number().min(1800).max(new Date().getFullYear()).optional(),
   sqft: z.number().positive().optional(),
+  bedrooms: z.number().min(0).max(20).optional(),
+  bathrooms: z.number().min(0).max(20).optional(),
   hvacType: z.string().optional(),
   heatPump: z.enum(['yes', 'no', 'unknown']).optional(),
   waterHeater: z.string().optional(),
