@@ -10,6 +10,7 @@ import {
   sendSetupConfirmationEmail,
   sendAdminSetupNotification
 } from '../../lib/email.js';
+import { generateMaintenanceTasks } from '../../lib/tasks.js';
 
 const router = Router();
 
@@ -190,6 +191,25 @@ router.post("/activate", async (req: Request, res: Response) => {
         });
 
       console.log("✅ Home profile data saved with all Phase 1 fields");
+
+      // STEP 4.5: GENERATE MAINTENANCE TASKS (non-critical, wrapped in try-catch)
+      console.log("🔧 Generating maintenance tasks...");
+      try {
+        const homeProfileData = {
+          homeType: data.homeType || undefined,
+          hvacType: data.hvacType || undefined,
+          waterHeaterType: data.waterHeater || undefined,
+          roofAgeYears: data.roofAgeYears || undefined,
+          squareFootage: data.sqft || undefined
+        };
+        
+        const tasks = await generateMaintenanceTasks(tx, household.id, homeProfileData);
+        console.log(`✅ Generated ${tasks.length} maintenance tasks`);
+      } catch (taskError) {
+        console.error('⚠️ Task generation failed (non-critical):', taskError);
+        // Don't fail the setup if task generation fails
+        // Tasks can be generated manually later
+      }
 
       // STEP 5: UPDATE QR CODE STATUS (for customer mode with token)
       if (!isAdminMode && magnetToken) {
