@@ -157,8 +157,14 @@ router.post("/activate", async (req: Request, res: Response) => {
         .values({
           householdId: household.id,
           
-          // Core property fields
+          // Property Details (Phase 1 core fields)
+          homeType: data.homeType || null,
           yearBuilt: data.yearBuilt || null,
+          squareFootage: data.sqft || null,
+          bedrooms: data.bedrooms || null,
+          bathrooms: data.bathrooms || null,
+          
+          // Roof
           roofAgeYears: data.roofAgeYears || null,
           
           // HVAC & Systems  
@@ -179,7 +185,7 @@ router.post("/activate", async (req: Request, res: Response) => {
           updatedAt: now,
         });
 
-      console.log("✅ Home profile data saved");
+      console.log("✅ Home profile data saved with all Phase 1 fields");
 
       // STEP 5: UPDATE QR CODE STATUS (for customer mode with token)
       if (!isAdminMode && magnetToken) {
