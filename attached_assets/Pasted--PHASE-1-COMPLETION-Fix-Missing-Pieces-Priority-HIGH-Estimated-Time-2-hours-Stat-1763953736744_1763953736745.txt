@@ -1,0 +1,615 @@
+# PHASE 1 COMPLETION - Fix Missing Pieces
+
+**Priority:** HIGH  
+**Estimated Time:** 2 hours  
+**Status:** Ready for implementation
+
+---
+
+## CURRENT STATE ANALYSIS
+
+### ✅ What's Already Working:
+1. Household creation with setup_status = 'completed'
+2. setup_completed_at timestamp set correctly
+3. Order linking (order_id populated)
+4. QR code activation (activation_status = 'active', activated_at, activated_by_email)
+5. Transaction wrapper (all data commits together)
+6. Duplicate prevention (subsequent calls would fail)
+
+### ❌ What Needs Fixing:
+
+**Issue 1: Incomplete Home Profile Data**
+- Only 3 fields saved: hvac_type, water_heater_type, roof_age_years
+- Missing: home_type, square_footage, bedrooms, bathrooms
+- Root cause: Field name mapping incomplete
+
+**Issue 2: No Task Assignment Table**
+- home_maintenance_tasks table exists (task catalog)
+- Missing: household_task_assignments table
+- Without it, can't assign tasks to households
+
+---
+
+## FIX 1: COMPLETE HOME PROFILE FIELD MAPPING
+
+### Problem:
+Frontend sends different field names than database expects:
+
+**Frontend → Database Mapping:**
+```
+homeType       → home_type
+sqft           → square_footage  
+bedrooms       → bedrooms
+bathrooms      → bathrooms
+yearBuilt      → year_built
+hvacType       → hvac_type         ✅ (working)
+waterHeater    → water_heater_type ✅ (working)
+roofAgeYears   → roof_age_years    ✅ (working)
+```
+
+### Solution:
+
+**File:** `server/src/routes/setup.ts`
+
+**Location:** Inside the transaction where home_profile_extras is created
+
+**Current Code (incomplete):**
+```typescript
+// Create home profile extras (INCOMPLETE - only has 3 fields)
+await tx.insert(homeProfileExtras).values({
+  householdId: household.id,
+  hvacType: data.hvacType,
+  waterHeaterType: data.waterHeater,
+  roofAgeYears: data.roofAgeYears,
+  // MISSING: homeType, squareFootage, bedrooms, bathrooms, yearBuilt
+});
+```
+
+**Fixed Code (complete):**
+```typescript
+// Create home profile extras - map ALL fields from frontend
+const homeProfileData: any = {
+  householdId: household.id,
+  marketingConsent: true, // Default to true since they're signing up
+};
+
+// Map frontend field names to database column names
+if (data.homeType) homeProfileData.homeType = data.homeType;
+if (data.sqft) homeProfileData.squareFootage = data.sqft;
+if (data.bedrooms) homeProfileData.bedrooms = data.bedrooms;
+if (data.bathrooms) homeProfileData.bathrooms = data.bathrooms;
+if (data.yearBuilt) homeProfileData.yearBuilt = data.yearBuilt;
+if (data.hvacType) homeProfileData.hvacType = data.hvacType;
+if (data.hvacAgeYears) homeProfileData.hvacAgeYears = data.hvacAgeYears;
+if (data.waterHeater) homeProfileData.waterHeaterType = data.waterHeater;
+if (data.waterHeaterAgeYears) homeProfileData.waterHeaterAgeYears = data.waterHeaterAgeYears;
+if (data.roofAgeYears) homeProfileData.roofAgeYears = data.roofAgeYears;
+if (data.roofMaterial) homeProfileData.roofMaterial = data.roofMaterial;
+
+// Additional fields if provided
+if (data.exteriorType) homeProfileData.exteriorType = data.exteriorType;
+if (data.lotSqFt) homeProfileData.lotSqFt = data.lotSqFt;
+if (data.hasHoa !== undefined) homeProfileData.hasHoa = data.hasHoa;
+if (data.hoaName) homeProfileData.hoaName = data.hoaName;
+
+await tx.insert(homeProfileExtras).values(homeProfileData);
+```
+
+**Testing:**
+```bash
+# Test with complete data
+curl -X POST http://localhost:5000/api/setup/activate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "token": "OJnpwr1c8PsQ",
+    "fullName": "Jane Smith",
+    "email": "jane@example.com",
+    "phone": "4045551234",
+    "postalCode": "30281",
+    "homeType": "single_family",
+    "sqft": 2500,
+    "bedrooms": 4,
+    "bathrooms": 2.5,
+    "yearBuilt": 2015,
+    "hvacType": "central_air",
+    "waterHeater": "tank_gas",
+    "roofAgeYears": 5
+  }'
+
+# Verify ALL fields saved
+echo "SELECT household_id, home_type, square_footage, bedrooms, bathrooms, year_built, hvac_type, water_heater_type, roof_age_years FROM home_profile_extras WHERE household_id IN (SELECT id FROM households WHERE email = 'jane@example.com');" | psql $DATABASE_URL
+```
+
+**Expected Result:**
+```
+home_type: single_family
+square_footage: 2500
+bedrooms: 4
+bathrooms: 2.5
+year_built: 2015
+hvac_type: central_air
+water_heater_type: tank_gas
+roof_age_years: 5
+```
+
+---
+
+## FIX 2: CREATE HOUSEHOLD TASK ASSIGNMENTS TABLE
+
+### Problem:
+No table exists to assign maintenance tasks to individual households.
+
+### Solution:
+
+**Step 1: Create Database Table**
+
+```sql
+-- Table for assigning maintenance tasks to households
+CREATE TABLE household_task_assignments (
+  id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  household_id VARCHAR NOT NULL REFERENCES households(id) ON DELETE CASCADE,
+  task_id INTEGER NOT NULL REFERENCES home_maintenance_tasks(id),
+  
+  -- Scheduling
+  due_date DATE NOT NULL,
+  frequency VARCHAR(50), -- 'monthly', 'quarterly', 'biannual', 'annual', 'once'
+  
+  -- Status tracking
+  status VARCHAR(20) NOT NULL DEFAULT 'pending', -- 'pending', 'completed', 'skipped', 'overdue'
+  completed_at TIMESTAMP,
+  skipped_at TIMESTAMP,
+  skipped_reason TEXT,
+  
+  -- Additional info
+  priority VARCHAR(20) DEFAULT 'medium', -- 'low', 'medium', 'high'
+  notes TEXT,
+  reminder_sent BOOLEAN DEFAULT false,
+  reminder_sent_at TIMESTAMP,
+  
+  -- Metadata
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Indexes for performance
+CREATE INDEX idx_household_task_assignments_household ON household_task_assignments(household_id);
+CREATE INDEX idx_household_task_assignments_due_date ON household_task_assignments(due_date);
+CREATE INDEX idx_household_task_assignments_status ON household_task_assignments(status);
+CREATE INDEX idx_household_task_assignments_task ON household_task_assignments(task_id);
+
+-- Composite index for common queries
+CREATE INDEX idx_household_task_assignments_household_status ON household_task_assignments(household_id, status);
+CREATE INDEX idx_household_task_assignments_household_due ON household_task_assignments(household_id, due_date);
+```
+
+**Run Migration:**
+```bash
+psql $DATABASE_URL << 'EOF'
+CREATE TABLE household_task_assignments (
+  id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  household_id VARCHAR NOT NULL REFERENCES households(id) ON DELETE CASCADE,
+  task_id INTEGER NOT NULL REFERENCES home_maintenance_tasks(id),
+  due_date DATE NOT NULL,
+  frequency VARCHAR(50),
+  status VARCHAR(20) NOT NULL DEFAULT 'pending',
+  completed_at TIMESTAMP,
+  skipped_at TIMESTAMP,
+  skipped_reason TEXT,
+  priority VARCHAR(20) DEFAULT 'medium',
+  notes TEXT,
+  reminder_sent BOOLEAN DEFAULT false,
+  reminder_sent_at TIMESTAMP,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_household_task_assignments_household ON household_task_assignments(household_id);
+CREATE INDEX idx_household_task_assignments_due_date ON household_task_assignments(due_date);
+CREATE INDEX idx_household_task_assignments_status ON household_task_assignments(status);
+CREATE INDEX idx_household_task_assignments_task ON household_task_assignments(task_id);
+CREATE INDEX idx_household_task_assignments_household_status ON household_task_assignments(household_id, status);
+CREATE INDEX idx_household_task_assignments_household_due ON household_task_assignments(household_id, due_date);
+EOF
+```
+
+**Step 2: Add to Schema File**
+
+**File:** `shared/schema.ts`
+
+**Add after homeMaintenanceTasksTable:**
+
+```typescript
+// Household Task Assignments - links households to maintenance tasks
+export const householdTaskAssignmentsTable = pgTable("household_task_assignments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  householdId: varchar("household_id").notNull(),
+  taskId: integer("task_id").notNull(),
+  
+  // Scheduling
+  dueDate: date("due_date").notNull(),
+  frequency: varchar("frequency", { length: 50 }),
+  
+  // Status tracking
+  status: varchar("status", { length: 20 }).notNull().default('pending'),
+  completedAt: timestamp("completed_at"),
+  skippedAt: timestamp("skipped_at"),
+  skippedReason: text("skipped_reason"),
+  
+  // Additional info
+  priority: varchar("priority", { length: 20 }).default('medium'),
+  notes: text("notes"),
+  reminderSent: boolean("reminder_sent").default(false),
+  reminderSentAt: timestamp("reminder_sent_at"),
+  
+  // Metadata
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  householdIdx: index("idx_household_task_assignments_household").on(table.householdId),
+  dueDateIdx: index("idx_household_task_assignments_due_date").on(table.dueDate),
+  statusIdx: index("idx_household_task_assignments_status").on(table.status),
+  taskIdx: index("idx_household_task_assignments_task").on(table.taskId),
+  householdStatusIdx: index("idx_household_task_assignments_household_status").on(table.householdId, table.status),
+  householdDueIdx: index("idx_household_task_assignments_household_due").on(table.householdId, table.dueDate),
+}));
+
+// Type exports
+export type HouseholdTaskAssignment = typeof householdTaskAssignmentsTable.$inferSelect;
+export const insertHouseholdTaskAssignmentSchema = createInsertSchema(householdTaskAssignmentsTable).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertHouseholdTaskAssignment = z.infer<typeof insertHouseholdTaskAssignmentSchema>;
+```
+
+**Step 3: Update Storage Methods**
+
+**File:** `server/storage.ts`
+
+**Add methods to IStorage interface:**
+
+```typescript
+interface IStorage {
+  // ... existing methods ...
+  
+  // Household task assignment methods
+  createTaskAssignment(assignment: InsertHouseholdTaskAssignment): Promise<HouseholdTaskAssignment>;
+  getTaskAssignmentsByHousehold(householdId: string): Promise<HouseholdTaskAssignment[]>;
+  updateTaskAssignmentStatus(id: string, status: string, completedAt?: Date): Promise<void>;
+  getUpcomingTaskAssignments(householdId: string, daysAhead: number): Promise<HouseholdTaskAssignment[]>;
+  getOverdueTaskAssignments(householdId: string): Promise<HouseholdTaskAssignment[]>;
+}
+```
+
+**Implement in PostgresStorage class:**
+
+```typescript
+class PostgresStorage implements IStorage {
+  // ... existing methods ...
+  
+  async createTaskAssignment(assignment: InsertHouseholdTaskAssignment): Promise<HouseholdTaskAssignment> {
+    const [result] = await db
+      .insert(householdTaskAssignmentsTable)
+      .values(assignment)
+      .returning();
+    return result;
+  }
+  
+  async getTaskAssignmentsByHousehold(householdId: string): Promise<HouseholdTaskAssignment[]> {
+    return db
+      .select()
+      .from(householdTaskAssignmentsTable)
+      .where(eq(householdTaskAssignmentsTable.householdId, householdId))
+      .orderBy(householdTaskAssignmentsTable.dueDate);
+  }
+  
+  async updateTaskAssignmentStatus(id: string, status: string, completedAt?: Date): Promise<void> {
+    await db
+      .update(householdTaskAssignmentsTable)
+      .set({ 
+        status, 
+        completedAt,
+        updatedAt: new Date()
+      })
+      .where(eq(householdTaskAssignmentsTable.id, id));
+  }
+  
+  async getUpcomingTaskAssignments(householdId: string, daysAhead: number): Promise<HouseholdTaskAssignment[]> {
+    const futureDate = new Date();
+    futureDate.setDate(futureDate.getDate() + daysAhead);
+    
+    return db
+      .select()
+      .from(householdTaskAssignmentsTable)
+      .where(
+        and(
+          eq(householdTaskAssignmentsTable.householdId, householdId),
+          eq(householdTaskAssignmentsTable.status, 'pending'),
+          lte(householdTaskAssignmentsTable.dueDate, futureDate.toISOString().split('T')[0])
+        )
+      )
+      .orderBy(householdTaskAssignmentsTable.dueDate);
+  }
+  
+  async getOverdueTaskAssignments(householdId: string): Promise<HouseholdTaskAssignment[]> {
+    const today = new Date().toISOString().split('T')[0];
+    
+    return db
+      .select()
+      .from(householdTaskAssignmentsTable)
+      .where(
+        and(
+          eq(householdTaskAssignmentsTable.householdId, householdId),
+          eq(householdTaskAssignmentsTable.status, 'pending'),
+          lt(householdTaskAssignmentsTable.dueDate, today)
+        )
+      )
+      .orderBy(householdTaskAssignmentsTable.dueDate);
+  }
+}
+```
+
+**Step 4: Verify Table Created**
+
+```bash
+# Check table exists
+echo "\d household_task_assignments" | psql $DATABASE_URL
+
+# Verify indexes
+echo "\d household_task_assignments" | psql $DATABASE_URL | grep -A 10 "Indexes:"
+```
+
+---
+
+## VERIFICATION & TESTING
+
+### Test 1: Complete Home Profile Mapping
+
+```bash
+# Use a fresh activation code
+curl -X POST http://localhost:5000/api/setup/activate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "token": "EHLZShvzpSNJ",
+    "fullName": "Test Complete",
+    "email": "testcomplete@example.com",
+    "phone": "4045551234",
+    "postalCode": "30281",
+    "homeType": "townhouse",
+    "sqft": 1800,
+    "bedrooms": 3,
+    "bathrooms": 2,
+    "yearBuilt": 2010,
+    "hvacType": "heat_pump",
+    "waterHeater": "tankless",
+    "roofAgeYears": 8
+  }'
+
+# Verify ALL fields saved
+echo "SELECT home_type, square_footage, bedrooms, bathrooms, year_built, hvac_type, water_heater_type, roof_age_years FROM home_profile_extras WHERE household_id IN (SELECT id FROM households WHERE email = 'testcomplete@example.com');" | psql $DATABASE_URL
+```
+
+**Expected Output:**
+```
+ home_type | square_footage | bedrooms | bathrooms | year_built | hvac_type  | water_heater_type | roof_age_years 
+-----------+----------------+----------+-----------+------------+------------+-------------------+----------------
+ townhouse |           1800 |        3 |         2 |       2010 | heat_pump  | tankless          |              8
+```
+
+### Test 2: Task Assignment Table
+
+```bash
+# Manually insert a test task assignment
+psql $DATABASE_URL << 'EOF'
+INSERT INTO household_task_assignments (
+  household_id,
+  task_id,
+  due_date,
+  frequency,
+  status,
+  priority
+) VALUES (
+  '_Lm5Dab9cAcdi8tGYXzT1',
+  1,
+  CURRENT_DATE + INTERVAL '30 days',
+  'monthly',
+  'pending',
+  'medium'
+);
+EOF
+
+# Verify task assignment created
+echo "SELECT id, household_id, task_id, due_date, status, priority FROM household_task_assignments WHERE household_id = '_Lm5Dab9cAcdi8tGYXzT1';" | psql $DATABASE_URL
+```
+
+**Expected Output:**
+```
+          id           |      household_id     | task_id |  due_date  | status  | priority 
+-----------------------+-----------------------+---------+------------+---------+----------
+ abc123...             | _Lm5Dab9cAcdi8tGYXzT1 |       1 | 2025-12-24 | pending | medium
+```
+
+---
+
+## IMPLEMENTATION CHECKLIST
+
+**Before Starting:**
+- [ ] Backup database
+- [ ] Review current setup.ts code
+- [ ] Identify exact location for home profile mapping
+
+**Implementation Steps:**
+- [ ] Fix 1: Update home profile field mapping in setup.ts
+- [ ] Test Fix 1: Run curl test, verify all fields saved
+- [ ] Fix 2: Create household_task_assignments table (SQL migration)
+- [ ] Fix 2: Add table definition to shared/schema.ts
+- [ ] Fix 2: Add storage methods to server/storage.ts
+- [ ] Test Fix 2: Manual insert test task, verify it works
+
+**After Implementation:**
+- [ ] Run full test suite
+- [ ] Verify no regressions
+- [ ] Test with fresh activation code
+- [ ] Check all database tables populated
+- [ ] Monitor logs for errors
+
+---
+
+## SUCCESS CRITERIA
+
+**Fix 1 Complete When:**
+✅ All home profile fields save correctly:
+- home_type, square_footage, bedrooms, bathrooms
+- year_built, hvac_type, water_heater_type, roof_age_years
+
+**Fix 2 Complete When:**
+✅ household_task_assignments table exists
+✅ Schema file includes table definition
+✅ Storage methods implemented
+✅ Can manually create task assignments
+✅ Can query task assignments by household
+
+---
+
+## REPLIT AGENT PROMPT
+
+**For Fix 1 (Home Profile Mapping):**
+
+```
+Fix incomplete home profile data mapping in server/src/routes/setup.ts.
+
+PROBLEM:
+When household setup completes, only 3 fields save to home_profile_extras:
+- hvac_type
+- water_heater_type  
+- roof_age_years
+
+MISSING FIELDS:
+Frontend sends these fields that aren't being saved:
+- homeType → should map to home_type
+- sqft → should map to square_footage
+- bedrooms → should map to bedrooms
+- bathrooms → should map to bathrooms
+- yearBuilt → should map to year_built
+
+LOCATION:
+File: server/src/routes/setup.ts
+Inside: POST /activate endpoint
+Where: home_profile_extras creation (inside transaction)
+
+CURRENT CODE (incomplete):
+await tx.insert(homeProfileExtras).values({
+  householdId: household.id,
+  hvacType: data.hvacType,
+  waterHeaterType: data.waterHeater,
+  roofAgeYears: data.roofAgeYears,
+});
+
+REQUIRED CODE (complete):
+const homeProfileData: any = {
+  householdId: household.id,
+  marketingConsent: true,
+};
+
+// Map all frontend fields to database columns
+if (data.homeType) homeProfileData.homeType = data.homeType;
+if (data.sqft) homeProfileData.squareFootage = data.sqft;
+if (data.bedrooms) homeProfileData.bedrooms = data.bedrooms;
+if (data.bathrooms) homeProfileData.bathrooms = data.bathrooms;
+if (data.yearBuilt) homeProfileData.yearBuilt = data.yearBuilt;
+if (data.hvacType) homeProfileData.hvacType = data.hvacType;
+if (data.hvacAgeYears) homeProfileData.hvacAgeYears = data.hvacAgeYears;
+if (data.waterHeater) homeProfileData.waterHeaterType = data.waterHeater;
+if (data.waterHeaterAgeYears) homeProfileData.waterHeaterAgeYears = data.waterHeaterAgeYears;
+if (data.roofAgeYears) homeProfileData.roofAgeYears = data.roofAgeYears;
+
+await tx.insert(homeProfileExtras).values(homeProfileData);
+
+TESTING:
+After fix, this test should show ALL fields populated:
+curl -X POST http://localhost:5000/api/setup/activate -H "Content-Type: application/json" -d '{"token":"TEST_CODE","fullName":"Test","email":"test@test.com","postalCode":"30281","homeType":"single_family","sqft":2000,"bedrooms":3,"bathrooms":2,"yearBuilt":2015,"hvacType":"central_air","waterHeater":"tank_gas","roofAgeYears":10}'
+
+Verify with:
+SELECT home_type, square_footage, bedrooms, bathrooms, year_built FROM home_profile_extras WHERE household_id = 'xxx';
+
+Please update the code to include all field mappings.
+```
+
+---
+
+**For Fix 2 (Task Assignments Table):**
+
+```
+Create household_task_assignments table for assigning maintenance tasks to households.
+
+CONTEXT:
+- home_maintenance_tasks table exists (task catalog)
+- Need: Table to assign specific tasks to specific households
+- Purpose: Track which households have which tasks, due dates, completion status
+
+CREATE TABLE:
+Run this SQL migration:
+
+CREATE TABLE household_task_assignments (
+  id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  household_id VARCHAR NOT NULL REFERENCES households(id) ON DELETE CASCADE,
+  task_id INTEGER NOT NULL REFERENCES home_maintenance_tasks(id),
+  due_date DATE NOT NULL,
+  frequency VARCHAR(50),
+  status VARCHAR(20) NOT NULL DEFAULT 'pending',
+  completed_at TIMESTAMP,
+  skipped_at TIMESTAMP,
+  skipped_reason TEXT,
+  priority VARCHAR(20) DEFAULT 'medium',
+  notes TEXT,
+  reminder_sent BOOLEAN DEFAULT false,
+  reminder_sent_at TIMESTAMP,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_household_task_assignments_household ON household_task_assignments(household_id);
+CREATE INDEX idx_household_task_assignments_due_date ON household_task_assignments(due_date);
+CREATE INDEX idx_household_task_assignments_status ON household_task_assignments(status);
+CREATE INDEX idx_household_task_assignments_task ON household_task_assignments(task_id);
+
+Then add to shared/schema.ts and server/storage.ts as documented in the spec.
+
+Please create the table and add the schema definition.
+```
+
+---
+
+## ESTIMATED TIME
+
+**Fix 1:** 30 minutes (code update + testing)  
+**Fix 2:** 90 minutes (table creation + schema + storage methods + testing)  
+**Total:** 2 hours
+
+---
+
+## NEXT STEPS AFTER COMPLETION
+
+Once these fixes are complete:
+
+1. **Verify Phase 1 is 100% complete:**
+   - ✅ Household creation
+   - ✅ Order linking
+   - ✅ Complete home profile data
+   - ✅ QR activation
+   - ✅ Task assignment infrastructure
+
+2. **Move to Phase 2 (Emails):**
+   - Customer confirmation email
+   - Admin notification email
+   - Scan tracking
+
+3. **Or Move to Phase 3 (Task Generation):**
+   - Now that table exists, can generate tasks
+   - Task generation logic
+   - Automatic scheduling
+
+**Recommended:** Fix these issues → Test thoroughly → Move to Phase 2 (emails)
+
+Task generation (Phase 3) can wait since the infrastructure is now in place.
