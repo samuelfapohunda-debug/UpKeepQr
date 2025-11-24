@@ -19,6 +19,8 @@ The project utilizes PostgreSQL with Drizzle ORM for type-safe operations. It co
 
 **Database Sequences**: The `order_id_counter` sequence is required for generating unique order IDs in format `{counter}-{year}`. This sequence is created automatically via the migration script at `server/migrations/create_order_id_counter.ts`. If the sequence is missing, Stripe webhook order creation will fail.
 
+**Task Assignment System**: The `household_task_assignments` table links households to maintenance tasks from `home_maintenance_tasks`. Each assignment tracks due dates, completion status, priority, and frequency. Includes indexes on household_id, due_date, and status for efficient querying. Foreign key constraints ensure referential integrity with CASCADE delete on household removal.
+
 ## Development Environment
 The project is set up as a monorepo using Yarn workspaces. It uses Vite for frontend development with HMR and tsx for backend development. Separate build processes are configured for the client (Vite) and server (esbuild), with shared TypeScript configuration across the monorepo.
 

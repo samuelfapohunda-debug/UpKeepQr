@@ -940,6 +940,28 @@ export const homeProfileExtras = pgTable("home_profile_extras", {
 export type HomeProfileExtra = typeof homeProfileExtras.$inferSelect;
 export type InsertHomeProfileExtra = typeof homeProfileExtras.$inferInsert;
 
+// Household Task Assignments Table
+export const householdTaskAssignmentsTable = pgTable("household_task_assignments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()::text`),
+  householdId: varchar("household_id").notNull(),
+  taskId: integer("task_id").notNull(),
+  dueDate: timestamp("due_date", { mode: 'date' }).notNull(),
+  frequency: varchar("frequency", { length: 50 }),
+  status: varchar("status", { length: 20 }).notNull().default('pending'),
+  completedAt: timestamp("completed_at"),
+  priority: varchar("priority", { length: 20 }).default('medium'),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  householdIdx: index("idx_household_task_assignments_household").on(table.householdId),
+  dueDateIdx: index("idx_household_task_assignments_due_date").on(table.dueDate),
+  statusIdx: index("idx_household_task_assignments_status").on(table.status),
+}));
+
+export type HouseholdTaskAssignment = typeof householdTaskAssignmentsTable.$inferSelect;
+export type InsertHouseholdTaskAssignment = typeof householdTaskAssignmentsTable.$inferInsert;
+
 // Admin Setup Forms API Schemas
 export const adminSetupFormFiltersSchema = z.object({
   status: z.string().optional(), // 'not_started', 'in_progress', 'completed'
