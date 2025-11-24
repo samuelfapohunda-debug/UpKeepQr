@@ -1,0 +1,1091 @@
+# PHASE 2: EMAIL NOTIFICATIONS & SCAN TRACKING
+
+**Priority:** HIGH  
+**Estimated Time:** 3-4 hours  
+**Status:** Ready for implementation
+
+---
+
+## OVERVIEW
+
+Add email confirmations and notifications after household setup completion, plus QR code scan tracking.
+
+**What We're Adding:**
+1. Customer confirmation email (setup complete)
+2. Admin notification email (new setup alert)
+3. QR code scan tracking
+
+**Why:** Users need feedback, admins need visibility, we need engagement metrics.
+
+---
+
+## CURRENT STATE
+
+✅ **Phase 1 Complete:**
+- Household setup works end-to-end
+- All data saves correctly
+- QR codes activate properly
+
+❌ **Missing:**
+- No confirmation email to customer
+- No notification to admin
+- No scan tracking
+
+**Problem:** Customer completes setup → silence. Admin doesn't know about new setups.
+
+---
+
+## IMPLEMENTATION
+
+### TASK 2.1: Customer Confirmation Email
+
+**File:** `server/lib/email.ts`
+
+**Add this function:**
+
+```typescript
+/**
+ * Send setup confirmation email to customer
+ * Called after household setup completes successfully
+ */
+export async function sendSetupConfirmationEmail(
+  customerEmail: string,
+  customerName: string,
+  householdId: string,
+  homeDetails: {
+    address: string;
+    homeType?: string;
+    sqft?: number;
+  }
+): Promise<void> {
+  try {
+    const msg = {
+      to: customerEmail,
+      from: process.env.EMAIL_FROM || 'noreply@upkeepqr.com',
+      replyTo: process.env.SUPPORT_EMAIL || 'support@upkeepqr.com',
+      subject: 'Your Home Profile is Ready! - UpKeepQR',
+      categories: ['customer_setup_confirmation'],
+      text: `
+Hi ${customerName},
+
+Great news! Your home maintenance profile is now set up and ready.
+
+Home Details:
+- Address: ${homeDetails.address}
+${homeDetails.homeType ? `- Home Type: ${homeDetails.homeType}` : ''}
+${homeDetails.sqft ? `- Square Footage: ${Number(homeDetails.sqft).toLocaleString()} sq ft` : ''}
+
+What's Next:
+You'll start receiving personalized maintenance reminders to help keep your home in top condition. These timely reminders will help you stay on top of important tasks like HVAC filter changes, seasonal maintenance, and more.
+
+Questions or need help? Reply to this email or contact us at support@upkeepqr.com.
+
+Best regards,
+The UpKeepQR Team
+`.trim(),
+      html: `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Your Home Profile is Ready</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f4f4f4;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f4f4f4; padding: 20px 0;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+          
+          <!-- Header -->
+          <tr>
+            <td style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 30px; text-align: center; border-radius: 8px 8px 0 0;">
+              <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 600;">
+                🎉 Your Home Profile is Ready!
+              </h1>
+            </td>
+          </tr>
+          
+          <!-- Body -->
+          <tr>
+            <td style="padding: 40px 30px;">
+              
+              <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 20px;">
+                Hi <strong>${customerName}</strong>,
+              </p>
+              
+              <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 0 0 30px;">
+                Great news! Your home maintenance profile is now set up and ready to help you keep your home in top condition.
+              </p>
+              
+              <!-- Home Details Box -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f8f9fa; border-radius: 6px; margin-bottom: 30px;">
+                <tr>
+                  <td style="padding: 25px;">
+                    <h2 style="color: #667eea; margin: 0 0 15px; font-size: 18px; font-weight: 600;">
+                      📍 Your Home Details
+                    </h2>
+                    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <td style="color: #666666; font-size: 14px; padding: 5px 0;">
+                          <strong>Address:</strong> ${homeDetails.address}
+                        </td>
+                      </tr>
+                      ${homeDetails.homeType ? `
+                      <tr>
+                        <td style="color: #666666; font-size: 14px; padding: 5px 0;">
+                          <strong>Home Type:</strong> ${homeDetails.homeType}
+                        </td>
+                      </tr>
+                      ` : ''}
+                      ${homeDetails.sqft ? `
+                      <tr>
+                        <td style="color: #666666; font-size: 14px; padding: 5px 0;">
+                          <strong>Square Footage:</strong> ${Number(homeDetails.sqft).toLocaleString()} sq ft
+                        </td>
+                      </tr>
+                      ` : ''}
+                    </table>
+                  </td>
+                </tr>
+              </table>
+              
+              <!-- What's Next -->
+              <h2 style="color: #333333; margin: 0 0 15px; font-size: 20px; font-weight: 600;">
+                What's Next?
+              </h2>
+              
+              <ul style="color: #666666; font-size: 15px; line-height: 1.8; margin: 0 0 30px; padding-left: 20px;">
+                <li>You'll start receiving <strong>personalized maintenance reminders</strong></li>
+                <li>Get timely alerts for <strong>HVAC filter changes</strong></li>
+                <li>Never miss important <strong>seasonal maintenance tasks</strong></li>
+                <li>Keep your home running smoothly year-round</li>
+              </ul>
+              
+              <!-- CTA Button -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td align="center" style="padding: 20px 0;">
+                    <a href="https://upkeepqr.com" style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 6px; font-size: 16px; font-weight: 600;">
+                      Learn More About UpKeepQR
+                    </a>
+                  </td>
+                </tr>
+              </table>
+              
+            </td>
+          </tr>
+          
+          <!-- Footer -->
+          <tr>
+            <td style="background-color: #f8f9fa; padding: 30px; text-align: center; border-radius: 0 0 8px 8px; border-top: 1px solid #e9ecef;">
+              <p style="color: #999999; font-size: 14px; margin: 0 0 10px;">
+                Questions? We're here to help!
+              </p>
+              <p style="color: #666666; font-size: 14px; margin: 0;">
+                Email us at <a href="mailto:support@upkeepqr.com" style="color: #667eea; text-decoration: none;">support@upkeepqr.com</a>
+              </p>
+              <p style="color: #999999; font-size: 12px; margin: 15px 0 0;">
+                © ${new Date().getFullYear()} UpKeepQR. All rights reserved.
+              </p>
+            </td>
+          </tr>
+          
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+      `
+    };
+
+    await sgMail.send(msg);
+    console.log(`✅ Setup confirmation email sent to ${customerEmail}`);
+    
+  } catch (error) {
+    console.error('❌ Failed to send setup confirmation email:', error);
+    throw error;
+  }
+}
+```
+
+---
+
+### TASK 2.2: Admin Notification Email
+
+**File:** `server/lib/email.ts`
+
+**Add this function:**
+
+```typescript
+/**
+ * Send notification to admin about new household setup
+ * Called after household setup completes successfully
+ */
+export async function sendAdminSetupNotification(
+  householdName: string,
+  householdEmail: string,
+  householdId: string,
+  orderId: string | null,
+  homeDetails: {
+    address: string;
+    city?: string;
+    state?: string;
+    zip?: string;
+    homeType?: string;
+    sqft?: number;
+    hvacType?: string;
+    waterHeaterType?: string;
+  }
+): Promise<void> {
+  try {
+    const adminEmail = process.env.ADMIN_EMAIL || 'support@upkeepqr.com';
+    const baseUrl = process.env.BASE_URL || 'https://upkeepqr.com';
+    
+    const msg = {
+      to: adminEmail,
+      from: process.env.EMAIL_FROM || 'noreply@upkeepqr.com',
+      subject: `🏠 New Home Setup Completed - ${householdName}`,
+      categories: ['admin_setup_notification'],
+      text: `
+New Household Setup Completed
+
+Customer Information:
+- Name: ${householdName}
+- Email: ${householdEmail}
+- Household ID: ${householdId}
+${orderId ? `- Order ID: ${orderId}` : ''}
+
+Home Details:
+- Address: ${homeDetails.address}
+${homeDetails.city ? `- City: ${homeDetails.city}` : ''}
+${homeDetails.state ? `- State: ${homeDetails.state}` : ''}
+${homeDetails.zip ? `- ZIP: ${homeDetails.zip}` : ''}
+${homeDetails.homeType ? `- Home Type: ${homeDetails.homeType}` : ''}
+${homeDetails.sqft ? `- Square Footage: ${Number(homeDetails.sqft).toLocaleString()} sq ft` : ''}
+${homeDetails.hvacType ? `- HVAC Type: ${homeDetails.hvacType}` : ''}
+${homeDetails.waterHeaterType ? `- Water Heater: ${homeDetails.waterHeaterType}` : ''}
+
+View in Admin Panel:
+${baseUrl}/admin/setup-forms/${householdId}
+
+Setup completed at: ${new Date().toLocaleString()}
+`.trim(),
+      html: `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>New Home Setup Completed</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f4f4f4;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f4f4f4; padding: 20px 0;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+          
+          <!-- Header -->
+          <tr>
+            <td style="background-color: #10b981; padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
+              <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 600;">
+                🏠 New Home Setup Completed
+              </h1>
+            </td>
+          </tr>
+          
+          <!-- Body -->
+          <tr>
+            <td style="padding: 30px;">
+              
+              <!-- Customer Info -->
+              <h2 style="color: #333333; margin: 0 0 15px; font-size: 18px; font-weight: 600; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px;">
+                Customer Information
+              </h2>
+              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 25px;">
+                <tr>
+                  <td style="color: #666666; font-size: 14px; padding: 8px 0; width: 180px;">
+                    <strong>Name:</strong>
+                  </td>
+                  <td style="color: #333333; font-size: 14px; padding: 8px 0;">
+                    ${householdName}
+                  </td>
+                </tr>
+                <tr>
+                  <td style="color: #666666; font-size: 14px; padding: 8px 0;">
+                    <strong>Email:</strong>
+                  </td>
+                  <td style="color: #333333; font-size: 14px; padding: 8px 0;">
+                    <a href="mailto:${householdEmail}" style="color: #10b981; text-decoration: none;">${householdEmail}</a>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="color: #666666; font-size: 14px; padding: 8px 0;">
+                    <strong>Household ID:</strong>
+                  </td>
+                  <td style="color: #333333; font-size: 14px; padding: 8px 0; font-family: monospace;">
+                    ${householdId}
+                  </td>
+                </tr>
+                ${orderId ? `
+                <tr>
+                  <td style="color: #666666; font-size: 14px; padding: 8px 0;">
+                    <strong>Order ID:</strong>
+                  </td>
+                  <td style="color: #333333; font-size: 14px; padding: 8px 0; font-family: monospace;">
+                    ${orderId}
+                  </td>
+                </tr>
+                ` : ''}
+              </table>
+              
+              <!-- Home Details -->
+              <h2 style="color: #333333; margin: 0 0 15px; font-size: 18px; font-weight: 600; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px;">
+                Home Details
+              </h2>
+              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 25px;">
+                <tr>
+                  <td style="color: #666666; font-size: 14px; padding: 8px 0; width: 180px;">
+                    <strong>Address:</strong>
+                  </td>
+                  <td style="color: #333333; font-size: 14px; padding: 8px 0;">
+                    ${homeDetails.address}
+                  </td>
+                </tr>
+                ${homeDetails.city ? `
+                <tr>
+                  <td style="color: #666666; font-size: 14px; padding: 8px 0;">
+                    <strong>City:</strong>
+                  </td>
+                  <td style="color: #333333; font-size: 14px; padding: 8px 0;">
+                    ${homeDetails.city}
+                  </td>
+                </tr>
+                ` : ''}
+                ${homeDetails.state ? `
+                <tr>
+                  <td style="color: #666666; font-size: 14px; padding: 8px 0;">
+                    <strong>State:</strong>
+                  </td>
+                  <td style="color: #333333; font-size: 14px; padding: 8px 0;">
+                    ${homeDetails.state}
+                  </td>
+                </tr>
+                ` : ''}
+                ${homeDetails.zip ? `
+                <tr>
+                  <td style="color: #666666; font-size: 14px; padding: 8px 0;">
+                    <strong>ZIP Code:</strong>
+                  </td>
+                  <td style="color: #333333; font-size: 14px; padding: 8px 0;">
+                    ${homeDetails.zip}
+                  </td>
+                </tr>
+                ` : ''}
+                ${homeDetails.homeType ? `
+                <tr>
+                  <td style="color: #666666; font-size: 14px; padding: 8px 0;">
+                    <strong>Home Type:</strong>
+                  </td>
+                  <td style="color: #333333; font-size: 14px; padding: 8px 0;">
+                    ${homeDetails.homeType}
+                  </td>
+                </tr>
+                ` : ''}
+                ${homeDetails.sqft ? `
+                <tr>
+                  <td style="color: #666666; font-size: 14px; padding: 8px 0;">
+                    <strong>Square Footage:</strong>
+                  </td>
+                  <td style="color: #333333; font-size: 14px; padding: 8px 0;">
+                    ${Number(homeDetails.sqft).toLocaleString()} sq ft
+                  </td>
+                </tr>
+                ` : ''}
+                ${homeDetails.hvacType ? `
+                <tr>
+                  <td style="color: #666666; font-size: 14px; padding: 8px 0;">
+                    <strong>HVAC Type:</strong>
+                  </td>
+                  <td style="color: #333333; font-size: 14px; padding: 8px 0;">
+                    ${homeDetails.hvacType}
+                  </td>
+                </tr>
+                ` : ''}
+                ${homeDetails.waterHeaterType ? `
+                <tr>
+                  <td style="color: #666666; font-size: 14px; padding: 8px 0;">
+                    <strong>Water Heater:</strong>
+                  </td>
+                  <td style="color: #333333; font-size: 14px; padding: 8px 0;">
+                    ${homeDetails.waterHeaterType}
+                  </td>
+                </tr>
+                ` : ''}
+              </table>
+              
+              <!-- Action Button -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td align="center" style="padding: 20px 0;">
+                    <a href="${baseUrl}/admin/setup-forms/${householdId}" style="display: inline-block; background-color: #10b981; color: #ffffff; text-decoration: none; padding: 12px 30px; border-radius: 6px; font-size: 15px; font-weight: 600;">
+                      View in Admin Panel →
+                    </a>
+                  </td>
+                </tr>
+              </table>
+              
+              <p style="color: #999999; font-size: 13px; text-align: center; margin: 20px 0 0;">
+                Setup completed at ${new Date().toLocaleString()}
+              </p>
+              
+            </td>
+          </tr>
+          
+          <!-- Footer -->
+          <tr>
+            <td style="background-color: #f9fafb; padding: 20px; text-align: center; border-radius: 0 0 8px 8px; border-top: 1px solid #e5e7eb;">
+              <p style="color: #999999; font-size: 12px; margin: 0;">
+                UpKeepQR Admin Notification System
+              </p>
+            </td>
+          </tr>
+          
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+      `
+    };
+
+    await sgMail.send(msg);
+    console.log(`✅ Admin notification sent for household ${householdId}`);
+    
+  } catch (error) {
+    console.error('❌ Failed to send admin notification:', error);
+    throw error;
+  }
+}
+```
+
+---
+
+### TASK 2.3: Call Emails After Setup
+
+**File:** `server/src/routes/setup.ts`
+
+**Step 1: Add imports at top of file**
+
+```typescript
+import { 
+  sendSetupConfirmationEmail,
+  sendAdminSetupNotification
+} from '../../lib/email.js';
+```
+
+**Step 2: Add email calls after transaction**
+
+**Location:** After the transaction commits, before sending response
+
+**Add this code:**
+
+```typescript
+// After household creation transaction completes successfully
+console.log("🎉 Household created successfully:", {
+  id: household.id,
+  email: household.email,
+  setupStatus: household.setupStatus,
+  createdBy: household.createdBy
+});
+
+// Send emails (non-blocking, catch errors individually)
+void Promise.all([
+  // Customer confirmation email
+  sendSetupConfirmationEmail(
+    household.email,
+    household.name,
+    household.id,
+    {
+      address: household.addressLine1 
+        ? `${household.addressLine1}${household.city ? ', ' + household.city : ''}${household.state ? ', ' + household.state : ''}`
+        : 'Your home',
+      homeType: homeProfile?.homeType,
+      sqft: homeProfile?.squareFootage
+    }
+  ).catch(err => {
+    console.error('❌ Failed to send setup confirmation email:', err);
+    // Don't throw - setup succeeded, email failure shouldn't break response
+  }),
+  
+  // Admin notification email
+  sendAdminSetupNotification(
+    household.name,
+    household.email,
+    household.id,
+    household.orderId,
+    {
+      address: household.addressLine1 || 'Not provided',
+      city: household.city || undefined,
+      state: household.state || undefined,
+      zip: household.zipcode || undefined,
+      homeType: homeProfile?.homeType,
+      sqft: homeProfile?.squareFootage,
+      hvacType: homeProfile?.hvacType,
+      waterHeaterType: homeProfile?.waterHeaterType
+    }
+  ).catch(err => {
+    console.error('❌ Failed to send admin notification email:', err);
+    // Don't throw - setup succeeded, email failure shouldn't break response
+  })
+]);
+
+// Return success response immediately (don't wait for emails)
+res.json({
+  success: true,
+  household: {
+    id: household.id,
+    email: household.email,
+    status: household.setupStatus,
+    createdBy: household.createdBy,
+    createdAt: household.createdAt
+  }
+});
+```
+
+**Important Notes:**
+- Use `Promise.all()` but **don't await it** - emails send in background
+- Each email has its own `.catch()` - one failure doesn't affect the other
+- Setup response returns immediately - don't wait for emails
+- Email failures are logged but don't break the setup flow
+
+---
+
+### TASK 2.4: QR Code Scan Tracking
+
+**File:** `server/src/routes/public.ts`
+
+**Location:** `GET /setup/:token/customer` endpoint
+
+**Add scan tracking before returning customer data:**
+
+```typescript
+router.get('/setup/:token/customer', async (req: Request, res: Response) => {
+  try {
+    const { token } = req.params;
+    
+    if (!token) {
+      return res.status(400).json({ error: 'Activation code required' });
+    }
+
+    // Track QR code scan (non-blocking, don't fail if tracking fails)
+    db.update(orderMagnetItems)
+      .set({
+        scan_count: sql`scan_count + 1`,
+        last_scan_at: new Date()
+      })
+      .where(eq(orderMagnetItems.activationCode, token))
+      .catch(err => {
+        console.error('❌ Failed to track QR scan:', err);
+        // Don't fail the request if tracking fails
+      });
+
+    // Find the order item by activation code
+    const item = await storage.getOrderItemByActivationCode(token);
+    
+    if (!item) {
+      return res.status(404).json({ error: 'Activation code not found' });
+    }
+
+    // ... rest of existing code ...
+```
+
+**Key Points:**
+- Increment `scan_count` by 1
+- Update `last_scan_at` timestamp
+- Use SQL increment (`scan_count + 1`) for concurrency safety
+- Don't await - tracking happens in background
+- Wrap in `.catch()` - tracking failure doesn't break form loading
+
+---
+
+## SECURITY CONSIDERATIONS
+
+### HTML Email Sanitization
+
+**Issue:** User-provided data (names, addresses) inserted into HTML emails could break formatting or inject HTML.
+
+**Risk Level:** Low (email clients sanitize), but good practice to escape.
+
+**Recommended Solution:**
+
+**Option A: Simple HTML escape function**
+
+```typescript
+// Add to server/lib/email.ts
+function escapeHtml(unsafe: string): string {
+  return unsafe
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+// Then use in templates:
+${escapeHtml(customerName)}
+${escapeHtml(homeDetails.address)}
+```
+
+**Option B: Use existing library (if available)**
+
+```typescript
+import { escape } from 'lodash';
+// or
+import sanitizeHtml from 'sanitize-html';
+```
+
+**Fields to escape:**
+- Customer name
+- Address fields (line1, city, state)
+- Home type
+- Any free-text fields
+
+**Note:** Numbers and enums (like 'central_air') don't need escaping.
+
+---
+
+## ENVIRONMENT VARIABLES
+
+**File:** `.env`
+
+**Add these if not present:**
+
+```bash
+# Email configuration
+EMAIL_FROM=noreply@upkeepqr.com
+ADMIN_EMAIL=support@upkeepqr.com
+BASE_URL=https://upkeepqr.com
+
+# SendGrid (should already exist)
+SENDGRID_API_KEY=SG.your_key_here
+```
+
+---
+
+## TESTING
+
+### Test 1: Customer Confirmation Email
+
+```bash
+# Complete a setup
+curl -X POST http://localhost:5000/api/setup/activate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "token": "OJnpwr1c8PsQ",
+    "fullName": "Email Test User",
+    "email": "your-email@example.com",
+    "phone": "4045551234",
+    "postalCode": "30281",
+    "homeType": "single_family",
+    "sqft": 2000,
+    "bedrooms": 3,
+    "bathrooms": 2,
+    "hvacType": "central_air",
+    "waterHeater": "tank_gas",
+    "roofAgeYears": 10
+  }'
+
+# Check email inbox for confirmation
+# Subject: "Your Home Profile is Ready! - UpKeepQR"
+```
+
+**Expected:**
+- Email arrives within 30 seconds
+- Professional HTML formatting
+- Contains customer name and home details
+- Links work correctly
+
+### Test 2: Admin Notification Email
+
+```bash
+# Same setup as above
+# Check admin email inbox (support@upkeepqr.com or ADMIN_EMAIL)
+# Subject: "🏠 New Home Setup Completed - Email Test User"
+```
+
+**Expected:**
+- Email arrives within 30 seconds
+- Contains all customer and home details
+- "View in Admin Panel" link works
+- Professional formatting
+
+### Test 3: Special Characters in Names
+
+```bash
+# Test with special characters
+curl -X POST http://localhost:5000/api/setup/activate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "token": "NEXT_CODE",
+    "fullName": "José Álvarez-O'\''Brien",
+    "email": "jose@example.com",
+    "postalCode": "30281",
+    "homeType": "single_family"
+  }'
+
+# Check email renders correctly
+# Name should display: José Álvarez-O'Brien (not broken HTML)
+```
+
+**Expected:**
+- Special characters render correctly
+- Apostrophes don't break HTML
+- Accented characters display properly
+- No HTML escaping issues
+
+### Test 4: QR Scan Tracking
+
+```bash
+# Check current scan count
+echo "SELECT activation_code, scan_count, last_scan_at FROM order_magnet_items WHERE activation_code = 'TEST_CODE';" | psql $DATABASE_URL
+
+# Visit setup page (triggers scan tracking)
+curl http://localhost:5000/api/public/setup/TEST_CODE/customer
+
+# Check scan count increased
+echo "SELECT activation_code, scan_count, last_scan_at FROM order_magnet_items WHERE activation_code = 'TEST_CODE';" | psql $DATABASE_URL
+```
+
+**Expected:**
+- `scan_count` increments by 1
+- `last_scan_at` updates to current timestamp
+- Multiple scans increment counter each time
+
+### Test 4: QR Scan Tracking
+
+```bash
+# Check current scan count
+echo "SELECT activation_code, scan_count, last_scan_at FROM order_magnet_items WHERE activation_code = 'TEST_CODE';" | psql $DATABASE_URL
+
+# Visit setup page (triggers scan tracking)
+curl http://localhost:5000/api/public/setup/TEST_CODE/customer
+
+# Check scan count increased
+echo "SELECT activation_code, scan_count, last_scan_at FROM order_magnet_items WHERE activation_code = 'TEST_CODE';" | psql $DATABASE_URL
+```
+
+**Expected:**
+- `scan_count` increments by 1
+- `last_scan_at` updates to current timestamp
+- Multiple scans increment counter each time
+
+### Test 5: Concurrent Scan Tracking
+
+```bash
+# Test scan count handles concurrency correctly
+seq 1 20 | xargs -n1 -P20 curl -s http://localhost:5000/api/public/setup/TEST_CODE/customer > /dev/null
+
+# Check final count
+echo "SELECT scan_count FROM order_magnet_items WHERE activation_code = 'TEST_CODE';" | psql $DATABASE_URL
+# Expected: scan_count incremented by 20 (no lost updates)
+```
+
+**Expected:**
+- No race conditions
+- All 20 scans counted
+- No gaps in count
+
+### Test 6: Email Failure Handling
+
+```bash
+# Temporarily break SendGrid API key in .env
+SENDGRID_API_KEY=invalid_key
+
+# Complete setup
+curl -X POST http://localhost:5000/api/setup/activate ...
+
+# Check response
+# Expected: Setup still succeeds (200 OK)
+
+# Check logs
+# Expected: Error logged but setup not broken
+```
+
+---
+
+## VERIFICATION CHECKLIST
+
+**After Implementation:**
+
+**Email Functions:**
+- [ ] `sendSetupConfirmationEmail()` exists in server/lib/email.ts
+- [ ] `sendAdminSetupNotification()` exists in server/lib/email.ts
+- [ ] Both functions imported in setup.ts
+- [ ] SendGrid API key configured
+
+**Setup Route:**
+- [ ] Email calls added after transaction
+- [ ] Emails wrapped in Promise.all() without await
+- [ ] Individual .catch() on each email
+- [ ] Setup response returns immediately
+
+**Scan Tracking:**
+- [ ] Tracking added to GET /setup/:token/customer
+- [ ] Uses SQL increment for scan_count
+- [ ] Updates last_scan_at timestamp
+- [ ] Wrapped in .catch() for error handling
+
+**Testing:**
+- [ ] Customer receives confirmation email
+- [ ] Admin receives notification email
+- [ ] Emails have correct content and formatting
+- [ ] QR scans increment counter
+- [ ] Email failures don't break setup
+
+**Production Ready:**
+- [ ] Environment variables set
+- [ ] SendGrid sender email verified
+- [ ] Admin email configured correctly
+- [ ] No errors in logs
+- [ ] Email delivery rate monitored
+
+---
+
+## REPLIT AGENT PROMPT
+
+```
+Implement Phase 2: Email Notifications & Scan Tracking for household setup completion.
+
+CONTEXT:
+Phase 1 complete - household setup works end-to-end. Need to add:
+1. Customer confirmation email after setup
+2. Admin notification email 
+3. QR code scan tracking
+
+REQUIREMENTS:
+
+TASK 1: CREATE EMAIL FUNCTIONS
+
+File: server/lib/email.ts
+
+Add HTML escape helper function first:
+function escapeHtml(unsafe: string): string {
+  return unsafe
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+Add two new functions:
+
+1. sendSetupConfirmationEmail(customerEmail, customerName, householdId, homeDetails)
+   - Subject: "Your Home Profile is Ready! - UpKeepQR"
+   - To: customer email
+   - replyTo: support@upkeepqr.com
+   - categories: ['customer_setup_confirmation']
+   - Content: Setup complete confirmation, home details summary, what's next
+   - Professional HTML design with inline CSS
+   - Include home details: address, home type, square footage
+   - Use escapeHtml() for customerName and address fields
+   - Convert sqft to number before toLocaleString(): Number(homeDetails.sqft).toLocaleString()
+   - CRITICAL: Use .trim() on text version to remove leading whitespace
+
+2. sendAdminSetupNotification(householdName, householdEmail, householdId, orderId, homeDetails)
+   - Subject: "🏠 New Home Setup Completed - [Name]"
+   - To: process.env.ADMIN_EMAIL or support@upkeepqr.com
+   - categories: ['admin_setup_notification']
+   - Content: Customer info, home details, link to admin panel
+   - Include all home details for admin review
+   - Use escapeHtml() for all user-provided text fields
+   - Convert sqft to number: Number(homeDetails.sqft).toLocaleString()
+   - CRITICAL: Use .trim() on text version to remove leading whitespace
+
+Both functions should:
+- Use SendGrid (sgMail already configured)
+- Have both text and HTML versions
+- Log success/failure
+- Throw error on failure (caught by caller)
+- Follow existing email patterns in the file
+
+TASK 2: ADD EMAIL CALLS TO SETUP ROUTE
+
+File: server/src/routes/setup.ts
+
+Step 1: Add imports at top:
+import { 
+  sendSetupConfirmationEmail,
+  sendAdminSetupNotification
+} from '../../lib/email.js';
+
+Step 2: After transaction commits, add:
+
+void Promise.all([
+  sendSetupConfirmationEmail(...).catch(err => console.error('Email failed:', err)),
+  sendAdminSetupNotification(...).catch(err => console.error('Email failed:', err))
+]);
+
+CRITICAL:
+- Use "void" keyword to make fire-and-forget explicit
+- Do NOT await Promise.all() - emails send in background
+- Each email has its own .catch() - failures don't affect each other
+- Setup returns success immediately - don't wait for emails
+- Email failures logged but don't break setup
+
+TASK 3: ADD QR SCAN TRACKING
+
+File: server/src/routes/public.ts
+Location: GET /setup/:token/customer endpoint
+
+Before returning customer data, add:
+
+db.update(orderMagnetItems)
+  .set({
+    scan_count: sql`scan_count + 1`,
+    last_scan_at: new Date()
+  })
+  .where(eq(orderMagnetItems.activationCode, token))
+  .catch(err => console.error('Scan tracking failed:', err));
+
+CRITICAL:
+- Use snake_case column names: scan_count, last_scan_at
+- Don't await - tracking happens in background
+- Wrap in .catch() - tracking failure doesn't break form loading
+- Use SQL increment for concurrency safety
+
+ENVIRONMENT VARIABLES (.env):
+EMAIL_FROM=noreply@upkeepqr.com
+ADMIN_EMAIL=support@upkeepqr.com
+SUPPORT_EMAIL=support@upkeepqr.com
+BASE_URL=https://upkeepqr.com
+SENDGRID_API_KEY=SG.xxx (should already exist)
+
+TESTING:
+1. Complete setup → Customer receives confirmation email
+2. Admin receives notification email
+3. Test special characters in name: "José Álvarez-O'Brien"
+4. Scan QR code → scan_count increments
+5. Concurrent scans → no lost updates
+6. Email failures don't break setup (check logs)
+
+Provide complete, production-ready code for all three tasks.
+```
+
+---
+
+## FUTURE IMPROVEMENTS (Phase 2.5 Ideas)
+
+These are NOT required for Phase 2 but good to document for future work:
+
+### 1. Email Retry Queue
+**Problem:** Email failures are logged but lost  
+**Solution:** Queue failed emails for retry (Redis, Bull, or database table)  
+**Benefit:** Improved delivery rate
+
+### 2. Scan Rate Limiting
+**Problem:** Browser refresh can spam scan_count  
+**Solution:** Throttle scans (max once per 10 mins per IP/code)  
+**Implementation:**
+```typescript
+// Track recent scans in Redis or memory
+const lastScan = await redis.get(`scan:${token}:${ip}`);
+if (lastScan && Date.now() - lastScan < 600000) {
+  // Skip tracking - scanned too recently
+  return;
+}
+await redis.set(`scan:${token}:${ip}`, Date.now(), 'EX', 600);
+```
+
+### 3. Setup Endpoint Rate Limiting
+**Problem:** Malicious user could spam activations  
+**Solution:** Add rate limit middleware (express-rate-limit)  
+**Example:**
+```typescript
+import rateLimit from 'express-rate-limit';
+
+const setupLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // 5 requests per window
+  message: 'Too many setup attempts, please try again later'
+});
+
+router.post('/activate', setupLimiter, async (req, res) => {
+  // ...
+});
+```
+
+### 4. Email Open/Click Tracking
+**Problem:** No visibility into email engagement  
+**Solution:** Use SendGrid tracking or custom tracking pixels  
+**Benefit:** Know if customers read emails
+
+### 5. Unsubscribe Management
+**Problem:** No way for users to opt out of emails  
+**Solution:** Add unsubscribe link and preference center  
+**Required:** For compliance (CAN-SPAM, GDPR)
+
+### 6. Email Template System
+**Problem:** HTML in code is hard to maintain  
+**Solution:** Use template engine (Handlebars, Pug) or email service (SendGrid templates)  
+**Benefit:** Easier design updates
+
+---
+
+## SUCCESS CRITERIA
+
+**Phase 2 Complete When:**
+
+✅ Customer confirmation email:
+- Sends after every successful setup
+- Professional HTML design
+- Contains correct customer/home details
+- Arrives within 30 seconds
+
+✅ Admin notification email:
+- Sends after every successful setup
+- Contains all relevant details
+- Link to admin panel works
+- Arrives within 30 seconds
+
+✅ QR scan tracking:
+- Scan count increments on each view
+- Last scan timestamp updates
+- Works concurrently (no race conditions)
+- Failures don't break form loading
+
+✅ Error handling:
+- Email failures logged but don't break setup
+- Setup succeeds even if emails fail
+- Scan tracking failures don't break form
+- All errors visible in logs
+
+---
+
+## ESTIMATED TIME
+
+**Task 2.1:** Customer Email - 45 minutes  
+**Task 2.2:** Admin Email - 45 minutes  
+**Task 2.3:** Email Integration - 30 minutes  
+**Task 2.4:** Scan Tracking - 30 minutes  
+**Testing:** 30 minutes
+
+**Total:** 3-4 hours
+
+---
+
+## AFTER PHASE 2
+
+**You'll Have:**
+- ✅ Complete household setup flow
+- ✅ Customer confirmation emails
+- ✅ Admin visibility into new setups
+- ✅ Engagement tracking (scans)
+- ✅ Production-ready system
+
+**Next:** Phase 3 (Task Generation) or ship to production!
+
+**Recommendation:** Deploy Phase 1 + 2, gather feedback, then do Phase 3.
