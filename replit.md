@@ -1,6 +1,6 @@
 # Overview
 
-This is an UpKeepQR Agent Management Platform, a monorepo TypeScript application designed to manage business agents. It provides features like scheduling, QR code generation, onboarding workflows, and dashboard management. The platform aims to streamline agent operations and automate common tasks, utilizing a React frontend and an Express backend. The customer-facing website is hosted on WordPress.
+This project is an Agent Management Platform (UpKeepQR) within a monorepo TypeScript application. Its core purpose is to streamline business agent operations through features like scheduling, QR code generation, comprehensive onboarding workflows, and dashboard management. The platform features a React frontend and an Express backend, with a WordPress site handling the customer-facing interface. The business vision is to automate tasks and provide a robust system for managing agents efficiently.
 
 # User Preferences
 
@@ -8,81 +8,25 @@ Preferred communication style: Simple, everyday language.
 
 # System Architecture
 
-## Frontend Architecture
-The frontend uses React 18 with TypeScript, functional components, and hooks. It employs Tailwind CSS with shadcn/ui for styling, Wouter for routing, TanStack Query for server state management, Vite for building, and React Hook Form with Zod for form handling.
-
-## Backend Architecture
-The backend is a RESTful API built with Express.js and TypeScript. It uses Drizzle ORM with PostgreSQL for data persistence, Zod for API validation, and Node-cron for scheduled tasks. The file structure is modular, organizing routes into dedicated modules for authentication, webhooks, and magnets, with shared utilities for audit logging and error handling.
-
-## Database Design
-The project utilizes PostgreSQL with Drizzle ORM for type-safe operations. It connects via Neon serverless PostgreSQL, defines schemas in a shared directory, and manages migrations with Drizzle Kit.
-
-**Database Sequences**: The `order_id_counter` sequence is required for generating unique order IDs in format `{counter}-{year}`. This sequence is created automatically via the migration script at `server/migrations/create_order_id_counter.ts`. If the sequence is missing, Stripe webhook order creation will fail.
-
-**Task Assignment System**: The `household_task_assignments` table links households to maintenance tasks from `home_maintenance_tasks`. Each assignment tracks due dates, completion status, priority, and frequency. Includes indexes on household_id, due_date, and status for efficient querying. Foreign key constraints ensure referential integrity with CASCADE delete on household removal.
-
-## Development Environment
-The project is set up as a monorepo using Yarn workspaces. It uses Vite for frontend development with HMR and tsx for backend development. Separate build processes are configured for the client (Vite) and server (esbuild), with shared TypeScript configuration across the monorepo.
-
-## Authentication & Security
-The platform uses JWT-based authentication for admin access, with signed tokens expiring in 24 hours. Admin login is handled at `/api/auth/agent/login` with email/password validation. Tokens are stored client-side, and React route guards protect routes. Login attempts are rate-limited, and environment secrets are stored securely. A separate token-based system is used for homeowner QR setup. Zod schemas provide input validation.
-
-**Admin Mode Verification**: Admin privileges are derived exclusively from server-side authentication. The backend checks JWT tokens and validates admin role before enabling admin-only features. Client payloads can never control admin mode, preventing privilege escalation attacks.
-
-**Rate Limiting**: IP-based rate limiting is enforced using express-rate-limit across all public endpoints. The Express server is configured with `trust proxy: 1` for Replit's single-hop proxy architecture, ensuring accurate client IP detection without enabling IP spoofing vulnerabilities. Never set `validate: false` on rate limiters, as this disables critical security protections.
-
-**Schema Consistency**: All API validation schemas use camelCase field naming (homeType, hvacType, waterHeater, roofAgeYears) for consistency between client and server. Both admin and customer activation flows send matching camelCase payloads.
-
-**Zod Validation Pattern**: For optional fields in shared schemas, use `.optional()` without chaining `.min()` constraints. Pattern `.string().min(1).optional()` incorrectly validates min constraint on undefined values. Correct pattern: `.string().optional()`.
-
-**Conditional Token Validation**: The `token` field uses conditional validation based on authentication:
-- **Customers (via QR code)**: Token is **required** - must scan QR code with embedded token
-- **Admins (via `/setup/new`)**: Token is **optional** - can create households manually without QR codes
-- Implementation: `server/src/routes/setup.ts` checks authentication status and enforces token requirement for non-admin users
-- Security: Admin mode requires JWT authentication (`role === 'admin'`) AND `ALLOW_ADMIN_SETUP_CREATION=true` environment variable
-
 ## UI/UX Decisions
-The platform uses shadcn/ui and Tailwind CSS for a consistent and modern design. It leverages Radix UI for accessible headless components and Lucide React for iconography.
+The platform utilizes React for the frontend, styled with Tailwind CSS and `shadcn/ui` for a consistent, modern design. It incorporates Radix UI for accessible headless components and Lucide React for iconography. Frontend state management is handled by TanStack Query, and Wouter is used for routing. Forms are managed with React Hook Form and Zod for validation.
+
+## Technical Implementations
+The backend is a RESTful API built with Express.js and TypeScript. It uses Drizzle ORM with PostgreSQL for data persistence and Node-cron for scheduled tasks. Zod is extensively used for API validation and ensuring schema consistency (camelCase field naming) across the client and server. The project is structured as a monorepo using Yarn workspaces, with Vite for frontend development and `tsx` for backend development.
 
 ## Feature Specifications
-- **Admin Setup Forms**: Comprehensive admin dashboard for managing homeowner setup forms, including status tracking, multi-author notes, and test notification capabilities.
-- **Security-Hardened Setup Form Creation**: Admins can create households directly without QR codes. Features role-based authentication (JWT + ADMIN_EMAIL verification), audit event tracking for all CRUD operations, and optional welcome email control. Controlled by `ALLOW_ADMIN_SETUP_CREATION` environment variable. **Critical security fix (Nov 2025)**: Admin mode is now derived exclusively from server-side authentication, never from client input. The backend validates JWT tokens and checks admin role before enabling admin privileges.
-- **Admin Setup Form Field Visibility**: Admins can access the full onboarding form (all 32 fields) via `/setup/new` route for comprehensive household creation. Features admin-specific UI badge, field count indicator, and direct submission to `/api/setup/activate`. The form displays all fields including Personal Detail (11 fields), Home Detail (11 fields), and Interests & Needs (10 fields), allowing admins complete control over household data entry. Admin mode is server-verified, not client-controlled.
-- **Phase 1: Household Setup Completion** (Nov 24, 2025): Production-ready transaction-safe household activation system at `/api/setup/activate`. Features include:
-  - **Transaction Safety**: All database operations wrapped in `db.transaction()` for atomicity with automatic rollback on errors
-  - **Duplicate Prevention**: Validates activation codes haven't been used (checks both households table and order_magnet_items activation status)
-  - **Token Validation**: Rejects invalid tokens (404), already-activated tokens (409), and duplicate household tokens (409)
-  - **Order Linking**: Automatically links households to originating orders via order_magnet_items lookup
-  - **Setup Completion**: Marks households as 'completed' with setupStartedAt and setupCompletedAt timestamps
-  - **Home Profile Creation**: Establishes home_profile_extras relationship, persisting yearBuilt, roofAgeYears, hvacType, waterHeaterType, and contactPrefChannel fields
-  - **QR Code Activation**: Updates order_magnet_items status to 'active' with activation timestamp and activator email
-  - **Schema Validation**: Uses comprehensive setupActivateSchema with required fullName/email fields
-  - **Security**: Admin mode derived exclusively from server-side JWT authentication, never from client input
-  - **Field Mapping**: Complete field mapping implementation:
-    - **Property Details**: homeType, yearBuilt, squareFootage (from sqft), bedrooms, bathrooms
-    - **Systems**: hvacType, waterHeaterType (from waterHeater), roofAgeYears
-    - **Ownership**: ownerType (converted from isOwner boolean)
-    - **Preferences**: budgetBand (from budgetRange), contactPrefChannel (from preferredContact)
-  - **Database Schema**: Added 4 new columns to home_profile_extras (homeType, squareFootage, bedrooms, bathrooms) to support Phase 1 field capture
-  - **Additional Fields**: Advanced features (appliances array, roofMaterial, HOA info, smart home gear, planned projects, heatPump, interestType, needConsultation, timelineToProceed) can be added in future phases when needed
-- **Phase 2: Email Notifications & Scan Tracking** (Nov 24, 2025): Production-ready email notification system and QR scan analytics. Features include:
-  - **Customer Confirmation Emails**: Professional HTML emails sent to customers after successful household setup, including home details summary and next steps (via SendGrid)
-  - **Admin Notification Emails**: Comprehensive setup notifications sent to admin with full customer and home details, household/order IDs, and direct link to admin panel
-  - **HTML Security**: All user-provided data (names, addresses) properly escaped using escapeHtml() helper to prevent HTML injection attacks
-  - **Fire-and-Forget Email Dispatch**: Emails sent asynchronously after transaction completion using void Promise.all() with individual .catch() handlers - setup returns immediately without waiting for email delivery
-  - **QR Scan Tracking**: Automatic tracking of QR code scans on GET /setup/:token/customer endpoint - increments scan_count and updates last_scan_at timestamp using concurrency-safe SQL increment
-  - **Design Compliance**: All email templates use text only (no emoji) per universal design guidelines
-  - **Non-Blocking Pattern**: Email and scan tracking failures logged but never break the setup or form loading flows
-  - **SendGrid Integration**: Uses categories 'customer_setup_confirmation' and 'admin_setup_notification' for email tracking and analytics
-  - **Environment Variables**: Requires FROM_EMAIL, ADMIN_EMAIL for email dispatch; SUPPORT_EMAIL and BASE_URL for email content
-  - **Architect Approved**: Complete implementation reviewed and approved with no security issues
-- **Contact Form API** (Nov 23, 2025): Fully functional contact form endpoint at `/api/contact` with rate limiting, email validation, and SendGrid integration. Features include: POST endpoint accepting name, email, phone (optional), subject, and message; validation for required fields and email format; rate limiting (5 requests per 15 minutes per IP); SendGrid email delivery to admin with HTML and text formats; structured JSON responses for success/error states. Architect reviewed with no security issues.
-- **Professional Service Requests API** (Nov 23, 2025): Fully functional professional service request endpoint at `/api/pro-requests` with modular architecture, rate limiting, and dual email notifications. Features include: POST endpoint accepting trade (roofing/plumbing/electrical/hvac/general), urgency (emergency/24h/3days/flexible), description, address, and contact details; Zod validation for all fields including 5-digit ZIP regex; rate limiting (10 requests per 10 minutes per IP); best-effort audit logging (wrapped in try/catch to prevent failures from aborting requests); dual SendGrid email delivery (user confirmation + admin alert with urgency indicators); public tracking code generation; database persistence; structured JSON responses. Migrated from monolithic routes.ts to modular `server/src/routes/proRequests.ts`. Architect reviewed and approved with no security issues.
-- **Unified Notification System**: Implemented with preference-based routing (email/SMS/both) using Twilio for SMS and SendGrid for email (planned). Includes TCPA compliance and graceful degradation for failures.
-- **CID Attachments**: For email client compatibility, enabling inline QR code display in welcome emails.
-- **Stripe Webhook Integration**: Handles `checkout.session.completed` events, creating orders with a sequential ID format (`{counter}-{year}`).
-- **Modular Route Architecture**: All routes are being migrated to a modular system for better organization and maintainability.
-- **Audit Event System**: All household CRUD operations are tracked with actor type (admin/customer/system), actor ID, email, timestamp, and contextual metadata for compliance and debugging.
+- **Admin & Onboarding Management**: Comprehensive admin dashboards manage homeowner setup forms, including status tracking and test notifications. Admins can create households directly via a security-hardened flow, controlled by server-side authentication and environment variables, with full access to all onboarding fields.
+- **Household Setup & Activation**: A transaction-safe household activation system (`/api/setup/activate`) prevents duplicates, validates tokens, links households to originating orders, and marks setups as complete. It also creates home profiles and activates QR codes.
+- **Email Notifications & QR Scan Tracking**: Integrates SendGrid for customer confirmation and admin notification emails, with all user data properly escaped to prevent injection attacks. QR code scans are automatically tracked, incrementing scan counts and updating timestamps.
+- **Automated Maintenance Task Generation**: Personalized maintenance tasks are automatically generated based on home details (e.g., HVAC type, roof age) with smart filtering, priority assignment, and scheduling logic. Tasks are inserted in batches within the setup transaction.
+- **Contact & Service Request APIs**: Dedicated APIs for contact forms (`/api/contact`) and professional service requests (`/api/pro-requests`) with rate limiting, validation, email notifications, audit logging, and database persistence.
+- **Authentication & Security**: JWT-based authentication for admin access with server-side validation of roles and tokens. Implements IP-based rate limiting across public endpoints and ensures schema consistency. Admin mode is exclusively derived from server-side authentication, preventing client-side privilege escalation. Conditional token validation is applied for customer (required) vs. admin (optional) setup flows.
+- **Unified Notification System**: Designed for preference-based routing (email/SMS/both) using Twilio for SMS and planned SendGrid integration for email, with TCPA compliance.
+- **Stripe Webhook Integration**: Processes `checkout.session.completed` events to create orders with a sequential ID format.
+- **Modular Architecture & Audit Logging**: Routes are modularized for maintainability. All household CRUD operations are tracked via an audit event system, recording actor type, ID, email, timestamp, and metadata for compliance.
+
+## System Design Choices
+The database uses PostgreSQL with Drizzle ORM, connected via Neon serverless. A critical `order_id_counter` sequence is used for unique order IDs. The `household_task_assignments` table manages links between households and maintenance tasks, with robust indexing and foreign key constraints.
 
 # External Dependencies
 
@@ -92,14 +36,14 @@ The platform uses shadcn/ui and Tailwind CSS for a consistent and modern design.
 
 ## UI Libraries
 - **Radix UI**: Headless UI primitives.
-- **shadcn/ui**: Component library built on Radix UI and Tailwind CSS.
+- **shadcn/ui**: Component library.
 - **Lucide React**: Icon library.
 
 ## Development Tools
-- **Vite**: Build tool and development server.
+- **Vite**: Build tool.
 - **TypeScript**: Type safety.
 - **Tailwind CSS**: Utility-first CSS framework.
-- **TanStack Query**: Data fetching and state management for React.
+- **TanStack Query**: Data fetching and state management.
 
 ## Utility Libraries
 - **QRCode**: QR code generation.
@@ -108,8 +52,8 @@ The platform uses shadcn/ui and Tailwind CSS for a consistent and modern design.
 - **Zod**: Runtime type validation.
 
 ## Communication Services
-- **Twilio**: SMS integration for notifications.
-- **SendGrid**: Email integration fully implemented for customer confirmation and admin notification emails.
+- **Twilio**: SMS integration.
+- **SendGrid**: Email integration.
 
 ## Payment Integration
 - **Stripe**: Payment processing.
