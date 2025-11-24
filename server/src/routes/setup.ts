@@ -4,23 +4,10 @@ import { getUserFromAuth } from "../../middleware/auth";
 import { storage } from "../../storage";
 import { nanoid } from "nanoid";
 import { db } from "../../db";
-import { householdsTable, orderMagnetItemsTable, homeProfileExtras } from "@shared/schema";
+import { householdsTable, orderMagnetItemsTable, homeProfileExtras, setupActivateSchema } from "@shared/schema";
 import { eq } from "drizzle-orm";
 
 const router = Router();
-
-// Base validation schema (all fields optional initially)
-const baseActivateSchema = z.object({
-  // Personal details (from Onboarding form)
-  fullName: z.string().min(1).optional(),
-  email: z.string().email().optional(),
-  phone: z.string().optional(),
-  zip: z.string().min(5).max(10).optional(),
-  homeType: z.string().optional(),
-  
-  // Optional admin flag
-  skipWelcomeEmail: z.boolean().optional(),
-});
 
 router.post("/activate", async (req: Request, res: Response) => {
   try {
@@ -43,8 +30,8 @@ router.post("/activate", async (req: Request, res: Response) => {
     
     console.log(`🔐 Authentication check: ${isAdminMode ? 'Admin mode' : 'Customer mode'}`);
     
-    // Validate base schema first
-    const validated = baseActivateSchema.safeParse(req.body);
+    // Validate using comprehensive setupActivateSchema
+    const validated = setupActivateSchema.safeParse(req.body);
 
     if (!validated.success) {
       console.warn("❌ Validation failed:", validated.error.errors);
@@ -57,7 +44,7 @@ router.post("/activate", async (req: Request, res: Response) => {
     const data = validated.data;
     
     // CONDITIONAL VALIDATION: Require token for non-admin users
-    if (!isAdminMode && !req.body.token) {
+    if (!isAdminMode && !data.token) {
       console.warn("❌ Token required for customer activation");
       return res.status(400).json({
         error: "Invalid data",
@@ -71,13 +58,6 @@ router.post("/activate", async (req: Request, res: Response) => {
       });
     }
 
-    // Validate required fields
-    if (!data.fullName || !data.email) {
-      return res.status(400).json({
-        error: "Full name and email are required"
-      });
-    }
-
     console.log("✅ Setup activation data validated:", {
       fullName: data.fullName,
       email: data.email,
@@ -86,7 +66,7 @@ router.post("/activate", async (req: Request, res: Response) => {
 
     // PHASE 1: COMPLETE SETUP WITH TRANSACTION
     const result = await db.transaction(async (tx) => {
-      const magnetToken = req.body.token;
+      const magnetToken = data.token;
       let orderId: string | null = null;
 
       // STEP 1: DUPLICATE CHECK (for customer mode with token)
@@ -105,9 +85,9 @@ router.post("/activate", async (req: Request, res: Response) => {
         }
       }
 
-      // STEP 2: LINK TO ORDER (for customer mode with token)
+      // STEP 2: VALIDATE TOKEN AND LINK TO ORDER (for customer mode with token)
       if (!isAdminMode && magnetToken) {
-        console.log("🔗 Looking up order from activation code:", magnetToken);
+        console.log("🔗 Validating activation code and looking up order:", magnetToken);
         
         const [magnetItem] = await tx
           .select()
@@ -115,12 +95,19 @@ router.post("/activate", async (req: Request, res: Response) => {
           .where(eq(orderMagnetItemsTable.activationCode, magnetToken))
           .limit(1);
 
-        if (magnetItem) {
-          orderId = magnetItem.orderId;
-          console.log("✅ Found linked order:", orderId);
-        } else {
-          console.warn("⚠️ No order found for activation code:", magnetToken);
+        if (!magnetItem) {
+          console.warn("⚠️ Invalid activation code:", magnetToken);
+          throw new Error('INVALID_TOKEN');
         }
+
+        // Check if already activated
+        if (magnetItem.activationStatus === 'active') {
+          console.warn("⚠️ Activation code already active:", magnetToken);
+          throw new Error('ALREADY_ACTIVATED');
+        }
+
+        orderId = magnetItem.orderId;
+        console.log("✅ Found linked order:", orderId);
       }
 
       // STEP 3: CREATE HOUSEHOLD WITH COMPLETE STATUS
@@ -134,10 +121,10 @@ router.post("/activate", async (req: Request, res: Response) => {
           name: data.fullName,
           email: data.email,
           phone: data.phone || null,
-          addressLine1: req.body.streetAddress || null,
-          city: req.body.city || null,
-          state: req.body.state || null,
-          zipcode: req.body.postalCode || req.body.zip || null,
+          addressLine1: data.streetAddress || null,
+          city: data.city || null,
+          state: data.state || null,
+          zipcode: data.postalCode || data.zip || null,
           notificationPreference: data.preferredContact === 'email' ? 'email_only' 
             : data.preferredContact === 'text' ? 'sms_only' 
             : 'both',
@@ -161,28 +148,38 @@ router.post("/activate", async (req: Request, res: Response) => {
         orderId: household.orderId
       });
 
-      // STEP 4: SAVE HOME PROFILE DATA (if any home details provided)
-      const hasHomeData = req.body.homeType || req.body.yearBuilt || req.body.sqft || 
-                         req.body.bedrooms || req.body.bathrooms || req.body.hvacType || 
-                         req.body.waterHeater || req.body.roofAgeYears;
+      // STEP 4: SAVE COMPREHENSIVE HOME PROFILE DATA
+      // Always create home_profile_extras record (establishing relationship)
+      console.log("🏠 Creating comprehensive home profile data");
+      
+      await tx
+        .insert(homeProfileExtras)
+        .values({
+          householdId: household.id,
+          
+          // Core property fields
+          yearBuilt: data.yearBuilt || null,
+          roofAgeYears: data.roofAgeYears || null,
+          
+          // HVAC & Systems  
+          hvacType: data.hvacType || null,
+          waterHeaterType: data.waterHeater || null,
+          
+          // Ownership type (convert boolean isOwner to enum)
+          ownerType: data.isOwner === true ? 'owner' : null,
+          
+          // Budget preferences (map budgetRange to budgetBand)
+          budgetBand: data.budgetRange || null,
+          
+          // Contact preferences
+          contactPrefChannel: data.preferredContact || null,
+          
+          // Timestamps
+          createdAt: now,
+          updatedAt: now,
+        });
 
-      if (hasHomeData) {
-        console.log("🏠 Creating home profile data");
-        
-        await tx
-          .insert(homeProfileExtras)
-          .values({
-            householdId: household.id,
-            yearBuilt: req.body.yearBuilt || null,
-            hvacType: req.body.hvacType || null,
-            waterHeaterType: req.body.waterHeater || null,
-            roofAgeYears: req.body.roofAgeYears || null,
-            createdAt: now,
-            updatedAt: now,
-          });
-
-        console.log("✅ Home profile data saved");
-      }
+      console.log("✅ Home profile data saved");
 
       // STEP 5: UPDATE QR CODE STATUS (for customer mode with token)
       if (!isAdminMode && magnetToken) {
@@ -201,8 +198,6 @@ router.post("/activate", async (req: Request, res: Response) => {
 
         if (updatedItem) {
           console.log("✅ QR code marked as active");
-        } else {
-          console.warn("⚠️ Could not update QR code status (item not found)");
         }
       }
 
@@ -235,6 +230,20 @@ router.post("/activate", async (req: Request, res: Response) => {
       return res.status(409).json({
         error: "Activation code already used",
         householdId: householdId
+      });
+    }
+    
+    // Handle already activated token error
+    if (error instanceof Error && error.message === 'ALREADY_ACTIVATED') {
+      return res.status(409).json({
+        error: "This QR code has already been activated. Each code can only be used once.",
+      });
+    }
+    
+    // Handle invalid token error
+    if (error instanceof Error && error.message === 'INVALID_TOKEN') {
+      return res.status(404).json({
+        error: "Invalid activation code. Please check your QR code and try again.",
       });
     }
     

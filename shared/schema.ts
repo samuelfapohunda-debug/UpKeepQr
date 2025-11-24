@@ -177,10 +177,11 @@ export const insertBatchSchema = z.object({
 // Setup and API schemas
 export const setupActivateSchema = z.object({
   token: z.string().optional(), // Optional for admin-created households
-  // Personal Details
-  fullName: z.string().optional(),
+  
+  // Personal Details (REQUIRED)
+  fullName: z.string().min(1, "Full name is required"),
+  email: z.string().email("Valid email is required"),
   phone: z.string().optional(),
-  email: z.string().email().optional(),
   preferredContact: z.enum(['email', 'phone', 'text']).optional(),
   preferredContactTime: z.enum(['morning', 'afternoon', 'evening']).optional(),
   smsOptIn: z.boolean().optional().default(false),
@@ -198,7 +199,7 @@ export const setupActivateSchema = z.object({
   // Admin fields (server-only, not sent by client)
   skipWelcomeEmail: z.boolean().optional().default(false),
   // NOTE: adminCreated removed - server derives admin mode from auth, never trusts client
-  homeType: z.string().optional(), // Optional since admin mode may not send it
+  homeType: z.string().optional(),
   yearBuilt: z.number().min(1800).max(new Date().getFullYear()).optional(),
   sqft: z.number().positive().optional(),
   bedrooms: z.number().min(0).max(20).optional(),
