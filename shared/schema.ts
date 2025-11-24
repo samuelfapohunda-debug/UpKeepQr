@@ -945,18 +945,33 @@ export const householdTaskAssignmentsTable = pgTable("household_task_assignments
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()::text`),
   householdId: varchar("household_id").notNull(),
   taskId: integer("task_id").notNull(),
+  
+  // Scheduling
   dueDate: timestamp("due_date", { mode: 'date' }).notNull(),
   frequency: varchar("frequency", { length: 50 }),
+  
+  // Status tracking
   status: varchar("status", { length: 20 }).notNull().default('pending'),
   completedAt: timestamp("completed_at"),
+  skippedAt: timestamp("skipped_at"),
+  skippedReason: text("skipped_reason"),
+  
+  // Additional info
   priority: varchar("priority", { length: 20 }).default('medium'),
   notes: text("notes"),
+  reminderSent: boolean("reminder_sent").default(false),
+  reminderSentAt: timestamp("reminder_sent_at"),
+  
+  // Metadata
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => ({
   householdIdx: index("idx_household_task_assignments_household").on(table.householdId),
   dueDateIdx: index("idx_household_task_assignments_due_date").on(table.dueDate),
   statusIdx: index("idx_household_task_assignments_status").on(table.status),
+  taskIdx: index("idx_household_task_assignments_task").on(table.taskId),
+  householdStatusIdx: index("idx_household_task_assignments_household_status").on(table.householdId, table.status),
+  householdDueIdx: index("idx_household_task_assignments_household_due").on(table.householdId, table.dueDate),
 }));
 
 export type HouseholdTaskAssignment = typeof householdTaskAssignmentsTable.$inferSelect;
