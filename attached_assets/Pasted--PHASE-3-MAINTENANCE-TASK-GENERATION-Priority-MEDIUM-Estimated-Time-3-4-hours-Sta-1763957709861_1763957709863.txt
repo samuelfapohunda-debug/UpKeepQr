@@ -1,0 +1,1501 @@
+# PHASE 3: MAINTENANCE TASK GENERATION
+
+**Priority:** MEDIUM  
+**Estimated Time:** 3-4 hours  
+**Status:** Ready for implementation
+
+---
+
+## OVERVIEW
+
+Automatically generate personalized maintenance task schedules when households complete setup.
+
+**What We're Adding:**
+1. Task catalog population (seed data)
+2. Task generation logic based on home details
+3. Automatic task assignment on setup completion
+4. Task scheduling with due dates
+
+**Why:** Provide immediate value - customers get personalized maintenance reminders.
+
+---
+
+## CURRENT STATE
+
+✅ **Phase 1 & 2 Complete:**
+- Household setup works
+- Emails send successfully
+- Infrastructure ready
+
+✅ **What Exists:**
+- `home_maintenance_tasks` table (catalog) - EMPTY
+- `household_task_assignments` table (assignments) - EXISTS
+
+❌ **What's Missing:**
+- Task catalog data (templates)
+- Task generation logic
+- Integration into setup flow
+
+---
+
+## ARCHITECTURE
+
+```
+Setup Complete
+    ↓
+Household + Home Profile Created
+    ↓
+generateMaintenanceTasks(household, homeProfile)
+    ↓
+    ├─> Query task catalog (home_maintenance_tasks)
+    ├─> Filter by home details (HVAC, roof, home type)
+    ├─> Calculate due dates (based on frequency)
+    └─> Create assignments (household_task_assignments)
+    ↓
+Tasks Ready for Customer
+```
+
+---
+
+## IMPLEMENTATION
+
+### TASK 3.1: Populate Task Catalog
+
+**Problem:** `home_maintenance_tasks` table is empty
+
+**Solution:** Create seed data with 20+ maintenance task templates
+
+**File:** Create `server/seeds/maintenance-tasks.sql`
+
+```sql
+-- Seed data for home maintenance tasks catalog
+-- Run this once to populate the task templates
+-- Safe to re-run: Uses ON CONFLICT to prevent duplicates
+
+INSERT INTO home_maintenance_tasks (
+  task_code,
+  category,
+  task_name,
+  base_frequency,
+  months_hot_humid,
+  months_cold_snow,
+  months_mixed,
+  months_arid_mountain,
+  seasonal_tag,
+  how_to,
+  why_it_matters,
+  est_minutes,
+  materials,
+  safety_note,
+  applies_if_freeze,
+  applies_if_hurricane,
+  applies_if_wildfire,
+  applies_if_hard_water,
+  applies_if_has_sprinklers,
+  pro_service_recommended,
+  diy_ok
+) VALUES
+
+-- HVAC Tasks
+(
+  'HVAC_FILTER_CHANGE',
+  'HVAC',
+  'Change HVAC Air Filter',
+  'monthly',
+  'monthly',
+  'monthly',
+  'monthly',
+  'monthly',
+  NULL,
+  'Turn off HVAC system. Locate air filter (usually in return air duct or furnace). Remove old filter, noting size and direction of airflow arrow. Insert new filter with arrow pointing toward furnace/blower. Turn system back on.',
+  'Clean filters improve air quality, reduce energy costs by 5-15%, and prevent system breakdowns. Dirty filters force your HVAC to work harder, shortening its lifespan.',
+  15,
+  'Replacement HVAC filter (check size: common sizes are 16x20x1, 20x25x1)',
+  'Turn off system before replacing filter to avoid inhaling dust.',
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  true
+),
+
+(
+  'HVAC_ANNUAL_SERVICE',
+  'HVAC',
+  'Schedule Professional HVAC Inspection',
+  'annual',
+  'spring',
+  'spring',
+  'spring',
+  'spring',
+  'spring',
+  'Contact licensed HVAC technician to inspect system before cooling season. Technician will check refrigerant levels, clean coils, test thermostat, inspect electrical connections, and ensure proper airflow.',
+  'Annual maintenance extends HVAC lifespan by 5-10 years, prevents costly breakdowns, maintains warranty coverage, and keeps energy efficiency optimal.',
+  90,
+  'None (professional service)',
+  'Ensure technician is licensed and insured.',
+  false,
+  false,
+  false,
+  false,
+  false,
+  true,
+  false
+),
+
+(
+  'HVAC_CONDENSER_CLEAN',
+  'HVAC',
+  'Clean Outdoor AC Condenser Unit',
+  'annual',
+  'spring',
+  'spring',
+  'spring',
+  'spring',
+  'spring',
+  'Turn off power to unit at breaker. Remove debris (leaves, grass) from around unit. Gently spray coils with garden hose from inside out. Straighten any bent fins with fin comb. Clear 2-foot perimeter around unit.',
+  'Clean condensers run 10-15% more efficiently, reduce cooling costs, and prevent compressor failure. Blocked airflow is a leading cause of AC failure.',
+  30,
+  'Garden hose, fin comb (optional)',
+  'Always turn off power at breaker before cleaning. Never use pressure washer.',
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  true
+),
+
+-- Plumbing Tasks
+(
+  'WATER_HEATER_FLUSH',
+  'Plumbing',
+  'Flush Water Heater Tank',
+  'annual',
+  'annual',
+  'annual',
+  'annual',
+  'annual',
+  NULL,
+  'Turn off power/gas to heater. Attach hose to drain valve at bottom of tank. Run hose to drain or outside. Open drain valve and let tank drain completely (20-30 minutes). Close valve, remove hose, turn power/gas back on.',
+  'Removes sediment buildup that reduces efficiency, causes noisy operation, and shortens tank life. Can improve efficiency by 5-10% and extend tank life by years.',
+  45,
+  'Garden hose, bucket',
+  'Water will be HOT. Let cool for 2 hours before draining or wear protective gloves.',
+  false,
+  false,
+  false,
+  true,
+  false,
+  false,
+  true
+),
+
+(
+  'WATER_HEATER_ANODE',
+  'Plumbing',
+  'Inspect Water Heater Anode Rod',
+  'biannual',
+  'biannual',
+  'biannual',
+  'biannual',
+  'biannual',
+  NULL,
+  'Turn off power/gas. Locate anode rod on top of tank. Use socket wrench to remove rod. If rod is less than 1/2" thick or coated with calcium, replace it. Apply teflon tape to threads and reinstall.',
+  'Anode rod prevents tank corrosion by sacrificing itself. Replacing it can extend tank life from 8-10 years to 15-20 years. Most important preventive maintenance for water heaters.',
+  60,
+  'Socket wrench, replacement anode rod, teflon tape',
+  'Turn off power/gas. If rod is stuck, consider calling professional.',
+  false,
+  false,
+  false,
+  true,
+  false,
+  true,
+  false
+),
+
+(
+  'LEAK_INSPECTION',
+  'Plumbing',
+  'Check for Plumbing Leaks',
+  'quarterly',
+  'quarterly',
+  'quarterly',
+  'quarterly',
+  'quarterly',
+  NULL,
+  'Inspect under sinks, around toilets, water heater, and washing machine. Look for water stains, moisture, mold, or dripping. Check water meter: turn off all water, note meter reading, wait 2 hours, check again. If meter changed, you have a leak.',
+  'Small leaks waste 10,000+ gallons per year, cause water damage ($5,000-$70,000 repairs), promote mold growth, and increase water bills. Early detection prevents major damage.',
+  20,
+  'Flashlight',
+  'Check for mold/mildew which indicates moisture problems.',
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  true
+),
+
+-- Exterior Tasks
+(
+  'GUTTER_CLEANING',
+  'Exterior',
+  'Clean Gutters and Downspouts',
+  'biannual',
+  'spring-fall',
+  'spring-fall',
+  'spring-fall',
+  'spring-fall',
+  'spring-fall',
+  'Use sturdy ladder with stabilizer. Scoop debris from gutters into bucket. Flush gutters with hose. Check downspouts are clear. Ensure water flows away from foundation.',
+  'Clogged gutters cause water damage to roof, siding, foundation ($10,000-$50,000 repairs), basement flooding, and landscape erosion. Regular cleaning prevents these costly issues.',
+  60,
+  'Ladder, gloves, bucket, garden hose, gutter scoop',
+  'Use ladder stabilizer. Never lean ladder against gutters. Work with partner.',
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  true
+),
+
+(
+  'ROOF_INSPECTION',
+  'Exterior',
+  'Visual Roof Inspection',
+  'annual',
+  'spring',
+  'spring',
+  'spring',
+  'spring',
+  'spring',
+  'From ground with binoculars, look for missing/damaged shingles, sagging areas, damaged flashing around chimneys/vents. Inside attic, check for water stains, daylight through roof, or sagging.',
+  'Early detection of roof issues prevents major water damage, mold, and structural problems. Small repairs cost $300-$1,000; replacement costs $5,000-$15,000+.',
+  30,
+  'Binoculars, flashlight',
+  'Do NOT climb on roof yourself - hire professional if issues found.',
+  false,
+  true,
+  false,
+  false,
+  false,
+  true,
+  true
+),
+
+(
+  'PRESSURE_WASH',
+  'Exterior',
+  'Pressure Wash Exterior',
+  'annual',
+  'spring',
+  'spring',
+  'spring',
+  'spring',
+  'spring',
+  'Rent or use pressure washer (1500-2000 PSI for home). Start from top, work down. Keep nozzle 12-18" from surface. Use wide-angle nozzle. Avoid windows, vents, and electrical fixtures.',
+  'Removes mold, mildew, dirt, and grime that degrade siding. Maintains curb appeal, prevents rot, and extends siding life. Increases home value by $10,000-$15,000.',
+  120,
+  'Pressure washer, safety goggles, outdoor cleaner',
+  'Never use on damaged siding. Wear safety goggles. Keep nozzle moving to avoid damage.',
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  true
+),
+
+-- Seasonal Tasks
+(
+  'WINTERIZATION',
+  'Seasonal',
+  'Winterize Home',
+  'annual',
+  NULL,
+  'fall',
+  'fall',
+  'fall',
+  'fall',
+  'Drain and shut off outdoor faucets. Insulate exposed pipes. Clean and store garden hoses. Service snow removal equipment. Check weatherstripping on doors/windows. Test heating system.',
+  'Prevents frozen pipe bursts ($5,000+ damage), reduces heating costs by 10-20%, ensures heating system works when needed, prevents carbon monoxide issues.',
+  90,
+  'Pipe insulation, weatherstripping',
+  'Test smoke and CO detectors. Have heating system serviced professionally.',
+  true,
+  false,
+  false,
+  false,
+  false,
+  false,
+  true
+),
+
+(
+  'SPRING_MAINTENANCE',
+  'Seasonal',
+  'Spring Home Maintenance',
+  'annual',
+  'spring',
+  'spring',
+  'spring',
+  'spring',
+  'spring',
+  'Inspect roof and gutters. Check for winter damage. Turn on outdoor water faucets. Test sprinkler system. Clean windows. Check AC system. Inspect deck/patio for damage.',
+  'Addresses winter damage before it worsens. Prepares home for summer. Prevents small issues from becoming expensive repairs. Maintains home value.',
+  120,
+  'Various tools and supplies',
+  'Inspect for pest damage after winter.',
+  false,
+  false,
+  false,
+  false,
+  true,
+  false,
+  true
+),
+
+-- Appliance Tasks
+(
+  'DRYER_VENT_CLEAN',
+  'Appliance',
+  'Clean Dryer Vent',
+  'annual',
+  'annual',
+  'annual',
+  'annual',
+  'annual',
+  NULL,
+  'Unplug dryer. Disconnect vent hose from back of dryer and wall. Use dryer vent brush or vacuum to remove lint from hose and duct. Reconnect securely. Clean lint trap.',
+  'Lint buildup causes 15,000+ house fires annually. Cleaning improves drying efficiency (30% faster), reduces energy costs, prevents fires, and extends dryer life.',
+  45,
+  'Dryer vent brush kit or vacuum attachment',
+  'Unplug dryer before cleaning. Check for gas leaks if gas dryer.',
+  false,
+  false,
+  true,
+  false,
+  false,
+  false,
+  true
+),
+
+(
+  'FRIDGE_COILS_CLEAN',
+  'Appliance',
+  'Clean Refrigerator Coils',
+  'annual',
+  'annual',
+  'annual',
+  'annual',
+  'annual',
+  NULL,
+  'Unplug refrigerator. Locate coils (usually back or bottom behind panel). Use coil brush or vacuum to remove dust and debris. Clean area around fridge. Plug back in.',
+  'Dirty coils make fridge work 25% harder, shortening lifespan and increasing energy costs by $100+/year. Cleaning takes 15 minutes, extends fridge life by years.',
+  30,
+  'Coil cleaning brush or vacuum with brush attachment',
+  'Unplug before cleaning. Be gentle with coils - they bend easily.',
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  true
+),
+
+-- Safety Tasks
+(
+  'SMOKE_DETECTOR_TEST',
+  'Safety',
+  'Test Smoke and CO Detectors',
+  'monthly',
+  'monthly',
+  'monthly',
+  'monthly',
+  'monthly',
+  NULL,
+  'Press test button on each detector. Should sound alarm. If not, replace battery. Replace entire unit every 10 years. Vacuum detector to remove dust.',
+  'Working detectors are required by law and save lives. Smoke alarms cut fire death risk by 50%. CO detectors prevent poisoning deaths. Simple test takes 5 minutes.',
+  10,
+  'Replacement batteries (9V or AA)',
+  'Never disable detector. Replace if more than 10 years old.',
+  false,
+  false,
+  true,
+  false,
+  false,
+  false,
+  true
+),
+
+(
+  'FIRE_EXTINGUISHER_CHECK',
+  'Safety',
+  'Inspect Fire Extinguishers',
+  'monthly',
+  'monthly',
+  'monthly',
+  'monthly',
+  'monthly',
+  NULL,
+  'Check pressure gauge is in green zone. Ensure pin and seal are intact. Check for visible damage or corrosion. Ensure accessible and not blocked. Should have one per floor and in kitchen.',
+  'Quick access to working extinguisher can prevent small fire from becoming total loss ($100,000+ damage). 90% of home fires start small and could be stopped with extinguisher.',
+  5,
+  'None',
+  'Never use water on electrical or grease fires. Call 911 for any fire.',
+  false,
+  false,
+  true,
+  false,
+  false,
+  false,
+  true
+),
+
+-- HVAC Seasonal
+(
+  'FURNACE_FILTER_WINTER',
+  'HVAC',
+  'Change Furnace Filter (Winter)',
+  'monthly',
+  NULL,
+  'monthly',
+  'monthly',
+  'monthly',
+  'winter',
+  'Turn off furnace. Locate filter (usually in return duct or furnace). Remove old filter. Note size and airflow direction. Install new filter with arrow pointing toward furnace. Turn system back on.',
+  'Critical during heating season when furnace runs constantly. Clean filter prevents furnace overheating, reduces heating costs by 15%, improves air quality, extends furnace life.',
+  15,
+  'Furnace filter (check size - common: 16x20x1, 20x25x1)',
+  'Turn off furnace before replacing. Consider higher MERV rating for better filtration.',
+  true,
+  false,
+  false,
+  false,
+  false,
+  false,
+  true
+),
+
+-- Exterior Paint/Siding
+(
+  'CAULK_INSPECTION',
+  'Exterior',
+  'Inspect and Replace Caulking',
+  'annual',
+  'spring',
+  'spring',
+  'spring',
+  'spring',
+  'spring',
+  'Check caulking around windows, doors, and exterior penetrations (pipes, wires). Look for cracks, gaps, or missing caulk. Remove old deteriorated caulk. Apply new exterior-grade silicone caulk.',
+  'Failed caulking allows water infiltration causing rot, mold, insect entry, and energy loss. Small caulk job ($20) prevents thousands in water damage repairs.',
+  60,
+  'Caulk gun, exterior silicone caulk, caulk removal tool',
+  'Work in dry conditions. Caulk requires 24 hours to cure.',
+  false,
+  true,
+  false,
+  false,
+  false,
+  false,
+  true
+),
+
+-- Lawn/Sprinkler
+(
+  'SPRINKLER_WINTERIZE',
+  'Exterior',
+  'Winterize Sprinkler System',
+  'annual',
+  NULL,
+  'fall',
+  'fall',
+  'fall',
+  'fall',
+  'Turn off water supply to system. Drain pipes using manual drain valves or compressed air blowout. Open valves to release pressure. Insulate backflow preventer.',
+  'Prevents pipe bursts from freezing ($2,000-$5,000 repairs). Critical in cold climates. Spring repairs cost 3x more than fall winterization.',
+  60,
+  'Air compressor (if using blowout method)',
+  'If using compressed air, do not exceed 80 PSI for PVC pipes.',
+  true,
+  false,
+  false,
+  false,
+  true,
+  true,
+  false
+),
+
+(
+  'SPRINKLER_SPRING_START',
+  'Exterior',
+  'Start Up Sprinkler System',
+  'annual',
+  'spring',
+  'spring',
+  'spring',
+  'spring',
+  'spring',
+  'Slowly turn on water supply. Check each zone for leaks, broken heads, or poor coverage. Adjust spray patterns. Set controller for seasonal schedule.',
+  'Proper startup prevents water waste, dead zones in lawn, and high water bills. Catches winter damage early when repairs are cheaper.',
+  45,
+  'Screwdriver for adjustments',
+  'Turn on water slowly to avoid pressure damage.',
+  false,
+  false,
+  false,
+  false,
+  true,
+  false,
+  true
+),
+
+-- Deck/Patio
+(
+  'DECK_SEAL',
+  'Exterior',
+  'Seal/Stain Deck',
+  'biannual',
+  'spring',
+  'spring',
+  'spring',
+  'spring',
+  'spring',
+  'Clean deck thoroughly. Sand rough spots. Apply deck cleaner and brightener. Let dry 48 hours. Apply stain/sealant with brush or roller. Apply thin, even coats.',
+  'Sealing prevents wood rot, splintering, UV damage, and insect infestation. Extends deck life from 10-15 years to 25-30 years. Maintains home value.',
+  240,
+  'Deck cleaner, sander, stain/sealant, brushes/roller',
+  'Work in dry weather (no rain for 48 hours). Test stain color on small area first.',
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  true
+)
+ON CONFLICT (task_code) DO NOTHING;
+```
+
+**Important Notes:**
+1. The `ON CONFLICT` clause prevents duplicate tasks when re-running the seed script
+2. Requires `task_code` to have a UNIQUE constraint
+3. If constraint doesn't exist, add it first:
+
+```sql
+ALTER TABLE home_maintenance_tasks ADD CONSTRAINT unique_task_code UNIQUE (task_code);
+```
+
+**To Run:**
+```bash
+psql $DATABASE_URL < server/seeds/maintenance-tasks.sql
+```
+
+---
+
+### TASK 3.2: Create Task Generation Library
+
+**File:** Create `server/lib/tasks.ts`
+
+**CRITICAL SCHEMA REQUIREMENT:**
+
+Before implementing, verify that `homeMaintenanceTasksTable` schema in `shared/schema.ts` uses camelCase column mapping:
+
+```typescript
+export const homeMaintenanceTasksTable = pgTable("home_maintenance_tasks", {
+  id: serial("id").primaryKey(),
+  taskCode: varchar("task_code", { length: 100 }).notNull(),
+  category: varchar("category", { length: 100 }).notNull(),
+  taskName: varchar("task_name", { length: 255 }).notNull(),
+  baseFrequency: varchar("base_frequency", { length: 50 }).notNull(),
+  // ... other fields
+});
+```
+
+If your Drizzle schema uses snake_case without camelCase mapping, you must either:
+1. Update the schema to use camelCase field names, OR
+2. Update all code below to use `task.task_code` instead of `task.taskCode`
+
+**Implementation:**
+
+```typescript
+import { sql } from 'drizzle-orm';
+import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
+import { householdTaskAssignmentsTable, homeMaintenanceTasksTable } from '../../shared/schema';
+
+/**
+ * Convert frequency string to days
+ */
+function frequencyToDays(frequency: string): number {
+  switch(frequency.toLowerCase()) {
+    case 'monthly': return 30;
+    case 'quarterly': return 90;
+    case 'biannual': return 180;
+    case 'annual': return 365;
+    case 'weekly': return 7;
+    default: return 30;
+  }
+}
+
+/**
+ * Calculate due date safely (handles DST and month boundaries)
+ */
+function calculateDueDate(fromDate: Date, daysAhead: number): Date {
+  return new Date(fromDate.getTime() + daysAhead * 86400000);
+}
+
+/**
+ * Task assignment for a household
+ */
+export interface TaskAssignment {
+  taskId: number;
+  taskName: string;
+  category: string;
+  frequency: string;
+  dueDate: Date;
+  priority: string;
+}
+
+/**
+ * Generate maintenance tasks for a household based on home details
+ * 
+ * @param tx - Database transaction (from Drizzle)
+ * @param householdId - Household ID to assign tasks to
+ * @param homeProfile - Home details from setup
+ * @returns Array of task assignments created
+ */
+export async function generateMaintenanceTasks(
+  tx: any, // Drizzle transaction type
+  householdId: string,
+  homeProfile: {
+    homeType?: string;
+    hvacType?: string;
+    waterHeaterType?: string;
+    roofAgeYears?: number;
+    squareFootage?: number;
+  }
+): Promise<TaskAssignment[]> {
+  console.log(`🔧 Generating maintenance tasks for household ${householdId}`, homeProfile);
+  
+  const assignments: TaskAssignment[] = [];
+  const today = new Date();
+  
+  try {
+    // Get all maintenance tasks from catalog (using transaction)
+    const allTasks = await tx
+      .select()
+      .from(homeMaintenanceTasksTable);
+    
+    console.log(`📋 Found ${allTasks.length} tasks in catalog`);
+    
+    if (allTasks.length === 0) {
+      console.warn('⚠️ No tasks in catalog. Run seed script first.');
+      return [];
+    }
+    
+    // Filter and assign tasks based on home details
+    for (const task of allTasks) {
+      let shouldAssign = false;
+      let priority = 'medium';
+      let daysUntilDue = 30; // Default: due in 30 days
+      
+      // HVAC tasks
+      if (task.category === 'HVAC') {
+        if (homeProfile.hvacType) {
+          shouldAssign = true;
+          
+          // Monthly filter changes for central systems
+          if (task.taskCode === 'HVAC_FILTER_CHANGE' && 
+              (homeProfile.hvacType === 'central_air' || homeProfile.hvacType === 'heat_pump')) {
+            priority = 'high';
+            daysUntilDue = 30; // First change in 30 days
+          }
+          
+          // Annual service
+          if (task.taskCode === 'HVAC_ANNUAL_SERVICE') {
+            priority = 'high';
+            daysUntilDue = 90; // Schedule for spring
+          }
+          
+          // Condenser cleaning (only for outdoor units)
+          if (task.taskCode === 'HVAC_CONDENSER_CLEAN' && 
+              (homeProfile.hvacType === 'central_air' || homeProfile.hvacType === 'heat_pump')) {
+            daysUntilDue = 60; // Spring task
+          }
+        }
+      }
+      
+      // Plumbing tasks
+      if (task.category === 'Plumbing') {
+        shouldAssign = true;
+        
+        // Water heater tasks - higher priority for older heaters
+        if (task.taskCode === 'WATER_HEATER_FLUSH') {
+          daysUntilDue = 120; // 4 months out
+          
+          if (homeProfile.waterHeaterType === 'tank_gas' || 
+              homeProfile.waterHeaterType === 'tank_electric') {
+            priority = 'medium';
+          }
+        }
+        
+        if (task.taskCode === 'WATER_HEATER_ANODE') {
+          daysUntilDue = 180; // 6 months out
+          priority = 'low'; // Can wait, but important
+        }
+        
+        // Leak inspection - always important
+        if (task.taskCode === 'LEAK_INSPECTION') {
+          priority = 'medium';
+          daysUntilDue = 30; // First check in 30 days
+        }
+      }
+      
+      // Exterior tasks - only for single family homes
+      if (task.category === 'Exterior') {
+        if (homeProfile.homeType === 'single_family' || 
+            homeProfile.homeType === 'townhouse') {
+          shouldAssign = true;
+          
+          // Gutter cleaning
+          if (task.taskCode === 'GUTTER_CLEANING') {
+            priority = 'high';
+            daysUntilDue = 45; // Before fall/spring
+          }
+          
+          // Roof inspection - critical if roof is old
+          if (task.taskCode === 'ROOF_INSPECTION') {
+            if (homeProfile.roofAgeYears && homeProfile.roofAgeYears > 10) {
+              priority = 'high';
+              daysUntilDue = 30; // Check soon if old roof
+            } else {
+              priority = 'medium';
+              daysUntilDue = 90;
+            }
+          }
+          
+          // Pressure washing
+          if (task.taskCode === 'PRESSURE_WASH') {
+            priority = 'low';
+            daysUntilDue = 180; // Spring/summer task
+          }
+          
+          // Caulking
+          if (task.taskCode === 'CAULK_INSPECTION') {
+            priority = 'medium';
+            daysUntilDue = 60;
+          }
+        }
+      }
+      
+      // Seasonal tasks
+      if (task.category === 'Seasonal') {
+        shouldAssign = true;
+        
+        // Winterization (fall)
+        if (task.taskCode === 'WINTERIZATION') {
+          const month = today.getMonth();
+          // Schedule for fall (Sept-Nov)
+          if (month < 8) { // Before September
+            daysUntilDue = (8 - month) * 30; // Days until September
+          } else {
+            daysUntilDue = 30;
+          }
+          priority = 'high';
+        }
+        
+        // Spring maintenance
+        if (task.taskCode === 'SPRING_MAINTENANCE') {
+          const month = today.getMonth();
+          // Schedule for spring (March-May)
+          if (month < 2) { // Before March
+            daysUntilDue = (2 - month) * 30;
+          } else if (month > 4) { // After May
+            daysUntilDue = (12 - month + 2) * 30; // Next spring
+          } else {
+            daysUntilDue = 30;
+          }
+          priority = 'high';
+        }
+      }
+      
+      // Appliance tasks - always applicable
+      if (task.category === 'Appliance') {
+        shouldAssign = true;
+        
+        if (task.taskCode === 'DRYER_VENT_CLEAN') {
+          priority = 'high'; // Fire hazard
+          daysUntilDue = 90;
+        }
+        
+        if (task.taskCode === 'FRIDGE_COILS_CLEAN') {
+          priority = 'medium';
+          daysUntilDue = 120;
+        }
+      }
+      
+      // Safety tasks - ALWAYS assign, highest priority
+      if (task.category === 'Safety') {
+        shouldAssign = true;
+        priority = 'high';
+        
+        if (task.taskCode === 'SMOKE_DETECTOR_TEST') {
+          daysUntilDue = 7; // Test within a week
+        }
+        
+        if (task.taskCode === 'FIRE_EXTINGUISHER_CHECK') {
+          daysUntilDue = 7;
+        }
+      }
+      
+      // Create assignment if task applies
+      if (shouldAssign) {
+        const dueDate = calculateDueDate(today, daysUntilDue);
+        
+        assignments.push({
+          taskId: task.id,
+          taskName: task.taskName,
+          category: task.category,
+          frequency: task.baseFrequency,
+          dueDate,
+          priority
+        });
+      }
+    }
+    
+    // Sort by due date (soonest first)
+    assignments.sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime());
+    
+    // Batch insert all assignments (single query, not N queries)
+    if (assignments.length > 0) {
+      const assignmentValues = assignments.map(assignment => ({
+        householdId,
+        taskId: assignment.taskId,
+        dueDate: assignment.dueDate.toISOString().split('T')[0], // Format as YYYY-MM-DD
+        frequency: assignment.frequency,
+        status: 'pending',
+        priority: assignment.priority,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }));
+      
+      await tx.insert(householdTaskAssignmentsTable).values(assignmentValues);
+    }
+    
+    console.log(`✅ Created ${assignments.length} task assignments for household ${householdId}`);
+    
+    return assignments;
+    
+  } catch (error) {
+    console.error('❌ Error generating maintenance tasks:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get upcoming tasks for a household
+ * Note: This function uses db directly, not transaction.
+ * Only call outside of active transactions.
+ */
+export async function getUpcomingTasks(
+  db: any, // Database instance
+  householdId: string,
+  daysAhead: number = 30
+): Promise<any[]> {
+  const futureDate = calculateDueDate(new Date(), daysAhead);
+  
+  const tasks = await db
+    .select({
+      assignment: householdTaskAssignmentsTable,
+      task: homeMaintenanceTasksTable
+    })
+    .from(householdTaskAssignmentsTable)
+    .leftJoin(
+      homeMaintenanceTasksTable,
+      sql`${householdTaskAssignmentsTable.taskId} = ${homeMaintenanceTasksTable.id}`
+    )
+    .where(sql`
+      ${householdTaskAssignmentsTable.householdId} = ${householdId}
+      AND ${householdTaskAssignmentsTable.status} = 'pending'
+      AND ${householdTaskAssignmentsTable.dueDate} <= ${futureDate.toISOString().split('T')[0]}
+    `)
+    .orderBy(householdTaskAssignmentsTable.dueDate)
+    .execute();
+  
+  return tasks;
+}
+```
+
+---
+
+### TASK 3.3: Integrate Task Generation into Setup
+
+**File:** `server/src/routes/setup.ts`
+
+**Step 1: Add import at top**
+
+```typescript
+import { generateMaintenanceTasks } from '../../lib/tasks.js';
+```
+
+**Step 2: Add task generation inside transaction (after home profile creation)**
+
+```typescript
+// After creating household and home_profile_extras
+const household = await tx.insert(households)...;
+const homeProfile = await tx.insert(homeProfileExtras)...;
+
+// Generate maintenance tasks based on home details (pass transaction)
+console.log('🔧 Generating maintenance tasks...');
+try {
+  const tasks = await generateMaintenanceTasks(tx, household.id, {
+    homeType: homeProfile.homeType,
+    hvacType: homeProfile.hvacType,
+    waterHeaterType: homeProfile.waterHeaterType,
+    roofAgeYears: homeProfile.roofAgeYears,
+    squareFootage: homeProfile.squareFootage
+  });
+  
+  console.log(`✅ Generated ${tasks.length} maintenance tasks`);
+} catch (taskError) {
+  console.error('⚠️ Task generation failed (non-critical):', taskError);
+  // Don't fail the setup if task generation fails
+  // Tasks can be generated manually later
+}
+
+// Continue with rest of setup (emails, etc.)
+```
+
+**Important Notes:**
+- Task generation is inside the transaction
+- Wrapped in try-catch so task failures don't break setup
+- Tasks are logged but failures are non-critical
+- Setup still succeeds even if task generation fails
+
+---
+
+## IMPORTANT IMPROVEMENTS & REFINEMENTS
+
+### 1. Plumbing Task Filtering (Recommended)
+
+**Current Behavior:** ALL plumbing tasks assigned to all homes
+
+**Recommendation:** Filter water heater tasks by water heater type
+
+```typescript
+// In Plumbing tasks section, refine logic:
+if (task.category === 'Plumbing') {
+  // Leak inspection - always important
+  if (task.taskCode === 'LEAK_INSPECTION') {
+    shouldAssign = true;
+    priority = 'medium';
+    daysUntilDue = 30;
+  }
+  
+  // Water heater tasks - ONLY for tank water heaters
+  if (task.taskCode === 'WATER_HEATER_FLUSH' || task.taskCode === 'WATER_HEATER_ANODE') {
+    if (homeProfile.waterHeaterType === 'tank_gas' || 
+        homeProfile.waterHeaterType === 'tank_electric') {
+      shouldAssign = true;
+      // ... rest of logic
+    }
+  }
+}
+```
+
+### 2. Climate Fields Currently Unused
+
+**Note:** Your task catalog includes climate-specific scheduling fields:
+- `months_hot_humid`
+- `months_cold_snow`
+- `months_mixed`
+- `months_arid_mountain`
+
+**Current Status:** Not used in task generation logic
+
+**Options:**
+1. **Keep for future:** Add TODO comment for climate-based scheduling (Phase 4)
+2. **Remove:** Simplify schema if climate features not planned
+
+**Recommended:** Keep for future enhancement:
+```typescript
+// TODO: Phase 4 - Implement climate-based scheduling
+// Use homeProfile.climate or location to select appropriate month schedule
+```
+
+### 3. Idempotency Check (Highly Recommended)
+
+**Problem:** Running task generation twice creates duplicates
+
+**Solution:** Add check at start of `generateMaintenanceTasks`:
+
+```typescript
+// Check if household already has tasks
+const existingTasks = await tx
+  .select()
+  .from(householdTaskAssignmentsTable)
+  .where(eq(householdTaskAssignmentsTable.householdId, householdId))
+  .limit(1);
+
+if (existingTasks.length > 0) {
+  console.log(`⚠️ Household ${householdId} already has tasks assigned. Skipping.`);
+  return [];
+}
+```
+
+### 4. Schema Timestamp Defaults
+
+**Ensure schema has defaults for timestamps:**
+
+```typescript
+export const householdTaskAssignmentsTable = pgTable("household_task_assignments", {
+  // ...
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow()
+});
+```
+
+If defaults exist, you don't need to supply them in the insert.
+
+---
+
+## TESTING
+
+### Test 1: Seed Task Catalog
+
+```bash
+# Create seed file
+cat > server/seeds/maintenance-tasks.sql << 'EOF'
+[Copy SQL from Task 3.1]
+EOF
+
+# Run seed
+psql $DATABASE_URL < server/seeds/maintenance-tasks.sql
+
+# Verify tasks loaded
+echo "SELECT COUNT(*), category FROM home_maintenance_tasks GROUP BY category;" | psql $DATABASE_URL
+```
+
+**Expected Output:**
+```
+ count | category  
+-------+-----------
+     4 | HVAC
+     3 | Plumbing
+     6 | Exterior
+     2 | Seasonal
+     2 | Appliance
+     2 | Safety
+(6 rows)
+```
+
+### Test 2: Setup with Task Generation
+
+```bash
+# Get fresh activation code
+echo "SELECT activation_code FROM order_magnet_items WHERE activation_status = 'inactive' LIMIT 1;" | psql $DATABASE_URL
+
+# Complete setup
+curl -X POST http://localhost:5000/api/setup/activate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "token": "YOUR_CODE",
+    "fullName": "Task Test User",
+    "email": "tasktest@example.com",
+    "postalCode": "30281",
+    "homeType": "single_family",
+    "sqft": 2200,
+    "bedrooms": 4,
+    "bathrooms": 2.5,
+    "yearBuilt": 2010,
+    "hvacType": "central_air",
+    "waterHeater": "tank_gas",
+    "roofAgeYears": 12
+  }'
+```
+
+### Test 3: Verify Tasks Created
+
+```bash
+# Get household ID from previous test
+HOUSEHOLD_ID="[from response]"
+
+# Check tasks assigned
+echo "SELECT COUNT(*) FROM household_task_assignments WHERE household_id = '$HOUSEHOLD_ID';" | psql $DATABASE_URL
+
+# View tasks with details
+echo "
+SELECT 
+  hta.due_date,
+  hta.priority,
+  hta.status,
+  hmt.task_name,
+  hmt.category
+FROM household_task_assignments hta
+JOIN home_maintenance_tasks hmt ON hta.task_id = hmt.id
+WHERE hta.household_id = '$HOUSEHOLD_ID'
+ORDER BY hta.due_date
+LIMIT 10;
+" | psql $DATABASE_URL
+```
+
+**Expected Output:**
+```
+ due_date   | priority | status  |           task_name            | category 
+------------+----------+---------+--------------------------------+----------
+ 2025-12-01 | high     | pending | Test Smoke and CO Detectors    | Safety
+ 2025-12-07 | high     | pending | Inspect Fire Extinguishers     | Safety
+ 2025-12-24 | medium   | pending | Check for Plumbing Leaks       | Plumbing
+ 2026-01-23 | high     | pending | Change HVAC Air Filter         | HVAC
+ 2026-02-07 | high     | pending | Clean Gutters and Downspouts   | Exterior
+...
+(15-20 rows)
+```
+
+### Test 4: Different Home Types
+
+```bash
+# Test with condo (should skip exterior tasks)
+curl -X POST http://localhost:5000/api/setup/activate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "token": "ANOTHER_CODE",
+    "fullName": "Condo Owner",
+    "email": "condo@example.com",
+    "postalCode": "30281",
+    "homeType": "condo",
+    "hvacType": "heat_pump"
+  }'
+
+# Check tasks - should NOT have gutter cleaning, roof inspection, etc.
+```
+
+### Test 5: Idempotency Test (Prevent Duplicates)
+
+```bash
+# Complete setup twice with same household
+HOUSEHOLD_ID="test_household_id"
+
+# First setup
+curl -X POST http://localhost:5000/api/setup/activate ...
+
+# Count tasks
+echo "SELECT COUNT(*) FROM household_task_assignments WHERE household_id = '$HOUSEHOLD_ID';" | psql $DATABASE_URL
+
+# Try to run task generation again (should NOT create duplicates)
+# This should be prevented by your application logic
+```
+
+**Expected:** Task generation should check if household already has tasks assigned.
+
+**Recommended Implementation:**
+```typescript
+// In generateMaintenanceTasks, add at start:
+const existingTasks = await tx
+  .select()
+  .from(householdTaskAssignmentsTable)
+  .where(eq(householdTaskAssignmentsTable.householdId, householdId));
+
+if (existingTasks.length > 0) {
+  console.log(`⚠️ Household ${householdId} already has ${existingTasks.length} tasks. Skipping generation.`);
+  return [];
+}
+```
+
+### Test 6: Multiple Homes with Similar Profiles
+
+```bash
+# Setup 3 homes with same profile
+for i in {1..3}; do
+  CODE=$(echo "SELECT activation_code FROM order_magnet_items WHERE activation_status = 'inactive' LIMIT 1 OFFSET $i;" | psql $DATABASE_URL -t)
+  curl -X POST http://localhost:5000/api/setup/activate \
+    -H "Content-Type: application/json" \
+    -d "{
+      \"token\":\"$CODE\",
+      \"fullName\":\"Test User $i\",
+      \"email\":\"test$i@example.com\",
+      \"homeType\":\"single_family\",
+      \"hvacType\":\"central_air\"
+    }"
+done
+
+# Verify no cross-contamination
+echo "
+SELECT household_id, COUNT(*) as task_count
+FROM household_task_assignments
+GROUP BY household_id
+ORDER BY household_id;
+" | psql $DATABASE_URL
+```
+
+**Expected:** Each household has its own separate task assignments.
+
+---
+
+## VERIFICATION CHECKLIST
+
+**After Implementation:**
+
+**Task Catalog:**
+- [ ] Seed script created
+- [ ] 20+ tasks in home_maintenance_tasks table
+- [ ] Tasks grouped by category (HVAC, Plumbing, Exterior, etc.)
+- [ ] All required fields populated
+
+**Task Generation:**
+- [ ] tasks.ts library created
+- [ ] generateMaintenanceTasks() function works
+- [ ] Filters tasks by home details
+- [ ] Calculates appropriate due dates
+- [ ] Sets correct priorities
+
+**Setup Integration:**
+- [ ] Import added to setup.ts
+- [ ] Task generation called after home profile creation
+- [ ] Inside transaction for atomicity
+- [ ] Error handling prevents setup failure
+- [ ] Logs show tasks generated
+
+**Testing:**
+- [ ] Single family home gets 15-20 tasks
+- [ ] Condo gets fewer tasks (no exterior)
+- [ ] Old roof (>10 years) gets high priority roof inspection
+- [ ] Safety tasks always assigned with high priority
+- [ ] Due dates spread appropriately (7 days to 180 days)
+
+---
+
+## SUCCESS CRITERIA
+
+**Phase 3 Complete When:**
+
+✅ Task catalog populated:
+- 20+ task templates in database
+- All categories represented
+- Detailed instructions and timing
+
+✅ Task generation working:
+- Creates 10-20 tasks per household
+- Filters based on home details
+- Appropriate due dates (spread over 6 months)
+- Correct priorities assigned
+
+✅ Setup integration complete:
+- Tasks generated automatically on setup
+- Generation failures don't break setup
+- Tasks visible in database
+- Ready for frontend display
+
+✅ Different scenarios tested:
+- Single family home
+- Condo/apartment
+- Old vs new homes
+- Different HVAC types
+
+---
+
+## REPLIT AGENT PROMPT
+
+```
+Implement Phase 3: Automatic Maintenance Task Generation for household setup.
+
+CONTEXT:
+Phase 1 & 2 complete. Infrastructure ready (tables exist). Need to:
+1. Populate task catalog with maintenance task templates
+2. Create task generation logic
+3. Integrate into setup flow
+
+CRITICAL REQUIREMENTS BEFORE STARTING:
+
+1. SCHEMA VERIFICATION:
+   Verify homeMaintenanceTasksTable in shared/schema.ts uses camelCase:
+   - taskCode (not task_code)
+   - taskName (not task_name)
+   - baseFrequency (not base_frequency)
+   
+   If schema uses snake_case, update all code to use snake_case accessors.
+
+2. UNIQUE CONSTRAINT:
+   Ensure task_code has UNIQUE constraint:
+   ```sql
+   ALTER TABLE home_maintenance_tasks ADD CONSTRAINT unique_task_code UNIQUE (task_code);
+   ```
+
+TASK 1: CREATE SEED DATA
+
+Create file: server/seeds/maintenance-tasks.sql
+
+Populate home_maintenance_tasks table with 20+ maintenance tasks.
+Use the complete SQL from the spec INCLUDING the ON CONFLICT clause at the end:
+
+```sql
+INSERT INTO home_maintenance_tasks (...) VALUES
+(task 1...),
+(task 2...),
+...
+(task 20...)
+ON CONFLICT (task_code) DO NOTHING;
+```
+
+This prevents duplicates when re-running the seed script.
+
+TASK 2: CREATE TASK GENERATION LIBRARY
+
+Create file: server/lib/tasks.ts
+
+CRITICAL CHANGES FROM TYPICAL IMPLEMENTATION:
+
+1. Function signature MUST accept transaction:
+   ```typescript
+   export async function generateMaintenanceTasks(
+     tx: any, // Transaction, NOT db
+     householdId: string,
+     homeProfile: {...}
+   )
+   ```
+
+2. Use tx for ALL database operations, not db:
+   ```typescript
+   const allTasks = await tx.select().from(homeMaintenanceTasksTable);
+   await tx.insert(householdTaskAssignmentsTable).values(...);
+   ```
+
+3. Add helper functions:
+   ```typescript
+   function frequencyToDays(frequency: string): number {
+     switch(frequency.toLowerCase()) {
+       case 'monthly': return 30;
+       case 'quarterly': return 90;
+       case 'biannual': return 180;
+       case 'annual': return 365;
+       default: return 30;
+     }
+   }
+   
+   function calculateDueDate(fromDate: Date, daysAhead: number): Date {
+     return new Date(fromDate.getTime() + daysAhead * 86400000);
+   }
+   ```
+
+4. Add idempotency check at start:
+   ```typescript
+   const existingTasks = await tx
+     .select()
+     .from(householdTaskAssignmentsTable)
+     .where(eq(householdTaskAssignmentsTable.householdId, householdId))
+     .limit(1);
+   
+   if (existingTasks.length > 0) {
+     console.log(`Household already has tasks, skipping`);
+     return [];
+   }
+   ```
+
+5. BATCH INSERT (not loop):
+   ```typescript
+   const assignmentValues = assignments.map(a => ({
+     householdId,
+     taskId: a.taskId,
+     dueDate: a.dueDate.toISOString().split('T')[0],
+     frequency: a.frequency,
+     status: 'pending',
+     priority: a.priority,
+     createdAt: new Date(),
+     updatedAt: new Date()
+   }));
+   
+   if (assignmentValues.length > 0) {
+     await tx.insert(householdTaskAssignmentsTable).values(assignmentValues);
+   }
+   ```
+
+6. Refine plumbing task logic:
+   - Water heater tasks: ONLY for tank_gas or tank_electric
+   - Leak inspection: Always assign
+
+TASK 3: INTEGRATE INTO SETUP
+
+File: server/src/routes/setup.ts
+
+Step 1: Add import:
+```typescript
+import { generateMaintenanceTasks } from '../../lib/tasks.js';
+```
+
+Step 2: Inside transaction, after home profile creation:
+```typescript
+// After household and homeProfile created
+try {
+  const tasks = await generateMaintenanceTasks(tx, household.id, {
+    homeType: homeProfile.homeType,
+    hvacType: homeProfile.hvacType,
+    waterHeaterType: homeProfile.waterHeaterType,
+    roofAgeYears: homeProfile.roofAgeYears,
+    squareFootage: homeProfile.squareFootage
+  });
+  console.log(`✅ Generated ${tasks.length} maintenance tasks`);
+} catch (taskError) {
+  console.error('⚠️ Task generation failed:', taskError);
+  // Don't fail setup if tasks fail
+}
+```
+
+CRITICAL:
+- Pass tx (transaction), not db
+- Task generation inside transaction for atomicity
+- Wrapped in try-catch (non-critical failure)
+- Setup succeeds even if task generation fails
+
+TESTING:
+1. Add unique constraint to task_code
+2. Seed database: psql $DATABASE_URL < server/seeds/maintenance-tasks.sql
+3. Verify: SELECT COUNT(*), category FROM home_maintenance_tasks GROUP BY category;
+4. Complete setup with single_family home
+5. Verify 15-20 tasks created
+6. Test idempotency: re-run should skip generation
+7. Test condo: should skip exterior tasks
+8. Verify batch insert (not N individual queries)
+
+Provide complete, production-ready code for all three tasks.
+```
+
+---
+
+## ESTIMATED TIME
+
+**Task 3.1:** Seed data creation - 30 minutes  
+**Task 3.2:** Task generation library - 90 minutes  
+**Task 3.3:** Setup integration - 30 minutes  
+**Testing:** 30 minutes
+
+**Total:** 3-4 hours
+
+---
+
+## AFTER PHASE 3
+
+**You'll Have:**
+- ✅ Complete household setup
+- ✅ Email notifications
+- ✅ Automatic maintenance schedules
+- ✅ Personalized task recommendations
+- 🎉 Full-featured production system!
+
+**Next Steps:**
+1. Build frontend to display tasks
+2. Add task completion tracking
+3. Add reminder notifications
+4. Deploy to production!
+
+**Phase 3 completes the core UpKeepQR value proposition!**
