@@ -153,47 +153,50 @@ export async function generateMaintenanceTasks(
           }
         }
       }
-      // Exterior tasks
+      // Exterior tasks - ONLY for single_family or townhouse
       else if (task.category === 'Exterior') {
-        shouldAssign = true; // Most exterior tasks apply to all homes
-        
-        if (task.taskCode === 'GUTTER_CLEANING') {
-          priority = 'high';
-          daysUntilDue = 45;
-        }
-        
-        if (task.taskCode === 'ROOF_INSPECTION') {
-          // Prioritize older roofs
-          if (homeProfile.roofAgeYears && homeProfile.roofAgeYears > 10) {
+        // Check home type FIRST before assigning any exterior tasks
+        if (homeProfile.homeType === 'single_family' || 
+            homeProfile.homeType === 'townhouse') {
+          shouldAssign = true;
+          
+          if (task.taskCode === 'GUTTER_CLEANING') {
             priority = 'high';
-            daysUntilDue = 30;
-          } else {
+            daysUntilDue = 45;
+          }
+          
+          if (task.taskCode === 'ROOF_INSPECTION') {
+            if (homeProfile.roofAgeYears && homeProfile.roofAgeYears > 10) {
+              priority = 'high';
+              daysUntilDue = 30;
+            } else {
+              priority = 'medium';
+              daysUntilDue = 90;
+            }
+          }
+          
+          if (task.taskCode === 'PRESSURE_WASH') {
+            priority = 'low';
+            daysUntilDue = 120;
+          }
+          
+          if (task.taskCode === 'DECK_SEAL') {
             priority = 'medium';
             daysUntilDue = 90;
           }
+          
+          if (task.taskCode === 'CAULK_INSPECTION') {
+            priority = 'medium';
+            daysUntilDue = 60;
+          }
+          
+          if (task.taskCode === 'SPRINKLER_WINTERIZE' || 
+              task.taskCode === 'SPRINKLER_SPRING_START') {
+            priority = 'medium';
+            daysUntilDue = task.taskCode === 'SPRINKLER_WINTERIZE' ? 60 : 90;
+          }
         }
-        
-        if (task.taskCode === 'PRESSURE_WASH') {
-          priority = 'low';
-          daysUntilDue = 120;
-        }
-        
-        if (task.taskCode === 'DECK_SEAL') {
-          priority = 'medium';
-          daysUntilDue = 90;
-        }
-        
-        if (task.taskCode === 'CAULK_INSPECTION') {
-          priority = 'medium';
-          daysUntilDue = 60;
-        }
-        
-        // Sprinkler tasks - only if they have sprinklers (we assume yes for now)
-        if (task.taskCode === 'SPRINKLER_WINTERIZE' || task.taskCode === 'SPRINKLER_SPRING_START') {
-          // These will be scheduled seasonally
-          priority = 'medium';
-          daysUntilDue = 60;
-        }
+        // If not single_family/townhouse, shouldAssign stays false (no exterior tasks)
       }
       // Seasonal tasks
       else if (task.category === 'Seasonal') {
