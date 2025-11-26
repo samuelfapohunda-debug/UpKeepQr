@@ -10,3 +10,5 @@ vite.config.ts.*
 serviceAccountKey.json
 **/serviceAccountKey.json
 *.backup_*
+.env*
+*.backup
