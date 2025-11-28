@@ -1,7 +1,7 @@
 /* eslint-disable no-undef */
 /* eslint-disable no-console */
 import * as esbuild from 'esbuild';
-import { copyFile, mkdir } from 'fs/promises';
+import { copyFile, mkdir, cp } from 'fs/promises';
 
 async function build() {
   try {
@@ -11,6 +11,10 @@ async function build() {
     // Copy preload-stripe.cjs to dist
     await copyFile('./server/preload-stripe.cjs', './dist/server/preload-stripe.cjs');
     console.log('✅ Copied preload-stripe.cjs to dist');
+    
+    // Copy lib folder to dist
+    await cp('./server/lib', './dist/server/lib', { recursive: true });
+    console.log('✅ Copied lib folder to dist');
     
     // Build server with esbuild
     await esbuild.build({
