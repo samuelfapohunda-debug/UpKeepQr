@@ -12,7 +12,7 @@ import { createRequire } from "module";
 import Stripe from "stripe";
 
 const require = createRequire(import.meta.url);
-const { stripe } = require("../lib/stripe.js");
+import { stripe } from "../lib/stripe.js";
 
 const router = Router();
 
