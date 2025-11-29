@@ -1,7 +1,7 @@
 /* eslint-disable no-undef */
 /* eslint-disable no-console */
 import * as esbuild from 'esbuild';
-import { copyFile, mkdir } from 'fs/promises';
+import { copyFile, mkdir, cp } from 'fs/promises';
 
 async function build() {
   try {
@@ -11,6 +11,14 @@ async function build() {
     // Copy preload-stripe.cjs to dist
     await copyFile('./server/preload-stripe.cjs', './dist/server/preload-stripe.cjs');
     console.log('✅ Copied preload-stripe.cjs to dist');
+    
+    // Copy lib folder to dist
+    await cp('./server/lib', './dist/server/lib', { recursive: true });
+    console.log('✅ Copied lib folder to dist');
+    
+    // Copy src folder to dist  
+    await cp('./server/src', './dist/server/src', { recursive: true });
+    console.log('✅ Copied src folder to dist');
     
     // Build server with esbuild
     await esbuild.build({
@@ -23,12 +31,12 @@ async function build() {
       external: [
         // Node built-ins
         'node:*',
-        // Build/Dev tools that shouldn't be bundled
+        // Build/Dev tools
         'vite',
         'esbuild',
         '@vitejs/plugin-react',
         'lightningcss',
-        // Dependencies that should not be bundled
+        // Dependencies
         '@neondatabase/serverless',
         'drizzle-orm',
         'express',
@@ -52,7 +60,6 @@ async function build() {
       sourcemap: true,
       minify: false,
       logLevel: 'info',
-      // Don't bundle local imports - this is the key!
       packages: 'external'
     });
     

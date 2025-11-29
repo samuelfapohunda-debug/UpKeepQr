@@ -19,7 +19,7 @@ import {
 } from "../../lib/email.js";
 
 const require = createRequire(import.meta.url);
-const { stripe } = require("../lib/stripe.js");
+import { stripe } from "../lib/stripe.js";
 
 const router = Router();
 
