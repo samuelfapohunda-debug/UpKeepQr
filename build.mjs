@@ -29,14 +29,11 @@ async function build() {
       format: 'esm',
       outfile: './dist/server/index.js',
       external: [
-        // Node built-ins
         'node:*',
-        // Build/Dev tools
         'vite',
         'esbuild',
         '@vitejs/plugin-react',
         'lightningcss',
-        // Dependencies
         '@neondatabase/serverless',
         'drizzle-orm',
         'express',

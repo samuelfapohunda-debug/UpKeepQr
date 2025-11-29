@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "node --env-file=.env --require ./server/preload-stripe.cjs --import tsx --watch server/index.ts",
-    "build": "node build.mjs && vite build",
+    "build": "node build.mjs && vite build && cp -r dist/public dist/server/public",
     "start": "node --require ./dist/server/preload-stripe.cjs dist/server/index.js",
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
