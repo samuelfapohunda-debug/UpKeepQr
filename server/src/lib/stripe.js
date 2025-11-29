@@ -1,12 +1,10 @@
-import { createRequire } from 'module';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
+import Stripe from 'stripe';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const require = createRequire(import.meta.url);
+// Get the Stripe instance from the global (set by preload-stripe.cjs)
+// or create a new one if not available
+export const stripe = global.__STRIPE_INSTANCE__ || 
+  (process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY) : null);
 
-// Load stripe-loader from the lib directory
-const { getStripe } = require(join(__dirname, '../lib/stripe-loader.cjs'));
-
-export const stripe = getStripe();
+if (!stripe) {
+  console.warn('⚠️  Stripe is not available - STRIPE_SECRET_KEY not configured');
+}
