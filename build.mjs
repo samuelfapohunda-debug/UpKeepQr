@@ -16,6 +16,14 @@ async function build() {
     await cp('./server/lib', './dist/server/lib', { recursive: true });
     console.log('✅ Copied lib folder to dist');
     
+    // Copy src folder to dist (if it exists)
+    try {
+      await cp('./server/src', './dist/server/src', { recursive: true });
+      console.log('✅ Copied src folder to dist');
+    } catch (err) {
+      console.log('ℹ️  No src folder to copy');
+    }
+    
     // Build server with esbuild
     await esbuild.build({
       entryPoints: ['./server/index.ts'],
@@ -27,6 +35,11 @@ async function build() {
       external: [
         // Node built-ins
         'node:*',
+        // Local modules - don't bundle these
+        './lib/*',
+        '../lib/*',
+        './src/*',
+        '../src/*',
         // Build/Dev tools that shouldn't be bundled
         'vite',
         'esbuild',
