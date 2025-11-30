@@ -44,6 +44,10 @@ app.use((req, res, next) => {
   // 🚨 CORS Configuration - Must be FIRST
   app.use(cors({
     origin: [
+      'https://upkeepqr.com',
+      'https://www.upkeepqr.com',
+      'https://georgia-top-roofer.web.app',
+      'https://georgia-top-roofer.firebaseapp.com',
       'https://infamous-werewolf-v67jxv7jgxwhx7w4-5000.app.github.dev',
       'http://localhost:5173',
       'http://localhost:5000'
