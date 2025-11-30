@@ -1,0 +1,5 @@
+{
+  "scripts": {
+    "build": "node build.mjs && vite build && cp -r dist/public dist/server/public"
+  }
+}
