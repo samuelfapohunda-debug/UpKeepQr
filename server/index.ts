@@ -42,19 +42,22 @@ app.use((req, res, next) => {
 (async () => {
   // 🚨 CRITICAL: Setup routes BEFORE Vite middleware
   // 🚨 CORS Configuration - Must be FIRST
+  const allowedOrigins = process.env.ALLOWED_ORIGINS 
+    ? process.env.ALLOWED_ORIGINS.split(",")
+    : [
+      "https://upkeepqr.com",
+      "https://www.upkeepqr.com",
+      "https://georgia-top-roofer.web.app",
+      "https://georgia-top-roofer.firebaseapp.com",
+      "http://localhost:5173",
+      "http://localhost:5000"
+    ];
+
   app.use(cors({
-    origin: [
-      'https://upkeepqr.com',
-      'https://www.upkeepqr.com',
-      'https://georgia-top-roofer.web.app',
-      'https://georgia-top-roofer.firebaseapp.com',
-      'https://infamous-werewolf-v67jxv7jgxwhx7w4-5000.app.github.dev',
-      'http://localhost:5173',
-      'http://localhost:5000'
-    ],
+    origin: allowedOrigins,
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allowedHeaders: ["Content-Type", "Authorization"]
   }));
 
   // ⚡ CRITICAL: Stripe webhook needs raw body BEFORE express.json() parses it
