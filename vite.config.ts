@@ -1,12 +1,15 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
   plugins: [react()],
-  root: './client',  // ✅ React app is in client/ folder
+  root: './client',
   build: {
-    outDir: '../dist/public',  // ✅ Output to dist/public
+    outDir: '../dist/public',
     emptyOutDir: true,
     sourcemap: false,
     rollupOptions: {
