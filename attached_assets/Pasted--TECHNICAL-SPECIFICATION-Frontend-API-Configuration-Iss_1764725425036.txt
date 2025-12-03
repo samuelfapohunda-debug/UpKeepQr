@@ -1,0 +1,243 @@
+# 📋 **TECHNICAL SPECIFICATION: Frontend API Configuration Issue**
+
+---
+
+## 🎯 **ISSUE SUMMARY**
+
+The UpKeepQR frontend application is returning HTML responses instead of JSON when making API calls, causing form submissions to fail with error: `Unexpected token '<', "<!DOCTYPE "... is not valid JSON`
+
+---
+
+## 🔍 **ROOT CAUSE ANALYSIS**
+
+### **Problem:**
+Multiple files in the frontend codebase use inconsistent API base URL configurations:
+
+1. **`client/src/lib/api-config.ts`**: Uses `API_BASE_URL` with fallback to production URL
+2. **`client/src/pages/Onboarding.tsx`**: Has its own `API_BASE_URL` definition using `VITE_API_URL`
+3. **`client/src/contexts/AuthContext.tsx`**: Uses `VITE_API_BASE_URL` (different variable name!)
+
+### **Evidence:**
+```bash
+# Current state from grep command:
+client/src/lib/api-config.ts:export const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://upkeepqr-backend.onrender.com';
+client/src/pages/Onboarding.tsx:const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+client/src/contexts/AuthContext.tsx:const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
+```
+
+**Issue:** Different files use different fallback URLs and different environment variable names.
+
+---
+
+## ✅ **REQUIRED FIXES**
+
+### **1. Standardize API Configuration**
+
+**File:** `client/src/lib/api-config.ts`
+
+```typescript
+// API Configuration - Single source of truth
+export const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://upkeepqr-backend.onrender.com';
+
+export async function apiRequest(endpoint: string, options: RequestInit = {}) {
+  const url = `${API_BASE_URL}${endpoint}`;
+  
+  const response = await fetch(url, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`API request failed: ${response.statusText} - ${errorText}`);
+  }
+
+  return response.json();
+}
+```
+
+### **2. Update All Files to Use Central Config**
+
+**Files to update:**
+- `client/src/pages/Onboarding.tsx`
+- `client/src/contexts/AuthContext.tsx`
+- `client/src/components/setup/ExtendedHomeProfile.tsx`
+- `client/src/pages/Dashboard.tsx`
+
+**Required changes:**
+```typescript
+// ❌ REMOVE local definitions like:
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
+// ✅ ADD import at top of file:
+import { API_BASE_URL } from '../lib/api-config';
+// OR
+import { API_BASE_URL } from '../../lib/api-config';
+// (adjust path based on file location)
+```
+
+### **3. Ensure Environment Variable is Set**
+
+**File:** `.env.production` (must exist in project root)
+
+```env
+VITE_API_URL=https://upkeepqr-backend.onrender.com
+```
+
+**File:** `.env.development` (for local development)
+
+```env
+VITE_API_URL=http://localhost:5000
+```
+
+### **4. Update Deployment Configuration**
+
+**Firebase Hosting** already deployed - no changes needed.
+
+**Render Backend** already has CORS configured correctly for:
+- `https://upkeepqr.com`
+- `https://www.upkeepqr.com`
+- `https://georgia-top-roofer.web.app`
+- `https://georgia-top-roofer.firebaseapp.com`
+
+---
+
+## 🧪 **TESTING REQUIREMENTS**
+
+After implementing fixes, verify:
+
+### **1. API Calls Use Correct URL**
+```bash
+# Check deployed code contains correct URL
+curl -s https://upkeepqr.com/assets/index-*.js | grep -o "upkeepqr-backend.onrender.com" | head -1
+# Should return: upkeepqr-backend.onrender.com
+```
+
+### **2. CORS Headers Present**
+```bash
+# Test OPTIONS preflight
+curl -X OPTIONS https://upkeepqr-backend.onrender.com/api/contact \
+  -H "Origin: https://upkeepqr.com" \
+  -H "Access-Control-Request-Method: POST" \
+  -H "Access-Control-Request-Headers: Content-Type" \
+  -I | grep -i "access-control-allow-origin"
+# Should return: access-control-allow-origin: https://upkeepqr.com
+```
+
+### **3. Contact Form Submission**
+1. Navigate to https://upkeepqr.com/contact (in incognito mode)
+2. Fill out form with test data
+3. Click "Send Message"
+4. **Expected:** Success message appears
+5. **Actual:** Should not see "Unexpected token" error
+
+### **4. Request a Pro Form**
+1. Navigate to https://upkeepqr.com/request-pro
+2. Fill out form
+3. Submit
+4. **Expected:** Success message
+
+### **5. Admin Login**
+1. Navigate to https://upkeepqr.com/login
+2. Enter credentials
+3. **Expected:** Authentication succeeds or shows proper error
+
+---
+
+## 📂 **FILES TO MODIFY**
+
+```
+client/
+├── .env.production (create if doesn't exist)
+├── .env.development (create if doesn't exist)
+└── src/
+    ├── lib/
+    │   └── api-config.ts (already updated, verify)
+    ├── pages/
+    │   ├── Onboarding.tsx (remove local API_BASE_URL, import from api-config)
+    │   └── Dashboard.tsx (verify uses api-config import)
+    ├── contexts/
+    │   └── AuthContext.tsx (update VITE_API_BASE_URL → VITE_API_URL, import from api-config)
+    └── components/
+        └── setup/
+            └── ExtendedHomeProfile.tsx (verify uses api-config import)
+```
+
+---
+
+## 🚀 **DEPLOYMENT STEPS**
+
+```bash
+# 1. Make all code changes above
+
+# 2. Verify changes
+grep -r "const API_BASE_URL" client/src --include="*.ts" --include="*.tsx"
+# Should only show imports, not local definitions (except in api-config.ts)
+
+# 3. Build
+npm run build
+
+# 4. Deploy to Firebase
+firebase deploy --only hosting
+
+# 5. Verify deployment
+curl -s https://upkeepqr.com/assets/index-*.js | grep -o "upkeepqr-backend.onrender.com"
+
+# 6. Test in browser (incognito mode to avoid cache)
+# Navigate to https://upkeepqr.com/contact and test form
+```
+
+---
+
+## 🎯 **SUCCESS CRITERIA**
+
+- [ ] All files import `API_BASE_URL` from `client/src/lib/api-config.ts`
+- [ ] No files have local `API_BASE_URL` definitions (except api-config.ts)
+- [ ] `.env.production` exists with `VITE_API_URL=https://upkeepqr-backend.onrender.com`
+- [ ] Contact form submits successfully without JSON parse errors
+- [ ] Request a Pro form submits successfully
+- [ ] Admin login functions correctly
+- [ ] Network tab shows API calls going to `https://upkeepqr-backend.onrender.com/api/*`
+- [ ] CORS headers present in API responses
+- [ ] No "Unexpected token" errors in browser console
+
+---
+
+## ⚠️ **CRITICAL NOTES**
+
+1. **Browser Cache**: After deployment, users must hard refresh (`Ctrl+Shift+R`) or use incognito mode to see changes
+2. **Environment Variables**: Vite requires `VITE_` prefix for env vars to be accessible via `import.meta.env`
+3. **CORS**: Backend already configured correctly - no changes needed on backend
+4. **Service Workers**: If present, must be unregistered for cache to clear completely
+
+---
+
+## 📊 **CURRENT STATE**
+
+```
+✅ Backend: Running correctly at https://upkeepqr-backend.onrender.com
+✅ CORS: Properly configured with production domains
+✅ SSL: Enabled on both frontend and backend
+❌ Frontend: Inconsistent API URL configuration causing errors
+❌ Forms: Failing with JSON parse errors due to HTML responses
+```
+
+---
+
+## 🎯 **EXPECTED FINAL STATE**
+
+```
+✅ Backend: Running at https://upkeepqr-backend.onrender.com
+✅ Frontend: Correctly configured to call backend API
+✅ CORS: Working for all production domains
+✅ Forms: All forms submitting successfully
+✅ API Calls: All routing to correct backend URL with proper JSON responses
+```
+
+---
+
+**This specification provides complete context for Replit Agent to fix the API configuration issue systematically.**
