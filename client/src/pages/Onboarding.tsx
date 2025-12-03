@@ -21,7 +21,7 @@ interface OnboardingProps {
 const Onboarding: React.FC<OnboardingProps> = ({ adminMode = false }) => {
   const [location, setLocation] = useLocation();
   const [match, params] = useRoute('/setup/:token');
-  const { user } = useAuth();
+  const auth = useAuth();
   
   const { toast } = useToast();
   
