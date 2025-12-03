@@ -1,4 +1,6 @@
-import Stripe from 'stripe';
+import * as StripeModule from 'stripe';
+
+const Stripe = StripeModule.default || StripeModule;
 
 // Get the Stripe instance from the global (set by preload-stripe.cjs)
 // or create a new one if not available
