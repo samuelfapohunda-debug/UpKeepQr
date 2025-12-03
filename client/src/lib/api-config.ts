@@ -1,5 +1,7 @@
 // API Configuration
-export const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://upkeepqr-backend.onrender.com';
+// In development (Replit), use same-origin (empty string) for API calls
+// In production (Firebase), set VITE_API_URL to the Render backend URL
+export const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
 export async function apiRequest(endpoint: string, options: RequestInit = {}) {
   const url = `${API_BASE_URL}${endpoint}`;
