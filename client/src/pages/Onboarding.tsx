@@ -12,8 +12,7 @@ import { Smartphone, ShieldCheck } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiRequest } from '@/lib/queryClient';
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+import { API_BASE_URL } from '@/lib/api-config';
 
 interface OnboardingProps {
   adminMode?: boolean;

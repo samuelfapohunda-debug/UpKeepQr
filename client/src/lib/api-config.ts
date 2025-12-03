@@ -1,26 +1,21 @@
-/**
- * API Configuration
- * 
- * In GitHub Codespaces:
- * - Frontend and backend run on the same origin
- * - Always use relative URLs (no localhost)
- * 
- * In production:
- * - Also uses relative URLs (same origin)
- */
+// API Configuration
+export const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://upkeepqr-backend.onrender.com';
 
-// Always use relative URLs - works in both dev and production
-export const API_BASE_URL = '';
-
-// Helper function for API calls
-export async function apiRequest(endpoint: string, options?: RequestInit) {
+export async function apiRequest(endpoint: string, options: RequestInit = {}) {
   const url = `${API_BASE_URL}${endpoint}`;
+  
   const response = await fetch(url, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
-      ...options?.headers,
+      ...options.headers,
     },
+    credentials: 'include',
   });
-  return response;
+
+  if (!response.ok) {
+    throw new Error(`API request failed: ${response.statusText}`);
+  }
+
+  return response.json();
 }

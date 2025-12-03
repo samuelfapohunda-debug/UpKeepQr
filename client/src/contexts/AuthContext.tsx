@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { API_BASE_URL } from '../lib/api-config';
 
 interface AuthState {
   isAuthenticated: boolean;
@@ -21,10 +22,6 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const TOKEN_KEY = 'upkeepqr_admin_token';
 const EMAIL_KEY = 'upkeepqr_admin_email';
 const REMEMBER_ME_KEY = 'upkeepqr_remember_me';
-
-// API base URL - defaults to same-origin (empty string) for production
-// Set VITE_API_BASE_URL only if backend is on a different origin
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [authState, setAuthState] = useState<AuthState>({
