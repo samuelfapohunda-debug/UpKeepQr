@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { API_BASE_URL } from "@/lib/api-config";
 
 export default function AgentLogin() {
   const [email, setEmail] = useState("");
@@ -14,7 +15,7 @@ export default function AgentLogin() {
 
   const loginMutation = useMutation({
     mutationFn: async (email: string) => {
-      const response = await fetch("/api/agent/login", {
+      const response = await fetch(`${API_BASE_URL}/api/agent/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
