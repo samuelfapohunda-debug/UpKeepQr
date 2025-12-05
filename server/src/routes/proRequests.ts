@@ -264,7 +264,14 @@ router.post("/", proRequestLimiter, async (req: Request, res: Response) => {
       });
     }
     
-    // Handle other errors
+    // Handle database errors with detailed logging
+    console.error("❌ Pro request error details:", {
+      name: error?.name,
+      message: error?.message,
+      code: error?.code,
+      stack: error?.stack?.split('\n').slice(0, 3).join('\n')
+    });
+    
     res.status(500).json({ 
       error: "Failed to create pro request. Please try again." 
     });
