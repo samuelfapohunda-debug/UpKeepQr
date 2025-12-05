@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { API_BASE_URL } from "@/lib/api-config";
 
 if (!import.meta.env.VITE_STRIPE_PUBLIC_KEY) {
   throw new Error('Missing Stripe public key');
@@ -33,7 +34,7 @@ export default function CheckoutModal({ sku, isOpen, onClose, agentId }: Checkou
       setIsLoading(true);
       
       // Create checkout session
-      const response = await fetch("/api/checkout", {
+      const response = await fetch(`${API_BASE_URL}/api/checkout`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

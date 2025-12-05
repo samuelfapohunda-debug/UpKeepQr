@@ -12,6 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Upload, AlertCircle, CheckCircle } from "lucide-react";
+import { API_BASE_URL } from "@/lib/api-config";
 
 // Form validation schema
 const requestProSchema = z.object({
@@ -57,7 +58,7 @@ export default function RequestPro() {
 
   const submitRequest = useMutation({
     mutationFn: async (data: RequestProForm & { photos: string[] }) => {
-      const response = await fetch("/api/pro-requests", {
+      const response = await fetch(`${API_BASE_URL}/api/pro-requests`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),

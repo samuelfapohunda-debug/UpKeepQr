@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
+import { API_BASE_URL } from "@/lib/api-config";
 
 interface LeadCaptureFormProps {
   activationCode: string;
@@ -75,7 +76,7 @@ export default function LeadCaptureForm({ activationCode, onComplete }: LeadCapt
     }
     setLoading(true);
     try {
-      const response = await fetch("/api/leads", {
+      const response = await fetch(`${API_BASE_URL}/api/leads`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
