@@ -1,0 +1,162 @@
+ })
+      , c = Pt({
+        mutationFn: async p => {
+            const x = await fetch(`${Ps}/api/pro-requests`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(p)
+            });
+            if (!x.ok) {
+                const y = await x.json();
+                throw new Error(y.error || "Failed to submit request")
+            }
+            return x.json()
+        }
+        ,
+        onSuccess: p => {
+            n(!0),
+            i(p.publicTrackingCode),
+            o({
+                title: "Request Submitted Successfully!",
+                description: "You'll receive a confirmation email shortly."
+            })
+        }
+        ,
+        onError: p => {
+            o({
+                title: "Submission Failed",
+                description: p.message,
+                variant: "destructive"
+            })
+        }
+    })
+      , d = p => {
+        const x = Array.from(p.target.files || []);
+        if (t.length + x.length > 5) {
+            o({
+                title: "Too Many Photos",
+                description: "You can upload a maximum of 5 photos.",
+                variant: "destructive"
+            });
+            return
+        }
+        e(y => [...y, ...x])
+    }
+      , h = p => {
+        e(x => x.filter( (y, f) => f !== p))
+    }
+      , m = async p => {
+        try {
+            const x = [];
+            await c.mutateAsync({
+                ...p,
+                photos: x
+            })
+        } catch (x) {
+            console.error("Submission error:", x)
+        }
+    }
+    ;
+    return s ? r.jsx("div", {
+        className: "min-h-screen bg-background pt-16 sm:pt-20",
+        children: r.jsx("div", {
+            className: "max-w-2xl mx-auto px-4 py-8",
+            children: r.jsxs(te, {
+                className: "text-center",
+                children: [r.jsxs(ce, {
+                    children: [r.jsx("div", {
+                        className: "mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4",
+                        children: r.jsx(_e, {
+                            className: "w-8 h-8 text-green-600"
+                        })
+                    }), r.jsx(de, {
+                        className: "text-2xl text-green-700",
+                        children: "Request Submitted Successfully!"
+                    }), r.jsx(be, {
+                        className: "text-lg",
+                        children: "Your service request has been submitted and you'll receive a confirmation email shortly."
+                    })]
+                }), r.jsxs(se, {
+                    className: "space-y-4",
+                    children: [r.jsxs("div", {
+                        className: "bg-gray-50 p-4 rounded-lg",
+                        children: [r.jsx("p", {
+                            className: "font-semibold text-gray-700",
+                            children: "Your Tracking Code:"
+                        }), r.jsx("p", {
+                            className: "text-2xl font-mono text-blue-600 mt-1",
+                            "data-testid": "tracking-code",
+                            children: a
+                        }), r.jsx("p", {
+                            className: "text-sm text-gray-600 mt-2",
+                            children: "Save this code to track your request status"
+                        })]
+                    }), r.jsxs("div", {
+                        className: "text-sm text-gray-600",
+                        children: [r.jsx("p", {
+                            children: "What happens next:"
+                        }), r.jsxs("ol", {
+                            className: "list-decimal list-inside mt-2 space-y-1",
+                            children: [r.jsx("li", {
+                                children: "We'll match you with qualified professionals in your area"
+                            }), r.jsx("li", {
+                                children: "You'll receive email updates as your request progresses"
+                            }), r.jsx("li", {
+                                children: "A service provider will contact you to schedule the work"
+                            })]
+                        })]
+                    }), r.jsx(X, {
+                        onClick: () => {
+                            n(!1),
+                            l.reset(),
+                            e([]),
+                            i("")
+                        }
+                        ,
+                        variant: "outline",
+                        "data-testid": "button-submit-another",
+                        children: "Submit Another Request"
+                    })]
+                })]
+            })
+        })
+    }) : r.jsx("div", {
+        className: "min-h-screen bg-background pt-16 sm:pt-20",
+        children: r.jsxs("div", {
+            className: "max-w-4xl mx-auto px-4 py-8",
+            children: [r.jsxs("div", {
+                className: "text-center mb-8",
+                children: [r.jsx("h1", {
+                    className: "text-3xl font-bold text-gray-900 mb-4",
+                    children: "Request a Professional Service"
+                }), r.jsx("p", {
+                    className: "text-lg text-gray-600 max-w-2xl mx-auto",
+                    children: "Connect with qualified local professionals for your home maintenance and repair needs. Fill out the form below and we'll match you with the right expert."
+                })]
+            }), r.jsxs(te, {
+                children: [r.jsxs(ce, {
+                    children: [r.jsx(de, {
+                        children: "Service Request Details"
+                    }), r.jsx(be, {
+                        children: "Please provide as much detail as possible to help us match you with the right professional."
+                    })]
+                }), r.jsx(se, {
+                    children: r.jsx(hw, {
+                        ...l,
+                        children: r.jsxs("form", {
+                            onSubmit: l.handleSubmit(m),
+                            className: "space-y-6",
+                            children: [r.jsxs("div", {
+                                className: "grid grid-cols-1 md:grid-cols-2 gap-4",
+                                children: [r.jsx(Nt, {
+                                    control: l.control,
+                                    name: "contactName",
+                                    render: ({field: p}) => r.jsxs(ht, {
+                                        children: [r.jsx(ft, {
+                                            children: "Full Name"
+                                        }), r.jsx(mt, {
+                                            children: r.jsx(ue, {
+                                                ...p,
+                                        
