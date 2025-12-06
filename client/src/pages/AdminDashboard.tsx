@@ -3,6 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth, getAuthToken, getAuthHeaders } from "@/contexts/AuthContext";
+import { API_BASE_URL } from "@/lib/api-config";
 import { ProRequest, Note, AuditEvent, AdminProRequestFilters } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -80,7 +81,7 @@ export default function AdminDashboard() {
       params.set("sortDir", filters.sortDir);
 
       const token = getAuthToken();
-      const response = await fetch(`/api/admin/pro-requests?${params}`, {
+      const response = await fetch(`${API_BASE_URL}/api/admin/pro-requests?${params}`, {
         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
 
@@ -101,7 +102,7 @@ export default function AdminDashboard() {
       if (selectedRequest?.zip) params.set("zip", selectedRequest.zip);
 
       const token = getAuthToken();
-      const response = await fetch(`/api/admin/providers?${params}`, {
+      const response = await fetch(`${API_BASE_URL}/api/admin/providers?${params}`, {
         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
 
@@ -116,7 +117,7 @@ export default function AdminDashboard() {
     queryKey: ["/api/admin/pro-requests", selectedRequest?.id, "history"],
     queryFn: async () => {
       const token = getAuthToken();
-      const response = await fetch(`/api/admin/pro-requests/${selectedRequest!.id}/history`, {
+      const response = await fetch(`${API_BASE_URL}/api/admin/pro-requests/${selectedRequest!.id}/history`, {
         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
 
@@ -129,7 +130,7 @@ export default function AdminDashboard() {
   // Update status mutation
   const updateStatusMutation = useMutation({
     mutationFn: async ({ id, status, providerAssigned }: { id: string; status: string; providerAssigned?: string }) => {
-      const response = await fetch(`/api/pro-requests/${id}/status`, {
+      const response = await fetch(`${API_BASE_URL}/api/pro-requests/${id}/status`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -168,7 +169,7 @@ export default function AdminDashboard() {
   // Add note mutation
   const addNoteMutation = useMutation({
     mutationFn: async ({ id, message }: { id: string; message: string }) => {
-      const response = await fetch(`/api/admin/pro-requests/${id}/notes`, {
+      const response = await fetch(`${API_BASE_URL}/api/admin/pro-requests/${id}/notes`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

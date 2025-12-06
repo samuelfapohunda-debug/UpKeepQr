@@ -4,6 +4,7 @@ import { Link } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth, getAuthToken } from "@/contexts/AuthContext";
+import { API_BASE_URL } from "@/lib/api-config";
 import { Household, SetupFormNote, AdminSetupFormFilters } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -95,7 +96,7 @@ export default function SetupFormsDashboard() {
       params.set("sortDir", filters.sortDir);
 
       const token = getAuthToken();
-      const response = await fetch(`/api/admin/setup-forms?${params}`, {
+      const response = await fetch(`${API_BASE_URL}/api/admin/setup-forms?${params}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
 
@@ -112,7 +113,7 @@ export default function SetupFormsDashboard() {
     queryKey: ["/api/admin/setup-forms", selectedHousehold?.id],
     queryFn: async () => {
       const token = getAuthToken();
-      const response = await fetch(`/api/admin/setup-forms/${selectedHousehold?.id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/admin/setup-forms/${selectedHousehold?.id}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
 
