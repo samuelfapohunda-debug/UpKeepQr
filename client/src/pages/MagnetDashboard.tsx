@@ -52,7 +52,7 @@ export default function MagnetDashboard() {
   const { toast } = useToast();
 
   // Fetch orders with filters  
-  const { data: ordersData, isLoading: ordersLoading } = useQuery({
+  const { data: ordersData, isLoading: ordersLoading, error: ordersError } = useQuery({
     queryKey: ["/api/admin/magnets/orders", filters],
     queryFn: async () => {
       const params = new URLSearchParams();
@@ -75,21 +75,32 @@ export default function MagnetDashboard() {
       params.set("sortDir", filters.sortDir);
 
       const token = getAuthToken();
-      const response = await fetch(`${API_BASE_URL}/api/admin/magnets/orders?${params}`, {
+      const url = `${API_BASE_URL}/api/admin/magnets/orders?${params}`;
+      console.log('[MagnetDashboard] Fetching orders from:', url);
+      console.log('[MagnetDashboard] API_BASE_URL:', API_BASE_URL);
+      console.log('[MagnetDashboard] Token present:', !!token);
+      
+      const response = await fetch(url, {
         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
 
+      console.log('[MagnetDashboard] Response status:', response.status);
+      
       if (!response.ok) {
-        throw new Error("Failed to fetch orders");
+        const errorText = await response.text();
+        console.error('[MagnetDashboard] Error response:', errorText);
+        throw new Error(`Failed to fetch orders: ${response.status} - ${errorText}`);
       }
 
-      return response.json();
+      const data = await response.json();
+      console.log('[MagnetDashboard] Orders data:', { total: data.total, itemCount: data.items?.length });
+      return data;
     },
     enabled: activeTab === "orders",
   });
 
   // Fetch order metrics for KPIs
-  const { data: metricsData } = useQuery({
+  const { data: metricsData, error: metricsError } = useQuery({
     queryKey: ["/api/admin/magnets/orders/metrics", filters],
     queryFn: async () => {
       const params = new URLSearchParams();
@@ -108,15 +119,24 @@ export default function MagnetDashboard() {
       if (filters.q) params.set("q", filters.q);
 
       const token = getAuthToken();
-      const response = await fetch(`${API_BASE_URL}/api/admin/magnets/orders/metrics?${params}`, {
+      const url = `${API_BASE_URL}/api/admin/magnets/orders/metrics?${params}`;
+      console.log('[MagnetDashboard] Fetching metrics from:', url);
+      
+      const response = await fetch(url, {
         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
 
+      console.log('[MagnetDashboard] Metrics response status:', response.status);
+      
       if (!response.ok) {
-        throw new Error("Failed to fetch metrics");
+        const errorText = await response.text();
+        console.error('[MagnetDashboard] Metrics error response:', errorText);
+        throw new Error(`Failed to fetch metrics: ${response.status} - ${errorText}`);
       }
-
-      return response.json();
+      
+      const data = await response.json();
+      console.log('[MagnetDashboard] Metrics data:', data);
+      return data;
     },
   });
 
@@ -394,7 +414,13 @@ export default function MagnetDashboard() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {ordersLoading ? (
+                {ordersError ? (
+                  <div className="text-center py-8 text-red-600 dark:text-red-400">
+                    <p className="font-medium">Failed to load orders</p>
+                    <p className="text-sm mt-1">{(ordersError as Error).message}</p>
+                    <p className="text-xs mt-2 text-muted-foreground">Check browser console for details</p>
+                  </div>
+                ) : ordersLoading ? (
                   <div className="text-center py-8">Loading orders...</div>
                 ) : (
                   <div className="overflow-x-auto">
