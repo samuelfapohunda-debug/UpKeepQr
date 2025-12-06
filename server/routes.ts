@@ -377,26 +377,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         if (isAdminMode) {
           // Generate collision-resistant token for admin-created households
-          // Loop until we find an unused token (extremely unlikely to iterate)
-          let attempts = 0;
           const MAX_ATTEMPTS = 10;
+          let tokenIsUnique = false;
+          let attempts = 0;
           
-          do {
-            householdToken = `admin-${uuidv4()}`;
+          // Generate unique token (collision extremely unlikely with UUID)
+          householdToken = `admin-${uuidv4()}`;
+          
+          while (!tokenIsUnique && attempts < MAX_ATTEMPTS) {
             const existing = await storage.getHouseholdByToken(householdToken);
             
             if (!existing) {
-              break; // Token is unique
+              tokenIsUnique = true;
+            } else {
+              attempts++;
+              householdToken = `admin-${uuidv4()}`;
             }
-            
-            attempts++;
-            if (attempts >= MAX_ATTEMPTS) {
-              console.error('Failed to generate unique admin token after', MAX_ATTEMPTS, 'attempts');
-              return res.status(500).json({ error: "Failed to generate unique household identifier" });
-            }
-          } while (true);
+          }
           
-          console.log(`✅ Generated unique admin token: ${householdToken}`);
+          if (!tokenIsUnique) {
+            console.error('Failed to generate unique admin token after', MAX_ATTEMPTS, 'attempts');
+            return res.status(500).json({ error: "Failed to generate unique household identifier" });
+          }
+          
+          console.log(`Generated unique admin token: ${householdToken}`);
         } else {
           householdToken = token;
         }
