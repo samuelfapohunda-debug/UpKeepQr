@@ -45,14 +45,23 @@ async function createOrderIdCounterSequence() {
     const maxCounter = Number((maxResult.rows[0] as any)?.max_counter || 0);
     console.log('[OrderIdSequence] Max existing counter:', maxCounter);
     
-    // Set the sequence to start AFTER the max existing value
-    // Using setval with false means next nextval() returns maxCounter + 1
-    if (maxCounter > 0) {
-      await db.execute(sql`
-        SELECT setval('order_id_counter', ${maxCounter}, true)
-      `);
-      console.log(`[OrderIdSequence] Sequence set to ${maxCounter}, next ID will be ${maxCounter + 1}`);
-    }
+    // Get current sequence value to check if it needs adjustment
+    const currentSeqResult = await db.execute(sql`
+      SELECT last_value, is_called FROM order_id_counter
+    `);
+    const currentSeqValue = Number((currentSeqResult.rows[0] as any)?.last_value || 1);
+    const isCalled = (currentSeqResult.rows[0] as any)?.is_called;
+    console.log('[OrderIdSequence] Current sequence state:', { lastValue: currentSeqValue, isCalled });
+    
+    // Determine the safe starting value
+    // Use the higher of: maxCounter from DB, current sequence value, or minimum of 100 for safety
+    const safeStartValue = Math.max(maxCounter, currentSeqValue, 100);
+    
+    // Always set the sequence to ensure consistency
+    await db.execute(sql`
+      SELECT setval('order_id_counter', ${safeStartValue}, true)
+    `);
+    console.log(`[OrderIdSequence] Sequence set to ${safeStartValue}, next ID will be ${safeStartValue + 1}`);
     
     // Verify the sequence exists and get current value
     const verifyResult = await db.execute(sql`
