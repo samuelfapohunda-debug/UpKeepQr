@@ -23,6 +23,7 @@ The backend is a RESTful API built with Express.js and TypeScript. It uses Drizz
 - **Authentication & Security**: JWT-based authentication for admin access with server-side validation of roles and tokens. Implements IP-based rate limiting across public endpoints and ensures schema consistency. Admin mode is exclusively derived from server-side authentication, preventing client-side privilege escalation. Conditional token validation is applied for customer (required) vs. admin (optional) setup flows.
 - **Unified Notification System**: Designed for preference-based routing (email/SMS/both) using Twilio for SMS and planned SendGrid integration for email, with TCPA compliance.
 - **Stripe Webhook Integration**: Processes `checkout.session.completed` events to create orders with a sequential ID format.
+- **Google Calendar Integration**: OAuth 2.0 flow with AES-256-GCM encrypted token storage, automatic sync of maintenance tasks to Google Calendar, duplicate prevention via task assignment tracking, and calendar event management. Uses HMAC-signed state tokens for OAuth security.
 - **Modular Architecture & Audit Logging**: Routes are modularized for maintainability. All household CRUD operations are tracked via an audit event system, recording actor type, ID, email, timestamp, and metadata for compliance.
 
 ## System Design Choices
@@ -50,6 +51,7 @@ The database uses PostgreSQL with Drizzle ORM, connected via Neon serverless. A 
 - **ICS**: Calendar event generation.
 - **Node-cron**: Background job scheduling.
 - **Zod**: Runtime type validation.
+- **googleapis**: Google Calendar API integration.
 
 ## Communication Services
 - **Twilio**: SMS integration.
