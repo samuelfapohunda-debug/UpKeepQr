@@ -336,4 +336,4 @@ npm run db:push
 ### Communication Systems
 - Email notifications (Postmark integration)
 - SMS reminders and verification (Twilio integration)
-- Calendar event generation (ICS format)
+- Calendar event generation (ICS format)# Force redeploy - Sat Dec  6 04:18:33 PM UTC 2025
