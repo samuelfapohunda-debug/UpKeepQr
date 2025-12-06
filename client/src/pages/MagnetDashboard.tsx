@@ -3,6 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth, getAuthToken, getAuthHeaders } from "@/contexts/AuthContext";
+import { API_BASE_URL } from "@/lib/api-config";
 import { OrderMagnetOrder, AdminOrderMagnetFilters } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -74,7 +75,7 @@ export default function MagnetDashboard() {
       params.set("sortDir", filters.sortDir);
 
       const token = getAuthToken();
-      const response = await fetch(`/api/admin/magnets/orders?${params}`, {
+      const response = await fetch(`${API_BASE_URL}/api/admin/magnets/orders?${params}`, {
         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
 
@@ -107,7 +108,7 @@ export default function MagnetDashboard() {
       if (filters.q) params.set("q", filters.q);
 
       const token = getAuthToken();
-      const response = await fetch(`/api/admin/magnets/orders/metrics?${params}`, {
+      const response = await fetch(`${API_BASE_URL}/api/admin/magnets/orders/metrics?${params}`, {
         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
 
@@ -128,7 +129,7 @@ export default function MagnetDashboard() {
   // Update order status mutation
   const updateStatusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
-      const response = await fetch(`/api/admin/magnets/orders/${id}/status`, {
+      const response = await fetch(`${API_BASE_URL}/api/admin/magnets/orders/${id}/status`, {
         method: "PATCH",
         headers: getAuthHeaders(),
         body: JSON.stringify({ status })
