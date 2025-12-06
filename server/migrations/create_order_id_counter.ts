@@ -20,14 +20,26 @@ async function createOrderIdCounterSequence() {
     
     // Find the maximum counter value from existing orders
     // Order IDs are in format: {counter}-{year} (e.g., "5-2025")
+    // First, let's see what order_ids exist for debugging
+    const debugResult = await db.execute(sql`
+      SELECT order_id FROM order_magnet_orders WHERE order_id IS NOT NULL LIMIT 10
+    `);
+    console.log('[OrderIdSequence] Sample existing order_ids:', debugResult.rows);
+    
+    // Use a simpler pattern match that works better with PostgreSQL
     const maxResult = await db.execute(sql`
       SELECT COALESCE(
-        MAX(CAST(SPLIT_PART(order_id, '-', 1) AS BIGINT)),
+        MAX(
+          CASE 
+            WHEN order_id ~ '^[0-9]+-[0-9]{4}$' 
+            THEN CAST(SPLIT_PART(order_id, '-', 1) AS BIGINT)
+            ELSE 0
+          END
+        ),
         0
       ) as max_counter
       FROM order_magnet_orders 
-      WHERE order_id IS NOT NULL 
-        AND order_id ~ '^\d+-\d{4}$'
+      WHERE order_id IS NOT NULL
     `);
     
     const maxCounter = Number((maxResult.rows[0] as any)?.max_counter || 0);
