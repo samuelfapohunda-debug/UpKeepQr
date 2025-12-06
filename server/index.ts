@@ -66,6 +66,20 @@ app.use((req, res, next) => {
   app.use(express.json());
   app.use(express.urlencoded({ extended: false }));
   
+  // Bootstrap: Ensure order_id_counter sequence exists for Stripe webhook
+  const { createOrderIdCounterSequence } = await import("./migrations/create_order_id_counter.js");
+  const ensureOrderIdSequence = async () => {
+    try {
+      console.log('[Bootstrap] Ensuring order_id_counter sequence exists...');
+      await createOrderIdCounterSequence();
+      console.log('[Bootstrap] order_id_counter sequence ready');
+    } catch (error) {
+      console.error('[Bootstrap] Failed to create order_id_counter sequence:', error);
+      // Non-fatal: log but continue - might already exist or have permission issues
+    }
+  };
+  await ensureOrderIdSequence();
+  
   // Bootstrap: Ensure system agent exists for order-based QR codes
   const { storage, SYSTEM_AGENT_ID } = await import("./storage.js");
   const ensureSystemAgent = async () => {
