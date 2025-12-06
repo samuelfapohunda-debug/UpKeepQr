@@ -35,17 +35,4 @@ async function createOrderIdCounterSequence() {
   }
 }
 
-// Run if executed directly
-if (import.meta.url === `file://${process.argv[1]}`) {
-  createOrderIdCounterSequence()
-    .then(() => {
-      console.log('✅ Migration completed successfully!');
-      process.exit(0);
-    })
-    .catch((error) => {
-      console.error('❌ Migration failed:', error);
-      process.exit(1);
-    });
-}
-
 export { createOrderIdCounterSequence };
