@@ -3,6 +3,7 @@ import healthRoutes from './health.js';
 import authRoutes from './auth.js';
 import qrRoutes from './qr.js';
 import calendarRoutes from './calendar.js';
+import calendarConnectorRoutes from './calendarConnector.js';
 import homeExtraRoutes from './homeExtra.js';
 import webhookRoutes from './webhook.js';
 import publicHomeExtraRoutes from './publicHomeExtra.js';
@@ -20,6 +21,7 @@ export function registerRoutes(app: Express) {
   app.use('/api/auth', authRoutes);
   app.use('/api/qr', qrRoutes);
   app.use('/api/calendar', calendarRoutes);
+  app.use('/api/calendar/replit', calendarConnectorRoutes);
   app.use('/api/admin/home-extra', homeExtraRoutes);
   app.use('/api/admin/magnets', magnetOrdersRoutes);
   app.use('/api/admin/setup-forms', setupFormsRoutes);
@@ -36,6 +38,7 @@ export function registerRoutes(app: Express) {
   console.log('✅ Auth routes registered at /api/auth');
   console.log('✅ QR routes registered at /api/qr');
   console.log('✅ Calendar routes registered at /api/calendar');
+  console.log('✅ Calendar Replit connector routes registered at /api/calendar/replit');
   console.log('✅ Admin home extra routes registered at /api/admin/home-extra');
   console.log('✅ Admin magnet orders routes registered at /api/admin/magnets');
   console.log('✅ Admin setup forms routes registered at /api/admin/setup-forms');
