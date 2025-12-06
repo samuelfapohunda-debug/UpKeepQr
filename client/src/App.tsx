@@ -26,6 +26,7 @@ function Router() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Navigation />
+      <div className="pt-20">
       <Switch>
         <Route path="/" component={Home} />
         <Route path="/pricing" component={Pricing} />
@@ -69,6 +70,7 @@ function Router() {
         {/* Fallback to 404 */}
         <Route component={NotFound} />
       </Switch>
+      </div>
     </div>
   );
 }
