@@ -1,0 +1,57 @@
+=> Your service is live 🎉
+     ==> 
+     ==> ///////////////////////////////////////////////////////////
+     ==> 
+     ==> Available at your primary URL https://upkeepqr-backend.onrender.com
+     ==> 
+     ==> ///////////////////////////////////////////////////////////
+     ==> Deploying...
+==> Running 'npm start'
+> server@1.0.0 start
+> node --require ./dist/server/preload-stripe.cjs dist/server/index.js
+✅ Stripe pre-loaded before tsx
+📄 Service account file not found, trying environment variables...
+⚠️ Firebase service account credentials are incomplete. Firebase features will be disabled.
+🔌 Using standard PostgreSQL driver
+✅ SENDGRID_API_KEY loaded, initializing...
+📧 Email configuration loaded: {
+  FROM_EMAIL: 'noreply@upkeepqr.com',
+  ADMIN_EMAIL: 'samuel@upkeepqr.com',
+  sendgridConfigured: true
+}
+🔧 Webhook router initialized
+✅ Webhook routes registered
+DEBUG DATABASE_URL: postgresql://upkeepqr_user:Ni64FyyLctMDpwjWAWesDtlhyzLdfvbh@dpg-d4jtra3uibrs73f3s6i0-a/upkeepqr
+[Bootstrap] Ensuring order_id_counter sequence exists...
+[OrderIdSequence] Creating/verifying order_id_counter sequence...
+[OrderIdSequence] Sequence exists, syncing with existing orders...
+[OrderIdSequence] Sample existing order_ids: []
+[OrderIdSequence] Max existing counter: 0
+[OrderIdSequence] Current sequence state: { lastValue: 1, isCalled: false }
+[OrderIdSequence] Sequence set to 100, next ID will be 101
+[OrderIdSequence] Sequence verified: { lastValue: '100', isCalled: true }
+[OrderIdSequence] Setup complete!
+[Bootstrap] order_id_counter sequence ready
+🔧 Creating system agent for order-based QR codes...
+✅ System agent created successfully
+✅ Health routes registered at /health
+✅ Auth routes registered at /api/auth
+✅ QR routes registered at /api/qr
+✅ Calendar routes registered at /api/calendar
+✅ Admin home extra routes registered at /api/admin/home-extra
+✅ Admin magnet orders routes registered at /api/admin/magnets
+✅ Admin setup forms routes registered at /api/admin/setup-forms
+✅ Admin pro requests routes registered at /api/admin/pro-requests
+✅ Public home extra routes registered at /api/public
+✅ Webhook routes registered at /api/webhook
+✅ Leads routes registered at /api/leads
+✅ Setup routes registered at /api/setup
+✅ Pro requests routes registered at /api/pro-requests
+✅ Contact routes registered at /api/contact
+🚀 All routes setup complete
+1:52:44 PM [express] Server running on port 10000
+     ==> Your service is live 🎉
+     ==> 
+     ==> ///////////////////////////////////////////////////////////
+     ==> 
+     ==> Available at your primary URL https://upkeepqr-backend.onrender.com
