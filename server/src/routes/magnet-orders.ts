@@ -16,9 +16,13 @@ router.get('/orders/metrics', authenticateAgent, async (req, res) => {
   try {
     await createAuditLog(req, '/api/admin/magnets/orders/metrics');
     
+    console.log('[MagnetOrders API] Fetching order metrics...');
+    
     // For now, get basic metrics from all orders
     // In a real implementation, this would use more efficient aggregation queries
     const orders = await storage.getAllOrderMagnetOrders();
+    
+    console.log('[MagnetOrders API] Metrics - Total orders found:', orders.length);
     
     // Apply filters to match the frontend table filters
     let filteredOrders = orders;
@@ -105,12 +109,16 @@ router.get('/orders', authenticateAgent, async (req, res) => {
     // Parse and validate query parameters
     const { status, page = 1, pageSize = 25, sortBy = 'createdAt', sortDir = 'desc' } = req.query;
     
+    console.log('[MagnetOrders API] Fetching orders with params:', { status, page, pageSize, sortBy, sortDir });
+    
     let orders;
     if (status && typeof status === 'string') {
       orders = await storage.getOrderMagnetOrdersByStatus(status);
     } else {
       orders = await storage.getAllOrderMagnetOrders();
     }
+    
+    console.log('[MagnetOrders API] Total orders from database:', orders.length);
     
     // Simple pagination and sorting in memory for now
     const startIndex = (Number(page) - 1) * Number(pageSize);
