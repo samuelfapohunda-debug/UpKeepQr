@@ -14,6 +14,7 @@ router.post('/google/auth-url', async (req, res) => {
 
     const authUrl = oauth2Client.generateAuthUrl({
       access_type: 'offline',
+      response_type: 'code',
       scope: [
         'https://www.googleapis.com/auth/calendar.events',
         'https://www.googleapis.com/auth/calendar.readonly',
