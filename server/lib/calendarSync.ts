@@ -7,9 +7,12 @@ import { randomUUID } from 'crypto';
 
 // Get valid access token (handles refresh if needed)
 export async function getValidAccessToken(connectionId: string) {
-  const connection = await db.query.calendarConnectionsTable.findFirst({
-    where: eq(calendarConnectionsTable.id, connectionId),
-  });
+  const connections = await db.select()
+    .from(calendarConnectionsTable)
+    .where(eq(calendarConnectionsTable.id, connectionId))
+    .limit(1);
+
+  const connection = connections[0];
 
   if (!connection) {
     throw new Error('Calendar connection not found');
