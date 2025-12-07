@@ -87,7 +87,7 @@ export async function syncTasksToCalendar(householdId: string) {
     .from(householdTaskAssignmentsTable)
     .where(
       and(
-        eq(householdTaskAssignmentsTable.household_id, householdId),
+        eq(householdTaskAssignmentsTable.householdId, householdId),
         eq(householdTaskAssignmentsTable.status, 'pending')
       )
     );
@@ -118,7 +118,7 @@ export async function syncTasksToCalendar(householdId: string) {
     }
 
     // Create calendar event
-    const eventStart = new Date(task.due_date);
+    const eventStart = new Date(task.dueDate);
     const eventEnd = new Date(eventStart.getTime() + 60 * 60 * 1000); // 1 hour duration
 
     const event = {
