@@ -1,7 +1,7 @@
 import { google } from 'googleapis';
 import { db } from '../db.js';
 import { calendarConnectionsTable, calendarSyncEventsTable, householdTaskAssignmentsTable } from '../../shared/schema.js';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, sql } from 'drizzle-orm';
 import { decryptToken, encryptToken } from './encryption.js';
 import { randomUUID } from 'crypto';
 
@@ -75,12 +75,14 @@ export async function syncTasksToCalendar(householdId: string) {
   const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
 
   // Get pending tasks
-  const tasks = await db.query.householdTaskAssignmentsTable.findMany({
-    where: and(
-      eq(householdTaskAssignmentsTable.household_id, householdId),
-      eq(householdTaskAssignmentsTable.status, 'pending')
-    ),
-  });
+  const tasks = await db.select()
+    .from(householdTaskAssignmentsTable)
+    .where(
+      and(
+        eq(householdTaskAssignmentsTable.household_id, householdId),
+        eq(householdTaskAssignmentsTable.status, 'pending')
+      )
+    );
 
   console.log(`Found ${tasks.length} pending tasks to sync`);
 
