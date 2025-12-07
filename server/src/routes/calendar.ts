@@ -109,4 +109,30 @@ router.get('/google/callback', async (req, res) => {
   }
 });
 
+// POST /api/calendar/sync
+router.post('/sync', async (req, res) => {
+  try {
+    // TODO: Get household_id from authenticated user
+    // For now, using test household
+    const householdId = 'test-household-calendar';
+
+    const { syncTasksToCalendar } = await import('../../lib/calendarSync.js');
+    const result = await syncTasksToCalendar(householdId);
+
+    if (!result.success) {
+      return res.status(404).json({ error: result.message });
+    }
+
+    res.json({
+      success: true,
+      created: result.created,
+      skipped: result.skipped,
+      message: `Synced ${result.created} tasks to calendar`,
+    });
+  } catch (error: any) {
+    console.error('Sync error:', error);
+    res.status(500).json({ error: 'Failed to sync calendar', details: error.message });
+  }
+});
+
 export default router;
