@@ -107,3 +107,7 @@ expertMode = true
 
 [userenv.development]
 ALLOW_ADMIN_SETUP_CREATION = "true"
+
+[userenv.shared]
+FRONTEND_URL = "https://upkeepqr.com"
+BACKEND_URL = "https://upkeepqr.com"
