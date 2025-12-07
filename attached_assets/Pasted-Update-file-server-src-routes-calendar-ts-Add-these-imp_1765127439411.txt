@@ -1,38 +1,15 @@
-import { Router } from 'express';
-import { google } from 'googleapis';
-import { db } from '../../db.js';
+Update file: server/src/routes/calendar.ts
+
+Add these imports at the top (after the existing imports):
+```typescript
+import { db } from '../../db/index.js';
 import { calendarConnectionsTable } from '../../../shared/schema.js';
 import { encryptToken } from '../../lib/encryption.js';
 import { randomUUID } from 'crypto';
+```
 
-const router = Router();
-
-// POST /api/calendar/google/auth-url
-router.post('/google/auth-url', async (req, res) => {
-  try {
-    const oauth2Client = new google.auth.OAuth2(
-      process.env.GOOGLE_CLIENT_ID,
-      process.env.GOOGLE_CLIENT_SECRET,
-      `${process.env.BACKEND_URL || 'https://upkeepqr-backend.onrender.com'}/api/calendar/google/callback`
-    );
-
-    const authUrl = oauth2Client.generateAuthUrl({
-      access_type: 'offline',
-      response_type: 'code',
-      scope: [
-        'https://www.googleapis.com/auth/calendar.events',
-        'https://www.googleapis.com/auth/calendar.readonly',
-      ],
-      prompt: 'consent',
-    });
-
-    res.json({ authUrl });
-  } catch (error: any) {
-    console.error('Error generating auth URL:', error);
-    res.status(500).json({ error: 'Failed to generate authorization URL' });
-  }
-});
-
+Then replace the /google/callback endpoint with this EXACT code:
+```typescript
 // GET /api/calendar/google/callback
 router.get('/google/callback', async (req, res) => {
   try {
@@ -107,5 +84,9 @@ router.get('/google/callback', async (req, res) => {
     res.redirect(`${process.env.FRONTEND_URL || 'https://upkeepqr.com'}/dashboard?calendar_sync=error&message=server_error`);
   }
 });
+```
 
-export default router;
+Rules:
+- Add the imports at the top
+- Replace ONLY the /google/callback endpoint
+- Keep /google/auth-url unchanged
