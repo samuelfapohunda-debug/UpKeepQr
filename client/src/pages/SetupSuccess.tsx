@@ -333,7 +333,7 @@ export default function SetupSuccess() {
 
           {/* Google Calendar Integration */}
           <div className="max-w-md mx-auto text-left">
-            <CalendarSettings />
+            <CalendarSettings householdToken={result?.household?.token} />
           </div>
 
           {/* Home Profile Extra Data Collection */}

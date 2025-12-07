@@ -54,7 +54,7 @@ const syncRateLimiter = rateLimit({
   message: { error: 'Too many sync requests, please try again in 1 hour' },
 });
 
-function extractHouseholdId(req: Request): string | null {
+async function extractHouseholdId(req: Request): Promise<string | null> {
   const authHeader = req.headers.authorization;
   if (!authHeader?.startsWith('Bearer ')) {
     return null;
@@ -64,14 +64,22 @@ function extractHouseholdId(req: Request): string | null {
   
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
-    return decoded.householdId || null;
+    if (decoded.householdId) {
+      return decoded.householdId;
+    }
   } catch {
-    return null;
   }
+  
+  const [household] = await db.select({ id: householdsTable.id })
+    .from(householdsTable)
+    .where(eq(householdsTable.magnetToken, token))
+    .limit(1);
+  
+  return household?.id || null;
 }
 
-function requireAuth(req: Request, res: Response, next: Function) {
-  const householdId = extractHouseholdId(req);
+async function requireAuth(req: Request, res: Response, next: Function) {
+  const householdId = await extractHouseholdId(req);
   if (!householdId) {
     return res.status(401).json({ error: 'Authentication required' });
   }
