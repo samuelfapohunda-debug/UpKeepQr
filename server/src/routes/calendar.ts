@@ -81,8 +81,9 @@ router.get('/google/callback', async (req, res) => {
     const encryptedAccessToken = encryptToken(tokens.access_token);
     const encryptedRefreshToken = encryptToken(tokens.refresh_token);
 
-    // TODO: Get real household_id from authenticated user
-    const testHouseholdId = 'test-household-' + Date.now();
+    // TODO: Get real household_id from authenticated user session
+    // For now, using the test household
+    const testHouseholdId = 'test-household-calendar';
 
     // Save to database
     await db.insert(calendarConnectionsTable).values({
