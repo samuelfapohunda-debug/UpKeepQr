@@ -40,14 +40,28 @@ router.get('/google/callback', async (req, res) => {
       return res.redirect(`${process.env.FRONTEND_URL || 'https://upkeepqr.com'}/dashboard?calendar_sync=error&message=${error}`);
     }
 
-    if (!code) {
+    if (!code || typeof code !== 'string') {
       return res.redirect(`${process.env.FRONTEND_URL || 'https://upkeepqr.com'}/dashboard?calendar_sync=error&message=no_code`);
     }
 
-    // For now, just redirect to success
-    // We'll add token storage in the next step
-    console.log('OAuth callback received with code:', code);
-    res.redirect(`${process.env.FRONTEND_URL || 'https://upkeepqr.com'}/dashboard?calendar_sync=success`);
+    // Exchange code for tokens
+    const oauth2Client = new google.auth.OAuth2(
+      process.env.GOOGLE_CLIENT_ID,
+      process.env.GOOGLE_CLIENT_SECRET,
+      `${process.env.BACKEND_URL || 'https://upkeepqr-backend.onrender.com'}/api/calendar/google/callback`
+    );
+
+    const { tokens } = await oauth2Client.getToken(code);
+    
+    console.log('Tokens received:', {
+      hasAccessToken: !!tokens.access_token,
+      hasRefreshToken: !!tokens.refresh_token,
+      expiryDate: tokens.expiry_date
+    });
+
+    // For now, just log success and redirect
+    // We'll add database storage in the next step
+    res.redirect(`${process.env.FRONTEND_URL || 'https://upkeepqr.com'}/dashboard?calendar_sync=success&tokens_received=true`);
     
   } catch (error: any) {
     console.error('Callback error:', error);
