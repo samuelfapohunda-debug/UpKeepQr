@@ -1,0 +1,161 @@
+Step-by-Step Instructions for Replit AI Agent
+1. Verify environment variables
+
+Objective: Ensure backend and frontend know the correct URLs and client ID.
+
+Steps:
+
+Check if backend environment variables exist:
+
+echo $GOOGLE_CLIENT_ID
+echo $BACKEND_URL
+echo $FRONTEND_URL
+
+
+If missing, create or update .env in backend folder (server/.env):
+
+GOOGLE_CLIENT_ID=948307135034-pqrqfu4qju4p60k3qri4ku1q88blc1vl.apps.googleusercontent.com
+BACKEND_URL=https://upkeepqr-backend.onrender.com
+FRONTEND_URL=https://upkeepqr.com
+
+
+Reload backend environment:
+
+source server/.env
+
+2. Verify backend route registration
+
+Objective: Make sure calendar endpoints exist and are mounted correctly.
+
+Steps:
+
+Open server/src/routes/calendar.ts and confirm:
+
+router.post('/sync', syncTasksToCalendar);
+router.get('/google/callback', handleGoogleCallback);
+
+
+Check the router is mounted in main Express app:
+
+app.use('/api/calendar', calendarRouter);
+
+
+Optional: add temporary GET endpoint for browser testing:
+
+router.get('/sync-test', async (req, res) => {
+  const householdId = req.query.householdId as string || 'test-household-calendar';
+  await syncTasksToCalendar({ householdId });
+  res.send(`✅ Calendar sync triggered for household: ${householdId}`);
+});
+
+3. Audit database queries in syncTasksToCalendar
+
+Objective: Prevent PostgreSQL syntax errors.
+
+Steps:
+
+Open syncTasksToCalendar function (src/server/index.ts or compiled dist/server/index.js).
+
+Locate all SQL queries or Drizzle ORM calls.
+
+Convert any raw queries with = to correct PostgreSQL syntax using ORM:
+
+// Example conversion
+const tasks = await db.select(taskTable).where({ householdId });
+
+
+Add console logs to see generated SQL:
+
+console.log("Generated SQL:", query.toSQL?.());
+
+
+Ensure all tasks are being read correctly without syntax errors.
+
+4. Verify Google OAuth redirect URI
+
+Objective: Ensure backend URI matches Google Cloud configuration.
+
+Steps:
+
+In calendar.ts, check:
+
+const redirectUri = `${process.env.BACKEND_URL || 'https://upkeepqr-backend.onrender.com'}/api/calendar/google/callback`;
+
+
+Confirm this exact URI is registered in Google Cloud:
+
+https://upkeepqr-backend.onrender.com/api/calendar/google/callback
+
+
+Add logging to verify runtime:
+
+console.log("OAuth redirect_uri:", redirectUri);
+
+5. Test backend sync via curl (bash command)
+
+Objective: Verify database + OAuth flow works before frontend testing.
+
+curl -X POST "https://upkeepqr-backend.onrender.com/api/calendar/sync" \
+     -H "Content-Type: application/json" \
+     -d '{"householdId":"test-household-calendar"}'
+
+
+Expected: JSON response showing synced tasks:
+
+{"success":true,"created":3,"skipped":0,"message":"Synced 3 tasks to calendar"}
+
+6. Test backend sync via browser (temporary GET route)
+
+Objective: Allow click-to-test in browser.
+
+# Temporary GET endpoint
+curl -X GET "https://upkeepqr-backend.onrender.com/api/calendar/sync-test?householdId=test-household-calendar"
+
+
+Should return:
+
+✅ Calendar sync triggered for household: test-household-calendar
+
+
+Logs show task creation.
+
+7. Integrate frontend trigger
+
+Objective: Let users trigger sync from upkeepqr.com.
+
+Steps:
+
+Add a button in frontend (React/HTML):
+
+<button onClick={async () => {
+  const res = await fetch('https://upkeepqr-backend.onrender.com/api/calendar/sync', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ householdId: 'test-household-calendar' })
+  });
+  const data = await res.json();
+  alert(`Calendar sync: ${data.message}`);
+}}>
+Sync Calendar
+</button>
+
+
+Click button → triggers backend → OAuth → task creation.
+
+8. Observe logs and confirm end-to-end success
+
+Objective: Ensure backend + OAuth + task creation works.
+
+In Render logs, confirm:
+
+Starting calendar sync for household: test-household-calendar
+Synced X tasks to calendar
+
+
+Ensure no 500 or syntax errors appear.
+
+9. Cleanup
+
+Remove /sync-test temporary route after verification.
+
+Keep production /sync POST endpoint for actual use.

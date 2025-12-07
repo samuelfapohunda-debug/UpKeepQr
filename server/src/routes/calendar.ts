@@ -10,10 +10,13 @@ const router = Router();
 // POST /api/calendar/google/auth-url
 router.post('/google/auth-url', async (req, res) => {
   try {
+    const redirectUri = `${process.env.BACKEND_URL || 'https://upkeepqr-backend.onrender.com'}/api/calendar/google/callback`;
+    console.log('OAuth redirect_uri:', redirectUri);
+    
     const oauth2Client = new google.auth.OAuth2(
       process.env.GOOGLE_CLIENT_ID,
       process.env.GOOGLE_CLIENT_SECRET,
-      `${process.env.BACKEND_URL || 'https://upkeepqr-backend.onrender.com'}/api/calendar/google/callback`
+      redirectUri
     );
 
     const authUrl = oauth2Client.generateAuthUrl({
@@ -49,10 +52,13 @@ router.get('/google/callback', async (req, res) => {
     }
 
     // Exchange code for tokens
+    const redirectUri = `${process.env.BACKEND_URL || 'https://upkeepqr-backend.onrender.com'}/api/calendar/google/callback`;
+    console.log('Callback OAuth redirect_uri:', redirectUri);
+    
     const oauth2Client = new google.auth.OAuth2(
       process.env.GOOGLE_CLIENT_ID,
       process.env.GOOGLE_CLIENT_SECRET,
-      `${process.env.BACKEND_URL || 'https://upkeepqr-backend.onrender.com'}/api/calendar/google/callback`
+      redirectUri
     );
 
     const { tokens } = await oauth2Client.getToken(code);
@@ -114,7 +120,8 @@ router.post('/sync', async (req, res) => {
   try {
     // TODO: Get household_id from authenticated user
     // For now, using test household
-    const householdId = 'test-household-calendar';
+    const householdId = req.body.householdId || 'test-household-calendar';
+    console.log('Starting calendar sync for household:', householdId);
 
     const { syncTasksToCalendar } = await import('../../lib/calendarSync.js');
     const result = await syncTasksToCalendar(householdId);
@@ -132,6 +139,26 @@ router.post('/sync', async (req, res) => {
   } catch (error: any) {
     console.error('Sync error:', error);
     res.status(500).json({ error: 'Failed to sync calendar', details: error.message });
+  }
+});
+
+// GET /api/calendar/sync-test - Temporary browser testing endpoint
+router.get('/sync-test', async (req, res) => {
+  try {
+    const householdId = (req.query.householdId as string) || 'test-household-calendar';
+    console.log('Browser test: Starting calendar sync for household:', householdId);
+    
+    const { syncTasksToCalendar } = await import('../../lib/calendarSync.js');
+    const result = await syncTasksToCalendar(householdId);
+
+    if (!result.success) {
+      return res.send(`Calendar sync failed: ${result.message}`);
+    }
+
+    res.send(`Calendar sync triggered for household: ${householdId} - Created: ${result.created}, Skipped: ${result.skipped}`);
+  } catch (error: any) {
+    console.error('Sync test error:', error);
+    res.status(500).send(`Sync test failed: ${error.message}`);
   }
 });
 
