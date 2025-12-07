@@ -58,12 +58,17 @@ export async function syncTasksToCalendar(householdId: string) {
   console.log(`Starting calendar sync for household: ${householdId}`);
 
   // Get calendar connection
-  const connection = await db.query.calendarConnectionsTable.findFirst({
-    where: and(
-      eq(calendarConnectionsTable.household_id, householdId),
-      eq(calendarConnectionsTable.sync_enabled, true)
-    ),
-  });
+  const connections = await db.select()
+    .from(calendarConnectionsTable)
+    .where(
+      and(
+        eq(calendarConnectionsTable.household_id, householdId),
+        eq(calendarConnectionsTable.sync_enabled, true)
+      )
+    )
+    .limit(1);
+
+  const connection = connections[0];
 
   if (!connection) {
     console.log('No active calendar connection found');
@@ -91,12 +96,17 @@ export async function syncTasksToCalendar(householdId: string) {
 
   for (const task of tasks) {
     // Check if already synced
-    const existingEvent = await db.query.calendarSyncEventsTable.findFirst({
-      where: and(
-        eq(calendarSyncEventsTable.connection_id, connection.id),
-        eq(calendarSyncEventsTable.task_id, task.id)
-      ),
-    });
+    const existingEvents = await db.select()
+      .from(calendarSyncEventsTable)
+      .where(
+        and(
+          eq(calendarSyncEventsTable.connection_id, connection.id),
+          eq(calendarSyncEventsTable.task_id, task.id)
+        )
+      )
+      .limit(1);
+
+    const existingEvent = existingEvents[0];
 
     if (existingEvent) {
       console.log(`Task ${task.id} already synced, skipping`);
