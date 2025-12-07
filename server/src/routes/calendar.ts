@@ -41,11 +41,11 @@ router.get('/google/callback', async (req, res) => {
     // Handle OAuth errors
     if (error) {
       console.error('Google OAuth error:', error);
-      return res.redirect(`${process.env.FRONTEND_URL || 'https://upkeepqr.com'}/dashboard?calendar_sync=error&message=${error}`);
+      return res.redirect(`${process.env.FRONTEND_URL || 'https://upkeepqr.com'}/admin?calendar_sync=error&message=${error}`);
     }
 
     if (!code || typeof code !== 'string') {
-      return res.redirect(`${process.env.FRONTEND_URL || 'https://upkeepqr.com'}/dashboard?calendar_sync=error&message=no_code`);
+      return res.redirect(`${process.env.FRONTEND_URL || 'https://upkeepqr.com'}/admin?calendar_sync=error&message=no_code`);
     }
 
     // Exchange code for tokens
@@ -101,11 +101,11 @@ router.get('/google/callback', async (req, res) => {
 
     console.log('✅ Calendar connection saved to database');
 
-    res.redirect(`${process.env.FRONTEND_URL || 'https://upkeepqr.com'}/dashboard?calendar_sync=success&connection_saved=true`);
+    res.redirect(`${process.env.FRONTEND_URL || 'https://upkeepqr.com'}/admin?calendar_sync=success&connection_saved=true`);
     
   } catch (error: any) {
     console.error('Callback error:', error);
-    res.redirect(`${process.env.FRONTEND_URL || 'https://upkeepqr.com'}/dashboard?calendar_sync=error&message=server_error`);
+    res.redirect(`${process.env.FRONTEND_URL || 'https://upkeepqr.com'}/admin?calendar_sync=error&message=server_error`);
   }
 });
 
