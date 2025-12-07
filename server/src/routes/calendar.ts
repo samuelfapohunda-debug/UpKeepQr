@@ -43,4 +43,11 @@ router.get('/events/:agentId', (req, res) => {
   }
 });
 
+router.post('/google/auth-url', (_req, res) => {
+  res.json({
+    authUrl: 'test-url',
+    state: 'test-state'
+  });
+});
+
 export default router;
