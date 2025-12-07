@@ -28,4 +28,30 @@ router.post('/google/auth-url', async (req, res) => {
   }
 });
 
+// GET /api/calendar/google/callback
+router.get('/google/callback', async (req, res) => {
+  try {
+    const { code, error } = req.query;
+
+    // Handle OAuth errors
+    if (error) {
+      console.error('Google OAuth error:', error);
+      return res.redirect(`${process.env.FRONTEND_URL || 'https://upkeepqr.com'}/dashboard?calendar_sync=error&message=${error}`);
+    }
+
+    if (!code) {
+      return res.redirect(`${process.env.FRONTEND_URL || 'https://upkeepqr.com'}/dashboard?calendar_sync=error&message=no_code`);
+    }
+
+    // For now, just redirect to success
+    // We'll add token storage in the next step
+    console.log('OAuth callback received with code:', code);
+    res.redirect(`${process.env.FRONTEND_URL || 'https://upkeepqr.com'}/dashboard?calendar_sync=success`);
+    
+  } catch (error: any) {
+    console.error('Callback error:', error);
+    res.redirect(`${process.env.FRONTEND_URL || 'https://upkeepqr.com'}/dashboard?calendar_sync=error&message=server_error`);
+  }
+});
+
 export default router;
