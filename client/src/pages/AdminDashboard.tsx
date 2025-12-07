@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Search, Filter, Plus, Eye, User, Clock, AlertCircle, CheckCircle } from "lucide-react";
+import { Search, Filter, Plus, Eye, User, Clock, AlertCircle, CheckCircle, Calendar } from "lucide-react";
 
 interface Provider {
   id: string;
@@ -61,6 +61,63 @@ export default function AdminDashboard() {
   });
 
   const { toast } = useToast();
+
+  // Calendar sync mutation
+  const calendarSyncMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch(`${API_BASE_URL}/api/calendar/sync`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeaders()
+        },
+        body: JSON.stringify({ householdId: "test-household-calendar" })
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        if (data.error === "No calendar connection") {
+          const authResponse = await fetch(`${API_BASE_URL}/api/calendar/google/auth-url`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              ...getAuthHeaders()
+            }
+          });
+          
+          if (authResponse.ok) {
+            const authData = await authResponse.json();
+            window.location.href = authData.authUrl;
+            return { needsAuth: true };
+          }
+        }
+        throw new Error(data.error || "Failed to sync calendar");
+      }
+      
+      return data;
+    },
+    onSuccess: (data) => {
+      if (data?.needsAuth) {
+        toast({
+          title: "Connecting to Google Calendar",
+          description: "Redirecting to Google for authorization...",
+        });
+      } else {
+        toast({
+          title: "Calendar Sync Complete",
+          description: data.message || `Synced ${data.created} tasks to calendar`,
+        });
+      }
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Calendar Sync Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
 
   // Fetch pro requests with filters
   const { data: requestsData, isLoading: requestsLoading } = useQuery({
@@ -220,9 +277,20 @@ export default function AdminDashboard() {
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
               Request a Pro Dashboard
             </h1>
-            <Button variant="outline" onClick={logout} data-testid="button-admin-logout">
-              Sign Out
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                onClick={() => calendarSyncMutation.mutate()}
+                disabled={calendarSyncMutation.isPending}
+                data-testid="button-calendar-sync"
+              >
+                <Calendar className="h-4 w-4 mr-2" />
+                {calendarSyncMutation.isPending ? "Syncing..." : "Sync Calendar"}
+              </Button>
+              <Button variant="outline" onClick={logout} data-testid="button-admin-logout">
+                Sign Out
+              </Button>
+            </div>
           </div>
         </div>
       </div>
