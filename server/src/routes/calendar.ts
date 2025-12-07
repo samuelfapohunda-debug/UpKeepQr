@@ -1,52 +1,12 @@
 import { Router } from 'express';
-import { createEvent } from '../lib/ics.js';
-import { z } from 'zod';
 
 const router = Router();
 
-const eventSchema = z.object({
-  title: z.string().min(1),
-  description: z.string().optional(),
-  start: z.string().datetime(),
-  end: z.string().datetime(),
-  location: z.string().optional(),
-});
-
-router.post('/event', async (req, res) => {
-  try {
-    const eventData = eventSchema.parse(req.body);
-    
-    const icsContent = createEvent(eventData);
-    
-    res.setHeader('Content-Type', 'text/calendar');
-    res.setHeader('Content-Disposition', 'attachment; filename="event.ics"');
-    res.send(icsContent);
-  } catch {
-    res.status(400).json({ error: 'Failed to create calendar event' });
-  }
-});
-
-router.get('/events/:agentId', (req, res) => {
-  try {
-    const { agentId } = req.params;
-    
-    // TODO: Fetch agent events from database
-    const events: Array<Record<string, unknown>> = [];
-    
-    res.json({ 
-      success: true, 
-      events,
-      agentId 
-    });
-  } catch {
-    res.status(500).json({ error: 'Failed to fetch events' });
-  }
-});
-
-router.post('/google/auth-url', (_req, res) => {
-  res.json({
+// POST /api/calendar/google/auth-url
+router.post('/google/auth-url', (req, res) => {
+  return res.json({
     authUrl: 'test-url',
-    state: 'test-state'
+    state: 'test-state',
   });
 });
 
