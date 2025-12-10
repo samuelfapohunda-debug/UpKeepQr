@@ -14,6 +14,9 @@ import publicRoutes from './public.js';
 import contactRoutes from './contact.js';
 import proRequestsRoutes from './proRequests.js';
 import adminProRequestsRoutes from './adminProRequests.js';
+import applianceRoutes from './appliances.js';
+import maintenanceLogRoutes from './maintenanceLogs.js';
+import reportRoutes from './reports.js';
 
 export function registerRoutes(app: Express) {
   app.use('/health', healthRoutes);
@@ -31,6 +34,9 @@ export function registerRoutes(app: Express) {
   app.use('/api/pro-requests', proRequestsRoutes);  // Public professional service requests
   app.use('/api', contactRoutes);  // Contact form
   app.use('/api', publicRoutes);  // Customer data lookup and QR code download
+  app.use('/api', applianceRoutes);  // Appliance management
+  app.use('/api', maintenanceLogRoutes);  // Maintenance logs
+  app.use('/api', reportRoutes);  // Reports
   
   console.log('✅ Health routes registered at /health');
   console.log('✅ Auth routes registered at /api/auth');
@@ -46,5 +52,8 @@ export function registerRoutes(app: Express) {
   console.log('✅ Setup routes registered at /api/setup');
   console.log('✅ Pro requests routes registered at /api/pro-requests');
   console.log('✅ Contact routes registered at /api/contact');
+  console.log('✅ Appliance routes registered at /api');
+  console.log('✅ Maintenance log routes registered at /api');
+  console.log('✅ Report routes registered at /api');
   console.log('🚀 All routes setup complete');
 }

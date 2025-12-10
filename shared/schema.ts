@@ -1058,5 +1058,145 @@ export const calendarSyncEventsTable = pgTable('calendar_sync_events', {
   updated_at: timestamp('updated_at').notNull().defaultNow(),
 });
 
+// =====================================================
+// APPLIANCE TRACKING & MAINTENANCE LOG SYSTEM
+// =====================================================
+
+// Common Appliances Table - Master list of common appliances
+export const commonAppliancesTable = pgTable('common_appliances', {
+  id: serial('id').primaryKey(),
+  applianceType: varchar('appliance_type', { length: 100 }).notNull().unique(),
+  category: varchar('category', { length: 50 }).notNull(),
+  typicalLifespanYears: integer('typical_lifespan_years'),
+  commonBrands: text('common_brands').array(),
+  maintenanceNotes: text('maintenance_notes'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
+export type CommonAppliance = typeof commonAppliancesTable.$inferSelect;
+export type InsertCommonAppliance = typeof commonAppliancesTable.$inferInsert;
+
+// Household Appliances Table - Track appliances for each household
+export const householdAppliancesTable = pgTable('household_appliances', {
+  id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
+  householdId: varchar('household_id').notNull().references(() => householdsTable.id, { onDelete: 'cascade' }),
+  
+  applianceType: varchar('appliance_type', { length: 100 }).notNull(),
+  brand: varchar('brand', { length: 100 }).notNull(),
+  modelNumber: varchar('model_number', { length: 100 }).notNull(),
+  serialNumber: varchar('serial_number', { length: 100 }).notNull().unique(),
+  purchaseDate: timestamp('purchase_date', { mode: 'date' }).notNull(),
+  
+  purchasePrice: numeric('purchase_price', { precision: 10, scale: 2 }),
+  installationDate: timestamp('installation_date', { mode: 'date' }),
+  location: varchar('location', { length: 200 }),
+  notes: text('notes'),
+  
+  warrantyType: varchar('warranty_type', { length: 50 }),
+  warrantyExpiration: timestamp('warranty_expiration', { mode: 'date' }),
+  warrantyProvider: varchar('warranty_provider', { length: 100 }),
+  warrantyPolicyNumber: varchar('warranty_policy_number', { length: 100 }),
+  warrantyCoverageDetails: text('warranty_coverage_details'),
+  
+  warrantyAlertSent: boolean('warranty_alert_sent').default(false),
+  warrantyAlertSentAt: timestamp('warranty_alert_sent_at'),
+  isActive: boolean('is_active').default(true),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  createdBy: varchar('created_by', { length: 50 }),
+  createdByUserId: varchar('created_by_user_id', { length: 255 }),
+}, (table) => ({
+  householdIdx: index('idx_household_appliances_household').on(table.householdId),
+  typeIdx: index('idx_household_appliances_type').on(table.applianceType),
+  warrantyExpIdx: index('idx_household_appliances_warranty_exp').on(table.warrantyExpiration),
+  activeIdx: index('idx_household_appliances_active').on(table.isActive),
+}));
+
+export type HouseholdAppliance = typeof householdAppliancesTable.$inferSelect;
+export type InsertHouseholdAppliance = typeof householdAppliancesTable.$inferInsert;
+
+// Maintenance Logs Table - Record all maintenance activities
+export const maintenanceLogsTable = pgTable('maintenance_logs', {
+  id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
+  householdId: varchar('household_id').notNull().references(() => householdsTable.id, { onDelete: 'cascade' }),
+  taskAssignmentId: varchar('task_assignment_id').references(() => householdTaskAssignmentsTable.id, { onDelete: 'set null' }),
+  applianceId: varchar('appliance_id').references(() => householdAppliancesTable.id, { onDelete: 'set null' }),
+  
+  maintenanceDate: timestamp('maintenance_date', { mode: 'date' }).notNull(),
+  taskPerformed: text('task_performed').notNull(),
+  logType: varchar('log_type', { length: 20 }).notNull(),
+  
+  cost: numeric('cost', { precision: 10, scale: 2 }),
+  serviceProvider: varchar('service_provider', { length: 200 }),
+  partsReplaced: text('parts_replaced'),
+  notes: text('notes'),
+  
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  createdBy: varchar('created_by', { length: 50 }),
+  createdByUserId: varchar('created_by_user_id', { length: 255 }),
+  
+  wasOnTime: boolean('was_on_time'),
+  daysLate: integer('days_late'),
+}, (table) => ({
+  householdIdx: index('idx_maintenance_logs_household').on(table.householdId),
+  applianceIdx: index('idx_maintenance_logs_appliance').on(table.applianceId),
+  taskIdx: index('idx_maintenance_logs_task').on(table.taskAssignmentId),
+  dateIdx: index('idx_maintenance_logs_date').on(table.maintenanceDate),
+  typeIdx: index('idx_maintenance_logs_type').on(table.logType),
+}));
+
+export type MaintenanceLog = typeof maintenanceLogsTable.$inferSelect;
+export type InsertMaintenanceLog = typeof maintenanceLogsTable.$inferInsert;
+
+// Zod schemas for validation
+export const insertHouseholdApplianceSchema = z.object({
+  householdId: z.string().optional(),
+  applianceType: z.string().min(1, "Appliance type is required"),
+  brand: z.string().min(1, "Brand is required"),
+  modelNumber: z.string().min(1, "Model number is required"),
+  serialNumber: z.string().min(1, "Serial number is required"),
+  purchaseDate: z.string().or(z.date()),
+  purchasePrice: z.string().or(z.number()).optional(),
+  installationDate: z.string().or(z.date()).optional(),
+  location: z.string().optional(),
+  notes: z.string().optional(),
+  warrantyType: z.enum(['Manufacturer', 'Extended', 'Labor']).optional(),
+  warrantyExpiration: z.string().or(z.date()).optional(),
+  warrantyProvider: z.string().optional(),
+  warrantyPolicyNumber: z.string().optional(),
+  warrantyCoverageDetails: z.string().optional(),
+});
+
+export const updateHouseholdApplianceSchema = insertHouseholdApplianceSchema.partial();
+
+export const insertMaintenanceLogSchema = z.object({
+  householdId: z.string().optional(),
+  taskAssignmentId: z.string().optional(),
+  applianceId: z.string().optional(),
+  maintenanceDate: z.string().or(z.date()),
+  taskPerformed: z.string().min(1, "Task performed is required"),
+  logType: z.enum(['scheduled', 'manual', 'emergency']),
+  cost: z.string().or(z.number()).optional(),
+  serviceProvider: z.string().optional(),
+  partsReplaced: z.string().optional(),
+  notes: z.string().optional(),
+});
+
+export const updateMaintenanceLogSchema = insertMaintenanceLogSchema.partial();
+
+export const maintenanceLogFiltersSchema = z.object({
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
+  applianceId: z.string().optional(),
+  logType: z.enum(['scheduled', 'manual', 'emergency']).optional(),
+  page: z.number().min(1).default(1),
+  pageSize: z.number().min(1).max(100).default(25),
+  sortBy: z.enum(['maintenanceDate', 'createdAt', 'cost']).default('maintenanceDate'),
+  sortDir: z.enum(['asc', 'desc']).default('desc'),
+});
+
+export type MaintenanceLogFilters = z.infer<typeof maintenanceLogFiltersSchema>;
+
 // Lead Capture
 export * from "./lead-schema";

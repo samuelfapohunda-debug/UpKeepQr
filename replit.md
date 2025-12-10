@@ -24,6 +24,8 @@ The backend is a RESTful API built with Express.js and TypeScript. It uses Drizz
 - **Unified Notification System**: Designed for preference-based routing (email/SMS/both) using Twilio for SMS and planned SendGrid integration for email, with TCPA compliance.
 - **Stripe Webhook Integration**: Processes `checkout.session.completed` events to create orders with a sequential ID format.
 - **Modular Architecture & Audit Logging**: Routes are modularized for maintainability. All household CRUD operations are tracked via an audit event system, recording actor type, ID, email, timestamp, and metadata for compliance.
+- **Appliance Tracking & Warranty Management**: Comprehensive appliance management with CRUD operations, warranty tracking with expiration alerts (14-day threshold), and maintenance history logging. Features include: common appliances catalog (seeded with 15 typical home appliances), household-specific appliance registration with serial number uniqueness, warranty status reports, and automatic cost tracking. All endpoints require authentication.
+- **Maintenance History & Reporting**: Detailed maintenance logs linked to appliances and scheduled tasks. Supports manual, scheduled, and emergency log types with cost tracking, service provider recording, and on-time completion metrics. Reports include maintenance history with cost trends and warranty status summaries.
 
 ## System Design Choices
 The database uses PostgreSQL with Drizzle ORM, connected via Neon serverless. A critical `order_id_counter` sequence is used for unique order IDs. The `household_task_assignments` table manages links between households and maintenance tasks, with robust indexing and foreign key constraints.
