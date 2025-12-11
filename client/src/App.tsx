@@ -21,6 +21,7 @@ import AdminDashboard from "@/pages/AdminDashboard";
 import MagnetDashboard from "@/pages/MagnetDashboard";
 import SetupFormsDashboard from "@/pages/SetupFormsDashboard";
 import Login from "@/pages/Login";
+import Appliances from "@/pages/Appliances";
 
 function Router() {
   return (
@@ -41,6 +42,14 @@ function Router() {
         <Route path="/setup/:token" component={Onboarding} />
         <Route path="/task/:token/:taskId" component={TaskDetail} />
         <Route path="/request-pro" component={RequestPro} />
+        
+        {/* Appliance Management Routes */}
+        <Route path="/appliances">
+          <ProtectedRoute>
+            <Appliances />
+          </ProtectedRoute>
+        </Route>
+        
         <Route path="/admin">
           <ProtectedRoute>
             <Dashboard />
