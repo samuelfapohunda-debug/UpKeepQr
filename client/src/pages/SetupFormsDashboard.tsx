@@ -555,16 +555,16 @@ export default function SetupFormsDashboard() {
                             <div className="flex gap-1">
                               <Button
                                 variant="ghost"
-                                size="sm"
+                                size="icon"
                                 data-testid={`button-view-${household.id}`}
                                 onClick={() => handleViewDetail(household)}
                                 title="View Details"
                               >
-                                <Eye className="h-4 w-4" />
+                                <Eye className="h-4 w-4 text-foreground" />
                               </Button>
                               <Button
                                 variant="ghost"
-                                size="sm"
+                                size="icon"
                                 data-testid={`button-appliances-${household.id}`}
                                 onClick={() => {
                                   setSelectedHouseholdForAppliances(household.id);
@@ -572,7 +572,7 @@ export default function SetupFormsDashboard() {
                                 }}
                                 title="Manage Appliances"
                               >
-                                <Refrigerator className="h-4 w-4" />
+                                <Refrigerator className="h-4 w-4 text-foreground" />
                               </Button>
                             </div>
                           </TableCell>
