@@ -16,7 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Search, Filter, Eye, Bell, Trash2, Plus, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ArrowUpDown } from "lucide-react";
+import { Search, Filter, Eye, Bell, Trash2, Plus, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ArrowUpDown, Refrigerator } from "lucide-react";
 import ApplianceManager from "@/components/ApplianceManager";
 
 const statusColors: Record<string, string> = {
@@ -572,7 +572,7 @@ export default function SetupFormsDashboard() {
                                 }}
                                 title="Manage Appliances"
                               >
-                                <i className="fas fa-blender text-sm"></i>
+                                <Refrigerator className="h-4 w-4" />
                               </Button>
                             </div>
                           </TableCell>
