@@ -45,12 +45,16 @@ const Onboarding: React.FC<OnboardingProps> = ({ adminMode = false }) => {
     propertyType: 'residential' as 'residential' | 'commercial',
     home_type: '',
     sqft: '',
+    yearBuilt: '',
+    bedrooms: '',
+    bathrooms: '',
     interestType: 'Sales' as 'Sales' | 'Rent' | 'Lease',  // Fixed: Match backend
     needConsultation: false,
     isOwner: true,
     
     // Systems
     hvac_type: '',
+    heatPump: '',
     water_heater: '',
     roof_age_years: '',
     
@@ -239,14 +243,30 @@ const Onboarding: React.FC<OnboardingProps> = ({ adminMode = false }) => {
       if (adminMode) {
         // ADMIN MODE: Direct household creation
         // Security: Backend derives admin mode from authentication, not from client flag
-        const adminData = {
+        const adminData: Record<string, string | boolean | number | undefined> = {
           skipWelcomeEmail: true, // Admin creation skips welcome email by default
           fullName: formData.fullName.trim(),
           email: formData.email.trim().toLowerCase(),
           phone: formData.phone,
+          streetAddress: formData.streetAddress.trim(),
+          city: formData.city.trim(),
+          state: formData.state.trim().toUpperCase(),
           zip: formData.zip.trim(),
-          homeType: formData.home_type,
+          smsOptIn: formData.smsOptIn,
         };
+
+        // Add optional fields only if they have values
+        if (formData.home_type) adminData.homeType = formData.home_type;
+        if (formData.sqft) adminData.sqft = parseInt(formData.sqft);
+        if (formData.yearBuilt) adminData.yearBuilt = parseInt(formData.yearBuilt);
+        if (formData.bedrooms) adminData.bedrooms = parseInt(formData.bedrooms);
+        if (formData.bathrooms) adminData.bathrooms = parseFloat(formData.bathrooms);
+        if (formData.hvac_type) adminData.hvacType = formData.hvac_type;
+        if (formData.heatPump) adminData.heatPump = formData.heatPump;
+        if (formData.water_heater) adminData.waterHeater = formData.water_heater;
+        if (formData.roof_age_years) adminData.roofAgeYears = parseInt(formData.roof_age_years);
+        if (formData.isOwner !== undefined) adminData.isOwner = formData.isOwner;
+        if (formData.notes) adminData.notes = formData.notes;
 
         const response = await apiRequest("POST", "/api/setup/activate", adminData);
         const result = await response.json();
@@ -273,16 +293,27 @@ const Onboarding: React.FC<OnboardingProps> = ({ adminMode = false }) => {
         // 1. Submit original onboarding data
         const onboardingData: Record<string, string | boolean | number | undefined> = {
           token,
+          fullName: formData.fullName.trim(),
+          email: formData.email.trim().toLowerCase(),
+          phone: formData.phone,
+          streetAddress: formData.streetAddress.trim(),
+          city: formData.city.trim(),
+          state: formData.state.trim().toUpperCase(),
           zip: formData.zip,
           smsOptIn: formData.smsOptIn,
         };
 
         if (formData.home_type) onboardingData.homeType = formData.home_type;
-        if (formData.sqft) onboardingData.sqft = formData.sqft;
+        if (formData.sqft) onboardingData.sqft = parseInt(formData.sqft);
+        if (formData.yearBuilt) onboardingData.yearBuilt = parseInt(formData.yearBuilt);
+        if (formData.bedrooms) onboardingData.bedrooms = parseInt(formData.bedrooms);
+        if (formData.bathrooms) onboardingData.bathrooms = parseFloat(formData.bathrooms);
         if (formData.hvac_type) onboardingData.hvacType = formData.hvac_type;
+        if (formData.heatPump) onboardingData.heatPump = formData.heatPump;
         if (formData.water_heater) onboardingData.waterHeater = formData.water_heater;
-        if (formData.roof_age_years) onboardingData.roofAgeYears = formData.roof_age_years;
-        if (formData.email) onboardingData.email = formData.email;
+        if (formData.roof_age_years) onboardingData.roofAgeYears = parseInt(formData.roof_age_years);
+        if (formData.isOwner !== undefined) onboardingData.isOwner = formData.isOwner;
+        if (formData.notes) onboardingData.notes = formData.notes;
 
         const setupResponse = await fetch(`${API_BASE_URL}/api/setup/activate`, {
           method: 'POST',
@@ -659,6 +690,53 @@ const Onboarding: React.FC<OnboardingProps> = ({ adminMode = false }) => {
                       type="number"
                       value={formData.sqft}
                       onChange={handleInputChange}
+                      data-testid="input-sqft"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="yearBuilt">Year Built</Label>
+                    <Input
+                      id="yearBuilt"
+                      name="yearBuilt"
+                      type="number"
+                      placeholder="e.g., 1995"
+                      min="1800"
+                      max={new Date().getFullYear()}
+                      value={formData.yearBuilt}
+                      onChange={handleInputChange}
+                      data-testid="input-year-built"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="bedrooms">Bedrooms</Label>
+                    <Input
+                      id="bedrooms"
+                      name="bedrooms"
+                      type="number"
+                      min="0"
+                      max="20"
+                      placeholder="e.g., 3"
+                      value={formData.bedrooms}
+                      onChange={handleInputChange}
+                      data-testid="input-bedrooms"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="bathrooms">Bathrooms</Label>
+                    <Input
+                      id="bathrooms"
+                      name="bathrooms"
+                      type="number"
+                      min="0"
+                      max="20"
+                      step="0.5"
+                      placeholder="e.g., 2.5"
+                      value={formData.bathrooms}
+                      onChange={handleInputChange}
+                      data-testid="input-bathrooms"
                     />
                   </div>
 
@@ -682,13 +760,31 @@ const Onboarding: React.FC<OnboardingProps> = ({ adminMode = false }) => {
                   </div>
 
                   <div>
+                    <Label htmlFor="heatPump">Heat Pump</Label>
+                    <Select
+                      name="heatPump"
+                      value={formData.heatPump}
+                      onValueChange={(value) => handleSelectChange('heatPump', value)}
+                    >
+                      <SelectTrigger data-testid="select-heat-pump">
+                        <SelectValue placeholder="Select..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="yes">Yes</SelectItem>
+                        <SelectItem value="no">No</SelectItem>
+                        <SelectItem value="unknown">Unknown</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
                     <Label htmlFor="water_heater">Water Heater Type</Label>
                     <Select
                       name="water_heater"
                       value={formData.water_heater}
                       onValueChange={(value) => handleSelectChange('water_heater', value)}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger data-testid="select-water-heater">
                         <SelectValue placeholder="Select..." />
                       </SelectTrigger>
                       <SelectContent>
