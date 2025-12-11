@@ -555,7 +555,7 @@ export default function SetupFormsDashboard() {
                             <div className="flex gap-1">
                               <Button
                                 variant="ghost"
-                                size="icon"
+                                size="sm"
                                 data-testid={`button-view-${household.id}`}
                                 onClick={() => handleViewDetail(household)}
                                 title="View Details"
@@ -564,7 +564,7 @@ export default function SetupFormsDashboard() {
                               </Button>
                               <Button
                                 variant="ghost"
-                                size="icon"
+                                size="sm"
                                 data-testid={`button-appliances-${household.id}`}
                                 onClick={() => {
                                   setSelectedHouseholdForAppliances(household.id);
