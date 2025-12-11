@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Plus, MapPin } from 'lucide-react';
 import { API_BASE_URL } from '../lib/api-config';
 
 interface Appliance {
@@ -56,7 +57,7 @@ export default function ApplianceManager({ householdId, onClose }: ApplianceMana
               onClick={() => setShowForm(true)}
               className="bg-primary text-primary-foreground px-4 py-2 rounded-md"
             >
-              <i className="fas fa-plus mr-2"></i>
+              <Plus className="h-4 w-4 inline mr-2" />
               Add First Appliance
             </button>
           </div>
@@ -68,7 +69,7 @@ export default function ApplianceManager({ householdId, onClose }: ApplianceMana
                 onClick={() => setShowForm(true)}
                 className="bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm"
               >
-                <i className="fas fa-plus mr-2"></i>
+                <Plus className="h-4 w-4 inline mr-2" />
                 Add Appliance
               </button>
             </div>
@@ -83,8 +84,8 @@ export default function ApplianceManager({ householdId, onClose }: ApplianceMana
                         {appliance.brand} {appliance.modelNumber}
                       </p>
                       {appliance.location && (
-                        <p className="text-xs text-muted-foreground mt-1">
-                          <i className="fas fa-map-marker-alt mr-1"></i>
+                        <p className="text-xs text-muted-foreground mt-1 flex items-center">
+                          <MapPin className="h-3 w-3 mr-1" />
                           {appliance.location}
                         </p>
                       )}
@@ -107,7 +108,6 @@ export default function ApplianceManager({ householdId, onClose }: ApplianceMana
         {showForm && (
           <div className="mt-6 border-t pt-6">
             <h3 className="text-lg font-semibold mb-4">Add New Appliance</h3>
-            {/* Add the form here - simplified for now */}
             <p className="text-sm text-muted-foreground">Form coming next...</p>
             <button
               onClick={() => setShowForm(false)}
