@@ -1,0 +1,106 @@
+@agent Execute Phase 1: Stop Firebase dual-writes and fix homeExtra.ts
+
+STEP 1: Backup Current State
+```bash
+# Create backup branch
+git checkout -b backup-before-firebase-cleanup
+git push origin backup-before-firebase-cleanup
+git checkout main
+
+# Document current Firebase usage
+echo "=== FIREBASE USAGE AUDIT ===" > /tmp/firebase-audit.txt
+grep -rn "adminDb\|firebase" server/src --include="*.ts" >> /tmp/firebase-audit.txt
+cat /tmp/firebase-audit.txt
+```
+
+STEP 2: Fix homeExtra.ts to Use PostgreSQL Only
+
+File: server/src/routes/homeExtra.ts
+
+Find and replace Firebase calls with PostgreSQL:
+
+**Current code (lines ~18, 35):**
+```typescript
+const doc = await adminDb.collection("households").doc(householdId).get();
+const data = doc.data();
+```
+
+**Replace with:**
+```typescript
+import { db } from '../../db';
+import { householdsTable } from '@shared/schema';
+import { eq } from 'drizzle-orm';
+
+const household = await db.query.householdsTable.findFirst({
+  where: eq(householdsTable.id, householdId)
+});
+
+if (!household) {
+  return res.status(404).json({ error: 'Household not found' });
+}
+```
+
+STEP 3: Update All Firebase Household Reads
+
+Search for ALL occurrences:
+```bash
+grep -n 'adminDb.collection("households")' server/src/routes/homeExtra.ts
+```
+
+Replace each with PostgreSQL equivalent using Drizzle ORM.
+
+STEP 4: Test the Changes
+```bash
+# Build
+npm run build
+
+# Check for TypeScript errors
+npm run type-check
+
+# Verify imports are correct
+grep -n "import.*householdsTable" server/src/routes/homeExtra.ts
+```
+
+STEP 5: Commit Changes
+```bash
+git add server/src/routes/homeExtra.ts
+git commit -m "refactor(Phase 1): Replace Firebase household reads with PostgreSQL in homeExtra.ts"
+git push origin main
+```
+
+STEP 6: Create Audit Report
+
+Generate a report showing:
+1. Files modified
+2. Lines changed (before/after)
+3. Remaining Firebase usage in codebase
+4. Test results
+
+Format:
+```markdown
+# Phase 1 Completion Report
+
+## Changes Made
+- Modified: server/src/routes/homeExtra.ts
+- Lines changed: [list line numbers]
+- Firebase calls removed: [count]
+
+## Remaining Firebase Usage
+[List files still using Firebase with line numbers]
+
+## Test Results
+- Build: ✅ PASS / ❌ FAIL
+- Type Check: ✅ PASS / ❌ FAIL
+
+## Next Steps
+Ready for Phase 2 migration: YES/NO
+```
+
+CRITICAL RULES:
+1. Show me the EXACT code changes before committing
+2. Do NOT remove Firebase dependencies yet (Phase 3)
+3. Do NOT modify server/storage.ts yet (Phase 2)
+4. ONLY fix homeExtra.ts in this phase
+5. Keep Firebase as read-only backup
+
+Start with Step 1 and show me the audit results before proceeding.
