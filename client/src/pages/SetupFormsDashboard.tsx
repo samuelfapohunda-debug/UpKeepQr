@@ -73,10 +73,10 @@ export default function SetupFormsDashboard() {
   const { logout } = useAuth();
   const [selectedHousehold, setSelectedHousehold] = useState<HouseholdDetail | null>(null);
   const [showDetail, setShowDetail] = useState(false);
-  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [selectedHouseholdForAppliances, setSelectedHouseholdForAppliances] = useState<
+    string | null
+  >(null);
   const [showApplianceManager, setShowApplianceManager] = useState(false);
-  const [selectedHouseholdForAppliances, setSelectedHouseholdForAppliances] = useState;
-  string | (null > null);
   const [newNote, setNewNote] = useState('');
   const [searchDebounce, setSearchDebounce] = useState('');
 
