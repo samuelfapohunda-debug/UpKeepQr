@@ -1,34 +1,67 @@
-import { useState, useEffect } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { Link } from "wouter";
-import { apiRequest, queryClient } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
-import { useAuth, getAuthToken } from "@/contexts/AuthContext";
-import { API_BASE_URL } from "@/lib/api-config";
-import { Household, SetupFormNote, AdminSetupFormFilters } from "@shared/schema";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Search, Filter, Eye, Bell, Trash2, Plus, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ArrowUpDown, Refrigerator } from "lucide-react";
-import ApplianceManager from "@/components/ApplianceManager";
+import { useState, useEffect } from 'react';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { Link } from 'wouter';
+import { apiRequest, queryClient } from '@/lib/queryClient';
+import { useToast } from '@/hooks/use-toast';
+import { useAuth, getAuthToken } from '@/contexts/AuthContext';
+import { API_BASE_URL } from '@/lib/api-config';
+import { Household, SetupFormNote, AdminSetupFormFilters } from '@shared/schema';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Search,
+  Filter,
+  Eye,
+  Bell,
+  Trash2,
+  Plus,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  ArrowUpDown,
+  Refrigerator,
+} from 'lucide-react';
+import ApplianceManager from '@/components/ApplianceManager';
 
 const statusColors: Record<string, string> = {
-  not_started: "bg-gray-500",
-  in_progress: "bg-yellow-500",
-  completed: "bg-green-500",
+  not_started: 'bg-gray-500',
+  in_progress: 'bg-yellow-500',
+  completed: 'bg-green-500',
 };
 
 const statusLabels: Record<string, string> = {
-  not_started: "Not Started",
-  in_progress: "In Progress",
-  completed: "Completed",
+  not_started: 'Not Started',
+  in_progress: 'In Progress',
+  completed: 'Completed',
 };
 
 interface HouseholdDetail extends Household {
@@ -42,70 +75,71 @@ export default function SetupFormsDashboard() {
   const [showDetail, setShowDetail] = useState(false);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showApplianceManager, setShowApplianceManager] = useState(false);
-  const [selectedHouseholdForAppliances, setSelectedHouseholdForAppliances] = useState<string | null>(null);
-  const [newNote, setNewNote] = useState("");
-  const [searchDebounce, setSearchDebounce] = useState("");
+  const [selectedHouseholdForAppliances, setSelectedHouseholdForAppliances] = useState;
+  string | (null > null);
+  const [newNote, setNewNote] = useState('');
+  const [searchDebounce, setSearchDebounce] = useState('');
 
   // Filters state
   const [filters, setFilters] = useState<AdminSetupFormFilters>({
-    q: "",
-    status: "all",
-    city: "",
-    state: "",
-    zipcode: "",
-    dateFrom: "",
-    dateTo: "",
+    q: '',
+    status: 'all',
+    city: '',
+    state: '',
+    zipcode: '',
+    dateFrom: '',
+    dateTo: '',
     page: 1,
     pageSize: 25,
-    sortBy: "createdAt",
-    sortDir: "desc",
+    sortBy: 'createdAt',
+    sortDir: 'desc',
   });
 
   const { toast } = useToast();
 
   // Create household form state
   const [createForm, setCreateForm] = useState({
-    fullName: "",
-    email: "",
-    phone: "",
-    zip: "",
-    homeType: "single_family" as "single_family" | "condo" | "townhouse" | "apartment",
+    fullName: '',
+    email: '',
+    phone: '',
+    zip: '',
+    homeType: 'single_family' as 'single_family' | 'condo' | 'townhouse' | 'apartment',
     skipWelcomeEmail: false,
   });
 
   // Debounce search input
   useEffect(() => {
     const timer = setTimeout(() => {
-      setFilters((prev) => ({ ...prev, q: searchDebounce, page: 1 }));
+      setFilters(prev => ({ ...prev, q: searchDebounce, page: 1 }));
     }, 500);
     return () => clearTimeout(timer);
   }, [searchDebounce]);
 
   // Fetch households with filters
   const { data: householdsData, isLoading: householdsLoading } = useQuery({
-    queryKey: ["/api/admin/setup-forms", filters],
+    queryKey: ['/api/admin/setup-forms', filters],
     queryFn: async () => {
       const params = new URLSearchParams();
-      if (filters.q) params.set("q", filters.q);
-      if (filters.status && filters.status !== "all") params.set("status", filters.status);
-      if (filters.city) params.set("city", filters.city);
-      if (filters.state) params.set("state", filters.state);
-      if (filters.zipcode) params.set("zipcode", filters.zipcode);
-      if (filters.dateFrom) params.set("dateFrom", filters.dateFrom);
-      if (filters.dateTo) params.set("dateTo", filters.dateTo);
-      params.set("page", filters.page.toString());
-      params.set("pageSize", filters.pageSize.toString());
-      params.set("sortBy", filters.sortBy);
-      params.set("sortDir", filters.sortDir);
+      if (filters.q) params.set('q', filters.q);
+      if (filters.status && filters.status !== 'all') params.set('status', filters.status);
+      if (filters.city) params.set('city', filters.city);
+      if (filters.state) params.set('state', filters.state);
+      if (filters.zipcode) params.set('zipcode', filters.zipcode);
+      if (filters.dateFrom) params.set('dateFrom', filters.dateFrom);
+      if (filters.dateTo) params.set('dateTo', filters.dateTo);
+      params.set('page', filters.page.toString());
+      params.set('pageSize', filters.pageSize.toString());
+      params.set('sortBy', filters.sortBy);
+      params.set('sortDir', filters.sortDir);
 
       const token = getAuthToken();
       const response = await fetch(`${API_BASE_URL}/api/admin/setup-forms?${params}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
-        credentials: "include",
+        credentials: 'include',
       });
 
       if (!response.ok) {
-        throw new Error("Failed to fetch households");
+        throw new Error('Failed to fetch households');
       }
 
       return response.json();
@@ -122,7 +156,7 @@ export default function SetupFormsDashboard() {
 
   // Fetch detailed household data
   const { data: householdDetail } = useQuery({
-    queryKey: ["/api/admin/setup-forms/detail", selectedHousehold?.id],
+    queryKey: ['/api/admin/setup-forms/detail', selectedHousehold?.id],
     queryFn: async () => {
       if (!selectedHousehold?.id) return null;
       const token = getAuthToken();
@@ -130,11 +164,11 @@ export default function SetupFormsDashboard() {
         `${API_BASE_URL}/api/admin/setup-forms/${selectedHousehold.id}`,
         {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
-          credentials: "include",
+          credentials: 'include',
         }
       );
       if (!response.ok) {
-        throw new Error("Failed to fetch household details");
+        throw new Error('Failed to fetch household details');
       }
       return response.json();
     },
@@ -144,9 +178,9 @@ export default function SetupFormsDashboard() {
   // Create note mutation
   const createNoteMutation = useMutation({
     mutationFn: async (content: string) => {
-      if (!selectedHousehold?.id) throw new Error("No household selected");
-      return apiRequest("/api/admin/setup-forms/note", {
-        method: "POST",
+      if (!selectedHousehold?.id) throw new Error('No household selected');
+      return apiRequest('/api/admin/setup-forms/note', {
+        method: 'POST',
         body: JSON.stringify({
           householdId: selectedHousehold.id,
           content,
@@ -155,19 +189,19 @@ export default function SetupFormsDashboard() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ["/api/admin/setup-forms/detail", selectedHousehold?.id],
+        queryKey: ['/api/admin/setup-forms/detail', selectedHousehold?.id],
       });
-      setNewNote("");
+      setNewNote('');
       toast({
-        title: "Note added",
-        description: "Internal note has been saved",
+        title: 'Note added',
+        description: 'Internal note has been saved',
       });
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "Failed to add note",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to add note',
+        variant: 'destructive',
       });
     },
   });
@@ -176,33 +210,33 @@ export default function SetupFormsDashboard() {
   const deleteNoteMutation = useMutation({
     mutationFn: async (noteId: number) => {
       return apiRequest(`/api/admin/setup-forms/note/${noteId}`, {
-        method: "DELETE",
+        method: 'DELETE',
       });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ["/api/admin/setup-forms/detail", selectedHousehold?.id],
+        queryKey: ['/api/admin/setup-forms/detail', selectedHousehold?.id],
       });
       toast({
-        title: "Note deleted",
-        description: "Internal note has been removed",
+        title: 'Note deleted',
+        description: 'Internal note has been removed',
       });
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "Failed to delete note",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to delete note',
+        variant: 'destructive',
       });
     },
   });
 
   // Test notification mutation
   const testNotificationMutation = useMutation({
-    mutationFn: async (type: "email" | "sms" | "both") => {
-      if (!selectedHousehold?.id) throw new Error("No household selected");
-      return apiRequest("/api/admin/setup-forms/test-notification", {
-        method: "POST",
+    mutationFn: async (type: 'email' | 'sms' | 'both') => {
+      if (!selectedHousehold?.id) throw new Error('No household selected');
+      return apiRequest('/api/admin/setup-forms/test-notification', {
+        method: 'POST',
         body: JSON.stringify({
           householdId: selectedHousehold.id,
           type,
@@ -211,15 +245,15 @@ export default function SetupFormsDashboard() {
     },
     onSuccess: () => {
       toast({
-        title: "Test notification sent",
+        title: 'Test notification sent',
         description: "Check the household's contact info for delivery",
       });
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "Failed to send test notification",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to send test notification',
+        variant: 'destructive',
       });
     },
   });
@@ -227,32 +261,32 @@ export default function SetupFormsDashboard() {
   // Create household mutation
   const createHouseholdMutation = useMutation({
     mutationFn: async (data: typeof createForm) => {
-      return apiRequest("/api/admin/setup-forms/create", {
-        method: "POST",
+      return apiRequest('/api/admin/setup-forms/create', {
+        method: 'POST',
         body: JSON.stringify(data),
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/setup-forms"] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/setup-forms'] });
       setShowCreateDialog(false);
       setCreateForm({
-        fullName: "",
-        email: "",
-        phone: "",
-        zip: "",
-        homeType: "single_family",
+        fullName: '',
+        email: '',
+        phone: '',
+        zip: '',
+        homeType: 'single_family',
         skipWelcomeEmail: false,
       });
       toast({
-        title: "Household created",
-        description: "The household has been successfully created",
+        title: 'Household created',
+        description: 'The household has been successfully created',
       });
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "Failed to create household",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to create household',
+        variant: 'destructive',
       });
     },
   });
@@ -273,20 +307,20 @@ export default function SetupFormsDashboard() {
   };
 
   const handleDeleteNote = (noteId: number) => {
-    if (confirm("Are you sure you want to delete this note?")) {
+    if (confirm('Are you sure you want to delete this note?')) {
       deleteNoteMutation.mutate(noteId);
     }
   };
 
-  const handleTestNotification = (type: "email" | "sms" | "both") => {
+  const handleTestNotification = (type: 'email' | 'sms' | 'both') => {
     testNotificationMutation.mutate(type);
   };
 
   const handleSort = (field: string) => {
-    setFilters((prev) => ({
+    setFilters(prev => ({
       ...prev,
       sortBy: field,
-      sortDir: prev.sortBy === field && prev.sortDir === "asc" ? "desc" : "asc",
+      sortDir: prev.sortBy === field && prev.sortDir === 'asc' ? 'desc' : 'asc',
     }));
   };
 
@@ -335,7 +369,7 @@ export default function SetupFormsDashboard() {
                     id="search"
                     placeholder="Name, email, phone..."
                     value={searchDebounce}
-                    onChange={(e) => setSearchDebounce(e.target.value)}
+                    onChange={e => setSearchDebounce(e.target.value)}
                     className="pl-9"
                     data-testid="input-search"
                   />
@@ -346,8 +380,8 @@ export default function SetupFormsDashboard() {
               <div className="space-y-2">
                 <Label>Status</Label>
                 <Select
-                  value={filters.status || "all"}
-                  onValueChange={(value) => setFilters((prev) => ({ ...prev, status: value }))}
+                  value={filters.status || 'all'}
+                  onValueChange={value => setFilters(prev => ({ ...prev, status: value }))}
                 >
                   <SelectTrigger data-testid="select-status">
                     <SelectValue placeholder="All statuses" />
@@ -368,9 +402,7 @@ export default function SetupFormsDashboard() {
                   id="city"
                   placeholder="Filter by city"
                   value={filters.city}
-                  onChange={(e) =>
-                    setFilters((prev) => ({ ...prev, city: e.target.value }))
-                  }
+                  onChange={e => setFilters(prev => ({ ...prev, city: e.target.value }))}
                   data-testid="input-city"
                 />
               </div>
@@ -382,9 +414,7 @@ export default function SetupFormsDashboard() {
                   id="state"
                   placeholder="Filter by state"
                   value={filters.state}
-                  onChange={(e) =>
-                    setFilters((prev) => ({ ...prev, state: e.target.value }))
-                  }
+                  onChange={e => setFilters(prev => ({ ...prev, state: e.target.value }))}
                   data-testid="input-state"
                 />
               </div>
@@ -396,9 +426,7 @@ export default function SetupFormsDashboard() {
                   id="zipcode"
                   placeholder="Filter by zipcode"
                   value={filters.zipcode}
-                  onChange={(e) =>
-                    setFilters((prev) => ({ ...prev, zipcode: e.target.value }))
-                  }
+                  onChange={e => setFilters(prev => ({ ...prev, zipcode: e.target.value }))}
                   data-testid="input-zipcode"
                 />
               </div>
@@ -410,9 +438,7 @@ export default function SetupFormsDashboard() {
                   id="dateFrom"
                   type="date"
                   value={filters.dateFrom}
-                  onChange={(e) =>
-                    setFilters((prev) => ({ ...prev, dateFrom: e.target.value }))
-                  }
+                  onChange={e => setFilters(prev => ({ ...prev, dateFrom: e.target.value }))}
                   data-testid="input-date-from"
                 />
               </div>
@@ -424,9 +450,7 @@ export default function SetupFormsDashboard() {
                   id="dateTo"
                   type="date"
                   value={filters.dateTo}
-                  onChange={(e) =>
-                    setFilters((prev) => ({ ...prev, dateTo: e.target.value }))
-                  }
+                  onChange={e => setFilters(prev => ({ ...prev, dateTo: e.target.value }))}
                   data-testid="input-date-to"
                 />
               </div>
@@ -438,19 +462,19 @@ export default function SetupFormsDashboard() {
                   data-testid="button-clear-filters"
                   onClick={() => {
                     setFilters({
-                      q: "",
-                      status: "",
-                      city: "",
-                      state: "",
-                      zipcode: "",
-                      dateFrom: "",
-                      dateTo: "",
+                      q: '',
+                      status: '',
+                      city: '',
+                      state: '',
+                      zipcode: '',
+                      dateFrom: '',
+                      dateTo: '',
                       page: 1,
                       pageSize: 25,
-                      sortBy: "createdAt",
-                      sortDir: "desc",
+                      sortBy: 'createdAt',
+                      sortDir: 'desc',
                     });
-                    setSearchDebounce("");
+                    setSearchDebounce('');
                   }}
                   className="w-full"
                 >
@@ -465,17 +489,13 @@ export default function SetupFormsDashboard() {
         <Card>
           <CardHeader>
             <CardTitle>Households ({pagination.totalCount})</CardTitle>
-            <CardDescription>
-              Click on a row to view details and manage setup
-            </CardDescription>
+            <CardDescription>Click on a row to view details and manage setup</CardDescription>
           </CardHeader>
           <CardContent>
             {householdsLoading ? (
               <div className="text-center py-8 text-muted-foreground">Loading...</div>
             ) : households.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                No households found
-              </div>
+              <div className="text-center py-8 text-muted-foreground">No households found</div>
             ) : (
               <>
                 <div className="border rounded-lg">
@@ -486,7 +506,7 @@ export default function SetupFormsDashboard() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleSort("name")}
+                            onClick={() => handleSort('name')}
                             data-testid="button-sort-name"
                             className="flex items-center gap-1"
                           >
@@ -500,7 +520,7 @@ export default function SetupFormsDashboard() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleSort("setupCompletedAt")}
+                            onClick={() => handleSort('setupCompletedAt')}
                             data-testid="button-sort-completed"
                             className="flex items-center gap-1"
                           >
@@ -513,7 +533,7 @@ export default function SetupFormsDashboard() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {households.map((household) => (
+                      {households.map(household => (
                         <TableRow
                           key={household.id}
                           data-testid={`row-household-${household.id}`}
@@ -521,42 +541,38 @@ export default function SetupFormsDashboard() {
                           onClick={() => handleViewDetail(household)}
                         >
                           <TableCell className="font-medium">
-                            <div data-testid={`text-name-${household.id}`}>
-                              {household.name}
-                            </div>
+                            <div data-testid={`text-name-${household.id}`}>{household.name}</div>
                           </TableCell>
                           <TableCell>
                             <div className="text-sm">
                               <div data-testid={`text-email-${household.id}`}>
                                 {household.email}
                               </div>
-                              <div className="text-muted-foreground">
-                                {household.phone}
-                              </div>
+                              <div className="text-muted-foreground">{household.phone}</div>
                             </div>
                           </TableCell>
                           <TableCell>
                             <div className="text-sm">
-                              <div>{household.city}, {household.state}</div>
+                              <div>
+                                {household.city}, {household.state}
+                              </div>
                               <div className="text-muted-foreground">{household.zip}</div>
                             </div>
                           </TableCell>
                           <TableCell>
-                            <Badge
-                              className={statusColors[household.setupStatus || "not_started"]}
-                            >
-                              {statusLabels[household.setupStatus || "not_started"]}
+                            <Badge className={statusColors[household.setupStatus || 'not_started']}>
+                              {statusLabels[household.setupStatus || 'not_started']}
                             </Badge>
                           </TableCell>
                           <TableCell>
                             <code className="text-xs">{household.qrCode}</code>
                           </TableCell>
-                          <TableCell onClick={(e) => e.stopPropagation()}>
+                          <TableCell onClick={e => e.stopPropagation()}>
                             <div className="flex gap-1">
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                data-testid=`button-view-${household.id}`}
+                                data-testid={`button-view-${household.id}`}
                                 onClick={() => handleViewDetail(household)}
                                 title="View Details"
                               >
@@ -585,8 +601,8 @@ export default function SetupFormsDashboard() {
                 {/* Pagination */}
                 <div className="flex items-center justify-between mt-4">
                   <div className="text-sm text-muted-foreground">
-                    Showing {(pagination.page - 1) * pagination.pageSize + 1} to{" "}
-                    {Math.min(pagination.page * pagination.pageSize, pagination.totalCount)} of{" "}
+                    Showing {(pagination.page - 1) * pagination.pageSize + 1} to{' '}
+                    {Math.min(pagination.page * pagination.pageSize, pagination.totalCount)} of{' '}
                     {pagination.totalCount} results
                   </div>
                   <div className="flex items-center gap-2">
@@ -594,7 +610,7 @@ export default function SetupFormsDashboard() {
                       variant="outline"
                       size="sm"
                       data-testid="button-first-page"
-                      onClick={() => setFilters((prev) => ({ ...prev, page: 1 }))}
+                      onClick={() => setFilters(prev => ({ ...prev, page: 1 }))}
                       disabled={pagination.page === 1}
                     >
                       <ChevronsLeft className="h-4 w-4" />
@@ -603,9 +619,7 @@ export default function SetupFormsDashboard() {
                       variant="outline"
                       size="sm"
                       data-testid="button-prev-page"
-                      onClick={() =>
-                        setFilters((prev) => ({ ...prev, page: prev.page - 1 }))
-                      }
+                      onClick={() => setFilters(prev => ({ ...prev, page: prev.page - 1 }))}
                       disabled={pagination.page === 1}
                     >
                       <ChevronLeft className="h-4 w-4" />
@@ -617,9 +631,7 @@ export default function SetupFormsDashboard() {
                       variant="outline"
                       size="sm"
                       data-testid="button-next-page"
-                      onClick={() =>
-                        setFilters((prev) => ({ ...prev, page: prev.page + 1 }))
-                      }
+                      onClick={() => setFilters(prev => ({ ...prev, page: prev.page + 1 }))}
                       disabled={pagination.page >= pagination.totalPages}
                     >
                       <ChevronRight className="h-4 w-4" />
@@ -628,9 +640,7 @@ export default function SetupFormsDashboard() {
                       variant="outline"
                       size="sm"
                       data-testid="button-last-page"
-                      onClick={() =>
-                        setFilters((prev) => ({ ...prev, page: pagination.totalPages }))
-                      }
+                      onClick={() => setFilters(prev => ({ ...prev, page: pagination.totalPages }))}
                       disabled={pagination.page >= pagination.totalPages}
                     >
                       <ChevronsRight className="h-4 w-4" />
