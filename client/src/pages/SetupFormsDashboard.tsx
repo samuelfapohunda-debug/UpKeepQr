@@ -556,7 +556,7 @@ export default function SetupFormsDashboard() {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                data-testid={`button-view-${household.id}`}
+                                data-testid=`button-view-${household.id}`}
                                 onClick={() => handleViewDetail(household)}
                                 title="View Details"
                               >
