@@ -1,0 +1,122 @@
+@agent Critical issue: Appliance management button not rendering in production on Setup Forms Dashboard. Need your help to troubleshoot and fix.
+
+PROBLEM SUMMARY:
+The appliance management button (Refrigerator icon) is NOT appearing in the Actions column of the Setup Forms Dashboard at /admin/setup-forms. Only the view button (Eye icon) renders.
+
+CURRENT STATUS:
+- Local build: ✅ Works (Refrigerator icon present in bundle)
+- Production: ❌ Broken (serving old bundle without Refrigerator icon)
+- Render deployment: Shows as "Live" but serving cached/old assets
+
+BUNDLE MISMATCH:
+- Local build creates: `index-6HzsI5hw.js` (contains Refrigerator ✅)
+- Production serves: `index-DzqD5-wX.js` (does NOT contain Refrigerator ❌)
+- Even in incognito mode, production serves old bundle
+
+VERIFICATION TESTS:
+Console on production shows:
+```javascript
+document.querySelectorAll('[data-testid*="button-appliances"]').length // Returns 0 (WRONG)
+document.querySelectorAll('[data-testid*="button-view"]').length // Returns 6 (CORRECT)
+document.querySelectorAll('script[src*="index-"]')[0].src // Returns old bundle
+```
+
+WHAT WE'VE TRIED (ALL FAILED):
+1. Fixed JSX syntax for data-testid attributes (changed data-testid=` to data-testid={`)
+2. Fixed useState initialization for selectedHouseholdForAppliances
+3. Multiple rebuilds: `npm run build`
+4. Git commits and pushes (latest: d794cda "fix: Trigger rebuild to deploy Refrigerator icon")
+5. Render shows deployment as "Live" since 7:21 PM
+6. Browser cache clearing (hard refresh, incognito mode, clear site data)
+7. Verified Refrigerator import exists in SetupFormsDashboard.tsx line 51
+8. Verified Refrigerator is used in JSX on line 591
+
+REQUIRED FUNCTIONALITY FOR APPLIANCE BUTTON:
+The button requires these components to work:
+
+1. **Import Statement (line 51):**
+```typescript
+import {
+  // ... other icons
+  Refrigerator,
+} from 'lucide-react';
+```
+
+2. **State Management (lines 76-77):**
+```typescript
+const [showApplianceManager, setShowApplianceManager] = useState(false);
+const [selectedHouseholdForAppliances, setSelectedHouseholdForAppliances] = useState<string | null>(null);
+```
+
+3. **Button Code (lines 581-593):**
+```typescript
+<Button
+  variant="ghost"
+  size="sm"
+  data-testid={`button-appliances-${household.id}`}
+  onClick={() => {
+    setSelectedHouseholdForAppliances(household.id);
+    setShowApplianceManager(true);
+  }}
+  title="Manage Appliances"
+>
+  <Refrigerator className="h-4 w-4 text-foreground" />
+</Button>
+```
+
+4. **Dialog Trigger (lines 650-660):**
+```typescript
+{showApplianceManager && selectedHouseholdForAppliances && (
+  <ApplianceManager
+    householdId={selectedHouseholdForAppliances}
+    onClose={() => {
+      setShowApplianceManager(false);
+      setSelectedHouseholdForAppliances(null);
+    }}
+  />
+)}
+```
+
+FILE LOCATION:
+`client/src/pages/SetupFormsDashboard.tsx`
+
+DIAGNOSIS NEEDED:
+1. Why is production serving old bundle (index-DzqD5-wX.js) when latest commit is deployed?
+2. Check Render build logs - did vite build actually run?
+3. Is there static file caching on Render's CDN?
+4. Check if index.html was updated with new bundle reference
+5. Verify Refrigerator icon is in the deployed bundle
+
+COMMANDS TO RUN:
+```bash
+# Check what bundle is in dist
+ls -la dist/public/assets/index-*.js
+grep -c "Refrigerator" dist/public/assets/index-*.js
+
+# Check index.html references
+cat dist/public/index.html | grep -o 'index-[^"]*\.js'
+
+# Verify source code is correct
+grep -n "Refrigerator" client/src/pages/SetupFormsDashboard.tsx
+
+# Force clean rebuild
+rm -rf dist node_modules/.vite
+npm run build
+
+# Check if new bundle has Refrigerator
+ls dist/public/assets/index-*.js
+grep -c "Refrigerator" dist/public/assets/index-*.js
+
+# Commit and deploy
+git add .
+git commit -m "fix: Force complete rebuild for Refrigerator icon"
+git push origin main
+```
+
+EXPECTED RESULT:
+After fix, production should show:
+- Appliance buttons count: 5 (matches household count)
+- Bundle loaded: index-6HzsI5hw.js (or newer with Refrigerator)
+- Both Eye and Refrigerator icons visible in Actions column
+
+Please investigate why the deployed bundle doesn't match the local build and ensure the Refrigerator icon makes it into production. The code is correct locally but production is serving stale assets.
