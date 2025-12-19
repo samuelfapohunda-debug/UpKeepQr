@@ -1206,6 +1206,55 @@ export type MaintenanceLogFilters = z.infer<typeof maintenanceLogFiltersSchema>;
 // Firebase Migration Phase 2A - New Tables
 // ============================================================================
 
+// Leads Table - Replaces Firebase 'leads' collection
+export const leadsTable = pgTable("leads", {
+  id: text("id").primaryKey().default(sql`gen_random_uuid()`),
+  fullName: text("full_name"),
+  email: text("email"),
+  phone: text("phone"),
+  preferredContact: text("preferred_contact"),
+  hearAboutUs: text("hear_about_us"),
+  streetAddress: text("street_address"),
+  city: text("city"),
+  state: text("state"),
+  zipCode: text("zip_code"),
+  propertyType: text("property_type"),
+  numberOfLocations: integer("number_of_locations"),
+  locationNickname: text("location_nickname"),
+  homeType: text("home_type"),
+  squareFootage: integer("square_footage"),
+  roofAge: integer("roof_age"),
+  hvacSystemType: text("hvac_system_type"),
+  waterHeaterType: text("water_heater_type"),
+  numberOfAssets: integer("number_of_assets"),
+  assetCategories: text("asset_categories"),
+  companyName: text("company_name"),
+  industryType: text("industry_type"),
+  numberOfEmployees: integer("number_of_employees"),
+  businessWebsite: text("business_website"),
+  preferredServiceType: text("preferred_service_type"),
+  estimatedQrLabels: text("estimated_qr_labels"),
+  interestType: text("interest_type"),
+  needConsultation: boolean("need_consultation"),
+  isOwner: boolean("is_owner"),
+  budgetRange: text("budget_range"),
+  timelineToProceed: text("timeline_to_proceed"),
+  preferredContactTime: text("preferred_contact_time"),
+  notes: text("notes"),
+  activationCode: text("activation_code"),
+  agentId: text("agent_id"),
+  status: text("status").default('new'),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow()
+}, (table) => ({
+  agentIdx: index("idx_leads_agent").on(table.agentId),
+  statusIdx: index("idx_leads_status").on(table.status),
+  createdIdx: index("idx_leads_created").on(table.createdAt)
+}));
+
+export type LeadDb = typeof leadsTable.$inferSelect;
+export type InsertLeadDb = typeof leadsTable.$inferInsert;
+
 // Agents Table - Replaces Firebase 'agents' collection
 export const agentsTable = pgTable("agents", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

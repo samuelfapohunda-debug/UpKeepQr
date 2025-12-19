@@ -22,7 +22,9 @@ import {
   Schedule, InsertSchedule,
   TaskCompletion, InsertTaskCompletion,
   ReminderQueue, InsertReminderQueue,
+  LeadDb, InsertLeadDb,
   proRequestsTable,
+  leadsTable,
   providersTable,
   auditEventsTable,
   notesTable,
@@ -505,42 +507,40 @@ export class FirebaseStorage implements IStorage {
     return query.docs.map(doc => this.convertFirestoreData<Task>(doc)!);
   }
 
-  // Lead methods
+  // Lead methods (PostgreSQL)
   async createLead(lead: InsertLead): Promise<Lead> {
-    const id = lead.id || uuidv4();
-    const now = new Date();
-    
-    const newLead: Lead = {
-      ...lead,
-      id,
-      createdAt: now,
-      updatedAt: now
-    };
-
-    await adminDb.collection(COLLECTIONS.LEADS).doc(id).set(newLead);
-    return newLead;
+    const [result] = await db.insert(leadsTable)
+      .values({
+        ...lead,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      } as InsertLeadDb)
+      .returning();
+    return result as unknown as Lead;
   }
 
   async getLead(id: string): Promise<Lead | undefined> {
-    const doc = await adminDb.collection(COLLECTIONS.LEADS).doc(id).get();
-    return this.convertFirestoreData<Lead>(doc);
+    const result = await db.query.leadsTable.findFirst({
+      where: eq(leadsTable.id, id)
+    });
+    return result as unknown as Lead | undefined;
   }
 
   async getLeadsByAgent(agentId: string): Promise<Lead[]> {
-    const query = await adminDb.collection(COLLECTIONS.LEADS)
-      .where('agentId', '==', agentId)
-      .get();
-    
-    const leads = query.docs.map(doc => this.convertFirestoreData<Lead>(doc)!);
-    // Sort in memory instead of using orderBy to avoid index requirement
-    return leads.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    const results = await db.query.leadsTable.findMany({
+      where: eq(leadsTable.agentId, agentId),
+      orderBy: desc(leadsTable.createdAt)
+    });
+    return results as unknown as Lead[];
   }
 
   async updateLeadStatus(id: string, status: Lead['status']): Promise<void> {
-    await adminDb.collection(COLLECTIONS.LEADS).doc(id).update({
-      status,
-      updatedAt: new Date()
-    });
+    await db.update(leadsTable)
+      .set({
+        status,
+        updatedAt: new Date()
+      })
+      .where(eq(leadsTable.id, id));
   }
 
   // Additional batch methods
