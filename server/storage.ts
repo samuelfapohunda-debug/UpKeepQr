@@ -615,28 +615,27 @@ export class FirebaseStorage implements IStorage {
     return result;
   }
 
-  // Event/Audit methods
-  async createEvent(event: { householdId: string; eventType: string; eventData: string }): Promise<unknown> {
-    const eventId = uuidv4();
-    const newEvent = {
-      id: eventId,
-      ...event,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-    await adminDb.collection('events').doc(eventId).set(newEvent);
-    return newEvent;
+  // Event/Audit methods (PostgreSQL)
+  async createEvent(event: { householdId?: string; eventType: string; eventData: string; requestId?: string }): Promise<AuditEvent> {
+    const [result] = await db.insert(auditEventsTable)
+      .values({
+        requestId: event.requestId || event.householdId || '',
+        eventType: event.eventType,
+        eventData: event.eventData,
+        createdAt: new Date()
+      })
+      .returning();
+    return result;
   }
 
-  async createAuditLog(data: Record<string, unknown>): Promise<unknown> {
-    const logId = uuidv4();
-    const auditLog = {
-      id: logId,
-      ...data,
-      createdAt: new Date()
-    };
-    await adminDb.collection('auditLogs').doc(logId).set(auditLog);
-    return auditLog;
+  async createAuditLog(data: Partial<InsertOrderMagnetAuditEvent>): Promise<OrderMagnetAuditEvent> {
+    const [result] = await db.insert(orderMagnetAuditEventsTable)
+      .values({
+        ...data,
+        createdAt: new Date()
+      } as InsertOrderMagnetAuditEvent)
+      .returning();
+    return result;
   }
 
   // Reminder Queue methods (PostgreSQL)
