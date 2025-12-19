@@ -37,6 +37,13 @@ The backend is a RESTful API built with Express.js and TypeScript. It uses Drizz
 ## System Design Choices
 The database uses PostgreSQL with Drizzle ORM, connected via Neon serverless. A critical `order_id_counter` sequence is used for unique order IDs. The `household_task_assignments` table manages links between households and maintenance tasks, with robust indexing and foreign key constraints.
 
+## Database Migration Status
+- **Firebase Migration**: In progress. Households CRUD operations fully migrated to PostgreSQL (Dec 2024).
+- **Key Fix (Dec 2024)**: Resolved critical data corruption where createHousehold() wrote to PostgreSQL but getHousehold/updateHousehold read/wrote to Firebase. All household operations now use PostgreSQL exclusively.
+- **New Column**: `agent_id` added to households table with index for agent dashboard queries.
+- **Remaining Firebase**: agents, magnets, magnetBatches, tasks, leads, schedules, taskCompletions collections still use Firebase (migration pending).
+- **Documentation**: See `docs/FIREBASE_MIGRATION_IMPACT_ANALYSIS.md` for full migration plan.
+
 # External Dependencies
 
 ## Database Services

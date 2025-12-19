@@ -679,6 +679,7 @@ export const householdsTable = pgTable("households", {
   // Security and tracking fields
   createdBy: varchar("created_by", { length: 20 }).notNull().default('customer'), // 'customer', 'admin', 'api'
   createdByUserId: varchar("created_by_user_id", { length: 255 }), // UUID of admin who created (if admin-created)
+  agentId: varchar("agent_id", { length: 255 }), // Agent who owns this household (nullable for direct orders)
   
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -689,6 +690,7 @@ export const householdsTable = pgTable("households", {
   orderIdIdx: index("idx_households_order_id").on(table.orderId),
   // Composite index for location filtering
   locationIdx: index("idx_households_location").on(table.state, table.zipcode),
+  agentIdIdx: index("idx_households_agent_id").on(table.agentId),
 }));
 
 // Setup Form Notes table for admin comments
