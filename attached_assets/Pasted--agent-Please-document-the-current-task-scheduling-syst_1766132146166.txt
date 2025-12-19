@@ -1,0 +1,117 @@
+```
+@agent Please document the current task scheduling system in UpKeepQr application. Create comprehensive documentation showing the end-to-end flow.
+
+OBJECTIVE:
+Document how the maintenance task scheduling system currently works in the UpKeepQr application, from task creation to completion tracking.
+
+SCOPE:
+Analyze and document the complete flow of:
+1. How maintenance tasks are created and stored
+2. How tasks are assigned to households/appliances
+3. How scheduling and reminders work
+4. How task completion is tracked
+5. Database schema related to tasks
+6. API endpoints for task management
+7. Frontend components that display/manage tasks
+8. Any automation or background jobs
+
+FILES TO ANALYZE:
+
+**Backend:**
+- `server/src/routes/*.ts` - Look for task-related routes
+- `shared/schema.ts` - Find task-related tables (maintenance_logs, household_task_assignments, home_maintenance_tasks, etc.)
+- `server/db.ts` - Database connection and queries
+- Any cron jobs or scheduled processes
+
+**Frontend:**
+- `client/src/pages/*.tsx` - Look for task management pages
+- `client/src/components/*.tsx` - Task-related components
+- Any calendar integration code
+
+**Database Tables to Document:**
+- `home_maintenance_tasks` - Task definitions
+- `household_task_assignments` - Task assignments to households
+- `maintenance_logs` - Completed task records
+- `common_appliances` - Appliance types with maintenance needs
+- `household_appliances` - Specific appliances in households
+- Any other related tables
+
+DELIVERABLE FORMAT:
+Create a Markdown document: `TASK_SCHEDULING_SYSTEM.md` with:
+
+1. **System Overview**
+   - High-level description of task scheduling functionality
+   - Key features available
+
+2. **Database Schema**
+   ```
+   Tables and relationships:
+   - Table name
+   - Key fields
+   - Relationships to other tables
+   - Sample data structure
+   ```
+
+3. **Data Flow Diagrams**
+   ```
+   Task Creation Flow:
+   [User Action] → [API Endpoint] → [Database] → [Response]
+   
+   Task Assignment Flow:
+   [Household] → [Appliance] → [Task Template] → [Scheduled Task]
+   
+   Task Completion Flow:
+   [User Marks Complete] → [Update DB] → [Log Entry] → [Notification?]
+   ```
+
+4. **API Endpoints**
+   ```
+   List all task-related endpoints:
+   - Method: GET/POST/PUT/DELETE
+   - Path: /api/...
+   - Purpose: What it does
+   - Request body: Expected input
+   - Response: What it returns
+   ```
+
+5. **Frontend Components**
+   ```
+   List components that interact with tasks:
+   - Component name and file location
+   - What it displays
+   - What actions it supports
+   - Props it accepts
+   ```
+
+6. **Current Limitations**
+   - What's NOT implemented yet
+   - What doesn't work as expected
+   - Missing features
+
+7. **Code Examples**
+   - Sample API call
+   - Sample database query
+   - Sample component usage
+
+COMMANDS TO RUN:
+```bash
+# Find task-related files
+find . -type f -name "*.ts" -o -name "*.tsx" | xargs grep -l "task\|maintenance\|schedule" | grep -v node_modules
+
+# Check database schema
+grep -A20 "maintenance\|task" shared/schema.ts
+
+# Find API routes
+grep -r "router\." server/src/routes/ | grep -i "task\|maintenance"
+
+# Find frontend components
+find client/src -name "*.tsx" | xargs grep -l -i "task\|maintenance\|schedule"
+```
+
+START ANALYSIS:
+Begin by examining the database schema, then trace through the API routes, and finally document the frontend implementation. Show the complete end-to-end flow with specific file references and code snippets.
+
+Create the documentation file at: `docs/TASK_SCHEDULING_SYSTEM.md`
+
+If docs folder doesn't exist, create it first.
+```
