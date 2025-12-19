@@ -225,42 +225,66 @@ export class FirebaseStorage implements IStorage {
     return result;
   }
 
-  // Magnet Batch methods
+  // Magnet Batch methods (PostgreSQL)
   async createMagnetBatch(batch: InsertMagnetBatch): Promise<MagnetBatch> {
-    const id = batch.id || uuidv4();
-    const now = new Date();
-    
-    const newBatch: MagnetBatch = {
-      ...batch,
-      id,
-      createdAt: now,
-      updatedAt: now
-    };
-
-    await adminDb.collection(COLLECTIONS.MAGNET_BATCHES).doc(id).set(newBatch);
-    return newBatch;
+    const [result] = await db.insert(orderMagnetBatchesTable)
+      .values({
+        batchId: batch.id || uuidv4(),
+        agentId: batch.agentId,
+        quantity: batch.quantity || 0,
+        status: batch.status || 'pending',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      })
+      .returning();
+    // Map to legacy MagnetBatch format
+    return {
+      id: result.batchId,
+      agentId: result.agentId || '',
+      quantity: result.quantity || 0,
+      status: result.status || 'pending',
+      createdAt: result.createdAt || new Date(),
+      updatedAt: result.updatedAt || new Date()
+    } as MagnetBatch;
   }
 
   async getMagnetBatch(id: string): Promise<MagnetBatch | undefined> {
-    const doc = await adminDb.collection(COLLECTIONS.MAGNET_BATCHES).doc(id).get();
-    return this.convertFirestoreData<MagnetBatch>(doc);
+    const result = await db.query.orderMagnetBatchesTable.findFirst({
+      where: eq(orderMagnetBatchesTable.batchId, id)
+    });
+    if (!result) return undefined;
+    return {
+      id: result.batchId,
+      agentId: result.agentId || '',
+      quantity: result.quantity || 0,
+      status: result.status || 'pending',
+      createdAt: result.createdAt || new Date(),
+      updatedAt: result.updatedAt || new Date()
+    } as MagnetBatch;
   }
 
   async getMagnetBatchesByAgent(agentId: string): Promise<MagnetBatch[]> {
-    const query = await adminDb.collection(COLLECTIONS.MAGNET_BATCHES)
-      .where('agentId', '==', agentId)
-      .get();
-    
-    const batches = query.docs.map(doc => this.convertFirestoreData<MagnetBatch>(doc)!);
-    // Sort in memory instead of using orderBy to avoid index requirement
-    return batches.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    const results = await db.query.orderMagnetBatchesTable.findMany({
+      where: eq(orderMagnetBatchesTable.agentId, agentId),
+      orderBy: desc(orderMagnetBatchesTable.createdAt)
+    });
+    return results.map(result => ({
+      id: result.batchId,
+      agentId: result.agentId || '',
+      quantity: result.quantity || 0,
+      status: result.status || 'pending',
+      createdAt: result.createdAt || new Date(),
+      updatedAt: result.updatedAt || new Date()
+    })) as MagnetBatch[];
   }
 
   async updateMagnetBatch(id: string, data: Partial<MagnetBatch>): Promise<void> {
-    await adminDb.collection(COLLECTIONS.MAGNET_BATCHES).doc(id).update({
-      ...data,
-      updatedAt: new Date()
-    });
+    await db.update(orderMagnetBatchesTable)
+      .set({
+        ...data,
+        updatedAt: new Date()
+      })
+      .where(eq(orderMagnetBatchesTable.batchId, id));
   }
 
   // Magnet methods

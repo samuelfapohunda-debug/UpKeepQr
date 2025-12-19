@@ -1,0 +1,145 @@
+@agent Migrate Magnet Batches to PostgreSQL in server/storage.ts - Phase 2B Batch 4
+
+OBJECTIVE:
+Migrate 4 Magnet Batch functions from Firebase to PostgreSQL (MEDIUM risk - field mapping required).
+
+CONTEXT:
+- Batches 1-3 complete: 13 functions migrated
+- Remaining: 15 Firebase calls
+- Firebase `magnetBatches` → PostgreSQL `order_magnet_batches`
+- This is MEDIUM RISK due to field mapping
+
+FIELD MAPPING:
+Firebase → PostgreSQL
+- `id` → `batch_id`
+- `agentId` → `agent_id`
+- `quantity` → `quantity`
+- `createdAt` → `created_at`
+- `status` → `status`
+
+FUNCTIONS TO MIGRATE (around lines 227-261):
+
+## 1. createMagnetBatch()
+
+**REPLACE Firebase:**
+```typescript
+async createMagnetBatch(batch: Partial<MagnetBatch>): Promise<MagnetBatch> {
+  const id = batch.id || uuidv4();
+  const newBatch: MagnetBatch = {
+    ...batch,
+    id,
+    createdAt: new Date(),
+    updatedAt: new Date()
+  } as MagnetBatch;
+  
+  await adminDb.collection(COLLECTIONS.MAGNET_BATCHES).doc(id).set(newBatch);
+  return newBatch;
+}
+```
+
+**WITH PostgreSQL:**
+```typescript
+async createMagnetBatch(batch: Partial<OrderMagnetBatch>): Promise<OrderMagnetBatch> {
+  const [result] = await db.insert(orderMagnetBatchesTable)
+    .values({
+      batchId: batch.batchId || uuidv4(),
+      agentId: batch.agentId,
+      quantity: batch.quantity || 0,
+      status: batch.status || 'pending',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    })
+    .returning();
+  return result;
+}
+```
+
+## 2. getMagnetBatch()
+
+**REPLACE Firebase:**
+```typescript
+async getMagnetBatch(id: string): Promise<MagnetBatch | undefined> {
+  const doc = await adminDb.collection(COLLECTIONS.MAGNET_BATCHES).doc(id).get();
+  return this.convertFirestoreData<MagnetBatch>(doc);
+}
+```
+
+**WITH PostgreSQL:**
+```typescript
+async getMagnetBatch(id: string): Promise<OrderMagnetBatch | undefined> {
+  return await db.query.orderMagnetBatchesTable.findFirst({
+    where: eq(orderMagnetBatchesTable.batchId, id)
+  });
+}
+```
+
+## 3. getMagnetBatchesByAgent()
+
+**REPLACE Firebase:**
+```typescript
+async getMagnetBatchesByAgent(agentId: string): Promise<MagnetBatch[]> {
+  const query = await adminDb.collection(COLLECTIONS.MAGNET_BATCHES)
+    .where('agentId', '==', agentId)
+    .get();
+  
+  return query.docs.map(doc => this.convertFirestoreData<MagnetBatch>(doc)!);
+}
+```
+
+**WITH PostgreSQL:**
+```typescript
+async getMagnetBatchesByAgent(agentId: string): Promise<OrderMagnetBatch[]> {
+  return await db.query.orderMagnetBatchesTable.findMany({
+    where: eq(orderMagnetBatchesTable.agentId, agentId),
+    orderBy: desc(orderMagnetBatchesTable.createdAt)
+  });
+}
+```
+
+## 4. updateMagnetBatch()
+
+**REPLACE Firebase:**
+```typescript
+async updateMagnetBatch(id: string, data: Partial<MagnetBatch>): Promise<MagnetBatch | undefined> {
+  await adminDb.collection(COLLECTIONS.MAGNET_BATCHES).doc(id).update({
+    ...data,
+    updatedAt: new Date()
+  });
+  
+  return this.getMagnetBatch(id);
+}
+```
+
+**WITH PostgreSQL:**
+```typescript
+async updateMagnetBatch(id: string, data: Partial<OrderMagnetBatch>): Promise<OrderMagnetBatch | undefined> {
+  await db.update(orderMagnetBatchesTable)
+    .set({
+      ...data,
+      updatedAt: new Date()
+    })
+    .where(eq(orderMagnetBatchesTable.batchId, id));
+  
+  return this.getMagnetBatch(id);
+}
+```
+
+## 5. ENSURE IMPORTS
+
+Verify these imports exist:
+```typescript
+import { 
+  orderMagnetBatchesTable,
+  type OrderMagnetBatch,
+  type InsertOrderMagnetBatch
+} from "@shared/schema";
+```
+
+VERIFICATION:
+```bash
+npm run build
+grep -c "adminDb.*MAGNET_BATCHES" server/storage.ts
+# Should return 0 after migration
+```
+
+START NOW - Migrate all 4 Magnet Batch functions!
