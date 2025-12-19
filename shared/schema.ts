@@ -1,5 +1,6 @@
 import { z } from "zod";
-import { pgTable, serial, varchar, text, integer, boolean, timestamp, json, numeric, jsonb, index } from "drizzle-orm/pg-core";
+import { pgTable, serial, varchar, text, integer, boolean, timestamp, json, numeric, jsonb, index, date, uniqueIndex } from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { sql } from "drizzle-orm";
 
@@ -1199,6 +1200,96 @@ export const maintenanceLogFiltersSchema = z.object({
 });
 
 export type MaintenanceLogFilters = z.infer<typeof maintenanceLogFiltersSchema>;
+
+// ============================================================================
+// Firebase Migration Phase 2A - New Tables
+// ============================================================================
+
+// Agents Table - Replaces Firebase 'agents' collection
+export const agentsTable = pgTable("agents", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  email: varchar("email", { length: 255 }).notNull().unique(),
+  name: varchar("name", { length: 255 }).notNull(),
+  phone: varchar("phone", { length: 50 }),
+  company: varchar("company", { length: 255 }),
+  status: varchar("status", { length: 50 }).default('active'),
+  commissionRate: numeric("commission_rate", { precision: 5, scale: 2 }),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+});
+
+export const agentsRelations = relations(agentsTable, ({ many }) => ({
+  batches: many(orderMagnetBatchesTable),
+  households: many(householdsTable)
+}));
+
+export type Agent = typeof agentsTable.$inferSelect;
+export type InsertAgent = typeof agentsTable.$inferInsert;
+
+// Schedules Table - Replaces Firebase 'schedules' collection
+export const schedulesTable = pgTable("schedules", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  householdId: varchar("household_id", { length: 255 }).notNull().references(() => householdsTable.id),
+  taskName: varchar("task_name", { length: 255 }).notNull(),
+  frequency: varchar("frequency", { length: 50 }),
+  nextDueDate: date("next_due_date"),
+  lastCompletedDate: date("last_completed_date"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+}, (table) => ({
+  householdIdx: index("idx_schedules_household").on(table.householdId),
+  taskIdx: index("idx_schedules_task").on(table.taskName),
+  uniqueHouseholdTask: uniqueIndex("idx_schedules_household_task").on(table.householdId, table.taskName)
+}));
+
+export type Schedule = typeof schedulesTable.$inferSelect;
+export type InsertSchedule = typeof schedulesTable.$inferInsert;
+
+// Task Completions Table - Replaces Firebase 'taskCompletions' collection
+export const taskCompletionsTable = pgTable("task_completions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  householdId: varchar("household_id", { length: 255 }).notNull().references(() => householdsTable.id),
+  taskId: integer("task_id").references(() => homeMaintenanceTasksTable.id),
+  scheduleId: varchar("schedule_id", { length: 255 }).references(() => schedulesTable.id),
+  completedAt: timestamp("completed_at").notNull(),
+  completedBy: varchar("completed_by", { length: 255 }),
+  notes: text("notes"),
+  cost: numeric("cost", { precision: 10, scale: 2 }),
+  serviceProvider: varchar("service_provider", { length: 255 }),
+  createdAt: timestamp("created_at").defaultNow().notNull()
+}, (table) => ({
+  householdIdx: index("idx_task_completions_household").on(table.householdId),
+  completedIdx: index("idx_task_completions_completed").on(table.completedAt)
+}));
+
+export type TaskCompletion = typeof taskCompletionsTable.$inferSelect;
+export type InsertTaskCompletion = typeof taskCompletionsTable.$inferInsert;
+
+// Reminder Queue Table - Replaces Firebase 'reminderQueue' collection
+export const reminderQueueTable = pgTable("reminder_queue", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  householdId: varchar("household_id", { length: 255 }).notNull().references(() => householdsTable.id),
+  taskId: varchar("task_id", { length: 255 }),
+  taskName: varchar("task_name", { length: 255 }).notNull(),
+  taskDescription: text("task_description"),
+  dueDate: date("due_date").notNull(),
+  runAt: timestamp("run_at").notNull(),
+  method: varchar("method", { length: 50 }).default('email'),
+  status: varchar("status", { length: 50 }).default('pending'),
+  sentAt: timestamp("sent_at"),
+  errorMessage: text("error_message"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+}, (table) => ({
+  statusIdx: index("idx_reminder_queue_status").on(table.status),
+  runAtIdx: index("idx_reminder_queue_run_at").on(table.runAt),
+  householdIdx: index("idx_reminder_queue_household").on(table.householdId)
+}));
+
+export type ReminderQueue = typeof reminderQueueTable.$inferSelect;
+export type InsertReminderQueue = typeof reminderQueueTable.$inferInsert;
 
 // Lead Capture
 export * from "./lead-schema";
