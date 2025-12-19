@@ -19,6 +19,9 @@ import {
   OrderMagnetAuditEvent, InsertOrderMagnetAuditEvent,
   ContactMessage, InsertContactMessage,
   AdminContactMessageFilters,
+  Schedule, InsertSchedule,
+  TaskCompletion, InsertTaskCompletion,
+  ReminderQueue, InsertReminderQueue,
   proRequestsTable,
   providersTable,
   auditEventsTable,
@@ -30,6 +33,10 @@ import {
   orderMagnetAuditEventsTable,
   contactMessagesTable,
   householdsTable,
+  agentsTable,
+  schedulesTable,
+  taskCompletionsTable,
+  reminderQueueTable,
   COLLECTIONS,
   timestampToDate 
 } from "@shared/schema";
@@ -192,35 +199,28 @@ export class FirebaseStorage implements IStorage {
     return { id: doc.id, ...data } as T;
   }
 
-  // Agent methods
+  // Agent methods (PostgreSQL)
   async getAgent(id: string): Promise<Agent | undefined> {
-    const doc = await adminDb.collection(COLLECTIONS.AGENTS).doc(id).get();
-    return this.convertFirestoreData<Agent>(doc);
+    return await db.query.agentsTable.findFirst({
+      where: eq(agentsTable.id, id)
+    });
   }
 
   async getAgentByEmail(email: string): Promise<Agent | undefined> {
-    const query = await adminDb.collection(COLLECTIONS.AGENTS)
-      .where('email', '==', email)
-      .limit(1)
-      .get();
-    
-    if (query.empty) return undefined;
-    return this.convertFirestoreData<Agent>(query.docs[0]);
+    return await db.query.agentsTable.findFirst({
+      where: eq(agentsTable.email, email)
+    });
   }
 
   async createAgent(agent: InsertAgent): Promise<Agent> {
-    const id = agent.id || uuidv4();
-    const now = new Date();
-    
-    const newAgent: Agent = {
-      ...agent,
-      id,
-      createdAt: now,
-      updatedAt: now
-    };
-
-    await adminDb.collection(COLLECTIONS.AGENTS).doc(id).set(newAgent);
-    return newAgent;
+    const [result] = await db.insert(agentsTable)
+      .values({
+        ...agent,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      })
+      .returning();
+    return result;
   }
 
   // Magnet Batch methods
@@ -583,41 +583,36 @@ export class FirebaseStorage implements IStorage {
     return this.getHouseholdsByAgent(agentId);
   }
 
-  // Additional task methods
-  async createSchedule(data: Record<string, unknown>): Promise<unknown> {
-    // For now, create a basic task
-    const scheduleId = uuidv4();
-    const schedule = {
-      id: scheduleId,
-      ...data,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-    await adminDb.collection('schedules').doc(scheduleId).set(schedule);
-    return schedule;
+  // Schedule methods (PostgreSQL)
+  async createSchedule(data: InsertSchedule): Promise<Schedule> {
+    const [result] = await db.insert(schedulesTable)
+      .values({
+        ...data,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      })
+      .returning();
+    return result;
   }
 
-  async getScheduleByHouseholdAndTask(householdId: string, taskName: string): Promise<unknown> {
-    const query = await adminDb.collection('schedules')
-      .where('householdId', '==', householdId)
-      .where('taskName', '==', taskName)
-      .limit(1)
-      .get();
-    
-    if (query.empty) return undefined;
-    return this.convertFirestoreData(query.docs[0]);
+  async getScheduleByHouseholdAndTask(householdId: string, taskName: string): Promise<Schedule | undefined> {
+    return await db.query.schedulesTable.findFirst({
+      where: and(
+        eq(schedulesTable.householdId, householdId),
+        eq(schedulesTable.taskName, taskName)
+      )
+    });
   }
 
-  async createTaskCompletion(data: Record<string, unknown>): Promise<unknown> {
-    const completionId = uuidv4();
-    const completion = {
-      id: completionId,
-      ...data,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-    await adminDb.collection('taskCompletions').doc(completionId).set(completion);
-    return completion;
+  // Task Completion methods (PostgreSQL)
+  async createTaskCompletion(data: InsertTaskCompletion): Promise<TaskCompletion> {
+    const [result] = await db.insert(taskCompletionsTable)
+      .values({
+        ...data,
+        createdAt: new Date()
+      })
+      .returning();
+    return result;
   }
 
   // Event/Audit methods
@@ -644,16 +639,17 @@ export class FirebaseStorage implements IStorage {
     return auditLog;
   }
 
-  async createReminderQueue(data: Record<string, unknown>): Promise<unknown> {
-    const reminderId = uuidv4();
-    const reminder = {
-      id: reminderId,
-      ...data,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-    await adminDb.collection('reminderQueue').doc(reminderId).set(reminder);
-    return reminder;
+  // Reminder Queue methods (PostgreSQL)
+  async createReminderQueue(data: InsertReminderQueue): Promise<ReminderQueue> {
+    const [result] = await db.insert(reminderQueueTable)
+      .values({
+        ...data,
+        status: 'pending',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      })
+      .returning();
+    return result;
   }
 
   // Agent metrics methods
