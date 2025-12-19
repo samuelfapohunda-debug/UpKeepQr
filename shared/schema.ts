@@ -663,6 +663,7 @@ export const householdsTable = pgTable("households", {
   notificationPreference: varchar("notification_preference", { length: 20 }).notNull().default('both'), // 'email_only', 'sms_only', 'both'
   smsOptIn: boolean("sms_opt_in").default(false),
   preferredContact: varchar("preferred_contact", { length: 20 }), // 'email', 'phone', 'text'
+  calendarSyncPreference: varchar("calendar_sync_preference", { length: 50 }).default('none'), // 'google', 'apple', 'none'
   
   // Setup tracking
   setupStatus: varchar("setup_status", { length: 20 }).notNull().default('not_started'), // 'not_started', 'in_progress', 'completed'
