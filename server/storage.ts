@@ -287,29 +287,49 @@ export class FirebaseStorage implements IStorage {
       .where(eq(orderMagnetBatchesTable.batchId, id));
   }
 
-  // Magnet methods
+  // Magnet methods (PostgreSQL)
   async createMagnet(magnet: InsertMagnet): Promise<Magnet> {
-    const id = magnet.id || uuidv4();
-    const now = new Date();
-    
-    const newMagnet: Magnet = {
-      ...magnet,
-      id,
-      createdAt: now,
-      updatedAt: now
-    };
-
-    await adminDb.collection(COLLECTIONS.MAGNETS).doc(id).set(newMagnet);
-    return newMagnet;
+    const [result] = await db.insert(orderMagnetItemsTable)
+      .values({
+        itemId: magnet.id || uuidv4(),
+        batchId: magnet.batchId,
+        activationCode: magnet.token,
+        activationStatus: magnet.isUsed ? 'activated' : 'inactive',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      })
+      .returning();
+    // Map to legacy Magnet format
+    return {
+      id: result.itemId,
+      batchId: result.batchId || '',
+      agentId: magnet.agentId || '',
+      token: result.activationCode || '',
+      isUsed: result.activationStatus === 'activated',
+      setupUrl: magnet.setupUrl,
+      createdAt: result.createdAt || new Date(),
+      updatedAt: result.updatedAt || new Date()
+    } as Magnet;
   }
 
   async getMagnet(id: string): Promise<Magnet | undefined> {
-    const doc = await adminDb.collection(COLLECTIONS.MAGNETS).doc(id).get();
-    return this.convertFirestoreData<Magnet>(doc);
+    const result = await db.query.orderMagnetItemsTable.findFirst({
+      where: eq(orderMagnetItemsTable.itemId, id)
+    });
+    if (!result) return undefined;
+    return {
+      id: result.itemId,
+      batchId: result.batchId || '',
+      agentId: '',
+      token: result.activationCode || '',
+      isUsed: result.activationStatus === 'activated',
+      createdAt: result.createdAt || new Date(),
+      updatedAt: result.updatedAt || new Date()
+    } as Magnet;
   }
 
   async getMagnetByToken(token: string): Promise<Magnet | undefined> {
-    // Handle demo token when Firebase is disabled
+    // Handle demo token
     if (token === 'demo-token') {
       return {
         id: 'demo-magnet',
@@ -323,36 +343,48 @@ export class FirebaseStorage implements IStorage {
       };
     }
 
-    const query = await adminDb.collection(COLLECTIONS.MAGNETS)
-      .where('token', '==', token)
-      .limit(1)
-      .get();
+    // Case-insensitive search on activation_code
+    const results = await db.select().from(orderMagnetItemsTable)
+      .where(sql`LOWER(${orderMagnetItemsTable.activationCode}) = LOWER(${token})`)
+      .limit(1);
     
-    if (query.empty) return undefined;
-    return this.convertFirestoreData<Magnet>(query.docs[0]);
+    if (results.length === 0) return undefined;
+    const result = results[0];
+    return {
+      id: result.itemId,
+      batchId: result.batchId || '',
+      agentId: '',
+      token: result.activationCode || '',
+      isUsed: result.activationStatus === 'activated',
+      createdAt: result.createdAt || new Date(),
+      updatedAt: result.updatedAt || new Date()
+    } as Magnet;
   }
 
   async getMagnetsByBatch(batchId: string): Promise<Magnet[]> {
-    const query = await adminDb.collection(COLLECTIONS.MAGNETS)
-      .where('batchId', '==', batchId)
-      .orderBy('createdAt', 'asc')
-      .get();
-    
-    return query.docs.map(doc => this.convertFirestoreData<Magnet>(doc)!);
+    const results = await db.query.orderMagnetItemsTable.findMany({
+      where: eq(orderMagnetItemsTable.batchId, batchId),
+      orderBy: asc(orderMagnetItemsTable.createdAt)
+    });
+    return results.map(result => ({
+      id: result.itemId,
+      batchId: result.batchId || '',
+      agentId: '',
+      token: result.activationCode || '',
+      isUsed: result.activationStatus === 'activated',
+      createdAt: result.createdAt || new Date(),
+      updatedAt: result.updatedAt || new Date()
+    })) as Magnet[];
   }
 
   async updateMagnetUsed(token: string, isUsed: boolean): Promise<void> {
-    const query = await adminDb.collection(COLLECTIONS.MAGNETS)
-      .where('token', '==', token)
-      .limit(1)
-      .get();
-    
-    if (!query.empty) {
-      await query.docs[0].ref.update({ 
-        isUsed, 
-        updatedAt: new Date() 
-      });
-    }
+    await db.update(orderMagnetItemsTable)
+      .set({
+        activationStatus: isUsed ? 'activated' : 'inactive',
+        activatedAt: isUsed ? new Date() : null,
+        updatedAt: new Date()
+      })
+      .where(sql`LOWER(${orderMagnetItemsTable.activationCode}) = LOWER(${token})`);
   }
 
   // Household methods (PostgreSQL)
