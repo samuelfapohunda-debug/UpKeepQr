@@ -1,4 +1,3 @@
-import { adminDb } from "./firebase";
 import { db } from "./db";
 import { 
   Agent, InsertAgent, 
@@ -40,9 +39,7 @@ import {
   agentsTable,
   schedulesTable,
   taskCompletionsTable,
-  reminderQueueTable,
-  COLLECTIONS,
-  timestampToDate 
+  reminderQueueTable
 } from "@shared/schema";
 import { v4 as uuidv4 } from 'uuid';
 import { nanoid } from "nanoid";
@@ -187,22 +184,7 @@ export interface IStorage {
   updateContactMessageStatus(id: string, status: 'new' | 'read' | 'replied'): Promise<ContactMessage | undefined>;
 }
 
-export class FirebaseStorage implements IStorage {
-  // Helper method to convert Firestore data to our types
-  private convertFirestoreData<T>(doc: FirebaseFirestore.DocumentSnapshot): T | undefined {
-    if (!doc.exists) return undefined;
-    const data = doc.data()!;
-    
-    // Convert Firestore timestamps to Date objects
-    Object.keys(data).forEach(key => {
-      if (data[key] && typeof data[key] === 'object' && data[key].seconds !== undefined) {
-        data[key] = timestampToDate(data[key]);
-      }
-    });
-    
-    return { id: doc.id, ...data } as T;
-  }
-
+export class DatabaseStorage implements IStorage {
   // Agent methods (PostgreSQL)
   async getAgent(id: string): Promise<Agent | undefined> {
     return await db.query.agentsTable.findFirst({
@@ -1410,7 +1392,7 @@ export class FirebaseStorage implements IStorage {
   }
 }
 
-export const storage = new FirebaseStorage();
+export const storage = new DatabaseStorage();
 // ==========================================
 // HOME PROFILE EXTRA METHODS
 // ==========================================
