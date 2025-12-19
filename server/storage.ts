@@ -23,8 +23,10 @@ import {
   TaskCompletion, InsertTaskCompletion,
   ReminderQueue, InsertReminderQueue,
   LeadDb, InsertLeadDb,
+  HouseholdTaskAssignment, InsertHouseholdTaskAssignment,
   proRequestsTable,
   leadsTable,
+  householdTaskAssignmentsTable,
   providersTable,
   auditEventsTable,
   notesTable,
@@ -506,61 +508,127 @@ export class FirebaseStorage implements IStorage {
     };
   }
 
-  // Task methods
+  // Task methods (PostgreSQL - using household_task_assignments)
   async createTask(task: InsertTask): Promise<Task> {
-    const id = task.id || uuidv4();
-    const now = new Date();
-    
-    const newTask: Task = {
-      ...task,
-      id,
-      createdAt: now,
-      updatedAt: now
-    };
-
-    await adminDb.collection(COLLECTIONS.TASKS).doc(id).set(newTask);
-    return newTask;
+    const [result] = await db.insert(householdTaskAssignmentsTable)
+      .values({
+        id: task.id || uuidv4(),
+        householdId: task.householdId || '',
+        taskId: task.taskId || 0,
+        dueDate: task.scheduledDate || new Date(),
+        status: task.status || 'pending',
+        priority: task.priority || 'medium',
+        notes: task.notes,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      })
+      .returning();
+    // Map to legacy Task format
+    return {
+      id: result.id,
+      householdId: result.householdId,
+      taskId: result.taskId,
+      status: result.status as Task['status'],
+      scheduledDate: result.dueDate,
+      completedAt: result.completedAt,
+      priority: result.priority,
+      notes: result.notes,
+      createdAt: result.createdAt || new Date(),
+      updatedAt: result.updatedAt || new Date()
+    } as Task;
   }
 
   async getTask(id: string): Promise<Task | undefined> {
-    const doc = await adminDb.collection(COLLECTIONS.TASKS).doc(id).get();
-    return this.convertFirestoreData<Task>(doc);
+    const result = await db.query.householdTaskAssignmentsTable.findFirst({
+      where: eq(householdTaskAssignmentsTable.id, id)
+    });
+    if (!result) return undefined;
+    return {
+      id: result.id,
+      householdId: result.householdId,
+      taskId: result.taskId,
+      status: result.status as Task['status'],
+      scheduledDate: result.dueDate,
+      completedAt: result.completedAt,
+      priority: result.priority,
+      notes: result.notes,
+      createdAt: result.createdAt || new Date(),
+      updatedAt: result.updatedAt || new Date()
+    } as Task;
   }
 
   async getTasksByHousehold(householdId: string): Promise<Task[]> {
-    const query = await adminDb.collection(COLLECTIONS.TASKS)
-      .where('householdId', '==', householdId)
-      .orderBy('scheduledDate', 'asc')
-      .get();
-    
-    return query.docs.map(doc => this.convertFirestoreData<Task>(doc)!);
+    const results = await db.query.householdTaskAssignmentsTable.findMany({
+      where: eq(householdTaskAssignmentsTable.householdId, householdId),
+      orderBy: asc(householdTaskAssignmentsTable.dueDate)
+    });
+    return results.map(result => ({
+      id: result.id,
+      householdId: result.householdId,
+      taskId: result.taskId,
+      status: result.status as Task['status'],
+      scheduledDate: result.dueDate,
+      completedAt: result.completedAt,
+      priority: result.priority,
+      notes: result.notes,
+      createdAt: result.createdAt || new Date(),
+      updatedAt: result.updatedAt || new Date()
+    })) as Task[];
   }
 
   async getTasksByAgent(agentId: string): Promise<Task[]> {
-    const query = await adminDb.collection(COLLECTIONS.TASKS)
-      .where('agentId', '==', agentId)
-      .orderBy('scheduledDate', 'asc')
-      .get();
+    // Get households for this agent first
+    const households = await this.getHouseholdsByAgent(agentId);
+    if (households.length === 0) return [];
     
-    return query.docs.map(doc => this.convertFirestoreData<Task>(doc)!);
+    const householdIds = households.map(h => h.id);
+    const results = await db.query.householdTaskAssignmentsTable.findMany({
+      where: inArray(householdTaskAssignmentsTable.householdId, householdIds),
+      orderBy: asc(householdTaskAssignmentsTable.dueDate)
+    });
+    return results.map(result => ({
+      id: result.id,
+      householdId: result.householdId,
+      taskId: result.taskId,
+      status: result.status as Task['status'],
+      scheduledDate: result.dueDate,
+      completedAt: result.completedAt,
+      priority: result.priority,
+      notes: result.notes,
+      createdAt: result.createdAt || new Date(),
+      updatedAt: result.updatedAt || new Date()
+    })) as Task[];
   }
 
   async updateTaskStatus(id: string, status: Task['status']): Promise<void> {
-    await adminDb.collection(COLLECTIONS.TASKS).doc(id).update({
-      status,
-      updatedAt: new Date(),
-      ...(status === 'completed' ? { completedAt: new Date() } : {})
-    });
+    await db.update(householdTaskAssignmentsTable)
+      .set({
+        status,
+        updatedAt: new Date(),
+        ...(status === 'completed' ? { completedAt: new Date() } : {})
+      })
+      .where(eq(householdTaskAssignmentsTable.id, id));
   }
 
   async getOverdueTasks(): Promise<Task[]> {
     const now = new Date();
-    const query = await adminDb.collection(COLLECTIONS.TASKS)
-      .where('status', '==', 'pending')
-      .where('scheduledDate', '<', now)
-      .get();
-    
-    return query.docs.map(doc => this.convertFirestoreData<Task>(doc)!);
+    const results = await db.select().from(householdTaskAssignmentsTable)
+      .where(and(
+        sql`${householdTaskAssignmentsTable.status} != 'completed'`,
+        sql`${householdTaskAssignmentsTable.dueDate} < ${now}`
+      ));
+    return results.map(result => ({
+      id: result.id,
+      householdId: result.householdId,
+      taskId: result.taskId,
+      status: result.status as Task['status'],
+      scheduledDate: result.dueDate,
+      completedAt: result.completedAt,
+      priority: result.priority,
+      notes: result.notes,
+      createdAt: result.createdAt || new Date(),
+      updatedAt: result.updatedAt || new Date()
+    })) as Task[];
   }
 
   // Lead methods (PostgreSQL)
