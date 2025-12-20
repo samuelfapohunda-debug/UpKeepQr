@@ -1,7 +1,7 @@
 import { Router, Request, Response } from "express";
 import { z } from "zod";
 import { getUserFromAuth } from "../../middleware/auth";
-import { storage } from "../../storage";
+import { storage } from "../../storage.js";
 import { nanoid } from "nanoid";
 import { db } from "../../db";
 import { householdsTable, orderMagnetItemsTable, homeProfileExtras, setupActivateSchema } from "@shared/schema";
