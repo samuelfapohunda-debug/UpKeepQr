@@ -17,6 +17,7 @@ import adminProRequestsRoutes from './adminProRequests.js';
 import applianceRoutes from './appliances.js';
 import maintenanceLogRoutes from './maintenanceLogs.js';
 import reportRoutes from './reports.js';
+import householdsRoutes from './households.js';
 
 export function registerRoutes(app: Express) {
   app.use('/health', healthRoutes);
@@ -37,6 +38,7 @@ export function registerRoutes(app: Express) {
   app.use('/api', applianceRoutes);  // Appliance management
   app.use('/api', maintenanceLogRoutes);  // Maintenance logs
   app.use('/api', reportRoutes);  // Reports
+  app.use('/api', householdsRoutes);  // Households tasks
   
   console.log('✅ Health routes registered at /health');
   console.log('✅ Auth routes registered at /api/auth');
@@ -55,5 +57,6 @@ export function registerRoutes(app: Express) {
   console.log('✅ Appliance routes registered at /api');
   console.log('✅ Maintenance log routes registered at /api');
   console.log('✅ Report routes registered at /api');
+  console.log('✅ Households routes registered at /api');
   console.log('🚀 All routes setup complete');
 }
