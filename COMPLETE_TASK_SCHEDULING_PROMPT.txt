@@ -1,0 +1,171 @@
+@agent Implement COMPLETE task scheduling system - ALL components including missing pieces
+
+[Previous prompt content PLUS these additions:]
+
+CRITICAL MISSING PIECES TO INCLUDE:
+
+PART 4B: UPDATE getTasksByHousehold WITH JOIN
+
+In server/storage.ts, the getTasksByHousehold method MUST join with home_maintenance_tasks:
+```typescript
+async getTasksByHousehold(householdId: string) {
+  const results = await db
+    .select({
+      // Assignment fields
+      id: householdTaskAssignmentsTable.id,
+      householdId: householdTaskAssignmentsTable.householdId,
+      taskId: householdTaskAssignmentsTable.taskId,
+      dueDate: householdTaskAssignmentsTable.dueDate,
+      status: householdTaskAssignmentsTable.status,
+      priority: householdTaskAssignmentsTable.priority,
+      completedAt: householdTaskAssignmentsTable.completedAt,
+      notes: householdTaskAssignmentsTable.notes,
+      // Task details (CRITICAL: Must join to get these!)
+      taskCode: homeMaintenanceTasksTable.taskCode,
+      taskName: homeMaintenanceTasksTable.taskName,
+      category: homeMaintenanceTasksTable.category,
+      description: homeMaintenanceTasksTable.description,
+      baseFrequency: homeMaintenanceTasksTable.baseFrequency
+    })
+    .from(householdTaskAssignmentsTable)
+    .leftJoin(
+      homeMaintenanceTasksTable,
+      eq(householdTaskAssignmentsTable.taskId, homeMaintenanceTasksTable.id)
+    )
+    .where(eq(householdTaskAssignmentsTable.householdId, householdId))
+    .orderBy(asc(householdTaskAssignmentsTable.dueDate));
+  
+  const today = new Date();
+  
+  return results.map(task => {
+    const dueDate = new Date(task.dueDate);
+    const daysUntilDue = differenceInDays(dueDate, today);
+    
+    return {
+      ...task,
+      daysUntilDue,
+      isOverdue: dueDate < today && task.status === 'pending'
+    };
+  });
+}
+```
+
+PART 7: ADD MISSING STORAGE METHODS
+```typescript
+// server/storage.ts
+
+async getPendingReminders(now: Date) {
+  return await db.query.reminderQueueTable.findMany({
+    where: and(
+      eq(reminderQueueTable.status, 'pending'),
+      lte(reminderQueueTable.runAt, now)
+    ),
+    orderBy: asc(reminderQueueTable.runAt)
+  });
+}
+
+async updateReminderStatus(reminderId: string, status: string) {
+  await db.update(reminderQueueTable)
+    .set({ 
+      status,
+      sentAt: status === 'sent' ? new Date() : undefined
+    })
+    .where(eq(reminderQueueTable.id, reminderId));
+}
+```
+
+PART 8: ADD OVERDUE TASK UPDATE TO CRON
+
+In server/lib/cron.ts, the daily cron should do BOTH:
+```typescript
+cron.schedule('0 9 * * *', async () => {
+  console.log('🕘 Running daily maintenance job at 09:00');
+  
+  // STEP 1: Mark overdue tasks
+  await updateOverdueTasks();
+  
+  // STEP 2: Process reminder queue
+  await processReminderQueue();
+}, {
+  timezone: 'America/New_York'
+});
+
+async function updateOverdueTasks(): Promise<void> {
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const result = await db.update(householdTaskAssignmentsTable)
+      .set({ status: 'overdue' })
+      .where(and(
+        eq(householdTaskAssignmentsTable.status, 'pending'),
+        lt(householdTaskAssignmentsTable.dueDate, today)
+      ));
+    
+    console.log(`✅ Marked overdue tasks`);
+  } catch (error) {
+    console.error('❌ Failed to update overdue tasks:', error);
+  }
+}
+```
+
+PART 9: CREATE REMINDERS WHEN TASKS GENERATED
+
+In server/lib/tasks.ts, after inserting task assignments:
+```typescript
+// After: const insertedTasks = await tx.insert(householdTaskAssignmentsTable).values(...).returning();
+
+// Create reminders for each task
+for (const taskAssignment of insertedTasks) {
+  const reminders = createReminderEntries(taskAssignment, household);
+  if (reminders.length > 0) {
+    await tx.insert(reminderQueueTable).values(reminders);
+  }
+}
+
+function createReminderEntries(
+  task: any, 
+  household: any
+): InsertReminderQueue[] {
+  const reminders: InsertReminderQueue[] = [];
+  const dueDate = new Date(task.dueDate);
+  
+  // Reminder schedule based on priority
+  let daysBefore: number[] = [];
+  if (task.priority === 'high') {
+    daysBefore = [7, 3, 1, 0];
+  } else if (task.priority === 'medium') {
+    daysBefore = [7, 1, 0];
+  } else {
+    daysBefore = [3, 0];
+  }
+  
+  for (const days of daysBefore) {
+    const runAt = new Date(dueDate);
+    runAt.setDate(runAt.getDate() - days);
+    runAt.setHours(9, 0, 0, 0); // 9 AM EST
+    
+    // Don't create reminders in the past
+    if (runAt < new Date()) continue;
+    
+    reminders.push({
+      householdId: task.householdId,
+      taskId: task.id,
+      taskName: task.taskName,
+      taskDescription: task.description,
+      dueDate: task.dueDate,
+      runAt: runAt,
+      method: household.notificationPreference || 'email',
+      status: 'pending'
+    });
+  }
+  
+  return reminders;
+}
+```
+
+IMPORTS NEEDED:
+```typescript
+import { reminderQueueTable, type InsertReminderQueue } from '@shared/schema';
+```
+

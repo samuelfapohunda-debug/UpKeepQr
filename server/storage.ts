@@ -112,6 +112,13 @@ export interface IStorage {
   createAuditLog(data: Record<string, unknown>): Promise<unknown>;
   createReminderQueue(data: Record<string, unknown>): Promise<unknown>;
 
+  // Reminder Queue methods
+  getPendingReminders(now: Date): Promise<ReminderQueue[]>;
+  updateReminderStatus(reminderId: string, status: string, errorMessage?: string): Promise<void>;
+  deleteTaskReminders(taskId: string): Promise<void>;
+  getHouseholdById(id: string): Promise<Household | undefined>;
+  getTasksWithDetailsByHousehold(householdId: string): Promise<any[]>;
+
   // Agent metrics methods  
   getAgentMetrics(agentId: string): Promise<unknown>;
 
@@ -1389,6 +1396,75 @@ export class DatabaseStorage implements IStorage {
       .where(eq(contactMessagesTable.id, id));
     
     return this.getContactMessage(id);
+  }
+
+  async getPendingReminders(now: Date): Promise<ReminderQueue[]> {
+    return await db.select().from(reminderQueueTable)
+      .where(
+        and(
+          eq(reminderQueueTable.status, 'pending'),
+          sql`${reminderQueueTable.runAt} <= ${now}`
+        )
+      )
+      .orderBy(asc(reminderQueueTable.runAt));
+  }
+
+  async updateReminderStatus(reminderId: string, status: string, errorMessage?: string): Promise<void> {
+    const updateData: any = {
+      status,
+      updatedAt: new Date()
+    };
+    if (status === 'sent') {
+      updateData.sentAt = new Date();
+    }
+    if (errorMessage) {
+      updateData.errorMessage = errorMessage;
+    }
+    await db.update(reminderQueueTable)
+      .set(updateData)
+      .where(eq(reminderQueueTable.id, reminderId));
+  }
+
+  async deleteTaskReminders(taskId: string): Promise<void> {
+    await db.delete(reminderQueueTable)
+      .where(eq(reminderQueueTable.taskId, taskId));
+  }
+
+  async getHouseholdById(id: string): Promise<Household | undefined> {
+    return this.getHousehold(id);
+  }
+
+  async getTasksWithDetailsByHousehold(householdId: string): Promise<any[]> {
+    const { homeMaintenanceTasksTable } = await import('../shared/schema.js');
+    
+    const result = await db
+      .select({
+        assignment: householdTaskAssignmentsTable,
+        task: homeMaintenanceTasksTable
+      })
+      .from(householdTaskAssignmentsTable)
+      .leftJoin(
+        homeMaintenanceTasksTable,
+        eq(householdTaskAssignmentsTable.taskId, homeMaintenanceTasksTable.id)
+      )
+      .where(eq(householdTaskAssignmentsTable.householdId, householdId))
+      .orderBy(asc(householdTaskAssignmentsTable.dueDate));
+    
+    return result.map(row => ({
+      id: row.assignment.id,
+      householdId: row.assignment.householdId,
+      taskId: row.assignment.taskId,
+      dueDate: row.assignment.dueDate,
+      status: row.assignment.status,
+      completedAt: row.assignment.completedAt,
+      createdAt: row.assignment.createdAt,
+      updatedAt: row.assignment.updatedAt,
+      taskName: row.task?.name || 'Unknown Task',
+      taskDescription: row.task?.description || '',
+      category: row.task?.category || 'general',
+      priority: row.task?.priority || 2,
+      frequencyMonths: row.task?.frequencyMonths || 12
+    }));
   }
 }
 

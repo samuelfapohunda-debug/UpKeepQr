@@ -2298,6 +2298,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // GET /api/admin/households/:id/tasks - Get tasks for a household (admin)
+  app.get("/api/admin/households/:id/tasks", authenticateAgent, async (req, res) => {
+    try {
+      await createAuditLog(req, '/api/admin/households/:id/tasks');
+      
+      const { id: householdId } = req.params;
+      
+      const household = await storage.getHousehold(householdId);
+      if (!household) {
+        return res.status(404).json({ message: 'Household not found' });
+      }
+      
+      const tasks = await storage.getTasksWithDetailsByHousehold(householdId);
+      
+      // Build summary statistics
+      const summary = {
+        total: tasks.length,
+        pending: tasks.filter(t => t.status === 'pending').length,
+        overdue: tasks.filter(t => t.status === 'overdue').length,
+        completed: tasks.filter(t => t.status === 'completed').length
+      };
+      
+      return res.json({
+        householdId,
+        householdName: household.name || 'Unknown',
+        summary,
+        tasks
+      });
+    } catch (error: any) {
+      console.error('Error fetching household tasks:', error);
+      return res.status(500).json({ message: 'Failed to fetch household tasks' });
+    }
+  });
+
   // Serve React app at /app for agent management
   app.get('/app*', (req, res, next) => {
     // Let the React app handle /app routes

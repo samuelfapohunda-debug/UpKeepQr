@@ -49,8 +49,10 @@ import {
   ChevronsRight,
   ArrowUpDown,
   Refrigerator,
+  ListTodo,
 } from 'lucide-react';
 import ApplianceManager from '@/components/ApplianceManager';
+import { HouseholdTasksView } from '@/components/HouseholdTasksView';
 
 const statusColors: Record<string, string> = {
   not_started: 'bg-gray-500',
@@ -77,6 +79,8 @@ export default function SetupFormsDashboard() {
     string | null
   >(null);
   const [showApplianceManager, setShowApplianceManager] = useState(false);
+  const [selectedHouseholdForTasks, setSelectedHouseholdForTasks] = useState<string | null>(null);
+  const [showTasksView, setShowTasksView] = useState(false);
   const [newNote, setNewNote] = useState('');
   const [searchDebounce, setSearchDebounce] = useState('');
 
@@ -590,6 +594,18 @@ export default function SetupFormsDashboard() {
                               >
                                 <Refrigerator className="h-4 w-4 text-foreground" />
                               </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                data-testid={`button-tasks-${household.id}`}
+                                onClick={() => {
+                                  setSelectedHouseholdForTasks(household.id);
+                                  setShowTasksView(true);
+                                }}
+                                title="View Tasks"
+                              >
+                                <ListTodo className="h-4 w-4 text-foreground" />
+                              </Button>
                             </div>
                           </TableCell>
                         </TableRow>
@@ -665,6 +681,26 @@ export default function SetupFormsDashboard() {
             setSelectedHouseholdForAppliances(null);
           }}
         />
+      )}
+
+      {/* Tasks View Dialog */}
+      {showTasksView && selectedHouseholdForTasks && (
+        <Dialog open={showTasksView} onOpenChange={(open) => {
+          if (!open) {
+            setShowTasksView(false);
+            setSelectedHouseholdForTasks(null);
+          }
+        }}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <HouseholdTasksView 
+              householdId={selectedHouseholdForTasks} 
+              onBack={() => {
+                setShowTasksView(false);
+                setSelectedHouseholdForTasks(null);
+              }}
+            />
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );

@@ -1,0 +1,706 @@
+@agent Implement COMPLETE task scheduling system - BULLETPROOF implementation with all system guarantees
+
+OBJECTIVE:
+Production-ready task scheduling with ALL edge cases covered:
+1. 32-task catalog with idempotency protection
+2. Cron jobs with concurrency guards
+3. Task generation with duplicate prevention
+4. Reminder creation with proper cancellation
+5. Admin UI with proper data joins
+6. Complete system guarantees (Part 8)
+
+REFERENCE DOCUMENTS:
+- docs/TASK_SCHEDULING_COMPLETE_SPECIFICATION.md (full task definitions)
+- docs/TASK_SCHEDULING_SYSTEM_GUARANTEES.md (CRITICAL - system rules)
+- docs/ADMIN_HOUSEHOLD_TASK_VIEW_SPEC.md (admin UI spec)
+
+CRITICAL: Read docs/TASK_SCHEDULING_SYSTEM_GUARANTEES.md FIRST - it defines all the rules that prevent production bugs.
+
+---
+
+PART 1: SEED TASK CATALOG
+
+Create: server/scripts/seed-tasks.ts
+
+[Previous 32 tasks from earlier prompt - same exact code]
+
+IMPORTANT ADDITIONS:
+- Check for existing tasks before inserting (idempotency)
+- Use transaction for atomic insert
+- Log count of inserted vs skipped tasks
+
+```typescript
+async function seedTasks() {
+  console.log('🌱 Seeding maintenance tasks...');
+  
+  // Check if already seeded
+  const existing = await db.query.homeMaintenanceTasksTable.findMany();
+  
+  if (existing.length > 0) {
+    console.log(`⚠️ Tasks already seeded (${existing.length} tasks). Skipping.`);
+    process.exit(0);
+  }
+  
+  // Insert all tasks in transaction
+  await db.transaction(async (tx) => {
+    await tx.insert(homeMaintenanceTasksTable).values(MAINTENANCE_TASKS);
+  });
+  
+  console.log(`✅ Successfully seeded ${MAINTENANCE_TASKS.length} maintenance tasks!`);
+  process.exit(0);
+}
+```
+
+---
+
+PART 2: INITIALIZE CRON WITH CONCURRENCY PROTECTION
+
+File: server/lib/cron.ts
+
+CRITICAL: Add reentrancy guard to prevent duplicate execution
+
+```typescript
+import cron from 'node-cron';
+import { storage } from '../storage.js';
+import { db } from '../db.js';
+import { householdTaskAssignmentsTable } from '@shared/schema';
+import { eq, and, lt } from 'drizzle-orm';
+
+// Reentrancy protection flag
+let isReminderJobRunning = false;
+let isOverdueJobRunning = false;
+
+export function startCronJobs() {
+  // Daily job at 9 AM EST
+  cron.schedule('0 9 * * *', async () => {
+    console.log('🕘 Running daily maintenance job at 09:00 EST');
+    
+    try {
+      // STEP 1: Mark overdue tasks
+      await updateOverdueTasks();
+      
+      // STEP 2: Process reminder queue
+      await processReminderQueue();
+    } catch (error) {
+      console.error('❌ Daily job failed:', error);
+    }
+  }, {
+    timezone: 'America/New_York'
+  });
+  
+  console.log('✅ Cron jobs started successfully');
+}
+
+async function updateOverdueTasks(): Promise<void> {
+  if (isOverdueJobRunning) {
+    console.log('⚠️ Overdue job already running, skipping');
+    return;
+  }
+  
+  isOverdueJobRunning = true;
+  
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Normalize to midnight
+    
+    const result = await db.update(householdTaskAssignmentsTable)
+      .set({ status: 'overdue', updatedAt: new Date() })
+      .where(and(
+        eq(householdTaskAssignmentsTable.status, 'pending'),
+        lt(householdTaskAssignmentsTable.dueDate, today)
+      ));
+    
+    console.log(`✅ Updated overdue tasks`);
+  } catch (error) {
+    console.error('❌ Failed to update overdue tasks:', error);
+  } finally {
+    isOverdueJobRunning = false;
+  }
+}
+
+async function processReminderQueue(): Promise<void> {
+  if (isReminderJobRunning) {
+    console.log('⚠️ Reminder job already running, skipping');
+    return;
+  }
+  
+  isReminderJobRunning = true;
+  
+  try {
+    const now = new Date();
+    const pending = await storage.getPendingReminders(now);
+    
+    console.log(`📧 Processing ${pending.length} pending reminders`);
+    
+    let successCount = 0;
+    let failCount = 0;
+    
+    for (const reminder of pending) {
+      try {
+        await processReminder(reminder);
+        await storage.updateReminderStatus(reminder.id, 'sent');
+        successCount++;
+      } catch (error) {
+        console.error(`❌ Reminder ${reminder.id} failed:`, error);
+        await storage.updateReminderStatus(
+          reminder.id,
+          'failed',
+          error.message
+        );
+        failCount++;
+      }
+    }
+    
+    console.log(`✅ Processed ${successCount} reminders, ${failCount} failed`);
+  } catch (error) {
+    console.error('❌ Reminder queue processing failed:', error);
+  } finally {
+    isReminderJobRunning = false;
+  }
+}
+
+async function processReminder(reminder: any): Promise<void> {
+  // Get household for notification preferences
+  const household = await storage.getHousehold(reminder.householdId);
+  if (!household) {
+    throw new Error('Household not found');
+  }
+  
+  // Determine notification channels
+  const { sendEmail, sendSMS } = determineReminderChannels(household);
+  
+  if (!sendEmail && !sendSMS) {
+    console.log(`⚠️ No valid notification channels for household ${household.id}`);
+    return; // Will be marked as failed
+  }
+  
+  // Send notifications
+  if (sendEmail && household.email) {
+    await sendReminderEmail(household, reminder);
+  }
+  
+  if (sendSMS && household.phone) {
+    await sendReminderSMS(household, reminder);
+  }
+}
+
+function determineReminderChannels(household: any): {
+  sendEmail: boolean;
+  sendSMS: boolean;
+} {
+  const hasEmail = !!household.email;
+  const hasPhone = !!household.phone;
+  const smsEnabled = household.smsOptIn === true;
+  const pref = household.notificationPreference || 'email_only';
+  
+  let sendEmail = false;
+  let sendSMS = false;
+  
+  if (pref === 'email_only' && hasEmail) {
+    sendEmail = true;
+  } else if (pref === 'sms_only' && hasPhone && smsEnabled) {
+    sendSMS = true;
+  } else if (pref === 'both') {
+    if (hasEmail) sendEmail = true;
+    if (hasPhone && smsEnabled) sendSMS = true;
+  } else {
+    // Default fallback: email if available
+    if (hasEmail) sendEmail = true;
+  }
+  
+  return { sendEmail, sendSMS };
+}
+
+// Placeholder email/SMS functions (implement with SendGrid/Twilio)
+async function sendReminderEmail(household: any, reminder: any): Promise<void> {
+  console.log(`📧 Sending email reminder to ${household.email}`);
+  // TODO: SendGrid implementation
+}
+
+async function sendReminderSMS(household: any, reminder: any): Promise<void> {
+  console.log(`📱 Sending SMS reminder to ${household.phone}`);
+  // TODO: Twilio implementation
+}
+```
+
+Register in server/src/index.ts:
+```typescript
+import { startCronJobs } from '../lib/cron.js';
+
+// After all routes
+startCronJobs();
+console.log('✅ Cron jobs initialized (daily at 9 AM EST)');
+```
+
+---
+
+PART 3: TASK GENERATION WITH IDEMPOTENCY & PROPER DUE DATE CALCULATION
+
+File: server/lib/tasks.ts
+
+CRITICAL CHANGES:
+1. Check for duplicate tasks before creating
+2. Map priority correctly (1→'high', 2→'medium', 3→'low')
+3. Calculate due dates using canonical rules
+4. Create reminders with cancellation on completion
+
+```typescript
+import { differenceInDays, addDays, addMonths, addYears } from 'date-fns';
+import { 
+  homeMaintenanceTasksTable,
+  householdTaskAssignmentsTable,
+  reminderQueueTable,
+  type InsertReminderQueue
+} from '@shared/schema';
+import { eq, and, gte, lte, inArray } from 'drizzle-orm';
+
+// CANONICAL SEASON DATES (per System Guarantees doc)
+const SEASON_DATES = {
+  spring: { month: 3, day: 15 },  // April 15
+  summer: { month: 6, day: 15 },  // July 15
+  fall: { month: 9, day: 15 },    // October 15
+  winter: { month: 0, day: 15 }   // January 15
+};
+
+// Priority mapping (per System Guarantees doc)
+function mapPriority(priorityNumber: number): 'high' | 'medium' | 'low' {
+  if (priorityNumber === 1) return 'high';
+  if (priorityNumber === 2) return 'medium';
+  return 'low';
+}
+
+export async function generateMaintenanceTasks(
+  tx: any,
+  householdId: string,
+  homeProfile: HomeProfile
+): Promise<any[]> {
+  console.log(`📋 Generating tasks for household ${householdId}...`);
+  
+  const activationDate = new Date();
+  
+  // Fetch all tasks from catalog
+  const catalogTasks = await tx.query.homeMaintenanceTasksTable.findMany();
+  
+  if (catalogTasks.length === 0) {
+    console.warn('⚠️ No tasks in catalog. Run seed script first.');
+    return [];
+  }
+  
+  // Filter tasks based on home profile
+  const relevantTasks = filterTasksByHomeProfile(catalogTasks, homeProfile);
+  
+  console.log(`✅ ${relevantTasks.length} relevant tasks for this home profile`);
+  
+  // Create task assignments with idempotency check
+  const assignments = [];
+  
+  for (const catalogTask of relevantTasks) {
+    // IDEMPOTENCY CHECK: Don't create duplicate within frequency window
+    const windowEnd = calculateFrequencyWindow(activationDate, catalogTask.baseFrequency);
+    
+    const existingTask = await tx.query.householdTaskAssignmentsTable.findFirst({
+      where: and(
+        eq(householdTaskAssignmentsTable.householdId, householdId),
+        eq(householdTaskAssignmentsTable.taskId, catalogTask.id),
+        gte(householdTaskAssignmentsTable.dueDate, activationDate),
+        lte(householdTaskAssignmentsTable.dueDate, windowEnd),
+        inArray(householdTaskAssignmentsTable.status, ['pending', 'in_progress', 'completed'])
+      )
+    });
+    
+    if (existingTask) {
+      console.log(`⚠️ Task ${catalogTask.taskCode} already exists, skipping`);
+      continue;
+    }
+    
+    // Calculate due date
+    const dueDate = calculateInitialDueDate(catalogTask, activationDate, homeProfile);
+    
+    // Create assignment
+    assignments.push({
+      householdId,
+      taskId: catalogTask.id,
+      taskName: catalogTask.taskName,
+      taskCode: catalogTask.taskCode,
+      category: catalogTask.category,
+      description: catalogTask.description,
+      dueDate,
+      frequency: catalogTask.baseFrequency,
+      priority: mapPriority(catalogTask.priority), // Convert 1→'high'
+      status: 'pending',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
+  }
+  
+  if (assignments.length === 0) {
+    console.log('✅ No new tasks to create (all exist or none applicable)');
+    return [];
+  }
+  
+  // Batch insert task assignments
+  const insertedTasks = await tx.insert(householdTaskAssignmentsTable)
+    .values(assignments)
+    .returning();
+  
+  console.log(`✅ Created ${insertedTasks.length} task assignments`);
+  
+  // Create reminders for each task
+  const allReminders: InsertReminderQueue[] = [];
+  
+  for (const taskAssignment of insertedTasks) {
+    const reminders = createReminderEntries(taskAssignment, activationDate);
+    allReminders.push(...reminders);
+  }
+  
+  if (allReminders.length > 0) {
+    await tx.insert(reminderQueueTable).values(allReminders);
+    console.log(`✅ Created ${allReminders.length} reminders`);
+  }
+  
+  return insertedTasks;
+}
+
+function calculateFrequencyWindow(startDate: Date, frequency: string): Date {
+  const windowEnd = new Date(startDate);
+  
+  switch (frequency) {
+    case 'monthly':
+      windowEnd.setMonth(windowEnd.getMonth() + 1);
+      break;
+    case 'quarterly':
+      windowEnd.setMonth(windowEnd.getMonth() + 3);
+      break;
+    case 'seasonal':
+      windowEnd.setMonth(windowEnd.getMonth() + 6);
+      break;
+    case 'annually':
+      windowEnd.setFullYear(windowEnd.getFullYear() + 1);
+      break;
+  }
+  
+  return windowEnd;
+}
+
+function calculateInitialDueDate(
+  task: any,
+  activationDate: Date,
+  homeProfile: any
+): Date {
+  const today = new Date(activationDate);
+  today.setHours(0, 0, 0, 0); // Normalize to midnight
+  
+  let dueDate = new Date(today);
+  
+  // STEP 1: Apply base frequency (per System Guarantees doc)
+  switch (task.baseFrequency) {
+    case 'monthly':
+      dueDate = addDays(today, 7); // Due in 1 week
+      break;
+    
+    case 'quarterly':
+      dueDate = addDays(today, 30); // Due in 1 month
+      break;
+    
+    case 'seasonal':
+      dueDate = getNextSeasonalDate(task.seasonalTiming, today);
+      break;
+    
+    case 'annually':
+      dueDate = addDays(today, 60); // Due in 2 months
+      break;
+  }
+  
+  // STEP 2: Adjust for priority (high = sooner)
+  if (task.priority === 1) {
+    dueDate = addDays(dueDate, -7); // Move up 1 week
+  } else if (task.priority === 3) {
+    dueDate = addDays(dueDate, 14); // Delay 2 weeks
+  }
+  
+  // STEP 3: Special urgency rules
+  if (task.taskCode === 'ROOF_INSPECTION' && homeProfile.roofAgeYears) {
+    if (homeProfile.roofAgeYears > 15) {
+      dueDate = addDays(today, 14); // Urgent: 2 weeks
+    } else if (homeProfile.roofAgeYears > 10) {
+      dueDate = addDays(today, 30); // Soon: 1 month
+    }
+  }
+  
+  // STEP 4: Ensure not in past
+  if (dueDate < today) {
+    dueDate = addDays(today, 7);
+  }
+  
+  dueDate.setHours(0, 0, 0, 0); // Normalize to midnight
+  return dueDate;
+}
+
+function getNextSeasonalDate(seasonalTiming: string | null, today: Date): Date {
+  if (!seasonalTiming) return addDays(today, 60);
+  
+  const seasons = seasonalTiming.split(',').map(s => s.trim());
+  const currentMonth = today.getMonth();
+  const currentYear = today.getFullYear();
+  
+  // Try to find next season this year
+  for (const season of seasons) {
+    const seasonDate = SEASON_DATES[season];
+    if (!seasonDate) continue;
+    
+    if (seasonDate.month > currentMonth || 
+        (seasonDate.month === currentMonth && seasonDate.day >= today.getDate())) {
+      const targetDate = new Date(currentYear, seasonDate.month, seasonDate.day);
+      targetDate.setHours(0, 0, 0, 0);
+      return targetDate;
+    }
+  }
+  
+  // All seasons passed, use first season next year
+  const firstSeason = seasons[0];
+  const firstDate = SEASON_DATES[firstSeason];
+  
+  const nextYear = currentYear + 1;
+  const targetDate = new Date(nextYear, firstDate.month, firstDate.day);
+  targetDate.setHours(0, 0, 0, 0);
+  return targetDate;
+}
+
+function createReminderEntries(
+  task: any,
+  activationDate: Date
+): InsertReminderQueue[] {
+  const reminders: InsertReminderQueue[] = [];
+  const dueDate = new Date(task.dueDate);
+  
+  // Reminder schedule based on priority
+  let daysBefore: number[] = [];
+  if (task.priority === 'high') {
+    daysBefore = [7, 3, 1, 0];
+  } else if (task.priority === 'medium') {
+    daysBefore = [7, 1, 0];
+  } else {
+    daysBefore = [3, 0];
+  }
+  
+  for (const days of daysBefore) {
+    const runAt = new Date(dueDate);
+    runAt.setDate(runAt.getDate() - days);
+    runAt.setHours(9, 0, 0, 0); // 9 AM EST
+    
+    // Don't create reminders in the past
+    if (runAt < activationDate) continue;
+    
+    reminders.push({
+      householdId: task.householdId,
+      taskId: task.id,
+      taskName: task.taskName,
+      taskDescription: task.description || '',
+      dueDate: task.dueDate,
+      runAt: runAt,
+      method: 'email', // Will be determined by household preferences
+      status: 'pending',
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
+  }
+  
+  return reminders;
+}
+
+// Filter tasks by home profile (from earlier implementation)
+function filterTasksByHomeProfile(tasks: any[], homeProfile: any): any[] {
+  return tasks.filter(task => {
+    // HVAC tasks
+    if (task.category === 'HVAC' && task.taskCode !== 'FURNACE_INSPECTION') {
+      if (!homeProfile.hvacType || homeProfile.hvacType === 'none') {
+        return false;
+      }
+    }
+    
+    // Furnace tasks
+    if (task.taskCode === 'FURNACE_INSPECTION') {
+      if (!homeProfile.hvacType || 
+          !['furnace', 'forced_air'].includes(homeProfile.hvacType)) {
+        return false;
+      }
+    }
+    
+    // Water heater tasks
+    if (['WATER_HEATER_FLUSH', 'WATER_HEATER_ANODE'].includes(task.taskCode)) {
+      if (!homeProfile.waterHeaterType || 
+          !['tank_gas', 'tank_electric'].includes(homeProfile.waterHeaterType)) {
+        return false;
+      }
+    }
+    
+    // Exterior tasks
+    if (task.category === 'Exterior') {
+      if (!homeProfile.homeType || 
+          ['condo', 'apartment'].includes(homeProfile.homeType)) {
+        return false;
+      }
+    }
+    
+    return true;
+  });
+}
+```
+
+---
+
+PART 4: STORAGE METHODS WITH PROPER JOINS
+
+File: server/storage.ts
+
+Add to DatabaseStorage class:
+
+```typescript
+import { differenceInDays } from 'date-fns';
+import { lte, asc, gte, inArray } from 'drizzle-orm';
+
+async getTasksByHousehold(householdId: string) {
+  // CRITICAL: Join with home_maintenance_tasks to get task details
+  const results = await db
+    .select({
+      // Assignment fields
+      id: householdTaskAssignmentsTable.id,
+      householdId: householdTaskAssignmentsTable.householdId,
+      taskId: householdTaskAssignmentsTable.taskId,
+      dueDate: householdTaskAssignmentsTable.dueDate,
+      status: householdTaskAssignmentsTable.status,
+      priority: householdTaskAssignmentsTable.priority,
+      completedAt: householdTaskAssignmentsTable.completedAt,
+      notes: householdTaskAssignmentsTable.notes,
+      frequency: householdTaskAssignmentsTable.frequency,
+      // Task catalog fields (JOIN)
+      taskCode: homeMaintenanceTasksTable.taskCode,
+      taskName: homeMaintenanceTasksTable.taskName,
+      category: homeMaintenanceTasksTable.category,
+      description: homeMaintenanceTasksTable.description,
+      baseFrequency: homeMaintenanceTasksTable.baseFrequency
+    })
+    .from(householdTaskAssignmentsTable)
+    .leftJoin(
+      homeMaintenanceTasksTable,
+      eq(householdTaskAssignmentsTable.taskId, homeMaintenanceTasksTable.id)
+    )
+    .where(eq(householdTaskAssignmentsTable.householdId, householdId))
+    .orderBy(asc(householdTaskAssignmentsTable.dueDate));
+  
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  return results.map(task => {
+    const dueDate = new Date(task.dueDate);
+    dueDate.setHours(0, 0, 0, 0);
+    const daysUntilDue = differenceInDays(dueDate, today);
+    
+    return {
+      ...task,
+      daysUntilDue,
+      isOverdue: dueDate < today && task.status === 'pending'
+    };
+  });
+}
+
+async getPendingReminders(now: Date) {
+  return await db.query.reminderQueueTable.findMany({
+    where: and(
+      eq(reminderQueueTable.status, 'pending'),
+      lte(reminderQueueTable.runAt, now)
+    ),
+    orderBy: asc(reminderQueueTable.runAt)
+  });
+}
+
+async updateReminderStatus(
+  reminderId: string,
+  status: string,
+  errorMessage?: string
+) {
+  await db.update(reminderQueueTable)
+    .set({
+      status,
+      sentAt: status === 'sent' ? new Date() : undefined,
+      errorMessage: errorMessage || undefined,
+      updatedAt: new Date()
+    })
+    .where(eq(reminderQueueTable.id, reminderId));
+}
+
+async deleteTaskReminders(taskId: string) {
+  // Called when task is completed
+  await db.delete(reminderQueueTable)
+    .where(and(
+      eq(reminderQueueTable.taskId, taskId),
+      eq(reminderQueueTable.status, 'pending')
+    ));
+}
+```
+
+---
+
+PART 5: HOUSEHOLDS API ROUTE
+
+[Same as before - no changes needed]
+
+---
+
+PART 6: HOUSEHOLD TASKS VIEW COMPONENT
+
+[Same as before - no changes needed]
+
+---
+
+PART 7: UPDATE SETUP FORMS DASHBOARD
+
+[Same as before - no changes needed]
+
+---
+
+PART 8: SYSTEM GUARANTEES VERIFICATION
+
+After implementation, verify ALL guarantees from docs/TASK_SCHEDULING_SYSTEM_GUARANTEES.md:
+
+**Testing Checklist:**
+- [ ] Run generateMaintenanceTasks twice → No duplicates created
+- [ ] Task with priority 1 → assignment has 'high' string
+- [ ] Monthly task → due in 7 days
+- [ ] Seasonal task in January → due April 15
+- [ ] High priority task → 4 reminders (7,3,1,0 days before)
+- [ ] Complete task → pending reminders deleted
+- [ ] Pending task past due → marked overdue at 9 AM next day
+- [ ] Rapid server restarts → cron doesn't run twice
+- [ ] Household with notificationPreference='email_only' → only email sent
+
+---
+
+SUCCESS CRITERIA:
+
+✅ 32 tasks seeded with idempotency check
+✅ Cron jobs start with concurrency protection
+✅ Tasks auto-generate without duplicates
+✅ Priority mapping correct (1→'high', 2→'medium', 3→'low')
+✅ Due dates calculated using canonical rules
+✅ Seasonal timing uses SEASON_DATES mapping
+✅ Reminders created with proper scheduling
+✅ Reminders respect notification preferences
+✅ Completed tasks cancel pending reminders
+✅ Overdue tasks marked at 9 AM EST daily
+✅ Admin view shows tasks with proper JOIN
+✅ Summary cards show accurate counts
+✅ All System Guarantees verified
+
+BUILD & DEPLOY:
+```bash
+npx tsx server/scripts/seed-tasks.ts  # Seed catalog
+npm run build                          # Build application
+# Deploy to Render
+# Verify logs show "Cron jobs initialized"
+# Create test household
+# Verify tasks generated
+# Check admin Tasks tab
+```
+
+START NOW - Complete bulletproof implementation with all system guarantees
