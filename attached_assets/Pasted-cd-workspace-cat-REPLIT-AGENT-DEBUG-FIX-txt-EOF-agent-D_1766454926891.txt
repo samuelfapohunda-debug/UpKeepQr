@@ -1,0 +1,353 @@
+cd ~/workspace
+
+cat > REPLIT_AGENT_DEBUG_FIX.txt << 'EOF'
+@agent Debug and fix missing Tasks and Appliances buttons in Setup Forms Dashboard
+
+CRITICAL ISSUE:
+The Tasks button (ListTodo icon) and Appliances button (Refrigerator icon) are NOT rendering in production, even though:
+- Code exists in GitHub (commits c9e3065, 2aa42ca)
+- Deployments succeeded on Render
+- Local builds succeed
+- Only the Eye (View Details) button shows in Actions column
+
+BROWSER CONSOLE EVIDENCE:
+```
+View buttons found: 7 ✅
+Appliance buttons found: 0 ❌
+Task buttons found: 0 ❌
+```
+
+This means the JSX for these buttons is NOT being rendered to the DOM.
+
+---
+
+PART 1: VERIFY THE PROBLEM
+
+1. Check if buttons are in the file:
+```bash
+grep -n "button-appliances\|button-tasks" client/src/pages/SetupFormsDashboard.tsx
+```
+
+2. Check icon imports:
+```bash
+head -80 client/src/pages/SetupFormsDashboard.tsx | grep "Refrigerator\|ListTodo"
+```
+
+3. Verify the JSX structure around line 570-620:
+```bash
+sed -n '570,620p' client/src/pages/SetupFormsDashboard.tsx
+```
+
+---
+
+PART 2: COMMON ISSUES TO CHECK
+
+Issue A: JSX Syntax Error
+- Missing closing tags
+- Unclosed parentheses
+- Template literal errors in data-testid
+
+Issue B: Conditional Rendering
+- Buttons wrapped in conditional (if/&&/?) that evaluates to false
+- Feature flag hiding buttons
+- Permission check blocking render
+
+Issue C: Import Error
+- Refrigerator or ListTodo not imported from lucide-react
+- Import path incorrect
+
+Issue D: TypeScript Error
+- Type errors preventing compilation
+- Button props type mismatch
+
+Issue E: Component Structure
+- Buttons outside the parent <div>
+- Missing wrapper element
+- Incorrect nesting
+
+---
+
+PART 3: DIAGNOSTIC STEPS
+
+Step 1: Check TypeScript Compilation
+```bash
+npm run build
+# Look for any errors related to SetupFormsDashboard.tsx
+```
+
+Step 2: Search for Conditional Rendering
+```bash
+grep -B10 "button-appliances\|button-tasks" client/src/pages/SetupFormsDashboard.tsx | grep "if\|&&\|?.*:"
+```
+
+Step 3: Verify Button Parent Element
+```bash
+# Check if buttons are inside the <div className="flex gap-1">
+awk '/flex gap-1/,/\/div>/ {print NR": "$0}' client/src/pages/SetupFormsDashboard.tsx | grep -A30 "button-view"
+```
+
+Step 4: Check for Duplicate Code
+```bash
+# Search for multiple Actions columns
+grep -n "TableHead.*Actions" client/src/pages/SetupFormsDashboard.tsx
+```
+
+Step 5: Verify Exact Icon Names
+```bash
+# Check if icon names match imports exactly
+grep "from 'lucide-react'" client/src/pages/SetupFormsDashboard.tsx
+grep "<Refrigerator\|<ListTodo" client/src/pages/SetupFormsDashboard.tsx
+```
+
+---
+
+PART 4: LIKELY ROOT CAUSES & FIXES
+
+Root Cause 1: Template Literal Syntax Error
+**Problem:**
+```tsx
+data-testid=`button-tasks-${household.id}`}  // WRONG - backtick outside JSX
+```
+
+**Fix:**
+```tsx
+data-testid={`button-tasks-${household.id}`}  // CORRECT - curly braces
+```
+
+Root Cause 2: Missing Curly Braces
+**Problem:**
+```tsx
+onClick={() => {
+  setSelectedHouseholdForTasks(household.id);
+  setShowTasksView(true);
+}  // WRONG - missing closing brace
+```
+
+**Fix:**
+```tsx
+onClick={() => {
+  setSelectedHouseholdForTasks(household.id);
+  setShowTasksView(true);
+}}  // CORRECT - proper closing
+```
+
+Root Cause 3: Comment Breaking JSX
+**Problem:**
+```tsx
+<Button>
+  // Comment here breaks JSX
+  <ListTodo />
+</Button>
+```
+
+**Fix:**
+```tsx
+<Button>
+  {/* Comment here is safe */}
+  <ListTodo />
+</Button>
+```
+
+Root Cause 4: Missing Import
+**Problem:**
+```tsx
+import { Eye } from 'lucide-react';  // Refrigerator, ListTodo missing
+```
+
+**Fix:**
+```tsx
+import { Eye, Refrigerator, ListTodo } from 'lucide-react';
+```
+
+---
+
+PART 5: VERIFICATION & FIX IMPLEMENTATION
+
+Step 1: Examine Current Code Structure
+Output the exact code from lines 570-620 to see the button structure:
+```bash
+cat client/src/pages/SetupFormsDashboard.tsx | sed -n '570,620p'
+```
+
+Step 2: Compare with Known Working Pattern
+The Eye button works. Compare its structure to Refrigerator/ListTodo buttons:
+```bash
+# Show Eye button (working)
+grep -A8 "button-view" client/src/pages/SetupFormsDashboard.tsx | head -10
+
+# Show Appliances button (broken)
+grep -A8 "button-appliances" client/src/pages/SetupFormsDashboard.tsx | head -10
+
+# Show Tasks button (broken)
+grep -A8 "button-tasks" client/src/pages/SetupFormsDashboard.tsx | head -10
+```
+
+Step 3: Fix ANY Differences
+Ensure Appliances and Tasks buttons have IDENTICAL structure to Eye button, just with different:
+- data-testid
+- onClick handler
+- title
+- Icon component
+
+Step 4: Verify Import Statement
+```bash
+# Should show all three icons
+grep "import.*lucide-react" client/src/pages/SetupFormsDashboard.tsx | grep -o "Eye\|Refrigerator\|ListTodo"
+```
+
+Step 5: Check for Trailing Code Issues
+```bash
+# Look for anything after the buttons that might break them
+sed -n '600,625p' client/src/pages/SetupFormsDashboard.tsx
+```
+
+---
+
+PART 6: NUCLEAR OPTION - REBUILD BUTTONS FROM SCRATCH
+
+If no obvious issue found, REBUILD the buttons section completely:
+```tsx
+<TableCell onClick={e => e.stopPropagation()}>
+  <div className="flex gap-1">
+    {/* View Details Button */}
+    <Button
+      variant="ghost"
+      size="sm"
+      data-testid={`button-view-${household.id}`}
+      onClick={() => handleViewDetail(household)}
+      title="View Details"
+    >
+      <Eye className="h-4 w-4 text-foreground" />
+    </Button>
+
+    {/* Manage Appliances Button */}
+    <Button
+      variant="ghost"
+      size="sm"
+      data-testid={`button-appliances-${household.id}`}
+      onClick={() => {
+        setSelectedHouseholdForAppliances(household.id);
+        setShowApplianceManager(true);
+      }}
+      title="Manage Appliances"
+    >
+      <Refrigerator className="h-4 w-4 text-foreground" />
+    </Button>
+
+    {/* View Tasks Button */}
+    <Button
+      variant="ghost"
+      size="sm"
+      data-testid={`button-tasks-${household.id}`}
+      onClick={() => {
+        setSelectedHouseholdForTasks(household.id);
+        setShowTasksView(true);
+      }}
+      title="View Tasks"
+    >
+      <ListTodo className="h-4 w-4 text-foreground" />
+    </Button>
+  </div>
+</TableCell>
+```
+
+Replace lines 570-620 with this exact structure.
+
+---
+
+PART 7: FINAL CHECKLIST
+
+After making fixes:
+
+1. Verify imports at top of file:
+```tsx
+import {
+  Eye,
+  Refrigerator,
+  ListTodo,
+  // ... other icons
+} from 'lucide-react';
+```
+
+2. Verify state variables exist:
+```tsx
+const [selectedHouseholdForAppliances, setSelectedHouseholdForAppliances] = useState<string | null>(null);
+const [showApplianceManager, setShowApplianceManager] = useState(false);
+const [selectedHouseholdForTasks, setSelectedHouseholdForTasks] = useState<string | null>(null);
+const [showTasksView, setShowTasksView] = useState(false);
+```
+
+3. Verify dialogs exist at end of component:
+```tsx
+{/* Appliance Manager Dialog */}
+{showApplianceManager && selectedHouseholdForAppliances && (
+  <ApplianceManager ... />
+)}
+
+{/* Tasks View Dialog */}
+{showTasksView && selectedHouseholdForTasks && (
+  <Dialog ... >
+    <HouseholdTasksView ... />
+  </Dialog>
+)}
+```
+
+4. Build and verify no errors:
+```bash
+npm run build
+```
+
+5. Commit and push:
+```bash
+git add client/src/pages/SetupFormsDashboard.tsx
+git commit -m "fix: Ensure Appliances and Tasks buttons render in Actions column"
+git push origin main
+```
+
+---
+
+PART 8: SUCCESS CRITERIA
+
+After fix is deployed:
+
+In browser console, these should return 7 (or number of households):
+```javascript
+document.querySelectorAll('[data-testid^="button-view-"]').length
+document.querySelectorAll('[data-testid^="button-appliances-"]').length
+document.querySelectorAll('[data-testid^="button-tasks-"]').length
+```
+
+All three should return the same number.
+
+---
+
+DEBUGGING NOTES:
+
+The fact that Eye button works but Refrigerator and ListTodo don't suggests:
+1. The file is partially broken (syntax error after Eye button)
+2. The buttons are commented out
+3. The buttons are in a conditional that's false
+4. There's a JSX parsing error after the Eye button
+5. The icons aren't imported properly
+
+Start by examining the EXACT code structure around lines 570-620 and comparing Eye button to the other two.
+
+---
+
+START NOW - Debug and fix the missing buttons issue
+EOF
+
+cat REPLIT_AGENT_DEBUG_FIX.txt
+
+echo ""
+echo "✅ COMPLETE DEBUG SPEC CREATED!"
+echo ""
+echo "📋 COPY THIS ENTIRE SPEC TO REPLIT AGENT:"
+echo "cat ~/workspace/REPLIT_AGENT_DEBUG_FIX.txt"
+echo ""
+echo "The agent will:"
+echo "1. Diagnose the exact issue"
+echo "2. Compare working Eye button to broken buttons"
+echo "3. Fix syntax/structure issues"
+echo "4. Rebuild buttons if needed"
+echo "5. Verify and deploy"

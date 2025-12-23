@@ -571,20 +571,20 @@ export default function SetupFormsDashboard() {
                           <TableCell>
                             <code className="text-xs">{household.qrCode}</code>
                           </TableCell>
-                          <TableCell onClick={e => e.stopPropagation()}>
-                            <div className="flex gap-1">
+                          <TableCell onClick={(e) => e.stopPropagation()}>
+                            <div className="flex items-center gap-1">
                               <Button
                                 variant="ghost"
-                                size="sm"
+                                size="icon"
                                 data-testid={`button-view-${household.id}`}
                                 onClick={() => handleViewDetail(household)}
                                 title="View Details"
                               >
-                                <Eye className="h-4 w-4 text-foreground" />
+                                <Eye className="h-4 w-4" />
                               </Button>
                               <Button
                                 variant="ghost"
-                                size="sm"
+                                size="icon"
                                 data-testid={`button-appliances-${household.id}`}
                                 onClick={() => {
                                   setSelectedHouseholdForAppliances(household.id);
@@ -592,11 +592,11 @@ export default function SetupFormsDashboard() {
                                 }}
                                 title="Manage Appliances"
                               >
-                                <Refrigerator className="h-4 w-4 text-foreground" />
+                                <Refrigerator className="h-4 w-4" />
                               </Button>
                               <Button
                                 variant="ghost"
-                                size="sm"
+                                size="icon"
                                 data-testid={`button-tasks-${household.id}`}
                                 onClick={() => {
                                   setSelectedHouseholdForTasks(household.id);
@@ -604,7 +604,7 @@ export default function SetupFormsDashboard() {
                                 }}
                                 title="View Tasks"
                               >
-                                <ListTodo className="h-4 w-4 text-foreground" />
+                                <ListTodo className="h-4 w-4" />
                               </Button>
                             </div>
                           </TableCell>
