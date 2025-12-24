@@ -165,7 +165,7 @@ export default function SetupFormsDashboard() {
       if (!selectedHousehold?.id) return null;
       const token = getAuthToken();
       const response = await fetch(
-        `${API_BASE_URL}/api/admin/setup-forms/${selectedHousehold.id}`,
+        (`${API_BASE_URL}/api/admin/setup-forms/${selectedHousehold.id}`,
         {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
           credentials: 'include',
