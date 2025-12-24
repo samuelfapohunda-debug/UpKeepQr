@@ -27,6 +27,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Table,
   TableBody,
@@ -82,6 +83,7 @@ export default function SetupFormsDashboard() {
   const [selectedHouseholdForTasks, setSelectedHouseholdForTasks] = useState<string | null>(null);
   const [showTasksView, setShowTasksView] = useState(false);
   const [newNote, setNewNote] = useState('');
+  const [activeTab, setActiveTab] = useState('details');
   const [searchDebounce, setSearchDebounce] = useState('');
 
   // Filters state
@@ -118,6 +120,12 @@ export default function SetupFormsDashboard() {
     }, 500);
     return () => clearTimeout(timer);
   }, [searchDebounce]);
+
+  // Reset tab and note state when household changes
+  useEffect(() => {
+    setNewNote('');
+    setActiveTab('details');
+  }, [selectedHousehold?.id]);
 
   // Fetch households with filters
   const { data: householdsData, isLoading: householdsLoading } = useQuery({
@@ -669,8 +677,142 @@ export default function SetupFormsDashboard() {
         </Card>
       </div>
 
-      {/* Detail Dialog - keeping the existing implementation */}
-      {/* ... rest of existing dialogs ... */}
+      {/* Detail Dialog with Tabs */}
+      {showDetail && selectedHousehold && (
+        <Dialog open={showDetail} onOpenChange={(open) => {
+          if (!open) {
+            setShowDetail(false);
+            setSelectedHousehold(null);
+          }
+        }}>
+          <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Household Details - {selectedHousehold.name}</DialogTitle>
+            </DialogHeader>
+
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="grid w-full grid-cols-2 md:grid-cols-4">
+                <TabsTrigger value="details" data-testid="tab-details">Details</TabsTrigger>
+                <TabsTrigger value="notes" data-testid="tab-notes">Notes</TabsTrigger>
+                <TabsTrigger value="appliances" data-testid="tab-appliances">Appliances</TabsTrigger>
+                <TabsTrigger value="tasks" data-testid="tab-tasks">Tasks</TabsTrigger>
+              </TabsList>
+
+              {/* Details Tab */}
+              <TabsContent value="details" className="space-y-4 mt-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-sm font-medium">Email</Label>
+                    <p className="text-sm" data-testid="detail-email">{selectedHousehold.email}</p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium">Phone</Label>
+                    <p className="text-sm" data-testid="detail-phone">{selectedHousehold.phone}</p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium">Address</Label>
+                    <p className="text-sm" data-testid="detail-address">
+                      {selectedHousehold.address}, {selectedHousehold.city}, {selectedHousehold.state} {selectedHousehold.zip}
+                    </p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium">Setup Status</Label>
+                    <Badge className={statusColors[selectedHousehold.setupStatus || 'not_started']}>
+                      {statusLabels[selectedHousehold.setupStatus || 'not_started']}
+                    </Badge>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium">QR Code</Label>
+                    <code className="text-sm" data-testid="detail-qrcode">{selectedHousehold.qrCode}</code>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium">Completed At</Label>
+                    <p className="text-sm" data-testid="detail-completed">
+                      {selectedHousehold.setupCompletedAt 
+                        ? new Date(selectedHousehold.setupCompletedAt).toLocaleDateString()
+                        : 'Not completed'}
+                    </p>
+                  </div>
+                </div>
+              </TabsContent>
+
+              {/* Notes Tab */}
+              <TabsContent value="notes" className="space-y-4 mt-4">
+                <div className="space-y-4">
+                  <div className="flex gap-2">
+                    <Textarea
+                      placeholder="Add a note..."
+                      value={newNote}
+                      onChange={(e) => setNewNote(e.target.value)}
+                      className="flex-1"
+                      data-testid="input-note"
+                    />
+                    <Button 
+                      onClick={() => createNoteMutation.mutate(newNote)}
+                      disabled={!newNote.trim() || createNoteMutation.isPending}
+                      data-testid="button-add-note"
+                    >
+                      Add Note
+                    </Button>
+                  </div>
+
+                  <div className="space-y-2">
+                    {householdDetail?.notes?.map((note: SetupFormNote) => (
+                      <Card key={note.id}>
+                        <CardContent className="pt-4">
+                          <div className="flex justify-between items-start gap-2">
+                            <p className="text-sm flex-1">{note.content}</p>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => deleteNoteMutation.mutate(note.id)}
+                              disabled={deleteNoteMutation.isPending}
+                              data-testid={`button-delete-note-${note.id}`}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-2">
+                            {new Date(note.createdAt).toLocaleString()}
+                          </p>
+                        </CardContent>
+                      </Card>
+                    ))}
+                    {(!householdDetail?.notes || householdDetail.notes.length === 0) && (
+                      <p className="text-sm text-muted-foreground">No notes yet.</p>
+                    )}
+                  </div>
+                </div>
+              </TabsContent>
+
+              {/* Appliances Tab */}
+              <TabsContent value="appliances" className="space-y-4 mt-4">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-semibold">Appliances</h3>
+                  <Button
+                    onClick={() => {
+                      setSelectedHouseholdForAppliances(selectedHousehold.id);
+                      setShowApplianceManager(true);
+                      setShowDetail(false);
+                    }}
+                    data-testid="button-manage-appliances"
+                  >
+                    Manage Appliances
+                  </Button>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Click "Manage Appliances" to view and edit appliances for this household.
+                </p>
+              </TabsContent>
+
+              {/* Tasks Tab */}
+              <TabsContent value="tasks" className="space-y-4 mt-4">
+                <HouseholdTasksView householdId={selectedHousehold.id} />
+              </TabsContent>
+            </Tabs>
+          </DialogContent>
+        </Dialog>
+      )}
 
       {/* Appliance Manager Dialog */}
       {showApplianceManager && selectedHouseholdForAppliances && (
