@@ -9,7 +9,7 @@ export default defineConfig({
   plugins: [react()],
   root: './client',
   build: {
-    outDir: '../dist/public',
+    outDir: '../dist/client',
     emptyOutDir: true,
     sourcemap: false,
     rollupOptions: {
