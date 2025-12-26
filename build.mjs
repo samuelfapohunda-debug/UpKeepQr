@@ -5,8 +5,9 @@ import { copyFile, mkdir, cp } from 'fs/promises';
 
 async function build() {
   try {
-    // Create dist directory
+    // Create dist directories
     await mkdir('./dist/server', { recursive: true });
+    await mkdir('./dist/server/public', { recursive: true });
     
     // Copy preload-stripe.cjs to dist
     await copyFile('./server/preload-stripe.cjs', './dist/server/preload-stripe.cjs');
