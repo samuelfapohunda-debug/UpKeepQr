@@ -22,10 +22,8 @@ import { Textarea } from '@/components/ui/textarea';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
@@ -36,12 +34,10 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Checkbox } from '@/components/ui/checkbox';
 import {
   Search,
   Filter,
   Eye,
-  Bell,
   Trash2,
   Plus,
   ChevronLeft,
@@ -104,7 +100,7 @@ export default function SetupFormsDashboard() {
   const { toast } = useToast();
 
   // Create household form state
-  const [createForm, setCreateForm] = useState({
+  const [_createForm, setCreateForm] = useState({
     fullName: '',
     email: '',
     phone: '',
@@ -271,8 +267,8 @@ export default function SetupFormsDashboard() {
   });
 
   // Create household mutation
-  const createHouseholdMutation = useMutation({
-    mutationFn: async (data: typeof createForm) => {
+  const _createHouseholdMutation = useMutation({
+    mutationFn: async (data: typeof _createForm) => {
       return apiRequest('/api/admin/setup-forms/create', {
         method: 'POST',
         body: JSON.stringify(data),
@@ -308,23 +304,23 @@ export default function SetupFormsDashboard() {
     setShowDetail(true);
   };
 
-  const handleCloseDetail = () => {
+  const _handleCloseDetail = () => {
     setShowDetail(false);
     setSelectedHousehold(null);
   };
 
-  const handleAddNote = () => {
+  const _handleAddNote = () => {
     if (!newNote.trim()) return;
     createNoteMutation.mutate(newNote);
   };
 
-  const handleDeleteNote = (noteId: number) => {
+  const _handleDeleteNote = (noteId: number) => {
     if (confirm('Are you sure you want to delete this note?')) {
       deleteNoteMutation.mutate(noteId);
     }
   };
 
-  const handleTestNotification = (type: 'email' | 'sms' | 'both') => {
+  const _handleTestNotification = (type: 'email' | 'sms' | 'both') => {
     testNotificationMutation.mutate(type);
   };
 
