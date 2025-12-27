@@ -41,7 +41,7 @@ router.get('/households/:householdId/reports/maintenance-history', async (req: R
       return res.status(404).json({ error: 'Household not found' });
     }
     
-    let conditions = [eq(maintenanceLogsTable.householdId, householdId)];
+    const conditions = [eq(maintenanceLogsTable.householdId, householdId)];
     
     const startDate = start_date ? new Date(start_date as string) : new Date(new Date().setFullYear(new Date().getFullYear() - 1));
     const endDate = end_date ? new Date(end_date as string) : new Date();

@@ -125,7 +125,7 @@ router.get('/households/:householdId/appliances', async (req: Request, res: Resp
     
     const isActiveFilter = is_active === 'false' ? false : true;
     
-    let conditions = [
+    const conditions = [
       eq(householdAppliancesTable.householdId, householdId),
       eq(householdAppliancesTable.isActive, isActiveFilter)
     ];

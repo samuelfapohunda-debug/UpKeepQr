@@ -94,7 +94,7 @@ router.get('/households/:householdId/maintenance-logs', async (req: Request, res
       sortDir: req.query.sort_dir || 'desc',
     });
     
-    let conditions = [eq(maintenanceLogsTable.householdId, householdId)];
+    const conditions = [eq(maintenanceLogsTable.householdId, householdId)];
     
     if (filters.startDate) {
       conditions.push(gte(maintenanceLogsTable.maintenanceDate, new Date(filters.startDate)));
