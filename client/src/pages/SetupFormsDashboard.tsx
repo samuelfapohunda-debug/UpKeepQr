@@ -154,7 +154,7 @@ export default function SetupFormsDashboard() {
     },
   });
 
-  const households = householdsData?.households || [];
+  const households = householdsData?.data || [];
   const pagination = householdsData?.pagination || {
     page: 1,
     pageSize: 25,
