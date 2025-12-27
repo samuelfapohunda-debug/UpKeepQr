@@ -145,7 +145,7 @@ export default function SetupFormsDashboard() {
       params.set('sortDir', filters.sortDir);
 
       const token = getAuthToken();
-      const response = await fetch(\`${API_BASE_URL}/api/admin/setup-forms?${params}\`, {
+      const response = await fetch(`${API_BASE_URL}/api/admin/setup-forms?${params}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
         credentials: 'include',
       });
