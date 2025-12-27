@@ -49,7 +49,7 @@ router.post('/households/:householdId/maintenance-logs', async (req: Request, re
       }
     }
     
-    const [log] = await db.insert(maintenanceLogsTable).values({
+    const insertData: Parameters<typeof maintenanceLogsTable.$inferInsert> = {
       householdId,
       taskAssignmentId: data.taskAssignmentId || null,
       applianceId: data.applianceId || null,
@@ -62,9 +62,9 @@ router.post('/households/:householdId/maintenance-logs', async (req: Request, re
       notes: data.notes || null,
       createdBy: authUser?.role === 'admin' ? 'admin' : 'customer',
       createdByUserId: authUser?.id || null,
-      wasOnTime: null,
-      daysLate: null,
-    }).returning();
+    };
+    
+    const [log] = await db.insert(maintenanceLogsTable).values(insertData as typeof maintenanceLogsTable.$inferInsert).returning();
     
     console.log(`Created maintenance log ${log.id} for household ${householdId}`);
     res.status(201).json(log);

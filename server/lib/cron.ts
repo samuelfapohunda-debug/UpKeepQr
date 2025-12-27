@@ -1,7 +1,7 @@
 import cron from 'node-cron';
 import { storage } from '../storage.js';
 import { db } from '../db.js';
-import { householdTaskAssignmentsTable } from '../../shared/schema.js';
+import { householdTaskAssignmentsTable, type ReminderQueue, type Household } from '../../shared/schema.js';
 import { eq, and, lt } from 'drizzle-orm';
 import { sendReminderEmail } from './mail.js';
 import { createMaintenanceReminderEvent } from './ics.js';
@@ -39,7 +39,10 @@ async function updateOverdueTasks(): Promise<void> {
     today.setHours(0, 0, 0, 0);
     
     await db.update(householdTaskAssignmentsTable)
-      .set({ status: 'overdue', updatedAt: new Date() })
+      .set({ 
+        status: 'overdue' as const,
+        updatedAt: new Date() 
+      })
       .where(and(
         eq(householdTaskAssignmentsTable.status, 'pending'),
         lt(householdTaskAssignmentsTable.dueDate, today)
@@ -94,7 +97,7 @@ async function processReminderQueue(): Promise<void> {
   }
 }
 
-async function processReminder(reminder: any): Promise<void> {
+async function processReminder(reminder: ReminderQueue): Promise<void> {
   const household = await storage.getHouseholdById(reminder.householdId);
   if (!household) {
     throw new Error('Household not found');
@@ -128,7 +131,7 @@ async function processReminder(reminder: any): Promise<void> {
         dueDate: new Date(reminder.dueDate).toISOString(),
         description: reminder.taskDescription || `Complete ${reminder.taskName} maintenance task`,
         howToSteps: [],
-        icsAttachment
+        icsAttachment: icsAttachment.toString()
       });
       
       emailSent = true;
@@ -159,7 +162,7 @@ async function processReminder(reminder: any): Promise<void> {
   }
 }
 
-function determineReminderChannels(household: any): {
+function determineReminderChannels(household: Household): {
   sendEmail: boolean;
   sendSMS: boolean;
 } {
