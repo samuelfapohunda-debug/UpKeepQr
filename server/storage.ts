@@ -1459,11 +1459,11 @@ export class DatabaseStorage implements IStorage {
       completedAt: row.assignment.completedAt,
       createdAt: row.assignment.createdAt,
       updatedAt: row.assignment.updatedAt,
-      taskName: row.task?.name || 'Unknown Task',
-      taskDescription: row.task?.description || '',
+      taskName: row.task?.taskName || 'Unknown Task',
+      taskDescription: row.task?.howTo || '',
       category: row.task?.category || 'general',
-      priority: row.task?.priority || 2,
-      frequencyMonths: row.task?.frequencyMonths || 12
+      priority: row.assignment.priority || 'medium',
+      frequencyMonths: parseInt(row.task?.baseFrequency || '12', 10) || 12
     }));
   }
 }
