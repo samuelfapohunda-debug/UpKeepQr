@@ -212,7 +212,7 @@ async function main() {
     const assignmentValues = assignments.map(a => ({
       householdId: household.id,
       taskId: a.taskId,
-      scheduledDate: a.dueDate,
+      dueDate: a.dueDate,
       status: 'pending' as const,
       priority: a.priority,
       createdAt: today,
@@ -280,82 +280,139 @@ interface TaskAssignment {
   priority: 'high' | 'medium' | 'low';
 }
 
+function calculateSeasonalDueDate(today: Date, taskCode: string): Date {
+  const month = today.getMonth();
+  const year = today.getFullYear();
+  
+  if (taskCode?.includes('SUMMER') || taskCode?.includes('COOLING')) {
+    const summerStart = new Date(year, 4, 1);
+    return summerStart > today ? summerStart : new Date(year + 1, 4, 1);
+  }
+  if (taskCode?.includes('WINTER') || taskCode?.includes('FURNACE') || taskCode?.includes('FREEZE')) {
+    const winterStart = new Date(year, 9, 1);
+    return winterStart > today ? winterStart : new Date(year + 1, 9, 1);
+  }
+  if (taskCode?.includes('SPRING') || taskCode?.includes('IRRIGATION')) {
+    const springStart = new Date(year, 2, 15);
+    return springStart > today ? springStart : new Date(year + 1, 2, 15);
+  }
+  if (taskCode?.includes('FALL') || taskCode?.includes('GUTTER')) {
+    const fallStart = new Date(year, 9, 15);
+    return fallStart > today ? fallStart : new Date(year + 1, 9, 15);
+  }
+  return calculateDueDate(today, 30);
+}
+
+function calculateFrequencyDueDate(today: Date, frequency: string | null): number {
+  if (!frequency) return 30;
+  const freq = frequency.toLowerCase();
+  if (freq.includes('monthly') || freq === '1x/month') return 30;
+  if (freq.includes('quarterly') || freq === '4x/year') return 90;
+  if (freq.includes('twice') || freq === '2x/year') return 180;
+  if (freq.includes('annual') || freq === '1x/year') return 365;
+  if (freq.includes('weekly')) return 7;
+  return 30;
+}
+
 function generateTasksForProfile(allTasks: any[], homeProfile: HomeProfile): TaskAssignment[] {
   const today = new Date();
   const assignments: TaskAssignment[] = [];
+  const homeType = (homeProfile.homeType || 'single_family').toLowerCase();
+  const hvacType = (homeProfile.hvacType || 'unknown').toLowerCase();
 
   for (const task of allTasks) {
     let shouldAssign = false;
     let priority: 'high' | 'medium' | 'low' = 'medium';
     let daysUntilDue = 30;
+    let useSeasonalDate = false;
 
-    if (task.category === 'HVAC') {
-      if (homeProfile.hvacType && homeProfile.hvacType !== 'none') {
+    const category = (task.category || '').toLowerCase();
+    const taskCode = (task.taskCode || '').toUpperCase();
+
+    if (category === 'hvac') {
+      if (hvacType !== 'none' && hvacType !== '') {
         shouldAssign = true;
-        if (task.taskCode?.includes('FILTER')) {
+        if (taskCode.includes('FILTER')) {
           priority = 'high';
           daysUntilDue = 14;
-        } else if (task.taskCode?.includes('CONDENSER')) {
+        } else if (taskCode.includes('CONDENSER') || taskCode.includes('COOLING')) {
           priority = 'medium';
-          daysUntilDue = 45;
+          useSeasonalDate = true;
+        } else if (taskCode.includes('FURNACE') || taskCode.includes('HEAT')) {
+          priority = 'medium';
+          useSeasonalDate = true;
         } else {
-          daysUntilDue = 60;
+          daysUntilDue = calculateFrequencyDueDate(today, task.baseFrequency);
         }
       }
     }
-    else if (task.category === 'Plumbing') {
-      if (task.taskCode?.includes('LEAK')) {
-        shouldAssign = true;
+    else if (category === 'plumbing') {
+      shouldAssign = true;
+      if (taskCode.includes('LEAK')) {
         priority = 'medium';
         daysUntilDue = 30;
-      }
-      if (task.taskCode?.includes('WATER_HEATER')) {
-        if (homeProfile.waterHeaterType?.includes('tank')) {
-          shouldAssign = true;
-          priority = 'medium';
-          daysUntilDue = 90;
-        }
+      } else if (taskCode.includes('WATER_HEATER') || taskCode.includes('FLUSH')) {
+        priority = 'medium';
+        daysUntilDue = 90;
+      } else if (taskCode.includes('WINTERIZE')) {
+        useSeasonalDate = true;
+      } else {
+        daysUntilDue = calculateFrequencyDueDate(today, task.baseFrequency);
       }
     }
-    else if (task.category === 'Exterior') {
-      if (homeProfile.homeType === 'single_family' || homeProfile.homeType === 'townhouse') {
+    else if (category === 'exterior') {
+      if (homeType === 'single_family' || homeType === 'townhouse') {
         shouldAssign = true;
-        if (task.taskCode?.includes('GUTTER') || task.taskCode?.includes('ROOF')) {
+        if (taskCode.includes('GUTTER') || taskCode.includes('ROOF')) {
           priority = homeProfile.roofAgeYears && homeProfile.roofAgeYears > 10 ? 'high' : 'medium';
-          daysUntilDue = 45;
+          useSeasonalDate = true;
+        } else if (taskCode.includes('IRRIGATION') || taskCode.includes('SPRINKLER')) {
+          useSeasonalDate = true;
         } else {
-          daysUntilDue = 90;
+          daysUntilDue = calculateFrequencyDueDate(today, task.baseFrequency);
         }
       }
     }
-    else if (task.category === 'Seasonal') {
+    else if (category === 'seasonal') {
       shouldAssign = true;
       priority = 'high';
-      daysUntilDue = 30;
+      useSeasonalDate = true;
     }
-    else if (task.category === 'Appliance') {
+    else if (category === 'appliance') {
       shouldAssign = true;
-      if (task.taskCode?.includes('DRYER')) {
+      if (taskCode.includes('DRYER')) {
         priority = 'high';
         daysUntilDue = 90;
       } else {
         priority = 'medium';
-        daysUntilDue = 120;
+        daysUntilDue = calculateFrequencyDueDate(today, task.baseFrequency);
       }
     }
-    else if (task.category === 'Safety') {
+    else if (category === 'safety') {
       shouldAssign = true;
       priority = 'high';
       daysUntilDue = 7;
     }
+    else {
+      shouldAssign = true;
+      daysUntilDue = calculateFrequencyDueDate(today, task.baseFrequency);
+    }
 
     if (shouldAssign) {
+      const dueDate = useSeasonalDate 
+        ? calculateSeasonalDueDate(today, taskCode)
+        : calculateDueDate(today, daysUntilDue);
+      
+      if (!dueDate || isNaN(dueDate.getTime())) {
+        console.warn(`   ⚠️  Invalid date for task ${task.taskName}, using default +30 days`);
+      }
+      
       assignments.push({
         taskId: task.id,
-        taskName: task.taskName,
-        category: task.category,
+        taskName: task.taskName || 'Unknown Task',
+        category: task.category || 'General',
         description: task.howTo || '',
-        dueDate: calculateDueDate(today, daysUntilDue),
+        dueDate: dueDate && !isNaN(dueDate.getTime()) ? dueDate : calculateDueDate(today, 30),
         priority
       });
     }
