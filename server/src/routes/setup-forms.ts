@@ -9,7 +9,7 @@ import {
 } from '../../../shared/schema.js';
 import { requireSystemAdmin } from '../../middleware/auth.js';
 import { createAuditLog, handleError } from './utils.js';
-import { eq, and, isNull, sql, desc, asc, like, or, gte, lte } from 'drizzle-orm';
+import { eq, and, isNull, sql, desc, asc, like, ilike, or, gte, lte } from 'drizzle-orm';
 import { NotificationDispatcher } from '../../lib/notificationDispatcher.js';
 
 const router = Router();
@@ -45,7 +45,7 @@ router.get('/', requireSystemAdmin, async (req: any, res: Response) => {
     }
 
     if (filters.city) {
-      conditions.push(eq(householdsTable.city, filters.city));
+      conditions.push(ilike(householdsTable.city, `%${filters.city}%`));
     }
 
     if (filters.state) {
