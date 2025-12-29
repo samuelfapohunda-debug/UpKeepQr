@@ -219,23 +219,28 @@ export default function ApplianceManager({ householdId, onClose }: ApplianceMana
 
       const method = editingAppliance ? 'PATCH' : 'POST';
 
-      const parsedPrice = formData.purchasePrice ? parseFloat(formData.purchasePrice) : null;
       const normalizedPayload: Record<string, unknown> = {
         applianceType: formData.applianceType,
         brand: formData.brand,
         modelNumber: formData.modelNumber,
         serialNumber: formData.serialNumber,
         purchaseDate: formData.purchaseDate,
-        purchasePrice: parsedPrice && !isNaN(parsedPrice) ? parsedPrice : null,
-        installationDate: formData.installationDate || null,
-        location: formData.location.trim() || null,
-        notes: formData.notes.trim() || null,
-        warrantyType: formData.warrantyType || null,
-        warrantyExpiration: formData.warrantyExpiration || null,
-        warrantyProvider: formData.warrantyProvider.trim() || null,
-        warrantyPolicyNumber: formData.warrantyPolicyNumber.trim() || null,
-        warrantyCoverageDetails: formData.warrantyCoverageDetails.trim() || null,
       };
+
+      if (formData.purchasePrice) {
+        const parsedPrice = parseFloat(formData.purchasePrice);
+        if (!isNaN(parsedPrice)) {
+          normalizedPayload.purchasePrice = parsedPrice;
+        }
+      }
+      if (formData.installationDate) normalizedPayload.installationDate = formData.installationDate;
+      if (formData.location.trim()) normalizedPayload.location = formData.location.trim();
+      if (formData.notes.trim()) normalizedPayload.notes = formData.notes.trim();
+      if (formData.warrantyType) normalizedPayload.warrantyType = formData.warrantyType;
+      if (formData.warrantyExpiration) normalizedPayload.warrantyExpiration = formData.warrantyExpiration;
+      if (formData.warrantyProvider.trim()) normalizedPayload.warrantyProvider = formData.warrantyProvider.trim();
+      if (formData.warrantyPolicyNumber.trim()) normalizedPayload.warrantyPolicyNumber = formData.warrantyPolicyNumber.trim();
+      if (formData.warrantyCoverageDetails.trim()) normalizedPayload.warrantyCoverageDetails = formData.warrantyCoverageDetails.trim();
 
       const response = await fetch(url, {
         method,
@@ -248,7 +253,17 @@ export default function ApplianceManager({ householdId, onClose }: ApplianceMana
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to save appliance');
+        let errorMessage = errorData.error || 'Failed to save appliance';
+        
+        if (errorData.details && Array.isArray(errorData.details)) {
+          const fieldErrors = errorData.details.map((e: { path?: string[]; message?: string }) => {
+            const field = e.path?.join('.') || 'Unknown field';
+            return `${field}: ${e.message}`;
+          });
+          errorMessage = fieldErrors.join('; ');
+        }
+        
+        throw new Error(errorMessage);
       }
 
       toast({
