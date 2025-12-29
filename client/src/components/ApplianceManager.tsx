@@ -627,10 +627,9 @@ export default function ApplianceManager({ householdId, onClose }: ApplianceMana
                         <SelectValue placeholder="Select type" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="manufacturer">Manufacturer</SelectItem>
-                        <SelectItem value="extended">Extended</SelectItem>
-                        <SelectItem value="home_warranty">Home Warranty</SelectItem>
-                        <SelectItem value="store">Store Protection Plan</SelectItem>
+                        <SelectItem value="Manufacturer">Manufacturer</SelectItem>
+                        <SelectItem value="Extended">Extended</SelectItem>
+                        <SelectItem value="Labor">Labor</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
