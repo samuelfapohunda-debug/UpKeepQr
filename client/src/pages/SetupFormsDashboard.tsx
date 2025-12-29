@@ -187,12 +187,7 @@ export default function SetupFormsDashboard() {
   const createNoteMutation = useMutation({
     mutationFn: async (content: string) => {
       if (!selectedHousehold?.id) throw new Error('No household selected');
-      return apiRequest(`/api/admin/setup-forms/${selectedHousehold.id}/notes`, {
-        method: 'POST',
-        body: JSON.stringify({
-          content,
-        }),
-      });
+      return apiRequest('POST', `/api/admin/setup-forms/${selectedHousehold.id}/notes`, { content });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
@@ -217,9 +212,7 @@ export default function SetupFormsDashboard() {
   const deleteNoteMutation = useMutation({
     mutationFn: async (noteId: number) => {
       if (!selectedHousehold?.id) throw new Error('No household selected');
-      return apiRequest(`/api/admin/setup-forms/${selectedHousehold.id}/notes/${noteId}`, {
-        method: 'DELETE',
-      });
+      return apiRequest('DELETE', `/api/admin/setup-forms/${selectedHousehold.id}/notes/${noteId}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({
