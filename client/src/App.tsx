@@ -22,6 +22,8 @@ import MagnetDashboard from "@/pages/MagnetDashboard";
 import SetupFormsDashboard from "@/pages/SetupFormsDashboard";
 import Login from "@/pages/Login";
 import Appliances from "@/pages/Appliances";
+import RegistrationSuccess from "@/pages/RegistrationSuccess";
+import CustomerDashboard from "@/pages/CustomerDashboard";
 
 function Router() {
   return (
@@ -34,6 +36,8 @@ function Router() {
         <Route path="/contact" component={Contact} />
         <Route path="/login" component={Login} />
         <Route path="/setup/success" component={SetupSuccess} />
+        <Route path="/registration/success" component={RegistrationSuccess} />
+        <Route path="/my-home" component={CustomerDashboard} />
         <Route path="/setup/new">
           <ProtectedRoute>
             <Onboarding adminMode={true} />
