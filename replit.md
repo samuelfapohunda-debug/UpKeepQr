@@ -44,6 +44,19 @@ The backend is a RESTful API built with Express.js and TypeScript. It uses Drizz
 - **Customer API Endpoints** (Dec 2024):
   - **GET /api/households/:id**: Public endpoint returning household info (firstName, lastName, email, homeType, city, state, zipCode) with home profile extras joined for property details.
   - **GET /api/households/:id/tasks**: Public endpoint returning full task details (taskName, taskDescription, category, priority, frequencyMonths, dueDate, status) with summary statistics.
+- **Progressive Onboarding Flow** (Dec 2024):
+  - **4-Step Setup Form** (`/setup/:token`): Redesigned onboarding as a multi-step progressive disclosure form to improve conversion rates. Components in `client/src/components/onboarding/`:
+    - **Step 1 - Home Profile**: Visual card selection for home type (Single Family, Condo, Townhouse, Apartment) with optional square footage. Smart contextual help explains task assignment based on home type.
+    - **Step 2 - Account**: Email, name, and ZIP code collection with validation. Creates household and generates initial maintenance tasks.
+    - **Gratification Preview**: Shows generated task count and preview of next 3 tasks with priority badges. Options to "Refine Schedule" or "Skip to Dashboard".
+    - **Step 3 - Refine Schedule**: Optional HVAC type, water heater type, year built, and square footage update. Improves task timing and reminders.
+    - **Step 4 - Notifications**: SMS opt-in with phone number validation. Shows reminder schedule by priority level.
+  - **Progressive API Endpoints**:
+    - `POST /api/setup/create-account`: Creates household with in_progress status, generates tasks, returns preview.
+    - `PATCH /api/setup/update-home-details`: Updates HVAC, water heater, year built, square footage.
+    - `PATCH /api/setup/update-preferences`: Updates SMS preferences and phone number.
+    - `POST /api/setup/finalize`: Marks setup complete, activates QR code, sends confirmation emails.
+  - **Features**: Auto-save to localStorage, progress indicator with step labels, dark mode support, mobile-responsive design, backwards compatibility via `/setup-legacy/:token`.
 
 ## System Design Choices
 The database uses PostgreSQL with Drizzle ORM, connected via Neon serverless. A critical `order_id_counter` sequence is used for unique order IDs. The `household_task_assignments` table manages links between households and maintenance tasks, with robust indexing and foreign key constraints.

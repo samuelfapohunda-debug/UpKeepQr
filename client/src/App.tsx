@@ -10,6 +10,7 @@ import Home from "@/pages/Home";
 import Pricing from "@/pages/Pricing";
 import Contact from "@/pages/Contact";
 import Onboarding from "@/pages/Onboarding";
+import SetupForm from "@/pages/SetupForm";
 import SetupSuccess from "@/pages/SetupSuccess";
 import Dashboard from "@/pages/Dashboard";
 import AgentLogin from "@/pages/AgentLogin";
@@ -43,7 +44,8 @@ function Router() {
             <Onboarding adminMode={true} />
           </ProtectedRoute>
         </Route>
-        <Route path="/setup/:token" component={Onboarding} />
+        <Route path="/setup/:token" component={SetupForm} />
+        <Route path="/setup-legacy/:token" component={Onboarding} />
         <Route path="/task/:token/:taskId" component={TaskDetail} />
         <Route path="/request-pro" component={RequestPro} />
         
