@@ -19,7 +19,8 @@ import {
 interface Task {
   id: number;
   taskName: string;
-  description: string;
+  taskDescription?: string;
+  description?: string;
   category: string;
   priority: string;
   status: string;
@@ -69,7 +70,7 @@ export default function CustomerDashboard() {
   });
 
   const { data: tasksData, isLoading: tasksLoading } = useQuery<TasksResponse>({
-    queryKey: ['/api/admin/households', householdId, 'tasks'],
+    queryKey: ['/api/households', householdId, 'tasks'],
     enabled: !!householdId,
   });
 
@@ -78,7 +79,7 @@ export default function CustomerDashboard() {
 
   const handleRefresh = () => {
     queryClient.invalidateQueries({ queryKey: ['/api/households', householdId] });
-    queryClient.invalidateQueries({ queryKey: ['/api/admin/households', householdId, 'tasks'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/households', householdId, 'tasks'] });
   };
 
   const getTaskStats = (): TaskStats => {
@@ -319,7 +320,7 @@ export default function CustomerDashboard() {
                             </Badge>
                           </div>
                           <p className="text-sm text-muted-foreground line-clamp-2">
-                            {task.description}
+                            {task.taskDescription || task.description}
                           </p>
                           <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground flex-wrap">
                             <span className="capitalize">{task.category}</span>
