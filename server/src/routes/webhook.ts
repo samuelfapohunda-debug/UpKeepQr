@@ -187,25 +187,48 @@ router.post('/stripe', async (req: Request, res: Response) => {
         }),
         
         // Email 2: Welcome email with QR codes
-        sendWelcomeEmailWithQR({
-          email: customerEmail,
-          customerName,
-          orderId: resultOrderId,
-          items: resultQrCodes.map(qr => ({
-            activationCode: qr.code,
-            qrCodeImage: qr.qrUrl,
-            setupUrl: qr.setupUrl
-          })),
-          quantity: resultMagnetCount,
-          sku
-        }).catch(error => {
-          console.error('❌ Failed to send welcome email:', error);
-          sendAdminErrorAlert(
-            'Welcome Email Failed',
-            error.message,
-            { orderId: resultOrderId, customerEmail, qrCodesCount: resultQrCodes.length }
-          ).catch(e => console.error('Failed to send error alert:', e));
-        }),
+        (async () => {
+          console.log('📧 Attempting to send welcome email with QR codes:', {
+            email: customerEmail,
+            orderId: resultOrderId,
+            qrCodesCount: resultQrCodes.length,
+            quantity: resultMagnetCount,
+            sku
+          });
+          
+          try {
+            const welcomeEmailResult = await sendWelcomeEmailWithQR({
+              email: customerEmail,
+              customerName,
+              orderId: resultOrderId,
+              items: resultQrCodes.map(qr => ({
+                activationCode: qr.code,
+                qrCodeImage: qr.qrUrl,
+                setupUrl: qr.setupUrl
+              })),
+              quantity: resultMagnetCount,
+              sku
+            });
+            
+            if (welcomeEmailResult) {
+              console.log('✅ Welcome email with QR codes sent successfully to:', customerEmail);
+            } else {
+              console.error('❌ Welcome email returned false - check SendGrid logs');
+              await sendAdminErrorAlert(
+                'Welcome Email Failed (returned false)',
+                'sendWelcomeEmailWithQR returned false',
+                { orderId: resultOrderId, customerEmail, qrCodesCount: resultQrCodes.length }
+              );
+            }
+          } catch (error: any) {
+            console.error('❌ Failed to send welcome email:', error?.message, error);
+            await sendAdminErrorAlert(
+              'Welcome Email Failed',
+              error?.message || 'Unknown error',
+              { orderId: resultOrderId, customerEmail, qrCodesCount: resultQrCodes.length }
+            ).catch(e => console.error('Failed to send error alert:', e));
+          }
+        })(),
         
         // Email 3: Admin notification
         sendAdminOrderNotification(
