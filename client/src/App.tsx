@@ -24,6 +24,7 @@ import Login from "@/pages/Login";
 import Appliances from "@/pages/Appliances";
 import RegistrationSuccess from "@/pages/RegistrationSuccess";
 import CustomerDashboard from "@/pages/CustomerDashboard";
+import SetupForm from "@/pages/SetupForm";
 
 function Router() {
   return (
@@ -38,6 +39,8 @@ function Router() {
         <Route path="/setup/success" component={SetupSuccess} />
         <Route path="/registration/success" component={RegistrationSuccess} />
         <Route path="/my-home" component={CustomerDashboard} />
+        <Route path="/new-setup" component={SetupForm} />
+        <Route path="/new-setup/:token" component={SetupForm} />
         <Route path="/setup/new">
           <ProtectedRoute>
             <Onboarding adminMode={true} />
