@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useLocation, useRoute } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import ProgressIndicator from "@/components/onboarding/ProgressIndicator";
@@ -7,6 +7,7 @@ import Step2Account from "@/components/onboarding/Step2Account";
 import GratificationPreview from "@/components/onboarding/GratificationPreview";
 import Step3RefineSchedule from "@/components/onboarding/Step3RefineSchedule";
 import Step4Notifications from "@/components/onboarding/Step4Notifications";
+import { apiRequest } from "@/lib/queryClient";
 
 interface FormData {
   homeType: string;
@@ -51,6 +52,8 @@ export default function SetupForm() {
     phoneNumber: ""
   });
 
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   useEffect(() => {
     const saved = localStorage.getItem("onboarding_progress");
     if (saved) {
@@ -63,9 +66,23 @@ export default function SetupForm() {
     }
   }, []);
 
+  const debouncedSave = useCallback((data: FormData) => {
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+    saveTimeoutRef.current = setTimeout(() => {
+      localStorage.setItem("onboarding_progress", JSON.stringify(data));
+    }, 500);
+  }, []);
+
   useEffect(() => {
-    localStorage.setItem("onboarding_progress", JSON.stringify(formData));
-  }, [formData]);
+    debouncedSave(formData);
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, [formData, debouncedSave]);
 
   const handleStep1Next = (data: { homeType: string; squareFootage: string }) => {
     setFormData(prev => ({ ...prev, ...data }));
@@ -86,7 +103,9 @@ export default function SetupForm() {
   };
 
   const handleGratificationSkip = () => {
-    completeOnboarding();
+    setShowGratification(false);
+    setCurrentStep(4);
+    window.scrollTo(0, 0);
   };
 
   const handleStep3Next = (data: { hvacType: string; waterHeaterType: string; yearBuilt: string }) => {

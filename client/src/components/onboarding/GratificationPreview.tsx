@@ -120,9 +120,9 @@ export default function GratificationPreview({
               onClick={onSkip}
               className="flex-1"
               size="lg"
-              data-testid="button-skip-to-dashboard"
+              data-testid="button-skip-refinement"
             >
-              Skip to Dashboard
+              Skip Refinement
             </Button>
             <Button
               type="button"
