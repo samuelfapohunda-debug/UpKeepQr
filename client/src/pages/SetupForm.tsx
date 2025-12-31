@@ -35,10 +35,12 @@ const STEP_LABELS = [
 
 export default function SetupForm() {
   const [, navigate] = useLocation();
-  const [match, params] = useRoute<{ token: string }>('/new-setup/:token');
+  const [newSetupMatch, newSetupParams] = useRoute<{ token: string }>('/new-setup/:token');
+  const [setupMatch, setupParams] = useRoute<{ token: string }>('/setup/:token');
   const { toast } = useToast();
 
-  const token = match ? params.token : null;
+  // Support both /new-setup/:token and /setup/:token URLs
+  const token = newSetupMatch ? newSetupParams.token : (setupMatch ? setupParams.token : null);
 
   const [currentStep, setCurrentStep] = useState(1);
   const [showGratification, setShowGratification] = useState(false);

@@ -46,7 +46,7 @@ function Router() {
             <Onboarding adminMode={true} />
           </ProtectedRoute>
         </Route>
-        <Route path="/setup/:token" component={Onboarding} />
+        <Route path="/setup/:token" component={SetupForm} />
         <Route path="/task/:token/:taskId" component={TaskDetail} />
         <Route path="/request-pro" component={RequestPro} />
         
