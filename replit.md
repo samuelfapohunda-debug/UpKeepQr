@@ -41,6 +41,14 @@ The backend is a RESTful API built with Express.js and TypeScript. It uses Drizz
 - **Customer Success Pages** (Dec 2024):
   - **Registration Success Page** (`/registration/success`): Customer-facing welcome page after completing home registration with personalized next steps, email check reminder, and dashboard access link.
   - **Customer Dashboard** (`/my-home?household=<id>`): Mobile-responsive customer dashboard showing maintenance tasks with category filtering, task statistics (total, completed, pending, overdue), priority badges, and professional service request link. Uses TanStack Query for data fetching with proper cache invalidation.
+- **New Multi-Step Onboarding Form** (Dec 2024):
+  - **Routes**: `/new-setup` and `/new-setup/:token` for new customer onboarding flow
+  - **Progressive Disclosure**: 4-step flow (Home Profile, Account Setup, Refine Schedule, Notifications) with optional steps clearly marked
+  - **Visual Home Type Selection**: Card-based UI with icons for Single Family, Condo, Townhouse, Apartment with task count estimates
+  - **Instant Gratification**: After step 2, shows preview of generated maintenance schedule before asking for optional details
+  - **Auto-save**: Debounced localStorage persistence (500ms) to preserve progress across page reloads
+  - **Components**: `client/src/components/onboarding/` contains ProgressIndicator, Step1HomeProfile, Step2Account, GratificationPreview, Step3RefineSchedule, Step4Notifications
+  - **Mobile-Responsive**: Full dark mode support with responsive grid layouts
 
 ## System Design Choices
 The database uses PostgreSQL with Drizzle ORM, connected via Neon serverless. A critical `order_id_counter` sequence is used for unique order IDs. The `household_task_assignments` table manages links between households and maintenance tasks, with robust indexing and foreign key constraints.
