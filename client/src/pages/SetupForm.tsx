@@ -14,6 +14,9 @@ interface FormData {
   squareFootage: string;
   email: string;
   name: string;
+  streetAddress: string;
+  city: string;
+  state: string;
   zipCode: string;
   hvacType: string;
   waterHeaterType: string;
@@ -44,6 +47,9 @@ export default function SetupForm() {
     squareFootage: "",
     email: "",
     name: "",
+    streetAddress: "",
+    city: "",
+    state: "",
     zipCode: "",
     hvacType: "",
     waterHeaterType: "",
@@ -90,8 +96,14 @@ export default function SetupForm() {
     window.scrollTo(0, 0);
   };
 
-  const handleStep2Next = async (data: { email: string; name: string; zipCode: string }) => {
-    setFormData(prev => ({ ...prev, ...data }));
+  const handleStep2Next = async (data: { email: string; name: string; zipCode: string; streetAddress?: string; city?: string; state?: string }) => {
+    setFormData(prev => ({ 
+      ...prev, 
+      ...data,
+      streetAddress: data.streetAddress || "",
+      city: data.city || "",
+      state: data.state || ""
+    }));
     setShowGratification(true);
     window.scrollTo(0, 0);
   };
@@ -220,7 +232,14 @@ export default function SetupForm() {
             />
           ) : currentStep === 2 ? (
             <Step2Account
-              data={{ email: formData.email, name: formData.name, zipCode: formData.zipCode }}
+              data={{ 
+                email: formData.email, 
+                name: formData.name, 
+                zipCode: formData.zipCode,
+                streetAddress: formData.streetAddress,
+                city: formData.city,
+                state: formData.state
+              }}
               onNext={handleStep2Next}
               onBack={handleBack}
             />

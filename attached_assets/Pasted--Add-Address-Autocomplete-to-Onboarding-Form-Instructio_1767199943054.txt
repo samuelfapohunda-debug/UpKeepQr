@@ -1,0 +1,652 @@
+# Add Address Autocomplete to Onboarding Form
+
+## Instructions for Replit Agent
+
+**Objective:** Add Google Places API address autocomplete to Step 2 (Account Setup) of the onboarding form.
+
+---
+
+## ⚠️ CRITICAL - Files to Modify
+
+**ONLY modify this ONE file:**
+```
+client/src/components/onboarding/Step2Account.tsx
+```
+
+**DO NOT touch:**
+- Any other component files
+- Any other pages
+- API routes
+- Database files
+- Admin dashboard
+- Customer dashboard
+
+---
+
+## Implementation Steps
+
+### Step 1: Install Google Places Autocomplete Library
+
+```bash
+npm install @react-google-maps/api
+```
+
+### Step 2: Get Google Places API Key
+
+**If you don't have one yet:**
+
+1. Go to: https://console.cloud.google.com/
+2. Create new project (or select existing)
+3. Enable "Places API"
+4. Create API Key
+5. Restrict API key to "Places API"
+6. Add to Render environment variables:
+   - Key: `VITE_GOOGLE_PLACES_API_KEY`
+   - Value: `YOUR_API_KEY_HERE`
+
+### Step 3: Update Step2Account.tsx
+
+**File:** `client/src/components/onboarding/Step2Account.tsx`
+
+Replace the entire file with this updated version:
+
+```typescript
+import { useState, useRef, useEffect } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Mail, User, MapPin } from "lucide-react";
+import { useLoadScript } from "@react-google-maps/api";
+
+interface Step2Data {
+  email: string;
+  name: string;
+  zipCode: string;
+  streetAddress?: string;
+  city?: string;
+  state?: string;
+}
+
+interface Step2Props {
+  data: Step2Data;
+  onNext: (data: Step2Data) => void;
+  onBack: () => void;
+}
+
+const libraries: ("places")[] = ["places"];
+
+export default function Step2Account({ data, onNext, onBack }: Step2Props) {
+  const [email, setEmail] = useState(data.email || "");
+  const [name, setName] = useState(data.name || "");
+  const [streetAddress, setStreetAddress] = useState(data.streetAddress || "");
+  const [city, setCity] = useState(data.city || "");
+  const [state, setState] = useState(data.state || "");
+  const [zipCode, setZipCode] = useState(data.zipCode || "");
+  
+  const addressInputRef = useRef<HTMLInputElement>(null);
+  const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
+
+  // Load Google Places API
+  const { isLoaded, loadError } = useLoadScript({
+    googleMapsApiKey: import.meta.env.VITE_GOOGLE_PLACES_API_KEY || "",
+    libraries,
+  });
+
+  // Initialize autocomplete when API is loaded
+  useEffect(() => {
+    if (isLoaded && addressInputRef.current && !autocompleteRef.current) {
+      try {
+        const autocomplete = new google.maps.places.Autocomplete(addressInputRef.current, {
+          types: ["address"],
+          componentRestrictions: { country: "us" }, // Restrict to US addresses
+          fields: ["address_components", "formatted_address"],
+        });
+
+        autocomplete.addListener("place_changed", () => {
+          const place = autocomplete.getPlace();
+          
+          if (place.address_components) {
+            let street = "";
+            let streetNumber = "";
+            let route = "";
+            let locality = "";
+            let stateCode = "";
+            let postalCode = "";
+
+            place.address_components.forEach((component) => {
+              const types = component.types;
+
+              if (types.includes("street_number")) {
+                streetNumber = component.long_name;
+              }
+              if (types.includes("route")) {
+                route = component.long_name;
+              }
+              if (types.includes("locality")) {
+                locality = component.long_name;
+              }
+              if (types.includes("administrative_area_level_1")) {
+                stateCode = component.short_name;
+              }
+              if (types.includes("postal_code")) {
+                postalCode = component.long_name;
+              }
+            });
+
+            street = `${streetNumber} ${route}`.trim();
+
+            setStreetAddress(street);
+            setCity(locality);
+            setState(stateCode);
+            setZipCode(postalCode);
+          }
+        });
+
+        autocompleteRef.current = autocomplete;
+      } catch (error) {
+        console.error("Error initializing Google Places Autocomplete:", error);
+      }
+    }
+  }, [isLoaded]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // Validation
+    if (!email || !name || !zipCode) {
+      alert("Please fill in all required fields");
+      return;
+    }
+
+    if (!email.includes("@")) {
+      alert("Please enter a valid email address");
+      return;
+    }
+
+    if (zipCode.length < 5) {
+      alert("Please enter a valid ZIP code");
+      return;
+    }
+
+    onNext({ 
+      email, 
+      name, 
+      zipCode,
+      streetAddress,
+      city,
+      state
+    });
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="w-full max-w-2xl mx-auto">
+      <Card>
+        <CardHeader className="text-center">
+          <CardTitle className="text-2xl">Create Your Account</CardTitle>
+          <CardDescription>
+            We'll use this to send your personalized maintenance schedule
+          </CardDescription>
+        </CardHeader>
+
+        <CardContent className="space-y-6">
+          {/* Email */}
+          <div className="space-y-2">
+            <Label htmlFor="email">
+              Email Address <span className="text-red-500">*</span>
+            </Label>
+            <div className="relative">
+              <Mail className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+              <Input
+                id="email"
+                type="email"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="pl-10"
+              />
+            </div>
+            <p className="text-xs text-gray-500">
+              We'll send your schedule and reminders here
+            </p>
+          </div>
+
+          {/* Name */}
+          <div className="space-y-2">
+            <Label htmlFor="name">
+              Full Name <span className="text-red-500">*</span>
+            </Label>
+            <div className="relative">
+              <User className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+              <Input
+                id="name"
+                type="text"
+                placeholder="John Smith"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                className="pl-10"
+              />
+            </div>
+          </div>
+
+          {/* Street Address - Google Autocomplete */}
+          <div className="space-y-2">
+            <Label htmlFor="streetAddress">
+              Street Address <span className="text-gray-500">(Optional)</span>
+            </Label>
+            <div className="relative">
+              <MapPin className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+              <Input
+                id="streetAddress"
+                ref={addressInputRef}
+                type="text"
+                placeholder="123 Main St"
+                value={streetAddress}
+                onChange={(e) => setStreetAddress(e.target.value)}
+                className="pl-10"
+                disabled={!isLoaded}
+              />
+            </div>
+            {loadError && (
+              <p className="text-xs text-red-600">
+                Address autocomplete unavailable. Please enter manually.
+              </p>
+            )}
+            {!isLoaded && !loadError && (
+              <p className="text-xs text-gray-500">Loading address suggestions...</p>
+            )}
+            {isLoaded && !loadError && (
+              <p className="text-xs text-gray-500">
+                Start typing your address for suggestions
+              </p>
+            )}
+          </div>
+
+          {/* City, State (Auto-populated from address) */}
+          {(city || state) && (
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="city">City</Label>
+                <Input
+                  id="city"
+                  type="text"
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                  placeholder="City"
+                  readOnly
+                  className="bg-gray-50"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="state">State</Label>
+                <Input
+                  id="state"
+                  type="text"
+                  value={state}
+                  onChange={(e) => setState(e.target.value)}
+                  placeholder="State"
+                  readOnly
+                  className="bg-gray-50"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* ZIP Code */}
+          <div className="space-y-2">
+            <Label htmlFor="zipCode">
+              ZIP Code <span className="text-red-500">*</span>
+            </Label>
+            <div className="relative">
+              <MapPin className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+              <Input
+                id="zipCode"
+                type="text"
+                placeholder="12345"
+                value={zipCode}
+                onChange={(e) => setZipCode(e.target.value.replace(/\D/g, "").slice(0, 5))}
+                required
+                className="pl-10"
+                maxLength={5}
+              />
+            </div>
+            <p className="text-xs text-gray-500">
+              For weather-based reminders and local service matching
+            </p>
+          </div>
+
+          {/* Buttons */}
+          <div className="flex gap-3">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={onBack}
+              className="flex-1"
+            >
+              ← Back
+            </Button>
+            <Button 
+              type="submit" 
+              className="flex-1"
+              size="lg"
+            >
+              Generate My Schedule →
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </form>
+  );
+}
+```
+
+---
+
+## Step 4: Update FormData Interface in SetupForm.tsx
+
+**File:** `client/src/pages/SetupForm.tsx`
+
+Find the `FormData` interface (around line 8) and update it:
+
+```typescript
+interface FormData {
+  homeType: string;
+  squareFootage: string;
+  email: string;
+  name: string;
+  streetAddress: string;     // ADD THIS
+  city: string;              // ADD THIS
+  state: string;             // ADD THIS
+  zipCode: string;
+  hvacType: string;
+  waterHeaterType: string;
+  yearBuilt: string;
+  enableSMS: boolean;
+  phoneNumber: string;
+}
+```
+
+And update the initial state (around line 33):
+
+```typescript
+const [formData, setFormData] = useState<FormData>({
+  homeType: "",
+  squareFootage: "",
+  email: "",
+  name: "",
+  streetAddress: "",        // ADD THIS
+  city: "",                 // ADD THIS
+  state: "",                // ADD THIS
+  zipCode: "",
+  hvacType: "",
+  waterHeaterType: "",
+  yearBuilt: "",
+  enableSMS: false,
+  phoneNumber: ""
+});
+```
+
+Update the Step2Account call (around line 120):
+
+```typescript
+<Step2Account
+  data={{ 
+    email: formData.email, 
+    name: formData.name, 
+    zipCode: formData.zipCode,
+    streetAddress: formData.streetAddress,  // ADD THIS
+    city: formData.city,                    // ADD THIS
+    state: formData.state                   // ADD THIS
+  }}
+  onNext={handleStep2Next}
+  onBack={handleBack}
+/>
+```
+
+---
+
+## Step 5: Add Environment Variable to Render
+
+**In Render Dashboard:**
+
+1. Go to: https://dashboard.render.com/web/srv-d4jtmm49c44c73eioqc0
+2. Click "Environment" tab
+3. Add new environment variable:
+   - **Key:** `VITE_GOOGLE_PLACES_API_KEY`
+   - **Value:** `YOUR_GOOGLE_API_KEY_HERE`
+4. Click "Save Changes"
+
+---
+
+## Step 6: Test Locally First
+
+```bash
+# 1. Add API key to local .env file
+echo "VITE_GOOGLE_PLACES_API_KEY=YOUR_API_KEY_HERE" >> .env
+
+# 2. Install dependency
+npm install @react-google-maps/api
+
+# 3. Start dev server
+npm run dev
+
+# 4. Test the form at:
+# http://localhost:5173/setup/test-token
+
+# 5. Verify:
+#    - Address field shows "Loading address suggestions..." briefly
+#    - Start typing an address (e.g., "123 Main")
+#    - Dropdown appears with suggestions
+#    - Selecting address auto-fills city, state, ZIP
+```
+
+---
+
+## Step 7: Deploy to Production
+
+```bash
+# Stage changes
+git add client/src/components/onboarding/Step2Account.tsx
+git add client/src/pages/SetupForm.tsx
+git add package.json
+git add package-lock.json
+
+# Commit
+git commit -m "feat: Add Google Places address autocomplete to onboarding
+
+Changes:
+- Added @react-google-maps/api dependency
+- Updated Step2Account.tsx with address autocomplete
+- Address field now suggests addresses as user types
+- Auto-populates city, state, ZIP from selected address
+- Falls back to manual entry if API unavailable
+- Updated FormData interface to include address fields
+
+Required:
+- VITE_GOOGLE_PLACES_API_KEY environment variable in Render"
+
+# Push to production
+git push origin main
+```
+
+---
+
+## Features of This Implementation
+
+### ✅ What It Does:
+
+1. **Address Autocomplete:**
+   - User types address → Google suggests matches
+   - Dropdown shows suggestions as user types
+   - Click suggestion → auto-fills all fields
+
+2. **Smart Auto-Population:**
+   - Street address → fills manually typed or selected
+   - City → auto-populated from selection
+   - State → auto-populated (2-letter code)
+   - ZIP → auto-populated from selection
+
+3. **Graceful Degradation:**
+   - If API key missing → shows error, allows manual entry
+   - If API fails to load → allows manual entry
+   - If user types manually → still works
+
+4. **US-Only Restriction:**
+   - Autocomplete limited to US addresses
+   - Simplifies data validation
+   - Matches your target market
+
+5. **Optional Field:**
+   - Address is optional (ZIP required for climate)
+   - Won't block form submission if left empty
+
+---
+
+## Visual Flow:
+
+**Before typing:**
+```
+Street Address (Optional)
+[                                        ]
+Start typing your address for suggestions
+```
+
+**While typing "123 Main":**
+```
+Street Address (Optional)
+[ 123 Main                               ]
+  ↓ Dropdown appears:
+  • 123 Main St, Atlanta, GA 30301
+  • 123 Main St, Marietta, GA 30060
+  • 123 Main Ave, Decatur, GA 30030
+```
+
+**After selecting:**
+```
+Street Address: 123 Main St
+City: Atlanta          State: GA
+ZIP Code: 30301
+```
+
+---
+
+## Troubleshooting
+
+### Issue: "Address autocomplete unavailable"
+
+**Solution:**
+```bash
+# Check API key is set
+echo $VITE_GOOGLE_PLACES_API_KEY
+
+# Verify API is enabled in Google Cloud Console
+# Go to: APIs & Services → Dashboard
+# Ensure "Places API" shows as enabled
+```
+
+### Issue: Dropdown doesn't appear
+
+**Check:**
+1. Browser console for errors (F12)
+2. API key is correct (no extra spaces)
+3. Places API is enabled in Google Cloud
+4. API key restrictions allow your domain
+
+### Issue: "Loading address suggestions..." never completes
+
+**Solution:**
+```typescript
+// Add timeout fallback in useEffect:
+setTimeout(() => {
+  if (!isLoaded) {
+    console.error("Google Places API failed to load");
+  }
+}, 5000);
+```
+
+---
+
+## Cost Considerations
+
+**Google Places Autocomplete Pricing:**
+- Autocomplete - Per Session: $2.83 per 1,000 sessions
+- First $200/month free (Google Cloud credit)
+- ~70 free sessions per month after credit
+
+**Recommendation:**
+- Enable billing in Google Cloud
+- Set budget alerts at $50, $100, $150
+- Monitor usage in Google Cloud Console
+
+---
+
+## Security Best Practices
+
+**API Key Restrictions:**
+
+1. **Application restrictions:**
+   - HTTP referrers
+   - Add: `upkeepqr.com/*`
+   - Add: `*.upkeepqr.com/*`
+
+2. **API restrictions:**
+   - Restrict key to: "Places API" only
+   - Do NOT enable other APIs
+
+3. **Monitoring:**
+   - Enable "Quotas" monitoring
+   - Set alerts for unusual usage
+
+---
+
+## Alternative: Simple Dropdown (No API)
+
+If you want to avoid Google Places API costs:
+
+**Replace address autocomplete with simple state/city dropdowns:**
+
+```typescript
+// Step2Account.tsx - No API version
+<Select value={state} onValueChange={setState}>
+  <SelectTrigger>
+    <SelectValue placeholder="Select state..." />
+  </SelectTrigger>
+  <SelectContent>
+    <SelectItem value="AL">Alabama</SelectItem>
+    <SelectItem value="AK">Alaska</SelectItem>
+    {/* ... all states */}
+    <SelectItem value="GA">Georgia</SelectItem>
+  </SelectContent>
+</Select>
+```
+
+But Google Places provides **much better UX** with address validation.
+
+---
+
+## Summary
+
+**Files Modified:**
+- ✅ `client/src/components/onboarding/Step2Account.tsx` (address autocomplete)
+- ✅ `client/src/pages/SetupForm.tsx` (data structure)
+- ✅ `package.json` (new dependency)
+
+**Environment Variables Added:**
+- ✅ `VITE_GOOGLE_PLACES_API_KEY` (in Render)
+
+**Testing Checklist:**
+```
+☐ API key added to Render
+☐ npm install runs successfully
+☐ Local dev server starts
+☐ Address field shows suggestions
+☐ Selecting address fills city/state/ZIP
+☐ Manual entry still works
+☐ Form submission includes address data
+☐ Deployed to production
+☐ Production address autocomplete works
+```
+
+**Expected Result:** Users can now search for their address and have all location fields auto-populated! 🎯
