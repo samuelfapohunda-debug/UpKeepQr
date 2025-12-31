@@ -2,65 +2,11 @@ import { Router, Request, Response } from 'express';
 import { storage } from '../../storage.js';
 import { authenticateAgent } from '../../middleware/auth.js';
 import { db } from '../../db.js';
-import { householdTaskAssignmentsTable, maintenanceLogsTable, homeProfileExtras } from '../../../shared/schema.js';
+import { householdTaskAssignmentsTable, maintenanceLogsTable } from '../../../shared/schema.js';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 
 const router = Router();
-
-// GET /api/households/:householdId - Get household info (public, for customer dashboard)
-router.get('/households/:householdId', async (req: Request, res: Response) => {
-  try {
-    const { householdId } = req.params;
-    
-    console.log('📊 Fetching household data for:', householdId);
-    
-    const household = await storage.getHousehold(householdId);
-    
-    if (!household) {
-      console.warn('⚠️  Household not found:', householdId);
-      return res.status(404).json({ error: 'Household not found' });
-    }
-    
-    // Get home profile extras for additional home details
-    let homeProfile = null;
-    try {
-      const [profile] = await db.select()
-        .from(homeProfileExtras)
-        .where(eq(homeProfileExtras.householdId, householdId));
-      homeProfile = profile || null;
-    } catch (e) {
-      console.log('No home profile extras found for household');
-    }
-    
-    console.log('✅ Household data found:', household.email);
-    
-    // Parse name into firstName/lastName if it contains a space
-    const nameParts = (household.name || '').split(' ');
-    const firstName = nameParts[0] || 'Homeowner';
-    const lastName = nameParts.slice(1).join(' ') || '';
-    
-    // Return safe fields for customer (no sensitive admin data)
-    res.json({
-      id: household.id,
-      firstName,
-      lastName,
-      email: household.email,
-      phone: household.phone,
-      homeType: homeProfile?.homeType || 'Home',
-      city: household.city,
-      state: household.state,
-      zipCode: household.zipcode,
-      squareFootage: homeProfile?.squareFootage,
-      hvacType: homeProfile?.hvacType,
-      waterHeaterType: homeProfile?.waterHeaterType,
-      setupStatus: household.setupStatus,
-    });
-  } catch (error) {
-    console.error('❌ Error fetching household:', error);
-    res.status(500).json({ error: 'Failed to fetch household data' });
-  }
-});
 
 const completeTaskSchema = z.object({
   completionDate: z.string().optional(),
@@ -74,15 +20,14 @@ router.get('/households/:householdId/tasks', async (req: Request, res: Response)
   try {
     const { householdId } = req.params;
     
-    // Use getTasksWithDetailsByHousehold for full task catalog details
-    const tasks = await storage.getTasksWithDetailsByHousehold(householdId);
+    const tasks = await storage.getTasksByHousehold(householdId);
     
     const summary = {
       total: tasks.length,
-      pending: tasks.filter((t: any) => t.status === 'pending').length,
-      overdue: tasks.filter((t: any) => t.status === 'overdue').length,
-      completed: tasks.filter((t: any) => t.status === 'completed').length,
-      skipped: tasks.filter((t: any) => t.status === 'skipped').length
+      pending: tasks.filter(t => t.status === 'pending').length,
+      overdue: tasks.filter(t => t.status === 'overdue').length,
+      completed: tasks.filter(t => t.status === 'completed').length,
+      skipped: tasks.filter(t => t.status === 'skipped').length
     };
     
     res.json({ tasks, summary });
