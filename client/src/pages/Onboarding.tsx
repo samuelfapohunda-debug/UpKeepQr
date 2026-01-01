@@ -20,7 +20,7 @@ interface OnboardingProps {
 
 const Onboarding: React.FC<OnboardingProps> = ({ adminMode = false }) => {
   const [location, setLocation] = useLocation();
-  const [match, params] = useRoute('/setup/:token');
+  // Removed: Token-based setup now handled by SetupForm.tsx
   const auth = useAuth();
   
   const { toast } = useToast();
