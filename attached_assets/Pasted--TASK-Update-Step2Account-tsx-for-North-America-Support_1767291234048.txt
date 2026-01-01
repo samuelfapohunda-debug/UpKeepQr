@@ -1,0 +1,208 @@
+# TASK: Update Step2Account.tsx for North America Support with Required Address
+
+## OBJECTIVE
+Modify the address autocomplete component to:
+1. Support both US and Canada addresses
+2. Make the Street Address field REQUIRED (not optional)
+3. Update labels and validation for North American use
+
+## FILE TO MODIFY
+`client/src/components/onboarding/Step2Account.tsx`
+
+## SPECIFIC CHANGES REQUIRED
+
+### Change 1: Update Country Restrictions (Line ~70)
+**Find this line:**
+```javascript
+componentRestrictions: { country: 'us' },
+```
+
+**Replace with:**
+```javascript
+componentRestrictions: { country: ['us', 'ca'] }, // US and Canada
+```
+
+### Change 2: Make Address Field Required (Line ~220)
+**Find this section:**
+```javascript
+<Label htmlFor="address" className="flex items-center gap-2 mb-2">
+  <HomeIcon className="h-4 w-4" />
+  Street Address (Optional)
+</Label>
+<Input
+  id="address"
+  type="text"
+  value={streetAddress}
+  onChange={(e) => handleAddressChange(e.target.value)}
+  onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+  onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+  placeholder="Start typing your address..."
+/>
+```
+
+**Replace with:**
+```javascript
+<Label htmlFor="address" className="flex items-center gap-2 mb-2">
+  <HomeIcon className="h-4 w-4" />
+  Street Address <span className="text-red-500">*</span>
+</Label>
+<Input
+  id="address"
+  type="text"
+  value={streetAddress}
+  onChange={(e) => handleAddressChange(e.target.value)}
+  onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+  onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+  placeholder="Start typing your address..."
+  required
+/>
+```
+
+### Change 3: Update Helper Text (Line ~245)
+**Find:**
+```javascript
+<p className="text-sm text-muted-foreground mt-1">
+  Start typing your address for suggestions
+</p>
+```
+
+**Replace with:**
+```javascript
+<p className="text-sm text-muted-foreground mt-1">
+  Start typing for suggestions (US & Canada)
+</p>
+```
+
+### Change 4: Update State Label (Line ~280)
+**Find:**
+```javascript
+<Label htmlFor="state">State</Label>
+```
+
+**Replace with:**
+```javascript
+<Label htmlFor="state">State / Province</Label>
+```
+
+### Change 5: Update ZIP Code Label and Field (Line ~295)
+**Find:**
+```javascript
+<Label htmlFor="zipCode" className="flex items-center gap-2 mb-2">
+  <MapPin className="h-4 w-4" />
+  ZIP Code <span className="text-red-500">*</span>
+</Label>
+<Input
+  id="zipCode"
+  type="text"
+  value={zipCode}
+  onChange={(e) => setZipCode(e.target.value)}
+  placeholder="12345"
+  required
+  maxLength={5}
+/>
+```
+
+**Replace with:**
+```javascript
+<Label htmlFor="zipCode" className="flex items-center gap-2 mb-2">
+  <MapPin className="h-4 w-4" />
+  ZIP / Postal Code <span className="text-red-500">*</span>
+</Label>
+<Input
+  id="zipCode"
+  type="text"
+  value={zipCode}
+  onChange={(e) => setZipCode(e.target.value)}
+  placeholder="12345 or A1B 2C3"
+  required
+  maxLength={10}
+/>
+```
+
+### Change 6: Update Submit Validation (Line ~320)
+**Find:**
+```javascript
+const handleSubmit = (e: React.FormEvent) => {
+  e.preventDefault();
+  if (email && name && zipCode) {
+    onNext({ email, name, zipCode, streetAddress, city, state });
+  }
+};
+```
+
+**Replace with:**
+```javascript
+const handleSubmit = (e: React.FormEvent) => {
+  e.preventDefault();
+  // All fields now required: email, name, streetAddress, zipCode
+  if (email && name && streetAddress && zipCode) {
+    onNext({ email, name, zipCode, streetAddress, city, state });
+  }
+};
+```
+
+### Change 7: Update Button Disabled State (Line ~340)
+**Find:**
+```javascript
+<Button
+  type="submit"
+  className="flex-1"
+  disabled={!email || !name || !zipCode}
+>
+  Generate My Schedule →
+</Button>
+```
+
+**Replace with:**
+```javascript
+<Button
+  type="submit"
+  className="flex-1"
+  disabled={!email || !name || !streetAddress || !zipCode}
+>
+  Generate My Schedule →
+</Button>
+```
+
+## VERIFICATION CHECKLIST
+After making changes, verify:
+- [ ] Street Address label shows red asterisk (*)
+- [ ] Street Address input has `required` attribute
+- [ ] Country restrictions include both 'us' and 'ca'
+- [ ] State label reads "State / Province"
+- [ ] ZIP Code label reads "ZIP / Postal Code"
+- [ ] ZIP Code maxLength is 10 (not 5)
+- [ ] ZIP Code placeholder is "12345 or A1B 2C3"
+- [ ] Submit button disabled unless email, name, streetAddress, AND zipCode are filled
+- [ ] handleSubmit function validates streetAddress
+
+## COMMIT MESSAGE
+```
+feat: Support North America (US & Canada) with required address
+
+Changes:
+- Added Canada ('ca') to country restrictions for autocomplete
+- Made Street Address field REQUIRED (was optional)
+- Updated labels: State/Province, ZIP/Postal Code
+- Increased postal code max length to 10 (Canadian format)
+- Updated validation to require street address
+- Updated placeholder text for clarity
+
+Supports both US and Canadian address formats
+```
+
+## TESTING INSTRUCTIONS
+After deploying:
+1. Navigate to Step 2 of the onboarding form
+2. Try typing a US address (e.g., "123 Main St, Boston")
+3. Try typing a Canadian address (e.g., "123 Main St, Toronto")
+4. Verify dropdown shows addresses from both countries
+5. Verify you cannot submit without filling Street Address
+6. Verify City, State/Province, ZIP/Postal Code auto-fill correctly
+
+## EXPECTED BEHAVIOR
+- Autocomplete suggests addresses from both US and Canada
+- Street Address field is mandatory (marked with red asterisk)
+- Form cannot be submitted without street address
+- ZIP Code field accepts both US (5 digits) and Canadian (6 chars) formats
+- Labels clearly indicate support for both countries
