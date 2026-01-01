@@ -1,40 +1,42 @@
-import { useState, useRef, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Mail, User, MapPin } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { Mail, User, MapPin, Home as HomeIcon } from "lucide-react";
 import { useLoadScript } from "@react-google-maps/api";
 
-interface Step2Data {
-  email: string;
-  name: string;
-  zipCode: string;
-  streetAddress?: string;
-  city?: string;
-  state?: string;
-}
-
 interface Step2Props {
-  data: Step2Data;
-  onNext: (data: Step2Data) => void;
+  data: {
+    email: string;
+    name: string;
+    zipCode: string;
+    streetAddress?: string;
+    city?: string;
+    state?: string;
+  };
+  onNext: (data: {
+    email: string;
+    name: string;
+    zipCode: string;
+    streetAddress?: string;
+    city?: string;
+    state?: string;
+  }) => void;
   onBack: () => void;
 }
 
 const libraries: ("places")[] = ["places"];
 
 export default function Step2Account({ data, onNext, onBack }: Step2Props) {
-  const [email, setEmail] = useState(data.email || "");
-  const [name, setName] = useState(data.name || "");
+  const [email, setEmail] = useState(data.email);
+  const [name, setName] = useState(data.name);
+  const [zipCode, setZipCode] = useState(data.zipCode);
   const [streetAddress, setStreetAddress] = useState(data.streetAddress || "");
   const [city, setCity] = useState(data.city || "");
   const [state, setState] = useState(data.state || "");
-  const [zipCode, setZipCode] = useState(data.zipCode || "");
-  const { toast } = useToast();
-  
-  const addressInputRef = useRef<HTMLInputElement>(null);
-  const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
+
+  const addressContainerRef = useRef<HTMLDivElement>(null);
+  const autocompleteElementRef = useRef<any>(null);
 
   const apiKey = import.meta.env.VITE_GOOGLE_PLACES_API_KEY || "";
   
@@ -43,266 +45,223 @@ export default function Step2Account({ data, onNext, onBack }: Step2Props) {
     libraries,
   });
 
+  // Initialize new PlaceAutocompleteElement
   useEffect(() => {
-    if (isLoaded && addressInputRef.current && !autocompleteRef.current && apiKey) {
+    if (isLoaded && addressContainerRef.current && !autocompleteElementRef.current && apiKey) {
       try {
-        const autocomplete = new google.maps.places.Autocomplete(addressInputRef.current, {
-          types: ["address"],
+        // Create the new Place Autocomplete Element
+        const options = {
           componentRestrictions: { country: "us" },
           fields: ["address_components", "formatted_address"],
-        });
+          types: ["address"],
+        };
 
-        autocomplete.addListener("place_changed", () => {
-          const place = autocomplete.getPlace();
+        // @ts-ignore - New API might not have types yet
+        const autocompleteElement = new google.maps.places.PlaceAutocompleteElement(options);
+        
+        // Add to DOM
+        addressContainerRef.current.appendChild(autocompleteElement);
+        autocompleteElementRef.current = autocompleteElement;
+
+        // Listen for place selection
+        autocompleteElement.addEventListener('gmp-placeselect', async (event: any) => {
+          const place = event.place;
           
-          if (place.address_components) {
+          if (place && place.addressComponents) {
             let streetNumber = "";
             let route = "";
             let locality = "";
             let stateCode = "";
             let postalCode = "";
 
-            place.address_components.forEach((component) => {
+            place.addressComponents.forEach((component: any) => {
               const types = component.types;
-
               if (types.includes("street_number")) {
-                streetNumber = component.long_name;
+                streetNumber = component.longText;
               }
               if (types.includes("route")) {
-                route = component.long_name;
+                route = component.longText;
               }
               if (types.includes("locality")) {
-                locality = component.long_name;
+                locality = component.longText;
               }
               if (types.includes("administrative_area_level_1")) {
-                stateCode = component.short_name;
+                stateCode = component.shortText;
               }
               if (types.includes("postal_code")) {
-                postalCode = component.long_name;
+                postalCode = component.longText;
               }
             });
 
             const street = `${streetNumber} ${route}`.trim();
-
             setStreetAddress(street);
             setCity(locality);
             setState(stateCode);
-            setZipCode(postalCode);
+            if (postalCode) setZipCode(postalCode);
           }
         });
-
-        autocompleteRef.current = autocomplete;
       } catch (error) {
-        console.error("Error initializing Google Places Autocomplete:", error);
+        console.error("Error initializing Place Autocomplete:", error);
       }
     }
+
+    return () => {
+      if (autocompleteElementRef.current && addressContainerRef.current) {
+        try {
+          addressContainerRef.current.removeChild(autocompleteElementRef.current);
+          autocompleteElementRef.current = null;
+        } catch (e) {
+          console.error("Cleanup error:", e);
+        }
+      }
+    };
   }, [isLoaded, apiKey]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!email || !name || !zipCode) {
-      toast({
-        title: "Missing Information",
-        description: "Please fill in all required fields",
-        variant: "destructive"
-      });
-      return;
+    if (email && name && zipCode) {
+      onNext({ email, name, zipCode, streetAddress, city, state });
     }
-
-    if (!email.includes("@") || !email.includes(".")) {
-      toast({
-        title: "Invalid Email",
-        description: "Please enter a valid email address",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (zipCode.length < 5) {
-      toast({
-        title: "Invalid ZIP Code",
-        description: "Please enter a valid 5-digit ZIP code",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    onNext({ 
-      email, 
-      name, 
-      zipCode,
-      streetAddress,
-      city,
-      state
-    });
   };
 
-  const hasApiKey = Boolean(apiKey);
+  if (loadError) {
+    return <div className="text-center text-red-600">Error loading Google Maps</div>;
+  }
+
+  if (!isLoaded) {
+    return <div className="text-center">Loading...</div>;
+  }
 
   return (
-    <form onSubmit={handleSubmit} className="w-full max-w-2xl mx-auto">
-      <Card>
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Create Your Account</CardTitle>
-          <CardDescription>
-            We'll use this to send your personalized maintenance schedule
-          </CardDescription>
-        </CardHeader>
+    <div className="w-full max-w-2xl mx-auto bg-white rounded-lg shadow-lg p-8">
+      <div className="mb-8">
+        <h2 className="text-2xl font-bold mb-2">Create Your Account</h2>
+        <p className="text-muted-foreground">
+          We'll use this to send your personalized maintenance schedule
+        </p>
+      </div>
 
-        <CardContent className="space-y-6">
-          <div className="space-y-2">
-            <Label htmlFor="email">
-              Email Address <span className="text-red-500">*</span>
-            </Label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
-              <Input
-                id="email"
-                type="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="pl-10"
-                data-testid="input-email"
-              />
-            </div>
-            <p className="text-xs text-muted-foreground">
-              We'll send your schedule and reminders here
-            </p>
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Email */}
+        <div>
+          <Label htmlFor="email" className="flex items-center gap-2 mb-2">
+            <Mail className="h-4 w-4" />
+            Email Address <span className="text-red-500">*</span>
+          </Label>
+          <Input
+            id="email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="you@example.com"
+            required
+          />
+          <p className="text-sm text-muted-foreground mt-1">
+            We'll send your schedule and reminders here
+          </p>
+        </div>
+
+        {/* Full Name */}
+        <div>
+          <Label htmlFor="name" className="flex items-center gap-2 mb-2">
+            <User className="h-4 w-4" />
+            Full Name <span className="text-red-500">*</span>
+          </Label>
+          <Input
+            id="name"
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="John Smith"
+            required
+          />
+        </div>
+
+        {/* Street Address with new Autocomplete */}
+        <div>
+          <Label htmlFor="address" className="flex items-center gap-2 mb-2">
+            <HomeIcon className="h-4 w-4" />
+            Street Address (Optional)
+          </Label>
+          <div ref={addressContainerRef} className="mb-2" />
+          <Input
+            id="manual-address"
+            type="text"
+            value={streetAddress}
+            onChange={(e) => setStreetAddress(e.target.value)}
+            placeholder="Or enter manually"
+            className="mt-2"
+          />
+          <p className="text-sm text-muted-foreground mt-1">
+            Start typing your address for suggestions
+          </p>
+        </div>
+
+        {/* City and State (auto-filled) */}
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="city">City</Label>
+            <Input
+              id="city"
+              type="text"
+              value={city}
+              onChange={(e) => setCity(e.target.value)}
+              placeholder="Auto-fills from address"
+              readOnly
+            />
           </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="name">
-              Full Name <span className="text-red-500">*</span>
-            </Label>
-            <div className="relative">
-              <User className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
-              <Input
-                id="name"
-                type="text"
-                placeholder="John Smith"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-                className="pl-10"
-                data-testid="input-name"
-              />
-            </div>
+          <div>
+            <Label htmlFor="state">State</Label>
+            <Input
+              id="state"
+              type="text"
+              value={state}
+              onChange={(e) => setState(e.target.value)}
+              placeholder="Auto-fills from address"
+              readOnly
+            />
           </div>
+        </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="streetAddress">
-              Street Address <span className="text-muted-foreground">(Optional)</span>
-            </Label>
-            <div className="relative">
-              <MapPin className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
-              <Input
-                id="streetAddress"
-                ref={addressInputRef}
-                type="text"
-                placeholder="123 Main St"
-                value={streetAddress}
-                onChange={(e) => setStreetAddress(e.target.value)}
-                className="pl-10"
-                disabled={hasApiKey && !isLoaded && !loadError}
-                data-testid="input-street-address"
-              />
-            </div>
-            {hasApiKey && loadError && (
-              <p className="text-xs text-red-600">
-                Address autocomplete unavailable. Please enter manually.
-              </p>
-            )}
-            {hasApiKey && !isLoaded && !loadError && (
-              <p className="text-xs text-muted-foreground">Loading address suggestions...</p>
-            )}
-            {hasApiKey && isLoaded && !loadError && (
-              <p className="text-xs text-muted-foreground">
-                Start typing your address for suggestions
-              </p>
-            )}
-            {!hasApiKey && (
-              <p className="text-xs text-muted-foreground">
-                Enter your street address (optional)
-              </p>
-            )}
-          </div>
+        {/* ZIP Code */}
+        <div>
+          <Label htmlFor="zipCode" className="flex items-center gap-2 mb-2">
+            <MapPin className="h-4 w-4" />
+            ZIP Code <span className="text-red-500">*</span>
+          </Label>
+          <Input
+            id="zipCode"
+            type="text"
+            value={zipCode}
+            onChange={(e) => setZipCode(e.target.value)}
+            placeholder="12345"
+            required
+            maxLength={5}
+          />
+          <p className="text-sm text-muted-foreground mt-1">
+            For weather-based reminders and local service matching
+          </p>
+        </div>
 
-          {(city || state) && (
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="city">City</Label>
-                <Input
-                  id="city"
-                  type="text"
-                  value={city}
-                  onChange={(e) => setCity(e.target.value)}
-                  placeholder="City"
-                  className="bg-muted/50"
-                  data-testid="input-city"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="state">State</Label>
-                <Input
-                  id="state"
-                  type="text"
-                  value={state}
-                  onChange={(e) => setState(e.target.value)}
-                  placeholder="State"
-                  className="bg-muted/50"
-                  data-testid="input-state"
-                />
-              </div>
-            </div>
-          )}
-
-          <div className="space-y-2">
-            <Label htmlFor="zipCode">
-              ZIP Code <span className="text-red-500">*</span>
-            </Label>
-            <div className="relative">
-              <MapPin className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
-              <Input
-                id="zipCode"
-                type="text"
-                placeholder="12345"
-                value={zipCode}
-                onChange={(e) => setZipCode(e.target.value.replace(/\D/g, "").slice(0, 5))}
-                required
-                className="pl-10"
-                maxLength={5}
-                data-testid="input-zip-code"
-              />
-            </div>
-            <p className="text-xs text-muted-foreground">
-              For weather-based reminders and local service matching
-            </p>
-          </div>
-
-          <div className="flex gap-3">
-            <Button 
-              type="button" 
-              variant="outline" 
-              onClick={onBack}
-              className="flex-1"
-              data-testid="button-step2-back"
-            >
-              Back
-            </Button>
-            <Button 
-              type="submit" 
-              className="flex-1"
-              size="lg"
-              data-testid="button-step2-continue"
-            >
-              Generate My Schedule
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    </form>
+        {/* Buttons */}
+        <div className="flex gap-4 pt-4">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onBack}
+            className="flex-1"
+          >
+            ← Back
+          </Button>
+          <Button
+            type="submit"
+            className="flex-1"
+            disabled={!email || !name || !zipCode}
+          >
+            Generate My Schedule →
+          </Button>
+        </div>
+      </form>
+    </div>
   );
 }
