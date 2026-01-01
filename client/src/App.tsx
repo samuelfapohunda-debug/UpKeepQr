@@ -41,11 +41,6 @@ function Router() {
         <Route path="/my-home" component={CustomerDashboard} />
         <Route path="/new-setup" component={SetupForm} />
         <Route path="/new-setup/:token" component={SetupForm} />
-        <Route path="/setup/new">
-          <ProtectedRoute>
-            <Onboarding adminMode={true} />
-          </ProtectedRoute>
-        </Route>
         <Route path="/setup/:token" component={SetupForm} />
         <Route path="/task/:token/:taskId" component={TaskDetail} />
         <Route path="/request-pro" component={RequestPro} />
