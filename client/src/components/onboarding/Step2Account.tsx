@@ -70,9 +70,7 @@ export default function Step2Account({ data, onNext, onBack }: Step2Props) {
         const request = {
           input: value,
           includedPrimaryTypes: ['address'],
-          locationRestriction: {
-            country: ['US', 'CA']
-          },
+          includedRegionCodes: ['US', 'CA'],
           sessionToken: sessionTokenRef.current,
         };
 
