@@ -1,3 +1,4 @@
+cat > client/src/components/onboarding/Step2Account.tsx << 'COMPONENT'
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -167,7 +168,7 @@ export default function Step2Account({ data, onNext, onBack }: Step2Props) {
   }
 
   return (
-    <div className="w-full max-w-2xl mx-auto bg-white dark:bg-gray-900 rounded-lg shadow-lg p-8">
+    <div className="w-full max-w-2xl mx-auto bg-white rounded-lg shadow-lg p-8">
       <div className="mb-8">
         <h2 className="text-2xl font-bold mb-2">Create Your Account</h2>
         <p className="text-muted-foreground">
@@ -189,7 +190,6 @@ export default function Step2Account({ data, onNext, onBack }: Step2Props) {
             onChange={(e) => setEmail(e.target.value)}
             placeholder="you@example.com"
             required
-            data-testid="input-email"
           />
           <p className="text-sm text-muted-foreground mt-1">
             We'll send your schedule and reminders here
@@ -209,7 +209,6 @@ export default function Step2Account({ data, onNext, onBack }: Step2Props) {
             onChange={(e) => setName(e.target.value)}
             placeholder="John Smith"
             required
-            data-testid="input-name"
           />
         </div>
 
@@ -228,30 +227,28 @@ export default function Step2Account({ data, onNext, onBack }: Step2Props) {
             onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
             placeholder="Start typing your address..."
             required
-            data-testid="input-street-address"
           />
           
           {/* Suggestions Dropdown */}
           {showSuggestions && suggestions.length > 0 && (
-            <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg max-h-60 overflow-auto">
+            <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
               {suggestions.map((suggestion, index) => (
                 <div
                   key={index}
-                  className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer border-b last:border-b-0"
+                  className="px-4 py-2 hover:bg-gray-100 cursor-pointer border-b last:border-b-0"
                   onMouseDown={() => handleSelectSuggestion(suggestion)}
-                  data-testid={`suggestion-${index}`}
                 >
                   <div className="text-sm font-medium">
                     {suggestion.placePrediction.text.text}
                   </div>
                   {suggestion.placePrediction.structuredFormat?.secondaryText && (
-                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                    <div className="text-xs text-gray-500">
                       {suggestion.placePrediction.structuredFormat.secondaryText.text}
                     </div>
                   )}
                 </div>
               ))}
-              <div className="px-4 py-2 text-xs text-gray-400 border-t bg-gray-50 dark:bg-gray-900">
+              <div className="px-4 py-2 text-xs text-gray-400 border-t bg-gray-50">
                 Powered by Google
               </div>
             </div>
@@ -272,8 +269,7 @@ export default function Step2Account({ data, onNext, onBack }: Step2Props) {
               value={city}
               placeholder="Auto-fills from address"
               readOnly
-              className="bg-gray-50 dark:bg-gray-800"
-              data-testid="input-city"
+              className="bg-gray-50"
             />
           </div>
           <div>
@@ -284,8 +280,7 @@ export default function Step2Account({ data, onNext, onBack }: Step2Props) {
               value={state}
               placeholder="Auto-fills from address"
               readOnly
-              className="bg-gray-50 dark:bg-gray-800"
-              data-testid="input-state"
+              className="bg-gray-50"
             />
           </div>
         </div>
@@ -304,7 +299,6 @@ export default function Step2Account({ data, onNext, onBack }: Step2Props) {
             placeholder="12345 or A1B 2C3"
             required
             maxLength={10}
-            data-testid="input-zip-code"
           />
           <p className="text-sm text-muted-foreground mt-1">
             For weather-based reminders and local service matching
@@ -318,20 +312,21 @@ export default function Step2Account({ data, onNext, onBack }: Step2Props) {
             variant="outline"
             onClick={onBack}
             className="flex-1"
-            data-testid="button-back"
           >
-            Back
+            ← Back
           </Button>
           <Button
             type="submit"
             className="flex-1"
             disabled={!email || !name || !streetAddress || !zipCode}
-            data-testid="button-submit-step2"
           >
-            Generate My Schedule
+            Generate My Schedule →
           </Button>
         </div>
       </form>
     </div>
   );
 }
+COMPONENT
+
+echo "✅ Updated Step2Account.tsx with NEW Google Places API (AutocompleteSuggestion)"
