@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Navigation from "@/components/Navigation";
+import Footer from "@/components/Footer";
 import Home from "@/pages/Home";
 import Pricing from "@/pages/Pricing";
 import Contact from "@/pages/Contact";
@@ -24,12 +25,16 @@ import Appliances from "@/pages/Appliances";
 import RegistrationSuccess from "@/pages/RegistrationSuccess";
 import CustomerDashboard from "@/pages/CustomerDashboard";
 import SetupForm from "@/pages/SetupForm";
+import PaymentSuccess from "@/pages/PaymentSuccess";
+import TermsOfService from "@/pages/legal/TermsOfService";
+import PrivacyPolicy from "@/pages/legal/PrivacyPolicy";
+import CookiePolicy from "@/pages/legal/CookiePolicy";
 
 function Router() {
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-background text-foreground flex flex-col">
       <Navigation />
-      <div className="pt-20">
+      <div className="pt-20 flex-1">
       <Switch>
         <Route path="/" component={Home} />
         <Route path="/pricing" component={Pricing} />
@@ -37,12 +42,18 @@ function Router() {
         <Route path="/login" component={Login} />
         <Route path="/setup/success" component={SetupSuccess} />
         <Route path="/registration/success" component={RegistrationSuccess} />
+        <Route path="/payment-success" component={PaymentSuccess} />
         <Route path="/my-home" component={CustomerDashboard} />
         <Route path="/new-setup" component={SetupForm} />
         <Route path="/new-setup/:token" component={SetupForm} />
         <Route path="/setup/:token" component={SetupForm} />
         <Route path="/task/:token/:taskId" component={TaskDetail} />
         <Route path="/request-pro" component={RequestPro} />
+        
+        {/* Legal Pages */}
+        <Route path="/terms-of-service" component={TermsOfService} />
+        <Route path="/privacy-policy" component={PrivacyPolicy} />
+        <Route path="/cookie-policy" component={CookiePolicy} />
         
         {/* Appliance Management Routes */}
         <Route path="/appliances">
@@ -81,6 +92,7 @@ function Router() {
         <Route component={NotFound} />
       </Switch>
       </div>
+      <Footer />
     </div>
   );
 }
