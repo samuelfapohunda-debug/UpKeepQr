@@ -1,0 +1,731 @@
+# 🎨 REPLIT AGENT INSTRUCTIONS: UpKeepQR UI Refresh
+
+## 🚨 CRITICAL SAFETY RULES (READ FIRST)
+
+**PRIMARY RULE - NON-NEGOTIABLE:**
+- **DO NOT** modify any backend logic, API endpoints, database queries, or business logic
+- **DO NOT** change form submission handlers, payment flows, or authentication
+- **DO NOT** refactor component functionality - ONLY update visual presentation
+- **This is a CSS/layout-only refresh** - if unsure about a change, skip it
+
+**If a change could break functionality → DON'T DO IT**
+
+---
+
+## ✅ WHAT YOU CAN CHANGE
+
+### In Scope:
+- CSS classes and Tailwind utilities
+- HTML/JSX structure and element ordering
+- Typography styles and font sizes
+- Spacing, padding, margins, and grid layouts
+- Color values and design tokens
+- Simple CSS transitions (no JavaScript animations)
+- Component reordering on pages
+- Static content and copy improvements
+
+### Out of Scope (DO NOT TOUCH):
+- API calls and data fetching
+- Form validation and submission logic
+- Payment processing (Stripe integration)
+- Authentication flows
+- Database models and queries
+- State management logic
+- QR code generation
+- Email/SMS reminder systems
+- Dashboard data processing
+- URL routing and navigation handlers
+
+---
+
+## 🎯 DESIGN PHILOSOPHY
+
+**Inspiration (in priority order):**
+1. **Stripe** → Clean spacing, excellent typography, trust-building clarity
+2. **Notion** → Grid-based layouts, calm backgrounds, organized content
+3. **Tesla** → Premium minimalism, restraint, immersive visuals (BUT keep light theme)
+
+**Target Audience:**
+- Homeowners (non-technical, seeking simplicity)
+- Real estate professionals (need professionalism)
+
+**Design Goals:**
+- User understands the product in ≤5 seconds
+- Feels calmer, cleaner, more trustworthy
+- Stripe-level polish with Apple-level simplicity
+
+---
+
+## 🎨 DESIGN SYSTEM IMPLEMENTATION
+
+### Step 1: Update Global Design Tokens
+
+**Add to `client/src/index.css` or Tailwind config:**
+
+```css
+:root {
+  /* Primary Colors */
+  --color-primary: #10B981;      /* Emerald green - CTAs, links */
+  --color-primary-dark: #059669; /* Hover states */
+  --color-primary-light: #D1FAE5; /* Backgrounds, badges */
+  
+  /* Neutrals */
+  --color-heading: #0F172A;      /* Slate 900 - Headlines */
+  --color-text: #334155;         /* Slate 700 - Body text */
+  --color-text-muted: #64748B;   /* Slate 500 - Secondary text */
+  
+  /* Backgrounds */
+  --color-bg: #F8FAFC;           /* Slate 50 - Page background */
+  --color-bg-white: #FFFFFF;     /* Card backgrounds */
+  --color-border: #E2E8F0;       /* Slate 200 - Borders */
+  
+  /* Semantic */
+  --color-success: #10B981;
+  --color-warning: #F59E0B;
+  --color-error: #EF4444;
+  
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+}
+```
+
+**If using Tailwind, update `tailwind.config.js`:**
+
+```javascript
+module.exports = {
+  theme: {
+    extend: {
+      colors: {
+        primary: {
+          DEFAULT: '#10B981',
+          dark: '#059669',
+          light: '#D1FAE5',
+        },
+        slate: {
+          50: '#F8FAFC',
+          700: '#334155',
+          900: '#0F172A',
+        }
+      },
+      fontFamily: {
+        sans: ['Inter', 'system-ui', 'sans-serif'],
+      },
+    },
+  },
+}
+```
+
+### Step 2: Typography System
+
+**Update global font in `client/src/index.css`:**
+
+```css
+/* Import Inter font */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  color: var(--color-text);
+  background-color: var(--color-bg);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Heading styles */
+h1, h2, h3, h4, h5, h6 {
+  color: var(--color-heading);
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+h1 { font-size: 3rem; }      /* 48px */
+h2 { font-size: 1.875rem; }  /* 30px */
+h3 { font-size: 1.5rem; }    /* 24px */
+h4 { font-size: 1.25rem; }   /* 20px */
+
+/* Responsive typography */
+@media (max-width: 768px) {
+  h1 { font-size: 2.25rem; } /* 36px on mobile */
+  h2 { font-size: 1.5rem; }  /* 24px on mobile */
+}
+```
+
+---
+
+## 🏗️ HOMEPAGE STRUCTURE REFRESH
+
+### Current Homepage Order (Verify First)
+
+**Check `client/src/pages/Home.tsx` or equivalent.**
+
+### Target Homepage Order
+
+```
+1. Hero Section (immersive, value-focused)
+2. How It Works (3-step bento grid)
+3. Key Benefits (feature grid)
+4. Product Showcase (split layouts)
+5. Social Proof (testimonials, stats) - if exists
+6. Pricing Section (simple, transparent)
+7. FAQ Section (accordion) - if exists
+8. Final CTA (centered, bold)
+9. Footer (comprehensive, already implemented)
+```
+
+**Implementation:**
+- Reorder components in the JSX
+- DO NOT delete any existing sections
+- Only change visual presentation and order
+
+---
+
+## 📐 SECTION-BY-SECTION IMPLEMENTATION
+
+### 1. Hero Section
+
+**File:** `client/src/pages/Home.tsx` or `client/src/components/Hero.tsx`
+
+**Structure:**
+```jsx
+<section className="relative bg-white overflow-hidden">
+  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-28">
+    <div className="grid lg:grid-cols-2 gap-12 items-center">
+      
+      {/* Left: Content */}
+      <div className="text-center lg:text-left">
+        <h1 className="text-5xl lg:text-6xl font-bold text-slate-900 mb-6">
+          Your Home's Maintenance, Finally Organized
+        </h1>
+        <p className="text-xl text-slate-700 mb-8 max-w-xl">
+          UpKeepQR uses smart QR magnets to track service history, reminders, 
+          and home care — just scan and go.
+        </p>
+        
+        {/* CTAs */}
+        <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+          <button className="btn-primary">
+            Order Your Magnet
+          </button>
+          <button className="btn-secondary">
+            See How It Works
+          </button>
+        </div>
+        
+        {/* Trust Badge */}
+        <p className="text-sm text-slate-600 mt-6">
+          Trusted by 10,000+ homeowners nationwide
+        </p>
+      </div>
+      
+      {/* Right: Product Image */}
+      <div className="relative">
+        {/* Add your product image here */}
+        <img 
+          src="/path-to-product-image.png" 
+          alt="UpKeepQR Smart Magnet" 
+          className="w-full h-auto rounded-2xl shadow-2xl"
+        />
+      </div>
+      
+    </div>
+  </div>
+</section>
+```
+
+**Styling Requirements:**
+- Light background (white or slate-50)
+- No video backgrounds
+- No parallax effects
+- Clean, centered layout
+- Mobile: Stack vertically
+
+---
+
+### 2. How It Works - Bento Grid
+
+**Create/Update:** `client/src/components/HowItWorks.tsx`
+
+```jsx
+<section className="py-20 bg-slate-50">
+  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    
+    <div className="text-center mb-16">
+      <h2 className="text-4xl font-bold text-slate-900 mb-4">
+        How UpKeepQR Works
+      </h2>
+      <p className="text-xl text-slate-700 max-w-2xl mx-auto">
+        Three simple steps to never miss home maintenance again
+      </p>
+    </div>
+    
+    {/* Bento Grid */}
+    <div className="grid md:grid-cols-3 gap-8">
+      
+      {/* Card 1 */}
+      <div className="bg-white rounded-xl p-8 border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+        <div className="w-12 h-12 bg-primary-light rounded-lg flex items-center justify-center mb-6">
+          <span className="text-2xl font-bold text-primary">1</span>
+        </div>
+        <h3 className="text-xl font-semibold text-slate-900 mb-3">
+          Order Your Magnet
+        </h3>
+        <p className="text-slate-600">
+          Get your smart QR magnet delivered to your door. 
+          Set up takes less than 5 minutes.
+        </p>
+      </div>
+      
+      {/* Card 2 */}
+      <div className="bg-white rounded-xl p-8 border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+        <div className="w-12 h-12 bg-primary-light rounded-lg flex items-center justify-center mb-6">
+          <span className="text-2xl font-bold text-primary">2</span>
+        </div>
+        <h3 className="text-xl font-semibold text-slate-900 mb-3">
+          Place on Appliances
+        </h3>
+        <p className="text-slate-600">
+          Stick magnets on HVAC, water heater, appliances. 
+          We create your personalized maintenance schedule.
+        </p>
+      </div>
+      
+      {/* Card 3 */}
+      <div className="bg-white rounded-xl p-8 border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+        <div className="w-12 h-12 bg-primary-light rounded-lg flex items-center justify-center mb-6">
+          <span className="text-2xl font-bold text-primary">3</span>
+        </div>
+        <h3 className="text-xl font-semibold text-slate-900 mb-3">
+          Get Automated Reminders
+        </h3>
+        <p className="text-slate-600">
+          Receive SMS and email alerts when it's time for maintenance. 
+          Never forget again.
+        </p>
+      </div>
+      
+    </div>
+  </div>
+</section>
+```
+
+---
+
+### 3. Key Benefits Section
+
+**Create/Update:** `client/src/components/Benefits.tsx`
+
+```jsx
+<section className="py-20 bg-white">
+  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    
+    <div className="text-center mb-16">
+      <h2 className="text-4xl font-bold text-slate-900 mb-4">
+        Why Homeowners Love UpKeepQR
+      </h2>
+      <p className="text-xl text-slate-700">
+        Save money, time, and stress with smart home maintenance
+      </p>
+    </div>
+    
+    {/* 2-column grid */}
+    <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+      
+      {/* Benefit 1 */}
+      <div className="flex gap-4">
+        <div className="flex-shrink-0">
+          {/* Icon from lucide-react */}
+          <div className="w-12 h-12 bg-primary-light rounded-lg flex items-center justify-center">
+            {/* Add icon here */}
+          </div>
+        </div>
+        <div>
+          <h3 className="text-lg font-semibold text-slate-900 mb-2">
+            Prevent Costly Repairs
+          </h3>
+          <p className="text-slate-600">
+            Regular maintenance prevents expensive emergency repairs. 
+            Save thousands on HVAC, plumbing, and appliances.
+          </p>
+        </div>
+      </div>
+      
+      {/* Repeat for other benefits... */}
+      {/* Add: Automated Reminders, Complete Maintenance History, 
+          Location-Based Scheduling, Pro Service Matching, etc. */}
+      
+    </div>
+  </div>
+</section>
+```
+
+**Benefits to Include:**
+- 📱 Automated SMS & Email Reminders
+- 💰 Prevent Costly Emergency Repairs
+- 📍 Weather & Location-Based Scheduling
+- 📊 Complete Maintenance History
+- 🔧 Pro Service Matching (if applicable)
+- 🏠 37+ Maintenance Tasks Covered
+
+---
+
+### 4. Product Showcase - Split Layouts
+
+**Create/Update:** `client/src/components/ProductShowcase.tsx`
+
+```jsx
+<section className="py-20 bg-slate-50">
+  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-24">
+    
+    {/* Feature 1: Image Left, Text Right */}
+    <div className="grid lg:grid-cols-2 gap-12 items-center">
+      <div>
+        <img 
+          src="/product-image-1.png" 
+          alt="QR Magnet on HVAC" 
+          className="rounded-2xl shadow-xl"
+        />
+      </div>
+      <div>
+        <h3 className="text-3xl font-bold text-slate-900 mb-4">
+          Smart QR Magnets for Every Appliance
+        </h3>
+        <p className="text-lg text-slate-700 mb-6">
+          Weatherproof magnets stick to your HVAC, water heater, 
+          garage door, and more. Scan to log maintenance instantly.
+        </p>
+        <ul className="space-y-3">
+          <li className="flex items-start gap-3">
+            <span className="text-primary">✓</span>
+            <span>Weatherproof and durable</span>
+          </li>
+          <li className="flex items-start gap-3">
+            <span className="text-primary">✓</span>
+            <span>Works with any smartphone</span>
+          </li>
+          <li className="flex items-start gap-3">
+            <span className="text-primary">✓</span>
+            <span>No app download required</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+    
+    {/* Feature 2: Text Left, Image Right (alternating) */}
+    <div className="grid lg:grid-cols-2 gap-12 items-center">
+      <div className="lg:order-2">
+        <img 
+          src="/product-image-2.png" 
+          alt="Mobile Dashboard" 
+          className="rounded-2xl shadow-xl"
+        />
+      </div>
+      <div className="lg:order-1">
+        <h3 className="text-3xl font-bold text-slate-900 mb-4">
+          Track Everything in One Place
+        </h3>
+        <p className="text-lg text-slate-700 mb-6">
+          Your complete maintenance history, upcoming tasks, 
+          and service records — all accessible from your phone.
+        </p>
+        {/* Add more details */}
+      </div>
+    </div>
+    
+  </div>
+</section>
+```
+
+**Styling Rules:**
+- Alternate image/text sides
+- Use existing product images (do NOT create new ones)
+- NO zoom effects or complex animations
+- CSS transitions only (hover states allowed)
+
+---
+
+### 5. Global Button Styles
+
+**Add to `client/src/index.css`:**
+
+```css
+/* Primary CTA Button */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  padding: 0.875rem 1.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+}
+
+.btn-primary:hover {
+  background-color: var(--color-primary-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.25);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+/* Secondary Button */
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: transparent;
+  color: var(--color-primary);
+  border: 2px solid var(--color-primary);
+  border-radius: 0.5rem;
+  padding: 0.75rem 1.625rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-secondary:hover {
+  background-color: var(--color-primary-light);
+  border-color: var(--color-primary-dark);
+  color: var(--color-primary-dark);
+}
+
+/* Disabled state */
+.btn-primary:disabled,
+.btn-secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+```
+
+**⚠️ CRITICAL:** Do NOT change button `onClick` handlers or form submission logic!
+
+---
+
+## 🎭 ANIMATIONS (STRICT LIMITS)
+
+**Allowed:**
+
+```css
+/* Fade in on scroll */
+.fade-in-up {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+.fade-in-up.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Card hover */
+.card-hover {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}
+```
+
+**NOT Allowed:**
+- Parallax scrolling
+- Auto-play videos
+- Heavy JavaScript animation libraries
+- Anything that could impact performance
+
+**If animation risks breaking layout → SKIP IT**
+
+---
+
+## 📱 MOBILE-FIRST REQUIREMENTS
+
+**Before committing, verify:**
+
+```css
+/* All grids must collapse on mobile */
+@media (max-width: 768px) {
+  .grid {
+    grid-template-columns: 1fr; /* Single column */
+  }
+  
+  /* Touch targets minimum 44px */
+  button, a {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* No horizontal scroll */
+  body {
+    overflow-x: hidden;
+  }
+}
+```
+
+**Mobile Checklist:**
+- [ ] All grids stack to single column
+- [ ] Buttons ≥ 44px height (touch-friendly)
+- [ ] No horizontal scroll
+- [ ] CTAs visible without zooming
+- [ ] Images scale properly
+- [ ] Text remains readable (≥16px)
+
+---
+
+## ✅ TESTING REQUIREMENTS (MANDATORY)
+
+**After EVERY change, verify:**
+
+1. **Forms Still Work:**
+   - [ ] Setup form submits successfully
+   - [ ] All form fields validate correctly
+   - [ ] Error messages display properly
+
+2. **Critical Flows Intact:**
+   - [ ] Payment checkout completes
+   - [ ] QR code generation works
+   - [ ] User authentication functions
+   - [ ] Dashboard loads data correctly
+
+3. **No Console Errors:**
+   - [ ] Open DevTools → Console
+   - [ ] Verify no red errors
+   - [ ] Check Network tab for failed requests
+
+4. **Performance:**
+   - [ ] Page loads in < 3 seconds
+   - [ ] No layout shift (CLS)
+   - [ ] Lighthouse score not degraded
+
+**If ANY issue appears → ROLLBACK that specific change immediately**
+
+---
+
+## 📝 COMMIT STRATEGY
+
+**Small, incremental commits:**
+
+```bash
+# Good commit messages:
+git commit -m "UI: Add design system tokens (colors, typography)"
+git commit -m "UI: Refresh hero section layout"
+git commit -m "UI: Implement bento grid for How It Works"
+git commit -m "UI: Update button styles globally"
+git commit -m "UI: Add benefits section with 2-column grid"
+git commit -m "UI: Implement product showcase split layouts"
+
+# Bad commit message:
+git commit -m "Updated UI" ❌
+```
+
+**One commit per major section** - this allows easy rollback if needed.
+
+---
+
+## 🎯 SUCCESS CRITERIA
+
+**The redesign is successful if:**
+
+1. ✅ A homeowner understands the product in ≤5 seconds
+2. ✅ Nothing breaks (forms, payments, QR flows, dashboard)
+3. ✅ Site feels calmer, cleaner, more trustworthy
+4. ✅ No console errors or performance degradation
+5. ✅ Mobile experience is excellent
+6. ✅ Looks Stripe-level polished
+
+**When in doubt:**
+- Choose **clarity** over cleverness
+- Choose **simplicity** over polish
+- Choose **safety** over ambition
+- **Leave functionality untouched**
+
+---
+
+## 🚫 WHAT TO AVOID
+
+**DO NOT:**
+- Refactor backend code
+- Change API endpoints
+- Modify database queries
+- Alter form submission logic
+- Touch payment processing
+- Change authentication flows
+- Modify QR generation
+- Update reminder systems
+- Refactor state management
+- Change routing logic
+
+**Remember:** This is a visual refresh, not a feature rebuild.
+
+---
+
+## 🔜 OPTIONAL ENHANCEMENTS (Only if time allows & safe)
+
+- [ ] Add subtle QR-pattern background texture (5% opacity, CSS only)
+- [ ] Improve focus states for keyboard navigation
+- [ ] Add loading skeletons for better perceived performance
+- [ ] Implement dark mode toggle (if requested)
+- [ ] Add accessibility improvements (ARIA labels, better contrast)
+
+---
+
+## 📋 IMPLEMENTATION CHECKLIST
+
+### Phase 1: Foundation
+- [ ] Add design system tokens (colors, typography)
+- [ ] Update global font to Inter
+- [ ] Implement button styles
+- [ ] Add card styles
+- [ ] Test on all pages - nothing broken
+
+### Phase 2: Homepage Sections
+- [ ] Refresh hero section
+- [ ] Implement "How It Works" bento grid
+- [ ] Add benefits section (2-column grid)
+- [ ] Create product showcase (split layouts)
+- [ ] Reorder sections logically
+
+### Phase 3: Polish
+- [ ] Add hover states (CSS only)
+- [ ] Implement fade-in animations (optional, safe)
+- [ ] Mobile responsiveness review
+- [ ] Final testing of all critical flows
+
+### Phase 4: Verification
+- [ ] Test all forms
+- [ ] Test payment flow
+- [ ] Check dashboard
+- [ ] Verify no console errors
+- [ ] Confirm mobile works perfectly
+
+---
+
+## 🧠 GUIDING PRINCIPLE
+
+**"This is not a redesign of how the product works. It is a redesign of how calm, clear, and trustworthy it feels."**
+
+Focus on:
+- **Clarity** in messaging
+- **Trust** through polish
+- **Simplicity** in layout
+- **Safety** in implementation
+
+---
+
+**START WITH PHASE 1 (FOUNDATION) AND PROCEED CAREFULLY. TEST AFTER EVERY CHANGE.**
+
+**IF UNSURE → ASK OR SKIP THE CHANGE. SAFETY FIRST.** 🛡️
