@@ -18,23 +18,16 @@ import { createRequire } from 'module';
 import rateLimit from 'express-rate-limit';
 import morgan from 'morgan';
 
-// Initialize Stripe - temporarily commented out to debug import issue
-// const require = createRequire(import.meta.url);
-// const Stripe = require('stripe');
-// const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-//   apiVersion: '2024-06-20',
-// });
-
-// Temporary placeholder for Stripe - will fix the import issue
-const stripe = {
+// Get the pre-loaded Stripe instance from global (loaded by preload-stripe.cjs)
+const stripe = (global as any).__STRIPE_INSTANCE__ || {
   checkout: {
     sessions: {
       create: async (params: any) => {
-        // Extract the success URL from params and return it directly for testing
+        console.warn('⚠️  Stripe not configured - using mock');
         const successUrl = params.success_url || 'http://localhost:5000/payment-success';
         return { 
-          id: 'temp_session_id', 
-          url: successUrl.replace('{CHECKOUT_SESSION_ID}', 'temp_session_id')
+          id: 'mock_session_id', 
+          url: successUrl.replace('{CHECKOUT_SESSION_ID}', 'mock_session_id')
         };
       }
     }
@@ -722,7 +715,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Get base URL for redirect URLs
       const baseUrl = req.headers.origin || `${req.protocol}://${req.get('host')}` || 'http://localhost:5000';
-      console.log('Base URL for checkout:', baseUrl);
+      const successUrl = `${baseUrl}/payment-success?session_id={CHECKOUT_SESSION_ID}`;
+      console.log('[Stripe Checkout] Base URL:', baseUrl);
+      console.log('[Stripe Checkout] Success URL:', successUrl);
 
       // Create Stripe checkout session
       const session = await stripe.checkout.sessions.create({
@@ -741,7 +736,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           },
         ],
         mode: 'payment',
-        success_url: `${baseUrl}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+        success_url: successUrl,
         cancel_url: `${baseUrl}/?canceled=true`,
         metadata: {
           sku,
