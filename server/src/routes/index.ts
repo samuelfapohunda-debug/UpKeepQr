@@ -18,6 +18,7 @@ import applianceRoutes from './appliances.js';
 import maintenanceLogRoutes from './maintenanceLogs.js';
 import reportRoutes from './reports.js';
 import householdsRoutes from './households.js';
+import checkoutRoutes from './checkout.js';
 
 export function registerRoutes(app: Express) {
   app.use('/health', healthRoutes);
@@ -39,8 +40,10 @@ export function registerRoutes(app: Express) {
   app.use('/api', maintenanceLogRoutes);  // Maintenance logs
   app.use('/api', reportRoutes);  // Reports
   app.use('/api', householdsRoutes);  // Households tasks
+  app.use('/api/checkout', checkoutRoutes);  // Stripe checkout
   
   console.log('✅ Health routes registered at /health');
+  console.log('✅ Checkout routes registered at /api/checkout');
   console.log('✅ Auth routes registered at /api/auth');
   console.log('✅ QR routes registered at /api/qr');
   console.log('✅ Calendar routes registered at /api/calendar');
