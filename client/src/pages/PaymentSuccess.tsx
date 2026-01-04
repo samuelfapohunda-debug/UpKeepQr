@@ -1,27 +1,10 @@
-import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { CheckCircle, Mail, Home } from "lucide-react";
 
 export default function PaymentSuccess() {
   const [, navigate] = useLocation();
-  const [countdown, setCountdown] = useState(10);
 
-  useEffect(() => {
-    const countdownInterval = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          clearInterval(countdownInterval);
-          navigate("/");
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(countdownInterval);
-  }, [navigate]);
-
-  const handleGoHomeNow = () => {
+  const handleGoHome = () => {
     navigate("/");
   };
 
@@ -123,24 +106,16 @@ export default function PaymentSuccess() {
           </p>
         </div>
         
-        {/* Redirect Notice & CTA */}
+        {/* CTA */}
         <div className="text-center">
           <button
-            onClick={handleGoHomeNow}
-            className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-8 py-3 rounded-lg transition-all hover:shadow-lg mb-4"
+            onClick={handleGoHome}
+            className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-8 py-3 rounded-lg transition-all hover:shadow-lg"
             data-testid="button-return-home"
           >
             <Home className="h-5 w-5" />
-            Return to Home
+            Back to Home
           </button>
-          
-          <p className="text-sm text-slate-500">
-            You'll be automatically redirected in{" "}
-            <span className="font-semibold text-emerald-600" data-testid="text-countdown">
-              {countdown}
-            </span>{" "}
-            {countdown === 1 ? "second" : "seconds"}
-          </p>
         </div>
         
       </div>
