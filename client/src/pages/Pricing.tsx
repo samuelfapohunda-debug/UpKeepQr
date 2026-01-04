@@ -3,17 +3,25 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle, Users, Package } from "lucide-react";
 
-// Stripe Payment Links mapping
-const STRIPE_PAYMENT_LINKS = {
-  single: "https://buy.stripe.com/test_14A00l9mwdUFbpncy9gIo07", // 1 QR Magnet - $19
-  twopack: "https://buy.stripe.com/test_8x27sNdCM03P3WVdCdgIo03", // 2 QR Magnets - $35
-  "100pack": "https://buy.stripe.com/test_eVq00l42c5o98db69LgIo01", // 100 QR Magnets - $899
-};
-
-const openStripeCheckout = (sku: keyof typeof STRIPE_PAYMENT_LINKS) => {
-  const paymentLink = STRIPE_PAYMENT_LINKS[sku];
-  if (paymentLink) {
-    window.open(paymentLink, '_blank');
+const openStripeCheckout = async (sku: 'single' | 'twopack' | '100pack') => {
+  try {
+    const response = await fetch('/api/checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sku }),
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to create checkout session');
+    }
+    
+    const { checkoutUrl } = await response.json();
+    if (checkoutUrl) {
+      window.location.href = checkoutUrl;
+    }
+  } catch (error) {
+    console.error('Checkout error:', error);
+    alert('Unable to start checkout. Please try again.');
   }
 };
 
