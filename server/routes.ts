@@ -31,7 +31,7 @@ const stripe = {
     sessions: {
       create: async (params: any) => {
         // Extract the success URL from params and return it directly for testing
-        const successUrl = params.success_url || 'http://localhost:5000/setup/success';
+        const successUrl = params.success_url || 'http://localhost:5000/payment-success';
         return { 
           id: 'temp_session_id', 
           url: successUrl.replace('{CHECKOUT_SESSION_ID}', 'temp_session_id')
