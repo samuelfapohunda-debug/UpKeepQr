@@ -134,6 +134,16 @@
     box-shadow: var(--shadow-lg);
   }
   
+  /* Card hover subtle - gentler effect for secondary cards */
+  .card-hover-subtle {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  
+  .card-hover-subtle:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+  }
+  
   /* Fade in animation */
   .fade-in-up {
     opacity: 0;
