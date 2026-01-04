@@ -741,7 +741,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           },
         ],
         mode: 'payment',
-        success_url: `${baseUrl}/setup/success?session_id={CHECKOUT_SESSION_ID}`,
+        success_url: `${baseUrl}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${baseUrl}/?canceled=true`,
         metadata: {
           sku,
