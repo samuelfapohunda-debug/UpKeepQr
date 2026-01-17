@@ -40,7 +40,17 @@ The backend is a RESTful API built with Express.js and TypeScript. It uses Drizz
 - **Maintenance History & Reporting**: Detailed maintenance logs linked to appliances and scheduled tasks. Supports manual, scheduled, and emergency log types with cost tracking, service provider recording, and on-time completion metrics. Reports include maintenance history with cost trends and warranty status summaries.
 - **Customer Success Pages** (Dec 2024):
   - **Registration Success Page** (`/registration/success`): Customer-facing welcome page after completing home registration with personalized next steps, email check reminder, and dashboard access link.
-  - **Customer Dashboard** (`/my-home?household=<id>`): Mobile-responsive customer dashboard showing maintenance tasks with category filtering, task statistics (total, completed, pending, overdue), priority badges, and professional service request link. Uses TanStack Query for data fetching with proper cache invalidation.
+- **Customer Dashboard** (Jan 2026):
+  - **Three-Tab Structure**: Tasks, Appliances, and Details tabs at `/my-home`
+  - **Tasks Tab**: Maintenance tasks with category filtering, completion buttons with confirmation dialog, task statistics (total, completed, pending, overdue), priority badges, due dates, and professional service request link
+  - **Appliances Tab**: Full CRUD appliance management integrated as a tab (not dialog), warranty tracking with expiration alerts
+  - **Details Tab**: Household information display (owner info, home type, location, subscription status) with edit placeholder
+  - **Task Completion API**: `PATCH /api/customer/tasks/:taskId` endpoint with session auth, double-completion prevention, and optimistic UI updates
+  - **Tab Persistence**: Selected tab saved to localStorage via `useTabState` hook
+  - **Type Definitions**: `client/src/types/dashboard.ts` for Task, Household, TasksResponse types
+  - **Components**: HouseholdDetails component at `client/src/components/HouseholdDetails.tsx`
+  - **Performance**: useMemo for derived data (stats, categories, filtered tasks), useCallback for handlers
+  - Uses session-based authentication with HTTP-only cookies
 - **New Multi-Step Onboarding Form** (Dec 2024):
   - **Routes**: `/new-setup` and `/new-setup/:token` for new customer onboarding flow
   - **Progressive Disclosure**: 4-step flow (Home Profile, Account Setup, Refine Schedule, Notifications) with optional steps clearly marked
