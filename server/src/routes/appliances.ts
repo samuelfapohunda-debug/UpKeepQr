@@ -8,7 +8,7 @@ import {
   HouseholdAppliance
 } from '@shared/schema';
 import { eq, and, desc, asc, sql } from 'drizzle-orm';
-import { getUserFromAuth } from '../../middleware/auth';
+import { requireSessionAuth, SessionAuthRequest, validateHouseholdAccess } from '../../middleware/sessionAuth';
 
 const router = Router();
 
@@ -47,13 +47,9 @@ router.get('/common-appliances', async (req: Request, res: Response) => {
   }
 });
 
-router.post('/households/:householdId/appliances', async (req: Request, res: Response) => {
+router.post('/households/:householdId/appliances', requireSessionAuth, validateHouseholdAccess, async (req: SessionAuthRequest, res: Response) => {
   try {
     const { householdId } = req.params;
-    const authUser = await getUserFromAuth(req);
-    
-    if (!authUser) {
-      return res.status(401).json({ error: 'Authentication required' });
     }
     
     const validated = insertHouseholdApplianceSchema.safeParse(req.body);
@@ -112,13 +108,9 @@ router.post('/households/:householdId/appliances', async (req: Request, res: Res
   }
 });
 
-router.get('/households/:householdId/appliances', async (req: Request, res: Response) => {
+router.get('/households/:householdId/appliances', requireSessionAuth, validateHouseholdAccess, async (req: SessionAuthRequest, res: Response) => {
   try {
     const { householdId } = req.params;
-    const authUser = await getUserFromAuth(req);
-    
-    if (!authUser) {
-      return res.status(401).json({ error: 'Authentication required' });
     }
     
     const { is_active, appliance_type } = req.query;
@@ -158,13 +150,9 @@ router.get('/households/:householdId/appliances', async (req: Request, res: Resp
   }
 });
 
-router.get('/households/:householdId/appliances/:applianceId', async (req: Request, res: Response) => {
+router.get('/households/:householdId/appliances/:applianceId', requireSessionAuth, validateHouseholdAccess, async (req: SessionAuthRequest, res: Response) => {
   try {
     const { householdId, applianceId } = req.params;
-    const authUser = await getUserFromAuth(req);
-    
-    if (!authUser) {
-      return res.status(401).json({ error: 'Authentication required' });
     }
     
     const [appliance] = await db.select()
@@ -190,13 +178,9 @@ router.get('/households/:householdId/appliances/:applianceId', async (req: Reque
   }
 });
 
-router.patch('/households/:householdId/appliances/:applianceId', async (req: Request, res: Response) => {
+router.patch('/households/:householdId/appliances/:applianceId', requireSessionAuth, validateHouseholdAccess, async (req: SessionAuthRequest, res: Response) => {
   try {
     const { householdId, applianceId } = req.params;
-    const authUser = await getUserFromAuth(req);
-    
-    if (!authUser) {
-      return res.status(401).json({ error: 'Authentication required' });
     }
     
     const validated = updateHouseholdApplianceSchema.safeParse(req.body);
@@ -258,13 +242,9 @@ router.patch('/households/:householdId/appliances/:applianceId', async (req: Req
   }
 });
 
-router.delete('/households/:householdId/appliances/:applianceId', async (req: Request, res: Response) => {
+router.delete('/households/:householdId/appliances/:applianceId', requireSessionAuth, validateHouseholdAccess, async (req: SessionAuthRequest, res: Response) => {
   try {
     const { householdId, applianceId } = req.params;
-    const authUser = await getUserFromAuth(req);
-    
-    if (!authUser) {
-      return res.status(401).json({ error: 'Authentication required' });
     }
     
     const [existing] = await db.select()
