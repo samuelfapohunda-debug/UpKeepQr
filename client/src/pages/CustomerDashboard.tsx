@@ -1,11 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useLocation } from "wouter";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { API_BASE_URL } from "@/lib/api-config";
+import { useToast } from "@/hooks/use-toast";
 import {
   Home,
   CheckCircle2,
@@ -16,55 +18,55 @@ import {
   RefreshCw,
   Filter,
   Loader2,
-  LogOut
+  LogOut,
+  CheckCircle,
+  Settings,
+  User
 } from "lucide-react";
+import HouseholdDetails from "@/components/HouseholdDetails";
+import ApplianceManager from "@/components/ApplianceManager";
+import type { Task, Household, TasksResponse, TaskStats, DashboardTab } from "@/types/dashboard";
+import { useTabState } from "@/hooks/useTabState";
 
-interface Task {
-  id: number;
-  taskName: string;
-  description: string;
-  category: string;
-  priority: string;
-  status: string;
-  dueDate: string;
-  frequencyMonths: number;
-}
+const formatDate = (dateStr?: string): string => {
+  if (!dateStr) return "Not scheduled";
+  const date = new Date(dateStr);
+  return isNaN(date.getTime())
+    ? "Invalid date"
+    : date.toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric',
+        year: 'numeric'
+      });
+};
 
-interface Household {
-  id: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  homeType: string;
-  city: string;
-  state: string;
-  zip: string;
-}
+const getPriorityVariant = (priority: string): "destructive" | "secondary" | "outline" => {
+  switch (priority?.toLowerCase()) {
+    case "high": return "destructive";
+    case "medium": return "secondary";
+    default: return "outline";
+  }
+};
 
-interface TasksResponse {
-  tasks: Task[];
-  summary?: {
-    total: number;
-    completed: number;
-    pending: number;
-    overdue: number;
-  };
-}
-
-interface TaskStats {
-  total: number;
-  completed: number;
-  pending: number;
-  overdue: number;
-}
+const getStatusColor = (status: string): string => {
+  switch (status?.toLowerCase()) {
+    case "completed": return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300";
+    case "pending": return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300";
+    case "overdue": return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300";
+    default: return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300";
+  }
+};
 
 export default function CustomerDashboard() {
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [isVerifying, setIsVerifying] = useState(true);
   const [sessionValid, setSessionValid] = useState(false);
-  
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const [activeTab, setActiveTab] = useTabState<DashboardTab>("customerDashboardTab", "tasks");
+  const [showCompleteDialog, setShowCompleteDialog] = useState(false);
+  const [taskToComplete, setTaskToComplete] = useState<Task | null>(null);
 
   useEffect(() => {
     const verifySession = async () => {
@@ -133,55 +135,86 @@ export default function CustomerDashboard() {
   const tasks = tasksData?.tasks || [];
   const isLoading = householdLoading || tasksLoading;
 
-  const handleRefresh = () => {
+  const handleRefresh = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ['/api/customer/household'] });
     queryClient.invalidateQueries({ queryKey: ['/api/customer/tasks'] });
-  };
+    toast({
+      title: "Refreshed",
+      description: "Dashboard data has been refreshed",
+    });
+  }, [queryClient, toast]);
 
-  const getTaskStats = (): TaskStats => {
+  const stats = useMemo((): TaskStats => {
     const total = tasks.length;
     const completed = tasks.filter(t => t.status === "completed").length;
     const pending = tasks.filter(t => t.status === "pending").length;
     const overdue = tasks.filter(t => t.status === "overdue").length;
-
     return { total, completed, pending, overdue };
-  };
+  }, [tasks]);
 
-  const getCategories = (): string[] => {
-    const categories = new Set(tasks.map(t => t.category));
-    return ["all", ...Array.from(categories)];
-  };
+  const categories = useMemo(() => {
+    const categorySet = new Set(tasks.map(t => t.category));
+    return ["all", ...Array.from(categorySet)];
+  }, [tasks]);
 
-  const filterTasks = (category: string): Task[] => {
-    if (category === "all") return tasks;
-    return tasks.filter(t => t.category.toLowerCase() === category.toLowerCase());
-  };
+  const filteredTasks = useMemo(() => {
+    if (selectedCategory === "all") return tasks;
+    return tasks.filter(t => t.category.toLowerCase() === selectedCategory.toLowerCase());
+  }, [tasks, selectedCategory]);
 
-  const getPriorityVariant = (priority: string): "destructive" | "secondary" | "outline" => {
-    switch (priority?.toLowerCase()) {
-      case "high": return "destructive";
-      case "medium": return "secondary";
-      default: return "outline";
+  const completeTaskMutation = useMutation({
+    mutationFn: async (taskId: number) => {
+      const response = await fetch(`${API_BASE_URL}/api/customer/tasks/${taskId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ status: 'completed' as const })
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to complete task');
+      }
+      
+      return response.json();
+    },
+    onSuccess: (updatedTask) => {
+      toast({
+        title: "Task Completed",
+        description: `${updatedTask.taskName} has been marked as complete`,
+      });
+      
+      queryClient.setQueryData<TasksResponse>(['/api/customer/tasks'], (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          tasks: old.tasks.map(task => 
+            task.id === updatedTask.id ? updatedTask : task
+          )
+        };
+      });
+      
+      setShowCompleteDialog(false);
+      setTaskToComplete(null);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to complete task",
+        variant: "destructive",
+      });
     }
+  });
+
+  const handleCompleteTask = (task: Task) => {
+    setTaskToComplete(task);
+    setShowCompleteDialog(true);
   };
 
-  const getStatusColor = (status: string): string => {
-    switch (status?.toLowerCase()) {
-      case "completed": return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300";
-      case "pending": return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300";
-      case "overdue": return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300";
-      default: return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300";
+  const confirmCompleteTask = () => {
+    if (taskToComplete) {
+      completeTaskMutation.mutate(taskToComplete.id);
     }
-  };
-
-  const formatDate = (dateStr: string): string => {
-    if (!dateStr) return "Not scheduled";
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('en-US', { 
-      month: 'short', 
-      day: 'numeric',
-      year: 'numeric'
-    });
   };
 
   if (isVerifying) {
@@ -250,10 +283,6 @@ export default function CustomerDashboard() {
     );
   }
 
-  const stats = getTaskStats();
-  const filteredTasks = filterTasks(selectedCategory);
-  const categories = getCategories();
-
   return (
     <div className="min-h-screen bg-background">
       <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
@@ -296,90 +325,107 @@ export default function CustomerDashboard() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <Card data-testid="stat-total">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between gap-2">
-                <div>
-                  <p className="text-sm text-muted-foreground">Total Tasks</p>
-                  <p className="text-2xl font-bold">{stats.total}</p>
-                </div>
-                <ListTodo className="h-8 w-8 text-blue-500" />
-              </div>
-            </CardContent>
-          </Card>
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as DashboardTab)} className="w-full">
+          <TabsList className="grid grid-cols-3 mb-6">
+            <TabsTrigger value="tasks" data-testid="tab-tasks">
+              <ListTodo className="h-4 w-4 mr-2" />
+              Tasks
+            </TabsTrigger>
+            <TabsTrigger value="appliances" data-testid="tab-appliances">
+              <Settings className="h-4 w-4 mr-2" />
+              Appliances
+            </TabsTrigger>
+            <TabsTrigger value="details" data-testid="tab-details">
+              <User className="h-4 w-4 mr-2" />
+              Details
+            </TabsTrigger>
+          </TabsList>
 
-          <Card data-testid="stat-completed">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between gap-2">
-                <div>
-                  <p className="text-sm text-muted-foreground">Completed</p>
-                  <p className="text-2xl font-bold text-green-600">{stats.completed}</p>
-                </div>
-                <CheckCircle2 className="h-8 w-8 text-green-500" />
-              </div>
-            </CardContent>
-          </Card>
+          <TabsContent value="tasks" className="space-y-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              <Card data-testid="stat-total">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between gap-2">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Total Tasks</p>
+                      <p className="text-2xl font-bold">{stats.total}</p>
+                    </div>
+                    <ListTodo className="h-8 w-8 text-blue-500" />
+                  </div>
+                </CardContent>
+              </Card>
 
-          <Card data-testid="stat-pending">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between gap-2">
-                <div>
-                  <p className="text-sm text-muted-foreground">Pending</p>
-                  <p className="text-2xl font-bold text-blue-600">{stats.pending}</p>
-                </div>
-                <Clock className="h-8 w-8 text-blue-500" />
-              </div>
-            </CardContent>
-          </Card>
+              <Card data-testid="stat-completed">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between gap-2">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Completed</p>
+                      <p className="text-2xl font-bold text-green-600">{stats.completed}</p>
+                    </div>
+                    <CheckCircle2 className="h-8 w-8 text-green-500" />
+                  </div>
+                </CardContent>
+              </Card>
 
-          <Card data-testid="stat-overdue">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between gap-2">
-                <div>
-                  <p className="text-sm text-muted-foreground">Overdue</p>
-                  <p className="text-2xl font-bold text-red-600">{stats.overdue}</p>
-                </div>
-                <AlertTriangle className="h-8 w-8 text-red-500" />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+              <Card data-testid="stat-pending">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between gap-2">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Pending</p>
+                      <p className="text-2xl font-bold text-blue-600">{stats.pending}</p>
+                    </div>
+                    <Clock className="h-8 w-8 text-blue-500" />
+                  </div>
+                </CardContent>
+              </Card>
 
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between gap-4 flex-wrap">
-              <div>
-                <CardTitle className="flex items-center gap-2">
-                  <Calendar className="h-5 w-5" />
-                  Your Maintenance Tasks
-                </CardTitle>
-                <CardDescription>
-                  Track and complete your personalized home maintenance schedule
-                </CardDescription>
-              </div>
-              <div className="flex items-center gap-2">
-                <Filter className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">Filter:</span>
-              </div>
+              <Card data-testid="stat-overdue">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between gap-2">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Overdue</p>
+                      <p className="text-2xl font-bold text-red-600">{stats.overdue}</p>
+                    </div>
+                    <AlertTriangle className="h-8 w-8 text-red-500" />
+                  </div>
+                </CardContent>
+              </Card>
             </div>
-          </CardHeader>
-          <CardContent>
-            <Tabs value={selectedCategory} onValueChange={setSelectedCategory} className="w-full">
-              <TabsList className="flex flex-wrap h-auto gap-1 mb-4">
-                {categories.map((category) => (
-                  <TabsTrigger 
-                    key={category} 
-                    value={category}
-                    className="capitalize text-xs sm:text-sm"
-                    data-testid={`tab-${category}`}
-                  >
-                    {category}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
 
-              <TabsContent value={selectedCategory} className="mt-0">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between gap-4 flex-wrap">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <Calendar className="h-5 w-5" />
+                      Your Maintenance Tasks
+                    </CardTitle>
+                    <CardDescription>
+                      Track and complete your personalized home maintenance schedule
+                    </CardDescription>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Filter className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">Filter:</span>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {categories.map((category) => (
+                    <Button
+                      key={category}
+                      variant={selectedCategory === category ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setSelectedCategory(category)}
+                      className="capitalize"
+                      data-testid={`filter-${category}`}
+                    >
+                      {category}
+                    </Button>
+                  ))}
+                </div>
+
                 {filteredTasks.length === 0 ? (
                   <div className="text-center py-12 text-muted-foreground">
                     <ListTodo className="h-12 w-12 mx-auto mb-4 opacity-50" />
@@ -418,29 +464,91 @@ export default function CustomerDashboard() {
                           <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(task.status)}`}>
                             {task.status}
                           </span>
+                          {task.status !== 'completed' && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleCompleteTask(task)}
+                              data-testid={`button-complete-${task.id}`}
+                            >
+                              <CheckCircle className="h-4 w-4 mr-1" />
+                              Complete
+                            </Button>
+                          )}
                         </div>
                       </div>
                     ))}
                   </div>
                 )}
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </Card>
+              </CardContent>
+            </Card>
 
-        <div className="mt-6 text-center">
-          <p className="text-sm text-muted-foreground mb-4">
-            Need help with a task? Connect with a local professional.
-          </p>
-          <Button 
-            variant="outline" 
-            onClick={() => navigate("/request-pro")}
-            data-testid="button-request-pro"
-          >
-            Request a Professional
-          </Button>
-        </div>
+            <div className="mt-6 text-center">
+              <p className="text-sm text-muted-foreground mb-4">
+                Need help with a task? Connect with a local professional.
+              </p>
+              <Button 
+                variant="outline" 
+                onClick={() => navigate("/request-pro")}
+                data-testid="button-request-pro"
+              >
+                Request a Professional
+              </Button>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="appliances">
+            {household && (
+              <ApplianceManager 
+                householdId={household.id}
+                onClose={() => {}}
+              />
+            )}
+          </TabsContent>
+
+          <TabsContent value="details">
+            {household && (
+              <HouseholdDetails 
+                household={household}
+                onEdit={() => {
+                  toast({
+                    title: "Edit Feature",
+                    description: "Household editing will be available soon.",
+                  });
+                }}
+              />
+            )}
+          </TabsContent>
+        </Tabs>
       </div>
+
+      <AlertDialog open={showCompleteDialog} onOpenChange={setShowCompleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Complete Task</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to mark "{taskToComplete?.taskName}" as complete?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-complete">Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmCompleteTask}
+              disabled={completeTaskMutation.isPending}
+              data-testid="button-confirm-complete"
+            >
+              {completeTaskMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Completing...
+                </>
+              ) : (
+                'Complete Task'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
