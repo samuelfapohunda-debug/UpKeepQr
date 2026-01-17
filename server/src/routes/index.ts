@@ -45,6 +45,8 @@ export function registerRoutes(app: Express) {
   app.use('/api/checkout', checkoutRoutes);  // Stripe checkout
   app.use('/api', dashboardRoutes);  // Homeowner dashboard
   app.use('/api/customer', customerRoutes);  // Customer authenticated routes
+  app.use('/api/appliances', applianceRoutes);  // Appliance management routes
+  app.use('/api/households', householdsRoutes);  // Households routes
   
   console.log('✅ Health routes registered at /health');
   console.log('✅ Dashboard routes registered at /api/dashboard');
