@@ -1,0 +1,95 @@
+@agent Migrate Events & Audit Logs to PostgreSQL in server/storage.ts - Phase 2B Batch 3
+
+OBJECTIVE:
+Migrate 2 audit/event functions from Firebase to PostgreSQL (low risk, existing tables).
+
+CONTEXT:
+- Batch 1 & 2 complete: 11 functions migrated
+- Remaining: 17 Firebase calls
+- PostgreSQL audit_events table already exists
+- This is LOW RISK migration
+
+FUNCTIONS TO MIGRATE:
+
+## 1. createEvent() (around line 624-633)
+
+**REPLACE Firebase:**
+```typescript
+async createEvent(data: Record<string, unknown>): Promise<unknown> {
+  const eventId = uuidv4();
+  const newEvent = {
+    id: eventId,
+    ...data,
+    createdAt: new Date()
+  };
+  
+  await adminDb.collection('events').doc(eventId).set(newEvent);
+  return newEvent;
+}
+```
+
+**WITH PostgreSQL:**
+```typescript
+async createEvent(data: InsertAuditEvent): Promise<AuditEvent> {
+  const [result] = await db.insert(auditEventsTable)
+    .values({
+      ...data,
+      createdAt: new Date()
+    })
+    .returning();
+  return result;
+}
+```
+
+## 2. createAuditLog() (around line 636-647)
+
+**REPLACE Firebase:**
+```typescript
+async createAuditLog(data: Record<string, unknown>): Promise<unknown> {
+  const logId = uuidv4();
+  const auditLog = {
+    id: logId,
+    ...data,
+    createdAt: new Date()
+  };
+  
+  await adminDb.collection('auditLogs').doc(logId).set(auditLog);
+  return auditLog;
+}
+```
+
+**WITH PostgreSQL:**
+```typescript
+async createAuditLog(data: Partial<InsertOrderMagnetAuditEvent>): Promise<OrderMagnetAuditEvent> {
+  const [result] = await db.insert(orderMagnetAuditEventsTable)
+    .values({
+      ...data,
+      createdAt: new Date()
+    })
+    .returning();
+  return result;
+}
+```
+
+## 3. ENSURE IMPORTS
+
+Verify these imports exist at the top of server/storage.ts:
+```typescript
+import { 
+  auditEventsTable,
+  orderMagnetAuditEventsTable,
+  type AuditEvent,
+  type InsertAuditEvent,
+  type OrderMagnetAuditEvent,
+  type InsertOrderMagnetAuditEvent
+} from "@shared/schema";
+```
+
+VERIFICATION:
+```bash
+npm run build
+grep -c "adminDb.*collection('events')\|adminDb.*collection('auditLogs')" server/storage.ts
+# Should return 0 after migration
+```
+
+START NOW - Migrate both audit/event functions!

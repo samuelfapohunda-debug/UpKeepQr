@@ -1,5 +1,6 @@
 import { z } from "zod";
-import { pgTable, serial, varchar, text, integer, boolean, timestamp, json, numeric, jsonb, index } from "drizzle-orm/pg-core";
+import { pgTable, serial, varchar, text, integer, boolean, timestamp, json, numeric, jsonb, index, date, uniqueIndex } from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { sql } from "drizzle-orm";
 
@@ -587,6 +588,7 @@ export const orderMagnetItemsTable = pgTable("order_magnet_items", {
   activationStatus: varchar("activation_status", { length: 20 }).notNull().default('inactive'),
   activatedAt: timestamp("activated_at"),
   activatedByEmail: varchar("activated_by_email", { length: 255 }),
+  householdId: varchar("household_id", { length: 255 }),
   scanCount: integer("scan_count").notNull().default(0),
   lastScanAt: timestamp("last_scan_at"),
   printBatchId: varchar("print_batch_id"),
@@ -662,6 +664,7 @@ export const householdsTable = pgTable("households", {
   notificationPreference: varchar("notification_preference", { length: 20 }).notNull().default('both'), // 'email_only', 'sms_only', 'both'
   smsOptIn: boolean("sms_opt_in").default(false),
   preferredContact: varchar("preferred_contact", { length: 20 }), // 'email', 'phone', 'text'
+  calendarSyncPreference: varchar("calendar_sync_preference", { length: 50 }).default('none'), // 'google', 'apple', 'none'
   
   // Setup tracking
   setupStatus: varchar("setup_status", { length: 20 }).notNull().default('not_started'), // 'not_started', 'in_progress', 'completed'
@@ -679,6 +682,7 @@ export const householdsTable = pgTable("households", {
   // Security and tracking fields
   createdBy: varchar("created_by", { length: 20 }).notNull().default('customer'), // 'customer', 'admin', 'api'
   createdByUserId: varchar("created_by_user_id", { length: 255 }), // UUID of admin who created (if admin-created)
+  agentId: varchar("agent_id", { length: 255 }), // Agent who owns this household (nullable for direct orders)
   
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -689,6 +693,7 @@ export const householdsTable = pgTable("households", {
   orderIdIdx: index("idx_households_order_id").on(table.orderId),
   // Composite index for location filtering
   locationIdx: index("idx_households_location").on(table.state, table.zipcode),
+  agentIdIdx: index("idx_households_agent_id").on(table.agentId),
 }));
 
 // Setup Form Notes table for admin comments
@@ -1022,6 +1027,356 @@ export const testNotificationSchema = z.object({
   channel: z.enum(['email', 'sms', 'both']),
 });
 export type TestNotificationData = z.infer<typeof testNotificationSchema>;
+
+// Calendar Connections Table
+export const calendarConnectionsTable = pgTable('calendar_connections', {
+  id: text('id').primaryKey(),
+  household_id: text('household_id').notNull().references(() => householdsTable.id, { onDelete: 'cascade' }),
+  provider: varchar('provider', { length: 20 }).notNull(),
+  access_token: text('access_token').notNull(),
+  refresh_token: text('refresh_token').notNull(),
+  token_expiry: timestamp('token_expiry'),
+  calendar_id: text('calendar_id').notNull(),
+  calendar_name: text('calendar_name'),
+  calendar_timezone: text('calendar_timezone').notNull().default('America/New_York'),
+  sync_enabled: boolean('sync_enabled').notNull().default(true),
+  last_sync: timestamp('last_sync'),
+  last_sync_status: varchar('last_sync_status', { length: 20 }),
+  last_sync_error: text('last_sync_error'),
+  created_at: timestamp('created_at').notNull().defaultNow(),
+  updated_at: timestamp('updated_at').notNull().defaultNow(),
+});
+
+// Calendar Sync Events Table
+export const calendarSyncEventsTable = pgTable('calendar_sync_events', {
+  id: text('id').primaryKey(),
+  connection_id: text('connection_id').notNull().references(() => calendarConnectionsTable.id, { onDelete: 'cascade' }),
+  household_id: text('household_id').notNull().references(() => householdsTable.id, { onDelete: 'cascade' }),
+  task_id: text('task_id'),
+  task_title: text('task_title').notNull(),
+  google_event_id: text('google_event_id').notNull().unique(),
+  event_start: timestamp('event_start').notNull(),
+  event_end: timestamp('event_end').notNull(),
+  event_status: varchar('event_status', { length: 20 }).notNull(),
+  sync_status: varchar('sync_status', { length: 20 }).notNull(),
+  created_at: timestamp('created_at').notNull().defaultNow(),
+  updated_at: timestamp('updated_at').notNull().defaultNow(),
+});
+
+// =====================================================
+// APPLIANCE TRACKING & MAINTENANCE LOG SYSTEM
+// =====================================================
+
+// Common Appliances Table - Master list of common appliances
+export const commonAppliancesTable = pgTable('common_appliances', {
+  id: serial('id').primaryKey(),
+  applianceType: varchar('appliance_type', { length: 100 }).notNull().unique(),
+  category: varchar('category', { length: 50 }).notNull(),
+  typicalLifespanYears: integer('typical_lifespan_years'),
+  commonBrands: text('common_brands').array(),
+  maintenanceNotes: text('maintenance_notes'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
+export type CommonAppliance = typeof commonAppliancesTable.$inferSelect;
+export type InsertCommonAppliance = typeof commonAppliancesTable.$inferInsert;
+
+// Household Appliances Table - Track appliances for each household
+export const householdAppliancesTable = pgTable('household_appliances', {
+  id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
+  householdId: varchar('household_id').notNull().references(() => householdsTable.id, { onDelete: 'cascade' }),
+  
+  applianceType: varchar('appliance_type', { length: 100 }).notNull(),
+  brand: varchar('brand', { length: 100 }).notNull(),
+  modelNumber: varchar('model_number', { length: 100 }).notNull(),
+  serialNumber: varchar('serial_number', { length: 100 }).notNull().unique(),
+  purchaseDate: timestamp('purchase_date', { mode: 'date' }).notNull(),
+  
+  purchasePrice: numeric('purchase_price', { precision: 10, scale: 2 }),
+  installationDate: timestamp('installation_date', { mode: 'date' }),
+  location: varchar('location', { length: 200 }),
+  notes: text('notes'),
+  
+  warrantyType: varchar('warranty_type', { length: 50 }),
+  warrantyExpiration: timestamp('warranty_expiration', { mode: 'date' }),
+  warrantyProvider: varchar('warranty_provider', { length: 100 }),
+  warrantyPolicyNumber: varchar('warranty_policy_number', { length: 100 }),
+  warrantyCoverageDetails: text('warranty_coverage_details'),
+  
+  warrantyAlertSent: boolean('warranty_alert_sent').default(false),
+  warrantyAlertSentAt: timestamp('warranty_alert_sent_at'),
+  isActive: boolean('is_active').default(true),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  createdBy: varchar('created_by', { length: 50 }),
+  createdByUserId: varchar('created_by_user_id', { length: 255 }),
+}, (table) => ({
+  householdIdx: index('idx_household_appliances_household').on(table.householdId),
+  typeIdx: index('idx_household_appliances_type').on(table.applianceType),
+  warrantyExpIdx: index('idx_household_appliances_warranty_exp').on(table.warrantyExpiration),
+  activeIdx: index('idx_household_appliances_active').on(table.isActive),
+}));
+
+export type HouseholdAppliance = typeof householdAppliancesTable.$inferSelect;
+export type InsertHouseholdAppliance = typeof householdAppliancesTable.$inferInsert;
+
+// Maintenance Logs Table - Record all maintenance activities
+export const maintenanceLogsTable = pgTable('maintenance_logs', {
+  id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
+  householdId: varchar('household_id').notNull().references(() => householdsTable.id, { onDelete: 'cascade' }),
+  taskAssignmentId: varchar('task_assignment_id').references(() => householdTaskAssignmentsTable.id, { onDelete: 'set null' }),
+  applianceId: varchar('appliance_id').references(() => householdAppliancesTable.id, { onDelete: 'set null' }),
+  
+  maintenanceDate: timestamp('maintenance_date', { mode: 'date' }).notNull(),
+  taskPerformed: text('task_performed').notNull(),
+  logType: varchar('log_type', { length: 20 }).notNull(),
+  
+  cost: numeric('cost', { precision: 10, scale: 2 }),
+  serviceProvider: varchar('service_provider', { length: 200 }),
+  partsReplaced: text('parts_replaced'),
+  notes: text('notes'),
+  
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  createdBy: varchar('created_by', { length: 50 }),
+  createdByUserId: varchar('created_by_user_id', { length: 255 }),
+  
+  wasOnTime: boolean('was_on_time'),
+  daysLate: integer('days_late'),
+}, (table) => ({
+  householdIdx: index('idx_maintenance_logs_household').on(table.householdId),
+  applianceIdx: index('idx_maintenance_logs_appliance').on(table.applianceId),
+  taskIdx: index('idx_maintenance_logs_task').on(table.taskAssignmentId),
+  dateIdx: index('idx_maintenance_logs_date').on(table.maintenanceDate),
+  typeIdx: index('idx_maintenance_logs_type').on(table.logType),
+}));
+
+export type MaintenanceLog = typeof maintenanceLogsTable.$inferSelect;
+export type InsertMaintenanceLog = typeof maintenanceLogsTable.$inferInsert;
+
+// Zod schemas for validation
+export const insertHouseholdApplianceSchema = z.object({
+  householdId: z.string().optional(),
+  applianceType: z.string().min(1, "Appliance type is required"),
+  brand: z.string().min(1, "Brand is required"),
+  modelNumber: z.string().min(1, "Model number is required"),
+  serialNumber: z.string().min(1, "Serial number is required"),
+  purchaseDate: z.string().or(z.date()),
+  purchasePrice: z.string().or(z.number()).optional(),
+  installationDate: z.string().or(z.date()).optional(),
+  location: z.string().optional(),
+  notes: z.string().optional(),
+  warrantyType: z.enum(['Manufacturer', 'Extended', 'Labor']).optional(),
+  warrantyExpiration: z.string().or(z.date()).optional(),
+  warrantyProvider: z.string().optional(),
+  warrantyPolicyNumber: z.string().optional(),
+  warrantyCoverageDetails: z.string().optional(),
+});
+
+export const updateHouseholdApplianceSchema = insertHouseholdApplianceSchema.partial();
+
+export const insertMaintenanceLogSchema = z.object({
+  householdId: z.string().optional(),
+  taskAssignmentId: z.string().optional(),
+  applianceId: z.string().optional(),
+  maintenanceDate: z.string().or(z.date()),
+  taskPerformed: z.string().min(1, "Task performed is required"),
+  logType: z.enum(['scheduled', 'manual', 'emergency']),
+  cost: z.string().or(z.number()).optional(),
+  serviceProvider: z.string().optional(),
+  partsReplaced: z.string().optional(),
+  notes: z.string().optional(),
+});
+
+export const updateMaintenanceLogSchema = insertMaintenanceLogSchema.partial();
+
+export const maintenanceLogFiltersSchema = z.object({
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
+  applianceId: z.string().optional(),
+  logType: z.enum(['scheduled', 'manual', 'emergency']).optional(),
+  page: z.number().min(1).default(1),
+  pageSize: z.number().min(1).max(100).default(25),
+  sortBy: z.enum(['maintenanceDate', 'createdAt', 'cost']).default('maintenanceDate'),
+  sortDir: z.enum(['asc', 'desc']).default('desc'),
+});
+
+export type MaintenanceLogFilters = z.infer<typeof maintenanceLogFiltersSchema>;
+
+// ============================================================================
+// Firebase Migration Phase 2A - New Tables
+// ============================================================================
+
+// Leads Table - Replaces Firebase 'leads' collection
+export const leadsTable = pgTable("leads", {
+  id: text("id").primaryKey().default(sql`gen_random_uuid()`),
+  fullName: text("full_name"),
+  email: text("email"),
+  phone: text("phone"),
+  preferredContact: text("preferred_contact"),
+  hearAboutUs: text("hear_about_us"),
+  streetAddress: text("street_address"),
+  city: text("city"),
+  state: text("state"),
+  zipCode: text("zip_code"),
+  propertyType: text("property_type"),
+  numberOfLocations: integer("number_of_locations"),
+  locationNickname: text("location_nickname"),
+  homeType: text("home_type"),
+  squareFootage: integer("square_footage"),
+  roofAge: integer("roof_age"),
+  hvacSystemType: text("hvac_system_type"),
+  waterHeaterType: text("water_heater_type"),
+  numberOfAssets: integer("number_of_assets"),
+  assetCategories: text("asset_categories"),
+  companyName: text("company_name"),
+  industryType: text("industry_type"),
+  numberOfEmployees: integer("number_of_employees"),
+  businessWebsite: text("business_website"),
+  preferredServiceType: text("preferred_service_type"),
+  estimatedQrLabels: text("estimated_qr_labels"),
+  interestType: text("interest_type"),
+  needConsultation: boolean("need_consultation"),
+  isOwner: boolean("is_owner"),
+  budgetRange: text("budget_range"),
+  timelineToProceed: text("timeline_to_proceed"),
+  preferredContactTime: text("preferred_contact_time"),
+  notes: text("notes"),
+  activationCode: text("activation_code"),
+  agentId: text("agent_id"),
+  status: text("status").default('new'),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow()
+}, (table) => ({
+  agentIdx: index("idx_leads_agent").on(table.agentId),
+  statusIdx: index("idx_leads_status").on(table.status),
+  createdIdx: index("idx_leads_created").on(table.createdAt)
+}));
+
+export type LeadDb = typeof leadsTable.$inferSelect;
+export type InsertLeadDb = typeof leadsTable.$inferInsert;
+
+// Agents Table - Replaces Firebase 'agents' collection
+export const agentsTable = pgTable("agents", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  email: varchar("email", { length: 255 }).notNull().unique(),
+  name: varchar("name", { length: 255 }).notNull(),
+  phone: varchar("phone", { length: 50 }),
+  company: varchar("company", { length: 255 }),
+  status: varchar("status", { length: 50 }).default('active'),
+  commissionRate: numeric("commission_rate", { precision: 5, scale: 2 }),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+});
+
+export const agentsRelations = relations(agentsTable, ({ many }) => ({
+  batches: many(orderMagnetBatchesTable),
+  households: many(householdsTable)
+}));
+
+export type Agent = typeof agentsTable.$inferSelect;
+export type InsertAgent = typeof agentsTable.$inferInsert;
+
+// Schedules Table - Replaces Firebase 'schedules' collection
+export const schedulesTable = pgTable("schedules", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  householdId: varchar("household_id", { length: 255 }).notNull().references(() => householdsTable.id),
+  taskName: varchar("task_name", { length: 255 }).notNull(),
+  frequency: varchar("frequency", { length: 50 }),
+  nextDueDate: date("next_due_date"),
+  lastCompletedDate: date("last_completed_date"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+}, (table) => ({
+  householdIdx: index("idx_schedules_household").on(table.householdId),
+  taskIdx: index("idx_schedules_task").on(table.taskName),
+  uniqueHouseholdTask: uniqueIndex("idx_schedules_household_task").on(table.householdId, table.taskName)
+}));
+
+export type Schedule = typeof schedulesTable.$inferSelect;
+export type InsertSchedule = typeof schedulesTable.$inferInsert;
+
+// Task Completions Table - Replaces Firebase 'taskCompletions' collection
+export const taskCompletionsTable = pgTable("task_completions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  householdId: varchar("household_id", { length: 255 }).notNull().references(() => householdsTable.id),
+  taskId: integer("task_id").references(() => homeMaintenanceTasksTable.id),
+  scheduleId: varchar("schedule_id", { length: 255 }).references(() => schedulesTable.id),
+  completedAt: timestamp("completed_at").notNull(),
+  completedBy: varchar("completed_by", { length: 255 }),
+  notes: text("notes"),
+  cost: numeric("cost", { precision: 10, scale: 2 }),
+  serviceProvider: varchar("service_provider", { length: 255 }),
+  createdAt: timestamp("created_at").defaultNow().notNull()
+}, (table) => ({
+  householdIdx: index("idx_task_completions_household").on(table.householdId),
+  completedIdx: index("idx_task_completions_completed").on(table.completedAt)
+}));
+
+export type TaskCompletion = typeof taskCompletionsTable.$inferSelect;
+export type InsertTaskCompletion = typeof taskCompletionsTable.$inferInsert;
+
+// Reminder Queue Table - Replaces Firebase 'reminderQueue' collection
+export const reminderQueueTable = pgTable("reminder_queue", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  householdId: varchar("household_id", { length: 255 }).notNull().references(() => householdsTable.id),
+  taskId: varchar("task_id", { length: 255 }),
+  taskName: varchar("task_name", { length: 255 }).notNull(),
+  taskDescription: text("task_description"),
+  dueDate: date("due_date").notNull(),
+  runAt: timestamp("run_at").notNull(),
+  method: varchar("method", { length: 50 }).default('email'),
+  status: varchar("status", { length: 50 }).default('pending'),
+  sentAt: timestamp("sent_at"),
+  errorMessage: text("error_message"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+}, (table) => ({
+  statusIdx: index("idx_reminder_queue_status").on(table.status),
+  runAtIdx: index("idx_reminder_queue_run_at").on(table.runAt),
+  householdIdx: index("idx_reminder_queue_household").on(table.householdId)
+}));
+
+export type ReminderQueue = typeof reminderQueueTable.$inferSelect;
+export type InsertReminderQueue = typeof reminderQueueTable.$inferInsert;
+
+// Magic Links Table - For passwordless authentication
+export const magicLinksTable = pgTable("magic_links", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  token: varchar("token", { length: 64 }).unique().notNull(),
+  email: varchar("email", { length: 255 }).notNull(),
+  householdId: varchar("household_id", { length: 255 }).references(() => householdsTable.id),
+  expiresAt: timestamp("expires_at").notNull(),
+  used: boolean("used").default(false),
+  usedAt: timestamp("used_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull()
+}, (table) => ({
+  tokenIdx: uniqueIndex("idx_magic_links_token").on(table.token),
+  emailIdx: index("idx_magic_links_email").on(table.email),
+  expiresIdx: index("idx_magic_links_expires").on(table.expiresAt)
+}));
+
+export type MagicLink = typeof magicLinksTable.$inferSelect;
+export type InsertMagicLink = typeof magicLinksTable.$inferInsert;
+
+// Sessions Table - For dashboard access after magic link verification
+export const sessionsTable = pgTable("sessions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  token: varchar("token", { length: 64 }).unique().notNull(),
+  email: varchar("email", { length: 255 }).notNull(),
+  householdId: varchar("household_id", { length: 255 }).references(() => householdsTable.id),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull()
+}, (table) => ({
+  sessionTokenIdx: uniqueIndex("idx_sessions_token").on(table.token),
+  sessionEmailIdx: index("idx_sessions_email").on(table.email),
+  sessionExpiresIdx: index("idx_sessions_expires").on(table.expiresAt)
+}));
+
+export type Session = typeof sessionsTable.$inferSelect;
+export type InsertSession = typeof sessionsTable.$inferInsert;
 
 // Lead Capture
 export * from "./lead-schema";

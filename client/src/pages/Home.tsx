@@ -1,116 +1,571 @@
+import { useState } from "react";
+import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, Users, Package } from "lucide-react";
-
-// Stripe Payment Links mapping
-const STRIPE_PAYMENT_LINKS = {
-  single: "https://buy.stripe.com/test_14A00l9mwdUFbpncy9gIo07", // 1 QR Magnet - $19
-  twopack: "https://buy.stripe.com/test_8x27sNdCM03P3WVdCdgIo03", // 2 QR Magnets - $35
-  "100pack": "https://buy.stripe.com/test_eVq00l42c5o98db69LgIo01", // 100 QR Magnets - $899
-};
-
-const openStripeCheckout = (sku: keyof typeof STRIPE_PAYMENT_LINKS) => {
-  const paymentLink = STRIPE_PAYMENT_LINKS[sku];
-  if (paymentLink) {
-    window.open(paymentLink, '_blank');
-  }
-};
+import { CheckCircle, Users, Package, Bell, Shield, Calendar, MapPin, Wrench, Home as HomeIcon, X, Building2, Briefcase } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Home() {
+  const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+  const { toast } = useToast();
+
+  const handleCheckout = async (planId: string, planName: string) => {
+    setLoadingPlan(planId);
+    try {
+      const response = await fetch('/api/checkout/create-subscription-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ priceId: planId, plan: planName }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to start checkout');
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error('No checkout URL received');
+      }
+    } catch (error: any) {
+      console.error('Checkout error:', error);
+      toast({
+        title: "Checkout Unavailable",
+        description: "Subscription checkout is being set up. Please contact us to get started.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoadingPlan(null);
+    }
+  };
 
   return (
     <div className="flex flex-col min-h-screen">
       <main className="flex-1">
-        {/* Hero Section */}
-        <section className="w-full py-12 md:py-24 lg:py-32 xl:py-48 bg-gradient-to-br from-blue-50 to-indigo-100">
-          <div className="container px-4 md:px-6 mx-auto">
-            <div className="flex flex-col items-center space-y-4 text-center">
-              <div className="space-y-2">
-                <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl">
-                  Smart Home Maintenance Management
+        
+        {/* Hero Section - Updated Copy */}
+        <section className="relative bg-white overflow-hidden">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-28">
+            <div className="grid lg:grid-cols-2 gap-12 items-center">
+              
+              {/* Left: Content */}
+              <div className="text-center lg:text-left">
+                <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-slate-900 mb-6 leading-tight">
+                  Never Miss Home Maintenance Again
                 </h1>
-                <p className="mx-auto max-w-[700px] text-gray-500 md:text-xl">
-                  Transform your home maintenance with QR-powered scheduling, automated reminders, and climate-based task management.
+                <p className="text-lg sm:text-xl text-slate-600 mb-8 max-w-xl mx-auto lg:mx-0">
+                  Smart QR codes that track service history and send climate-aware reminders — 
+                  so your home stays protected without the guesswork.
+                </p>
+                
+                {/* CTAs */}
+                <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+                  <Button 
+                    size="lg" 
+                    className="bg-emerald-500 hover:bg-emerald-600 text-white px-8 py-6 text-lg font-semibold"
+                    onClick={() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })}
+                    data-testid="button-get-started"
+                  >
+                    Start Free (No Credit Card Required)
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="lg"
+                    className="border-slate-300 text-slate-700 hover:bg-slate-50"
+                    onClick={() => document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' })}
+                    data-testid="button-how-it-works"
+                  >
+                    See How It Works
+                  </Button>
+                </div>
+                
+                {/* Trust Badge */}
+                <p className="text-sm text-slate-500 mt-6">
+                  Trusted by 5,000+ homeowners in North US and Canada
                 </p>
               </div>
-              <div className="space-x-4">
-                <Button size="lg" onClick={() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })} data-testid="button-get-started">
-                  Get Started
-                </Button>
-                <Button variant="outline" size="lg" onClick={() => document.getElementById('how-it-works')?.scrollIntoView()}>
-                  Learn More
-                </Button>
+              
+              {/* Right: Product Visual */}
+              <div className="relative hidden lg:block">
+                <div className="bg-gradient-to-br from-emerald-50 to-slate-100 rounded-2xl p-8 shadow-lg">
+                  <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="w-16 h-16 bg-emerald-500 rounded-lg flex items-center justify-center">
+                        <HomeIcon className="w-8 h-8 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-slate-900">Smart QR Magnet</h3>
+                        <p className="text-sm text-slate-500">Scan. Track. Maintain.</p>
+                      </div>
+                    </div>
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-3 text-sm text-slate-600">
+                        <CheckCircle className="w-5 h-5 text-emerald-500" />
+                        <span>37+ maintenance tasks covered</span>
+                      </div>
+                      <div className="flex items-center gap-3 text-sm text-slate-600">
+                        <CheckCircle className="w-5 h-5 text-emerald-500" />
+                        <span>Automated SMS & email reminders</span>
+                      </div>
+                      <div className="flex items-center gap-3 text-sm text-slate-600">
+                        <CheckCircle className="w-5 h-5 text-emerald-500" />
+                        <span>Climate-based scheduling</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
+              
             </div>
           </div>
         </section>
 
-        {/* How It Works Section */}
-        <section id="how-it-works" className="w-full py-12 md:py-24 lg:py-32 bg-gray-50">
-          <div className="container px-4 md:px-6 mx-auto">
-            <div className="flex flex-col items-center justify-center space-y-4 text-center">
-              <div className="space-y-2">
-                <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">How It Works</h2>
-                <p className="max-w-[900px] text-gray-500 md:text-xl/relaxed">
-                  Get your home maintenance on autopilot in four simple steps
-                </p>
-              </div>
+        {/* Social Proof Section */}
+        <section className="py-8 bg-slate-50 border-y border-slate-200">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <p className="text-center text-slate-600 text-lg">
+              Trusted by <span className="font-semibold text-slate-900">5,000+</span> homeowners nationwide
+            </p>
+          </div>
+        </section>
+
+        {/* Problem → Solution Section */}
+        <section className="py-20 bg-white">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-16">
+              <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">
+                Maintenance Is Easy to Forget — Until It's Expensive
+              </h2>
+              <p className="text-lg text-slate-600 max-w-2xl mx-auto">
+                Most homeowners don't realize a skipped filter change can lead to a $3,000 HVAC repair.
+              </p>
             </div>
-            <div className="mx-auto grid max-w-6xl items-center gap-6 py-12 lg:grid-cols-4">
-              <Card className="text-center">
+            
+            <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+              {/* BEFORE Column */}
+              <Card className="border-red-200 bg-red-50/50">
                 <CardHeader>
-                  <div className="mx-auto bg-blue-100 rounded-full w-12 h-12 flex items-center justify-center mb-4">
-                    <span className="text-2xl font-bold text-blue-600">1</span>
-                  </div>
-                  <CardTitle>Get Your Magnet</CardTitle>
+                  <CardTitle className="flex items-center gap-2 text-red-700">
+                    <X className="w-6 h-6" />
+                    Without UpKeepQR
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <CardDescription>
-                    Order your QR code magnet pack and place it on your refrigerator or utility area
+                  <ul className="space-y-4">
+                    <li className="flex items-start gap-3">
+                      <X className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                      <span className="text-slate-700">Paper lists that get lost</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <X className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                      <span className="text-slate-700">Forgotten filter changes</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <X className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                      <span className="text-slate-700">Surprise $3,000+ repair bills</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <X className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+                      <span className="text-slate-700">No service history when selling</span>
+                    </li>
+                  </ul>
+                </CardContent>
+              </Card>
+
+              {/* AFTER Column */}
+              <Card className="border-emerald-200 bg-emerald-50/50">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-emerald-700">
+                    <CheckCircle className="w-6 h-6" />
+                    With UpKeepQR
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ul className="space-y-4">
+                    <li className="flex items-start gap-3">
+                      <CheckCircle className="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" />
+                      <span className="text-slate-700">One scan, instant setup</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <CheckCircle className="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" />
+                      <span className="text-slate-700">Automatic climate-smart reminders</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <CheckCircle className="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" />
+                      <span className="text-slate-700">Prevent costly repairs</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <CheckCircle className="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" />
+                      <span className="text-slate-700">Complete maintenance history</span>
+                    </li>
+                  </ul>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </section>
+
+        {/* How It Works - Updated Copy */}
+        <section id="how-it-works" className="py-20 bg-slate-50">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            
+            <div className="text-center mb-16">
+              <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">
+                How UpKeepQR Works
+              </h2>
+              <p className="text-lg sm:text-xl text-slate-600 max-w-2xl mx-auto">
+                Three simple steps to never miss home maintenance again
+              </p>
+            </div>
+            
+            {/* Bento Grid */}
+            <div className="grid md:grid-cols-3 gap-8">
+              
+              {/* Card 1 */}
+              <Card className="text-center border-slate-200 shadow-sm card-hover bg-white">
+                <CardHeader className="pb-4">
+                  <div className="w-14 h-14 bg-emerald-100 rounded-xl flex items-center justify-center mx-auto mb-4">
+                    <span className="text-2xl font-bold text-emerald-600">1</span>
+                  </div>
+                  <CardTitle className="text-xl text-slate-900">Order & Attach QR</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CardDescription className="text-slate-600 text-base">
+                    Attach your QR magnet to key appliances. 
+                    It arrives ready to use.
                   </CardDescription>
                 </CardContent>
               </Card>
               
-              <Card className="text-center">
-                <CardHeader>
-                  <div className="mx-auto bg-green-100 rounded-full w-12 h-12 flex items-center justify-center mb-4">
-                    <span className="text-2xl font-bold text-green-600">2</span>
+              {/* Card 2 */}
+              <Card className="text-center border-slate-200 shadow-sm card-hover bg-white">
+                <CardHeader className="pb-4">
+                  <div className="w-14 h-14 bg-emerald-100 rounded-xl flex items-center justify-center mx-auto mb-4">
+                    <span className="text-2xl font-bold text-emerald-600">2</span>
                   </div>
-                  <CardTitle>Scan & Setup</CardTitle>
+                  <CardTitle className="text-xl text-slate-900">Scan to Activate</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <CardDescription>
-                    Scan the QR code and enter your home details to create a personalized maintenance schedule
+                  <CardDescription className="text-slate-600 text-base">
+                    We generate your personalized maintenance schedule 
+                    based on your home and climate.
                   </CardDescription>
                 </CardContent>
               </Card>
               
-              <Card className="text-center">
-                <CardHeader>
-                  <div className="mx-auto bg-orange-100 rounded-full w-12 h-12 flex items-center justify-center mb-4">
-                    <span className="text-2xl font-bold text-orange-600">3</span>
+              {/* Card 3 */}
+              <Card className="text-center border-slate-200 shadow-sm card-hover bg-white">
+                <CardHeader className="pb-4">
+                  <div className="w-14 h-14 bg-emerald-100 rounded-xl flex items-center justify-center mx-auto mb-4">
+                    <span className="text-2xl font-bold text-emerald-600">3</span>
                   </div>
-                  <CardTitle>Climate-Based Scheduling</CardTitle>
+                  <CardTitle className="text-xl text-slate-900">Get Smart Reminders</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <CardDescription>
-                    Our system creates optimal maintenance schedules based on your local climate zone
+                  <CardDescription className="text-slate-600 text-base">
+                    Timely alerts based on your local climate.
+                    Never miss a maintenance task again.
                   </CardDescription>
                 </CardContent>
               </Card>
               
-              <Card className="text-center">
-                <CardHeader>
-                  <div className="mx-auto bg-purple-100 rounded-full w-12 h-12 flex items-center justify-center mb-4">
-                    <span className="text-2xl font-bold text-purple-600">4</span>
+            </div>
+
+            {/* Micro-copy */}
+            <p className="text-center text-sm text-slate-500 mt-8">
+              Setup takes under 5 minutes. No app required.
+            </p>
+          </div>
+        </section>
+
+        {/* Benefits Section - Outcome Focused */}
+        <section className="py-20 bg-white">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            
+            <div className="text-center mb-16">
+              <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">
+                What Happens When You Never Miss Maintenance Again
+              </h2>
+              <p className="text-lg sm:text-xl text-slate-600">
+                Real outcomes from staying on top of your home care
+              </p>
+            </div>
+            
+            {/* 2-column grid */}
+            <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+              
+              {/* Benefit 1 */}
+              <div className="flex gap-4">
+                <div className="flex-shrink-0">
+                  <div className="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center">
+                    <Shield className="w-6 h-6 text-emerald-600" />
                   </div>
-                  <CardTitle>Get Reminders</CardTitle>
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-slate-900 mb-2">
+                    Prevent Costly Repairs
+                  </h3>
+                  <p className="text-slate-600 mb-1">
+                    Avoid $1,000–$5,000 emergency fixes with timely upkeep.
+                  </p>
+                  <p className="text-sm text-slate-500">
+                    Our climate-smart scheduling adjusts reminders based on your local weather.
+                  </p>
+                </div>
+              </div>
+              
+              {/* Benefit 2 */}
+              <div className="flex gap-4">
+                <div className="flex-shrink-0">
+                  <div className="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center">
+                    <HomeIcon className="w-6 h-6 text-emerald-600" />
+                  </div>
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-slate-900 mb-2">
+                    Protect Your Home Value
+                  </h3>
+                  <p className="text-slate-600 mb-1">
+                    Documented maintenance history increases your home's resale value.
+                  </p>
+                  <p className="text-sm text-slate-500">
+                    Complete records show buyers your home has been well cared for.
+                  </p>
+                </div>
+              </div>
+              
+              {/* Benefit 3 */}
+              <div className="flex gap-4">
+                <div className="flex-shrink-0">
+                  <div className="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center">
+                    <Calendar className="w-6 h-6 text-emerald-600" />
+                  </div>
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-slate-900 mb-2">
+                    Sell Your Home Faster
+                  </h3>
+                  <p className="text-slate-600 mb-1">
+                    Buyers trust homes with documented maintenance history.
+                  </p>
+                  <p className="text-sm text-slate-500">
+                    Exportable reports make disclosures and negotiations easier.
+                  </p>
+                </div>
+              </div>
+              
+              {/* Benefit 4 */}
+              <div className="flex gap-4">
+                <div className="flex-shrink-0">
+                  <div className="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center">
+                    <Bell className="w-6 h-6 text-emerald-600" />
+                  </div>
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-slate-900 mb-2">
+                    Stop Worrying, Start Living
+                  </h3>
+                  <p className="text-slate-600 mb-1">
+                    We remember so you don't have to.
+                  </p>
+                  <p className="text-sm text-slate-500">
+                    Get SMS and email alerts before tasks are due. Just check them off.
+                  </p>
+                </div>
+              </div>
+              
+              {/* Benefit 5 */}
+              <div className="flex gap-4">
+                <div className="flex-shrink-0">
+                  <div className="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center">
+                    <Wrench className="w-6 h-6 text-emerald-600" />
+                  </div>
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-slate-900 mb-2">
+                    37+ Tasks Covered
+                  </h3>
+                  <p className="text-slate-600 mb-1">
+                    From HVAC filters to roof inspections — we've got it all.
+                  </p>
+                  <p className="text-sm text-slate-500">
+                    Comprehensive catalog tailored to your home type and climate zone.
+                  </p>
+                </div>
+              </div>
+              
+              {/* Benefit 6 */}
+              <div className="flex gap-4">
+                <div className="flex-shrink-0">
+                  <div className="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center">
+                    <MapPin className="w-6 h-6 text-emerald-600" />
+                  </div>
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-slate-900 mb-2">
+                    No App Required
+                  </h3>
+                  <p className="text-slate-600 mb-1">
+                    Works directly through your phone's camera.
+                  </p>
+                  <p className="text-sm text-slate-500">
+                    Just scan the QR code — no downloads, no accounts to remember.
+                  </p>
+                </div>
+              </div>
+              
+            </div>
+          </div>
+        </section>
+
+        {/* Who UpKeepQR Is For */}
+        <section className="py-20 bg-slate-50">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">
+                Built for Homeowners — Powerful Enough for Professionals
+              </h2>
+              <p className="text-lg text-slate-600 max-w-2xl mx-auto">
+                Whether you're protecting your own home or managing properties for clients, 
+                UpKeepQR scales with your needs.
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {/* Homeowners */}
+              <Card className="border-slate-200 shadow-sm card-hover bg-white">
+                <CardHeader className="pb-3">
+                  <div className="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center mb-3">
+                    <HomeIcon className="w-6 h-6 text-emerald-600" />
+                  </div>
+                  <CardTitle className="text-lg text-slate-900">Homeowners</CardTitle>
+                  <CardDescription>Peace of mind and home value protection</CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <CardDescription>
-                    Receive timely email reminders with calendar events to keep your home in perfect condition
-                  </CardDescription>
+                <CardContent className="space-y-4">
+                  <ul className="space-y-2 text-sm">
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
+                      <span className="text-slate-600">Never forget maintenance</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
+                      <span className="text-slate-600">Protect your investment</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
+                      <span className="text-slate-600">Simple setup in minutes</span>
+                    </li>
+                  </ul>
+                  <Button 
+                    className="w-full bg-emerald-500 hover:bg-emerald-600 text-white"
+                    onClick={() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })}
+                    data-testid="button-audience-homeowners"
+                  >
+                    Start Free
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Multi-Property Owners */}
+              <Card className="border-slate-200 shadow-sm card-hover bg-white">
+                <CardHeader className="pb-3">
+                  <div className="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center mb-3">
+                    <Building2 className="w-6 h-6 text-emerald-600" />
+                  </div>
+                  <CardTitle className="text-lg text-slate-900">Multi-Property Owners</CardTitle>
+                  <CardDescription>Centralized tracking for all your properties</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <ul className="space-y-2 text-sm">
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
+                      <span className="text-slate-600">Manage up to 3 properties</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
+                      <span className="text-slate-600">Exportable history</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
+                      <span className="text-slate-600">Track everything in one place</span>
+                    </li>
+                  </ul>
+                  <Button 
+                    variant="outline"
+                    className="w-full border-emerald-500 text-emerald-600 hover:bg-emerald-50"
+                    onClick={() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })}
+                    data-testid="button-audience-multi-property"
+                  >
+                    View Plus Plan
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Realtors & Agents */}
+              <Card className="border-slate-200 shadow-sm card-hover bg-white">
+                <CardHeader className="pb-3">
+                  <div className="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center mb-3">
+                    <Briefcase className="w-6 h-6 text-emerald-600" />
+                  </div>
+                  <CardTitle className="text-lg text-slate-900">Realtors & Agents</CardTitle>
+                  <CardDescription>Branded closing gifts that keep clients engaged</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <ul className="space-y-2 text-sm">
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
+                      <span className="text-slate-600">25 branded QR magnets/year</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
+                      <span className="text-slate-600">Client dashboard access</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
+                      <span className="text-slate-600">Stand out from competitors</span>
+                    </li>
+                  </ul>
+                  <Button 
+                    variant="outline"
+                    className="w-full border-emerald-500 text-emerald-600 hover:bg-emerald-50"
+                    onClick={() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })}
+                    data-testid="button-audience-realtor"
+                  >
+                    View Realtor Plan
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Property Managers */}
+              <Card className="border-slate-200 shadow-sm card-hover bg-white">
+                <CardHeader className="pb-3">
+                  <div className="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center mb-3">
+                    <Users className="w-6 h-6 text-emerald-600" />
+                  </div>
+                  <CardTitle className="text-lg text-slate-900">Property Managers</CardTitle>
+                  <CardDescription>Compliance and audit logs at scale</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <ul className="space-y-2 text-sm">
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
+                      <span className="text-slate-600">Manage up to 200 units</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
+                      <span className="text-slate-600">Complete maintenance logs</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
+                      <span className="text-slate-600">Regulatory compliance</span>
+                    </li>
+                  </ul>
+                  <Button 
+                    variant="outline"
+                    className="w-full border-emerald-500 text-emerald-600 hover:bg-emerald-50"
+                    onClick={() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })}
+                    data-testid="button-audience-property-manager"
+                  >
+                    View Manager Plan
+                  </Button>
                 </CardContent>
               </Card>
             </div>
@@ -118,209 +573,303 @@ export default function Home() {
         </section>
 
         {/* Pricing Section */}
-        <section id="pricing" className="w-full py-12 md:py-24 lg:py-32">
-          <div className="container px-4 md:px-6 mx-auto">
-            <div className="flex flex-col items-center justify-center space-y-4 text-center">
-              <div className="space-y-2">
-                <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">Simple Pricing</h2>
-                <p className="max-w-[900px] text-gray-500 md:text-xl/relaxed">
-                  Choose the plan that fits your needs
-                </p>
-              </div>
+        <section id="pricing" className="py-20 bg-white">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-16">
+              <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">Simple, Smart Home Maintenance Pricing</h2>
+              <p className="text-lg sm:text-xl text-slate-600 max-w-2xl mx-auto">
+                Simple pricing. No clutter. Cancel anytime at renewal.
+              </p>
+              <p className="text-base text-slate-500 mt-2">
+                Monthly plans, billed annually. Physical QR magnets included.
+              </p>
             </div>
-            <div className="mx-auto grid max-w-6xl items-center gap-6 py-12 lg:grid-cols-3">
-              {/* Single Pack */}
-              <Card className="relative">
+            
+            <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+              
+              {/* Homeowner Basic */}
+              <Card className="relative border-slate-200 shadow-sm card-hover bg-white">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Package className="h-5 w-5" />
-                    Single Pack
+                  <CardTitle className="flex items-center gap-2 text-slate-900">
+                    <Package className="h-5 w-5 text-emerald-500" />
+                    Homeowner Basic
                   </CardTitle>
-                  <CardDescription>Perfect for homeowners</CardDescription>
-                  <div className="text-3xl font-bold">$19</div>
+                  <CardDescription>Perfect for single-home owners</CardDescription>
+                  <div className="flex items-baseline gap-2 mt-2">
+                    <span className="text-4xl font-bold text-slate-900">$6.99</span>
+                    <span className="text-slate-600">/ month</span>
+                  </div>
+                  <p className="text-sm text-slate-500 mt-1">Billed annually at $69</p>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <ul className="space-y-2 text-sm">
-                    <li className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-green-500" />
-                      1 QR Magnet
+                  <ul className="space-y-3 text-sm">
+                    <li className="flex items-center gap-2 text-slate-600">
+                      <CheckCircle className="h-4 w-4 text-emerald-500 flex-shrink-0" />
+                      1 Premium QR Magnet
                     </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-green-500" />
-                      Lifetime Reminders
+                    <li className="flex items-center gap-2 text-slate-600">
+                      <CheckCircle className="h-4 w-4 text-emerald-500 flex-shrink-0" />
+                      Smart maintenance task list
                     </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-green-500" />
-                      Climate-Based Scheduling
+                    <li className="flex items-center gap-2 text-slate-600">
+                      <CheckCircle className="h-4 w-4 text-emerald-500 flex-shrink-0" />
+                      Climate-based scheduling
                     </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-green-500" />
-                      Email & Calendar Sync
+                    <li className="flex items-center gap-2 text-slate-600">
+                      <CheckCircle className="h-4 w-4 text-emerald-500 flex-shrink-0" />
+                      Email reminders
+                    </li>
+                    <li className="flex items-center gap-2 text-slate-600">
+                      <CheckCircle className="h-4 w-4 text-emerald-500 flex-shrink-0" />
+                      Up to 3 SMS reminders/month
+                    </li>
+                    <li className="flex items-center gap-2 text-slate-600">
+                      <CheckCircle className="h-4 w-4 text-emerald-500 flex-shrink-0" />
+                      Task completion history
                     </li>
                   </ul>
                   <Button 
-                    className="w-full" 
-                    onClick={() => openStripeCheckout('single')}
-                    data-testid="button-single-pack"
+                    className="w-full bg-emerald-500 hover:bg-emerald-600 text-white" 
+                    data-testid="button-homeowner-basic"
+                    onClick={() => handleCheckout('homeowner_basic_yearly', 'Homeowner Basic')}
+                    disabled={loadingPlan === 'homeowner_basic_yearly'}
                   >
-                    Get Started
+                    {loadingPlan === 'homeowner_basic_yearly' ? 'Loading...' : 'Start Free'}
                   </Button>
                 </CardContent>
               </Card>
 
-              {/* Two Pack */}
-              <Card className="relative">
+              {/* Homeowner Plus - Most Popular */}
+              <Card className="relative border-2 border-emerald-500 shadow-lg card-hover bg-white">
+                <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-emerald-500 text-white px-4">Most Popular</Badge>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Package className="h-5 w-5" />
-                    Two Pack
+                  <CardTitle className="flex items-center gap-2 text-slate-900">
+                    <Package className="h-5 w-5 text-emerald-500" />
+                    Homeowner Plus
                   </CardTitle>
-                  <CardDescription>Great for sharing</CardDescription>
-                  <div className="text-3xl font-bold">$35</div>
-                  <Badge className="absolute -top-2 -right-2 bg-green-500">Save $3</Badge>
+                  <CardDescription>For multi-property owners</CardDescription>
+                  <div className="flex items-baseline gap-2 mt-2">
+                    <span className="text-4xl font-bold text-slate-900">$12.99</span>
+                    <span className="text-slate-600">/ month</span>
+                  </div>
+                  <p className="text-sm text-slate-500 mt-1">Billed annually at $129</p>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <ul className="space-y-2 text-sm">
-                    <li className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-green-500" />
-                      2 QR Magnets
+                  <ul className="space-y-3 text-sm">
+                    <li className="flex items-center gap-2 text-slate-600">
+                      <CheckCircle className="h-4 w-4 text-emerald-500 flex-shrink-0" />
+                      Up to 10 QR magnets
                     </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-green-500" />
-                      Lifetime Reminders
+                    <li className="flex items-center gap-2 text-slate-600">
+                      <CheckCircle className="h-4 w-4 text-emerald-500 flex-shrink-0" />
+                      Manage up to 3 properties
                     </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-green-500" />
-                      Climate-Based Scheduling
+                    <li className="flex items-center gap-2 text-slate-600">
+                      <CheckCircle className="h-4 w-4 text-emerald-500 flex-shrink-0" />
+                      Appliance-level maintenance tracking
                     </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-green-500" />
-                      Email & Calendar Sync
+                    <li className="flex items-center gap-2 text-slate-600">
+                      <CheckCircle className="h-4 w-4 text-emerald-500 flex-shrink-0" />
+                      Priority reminders
+                    </li>
+                    <li className="flex items-center gap-2 text-slate-600">
+                      <CheckCircle className="h-4 w-4 text-emerald-500 flex-shrink-0" />
+                      Exportable maintenance history
+                    </li>
+                    <li className="flex items-center gap-2 text-slate-600">
+                      <CheckCircle className="h-4 w-4 text-emerald-500 flex-shrink-0" />
+                      Everything in Homeowner Basic
                     </li>
                   </ul>
                   <Button 
-                    className="w-full" 
-                    onClick={() => openStripeCheckout('twopack')}
-                    data-testid="button-two-pack"
+                    className="w-full bg-emerald-500 hover:bg-emerald-600 text-white" 
+                    data-testid="button-homeowner-plus"
+                    onClick={() => handleCheckout('homeowner_plus_yearly', 'Homeowner Plus')}
+                    disabled={loadingPlan === 'homeowner_plus_yearly'}
                   >
-                    Get Started
+                    {loadingPlan === 'homeowner_plus_yearly' ? 'Loading...' : 'Start Free'}
                   </Button>
                 </CardContent>
               </Card>
 
-              {/* 100 Pack */}
-              <Card className="relative border-2 border-blue-500">
+              {/* Realtor / Agent */}
+              <Card className="relative border-slate-200 shadow-sm card-hover bg-white">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Users className="h-5 w-5" />
-                    Agent 100-Pack
+                  <CardTitle className="flex items-center gap-2 text-slate-900">
+                    <Users className="h-5 w-5 text-emerald-500" />
+                    Realtor / Agent
                   </CardTitle>
-                  <CardDescription>For real estate agents</CardDescription>
-                  <div className="text-3xl font-bold">$899</div>
-                  <Badge className="absolute -top-2 -right-2 bg-blue-500">Popular</Badge>
+                  <CardDescription>For real estate professionals</CardDescription>
+                  <div className="flex items-baseline gap-2 mt-2">
+                    <span className="text-4xl font-bold text-slate-900">$39</span>
+                    <span className="text-slate-600">/ month</span>
+                  </div>
+                  <p className="text-sm text-slate-500 mt-1">Billed annually at $390</p>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <ul className="space-y-2 text-sm">
-                    <li className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-green-500" />
-                      100 QR Magnets
+                  <ul className="space-y-3 text-sm">
+                    <li className="flex items-center gap-2 text-slate-600">
+                      <CheckCircle className="h-4 w-4 text-emerald-500 flex-shrink-0" />
+                      25 branded QR magnets per year
                     </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-green-500" />
-                      Agent Dashboard
+                    <li className="flex items-center gap-2 text-slate-600">
+                      <CheckCircle className="h-4 w-4 text-emerald-500 flex-shrink-0" />
+                      25 homeowner activations
                     </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-green-500" />
-                      Customer Analytics
+                    <li className="flex items-center gap-2 text-slate-600">
+                      <CheckCircle className="h-4 w-4 text-emerald-500 flex-shrink-0" />
+                      Agent dashboard
                     </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-green-500" />
-                      CSV Download
+                    <li className="flex items-center gap-2 text-slate-600">
+                      <CheckCircle className="h-4 w-4 text-emerald-500 flex-shrink-0" />
+                      Client activation tracking
+                    </li>
+                    <li className="flex items-center gap-2 text-slate-600">
+                      <CheckCircle className="h-4 w-4 text-emerald-500 flex-shrink-0" />
+                      Co-branded QR experience
                     </li>
                   </ul>
                   <Button 
-                    className="w-full" 
-                    onClick={() => openStripeCheckout('100pack')}
-                    data-testid="button-100-pack"
+                    className="w-full bg-emerald-500 hover:bg-emerald-600 text-white" 
+                    data-testid="button-realtor-agent"
+                    onClick={() => handleCheckout('realtor_yearly', 'Realtor / Agent')}
+                    disabled={loadingPlan === 'realtor_yearly'}
                   >
-                    Get Started
+                    {loadingPlan === 'realtor_yearly' ? 'Loading...' : 'Start Free'}
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Property Manager */}
+              <Card className="relative border-slate-200 shadow-sm card-hover bg-white">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-slate-900">
+                    <Users className="h-5 w-5 text-emerald-500" />
+                    Property / Maintenance Manager
+                  </CardTitle>
+                  <CardDescription>For property management companies</CardDescription>
+                  <div className="flex items-baseline gap-2 mt-2">
+                    <span className="text-4xl font-bold text-slate-900">$149</span>
+                    <span className="text-slate-600">/ month</span>
+                  </div>
+                  <p className="text-sm text-slate-500 mt-1">Billed annually at $1,490</p>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <ul className="space-y-3 text-sm">
+                    <li className="flex items-center gap-2 text-slate-600">
+                      <CheckCircle className="h-4 w-4 text-emerald-500 flex-shrink-0" />
+                      Up to 200 units
+                    </li>
+                    <li className="flex items-center gap-2 text-slate-600">
+                      <CheckCircle className="h-4 w-4 text-emerald-500 flex-shrink-0" />
+                      Appliance & unit-level tracking
+                    </li>
+                    <li className="flex items-center gap-2 text-slate-600">
+                      <CheckCircle className="h-4 w-4 text-emerald-500 flex-shrink-0" />
+                      Maintenance & service history logs
+                    </li>
+                    <li className="flex items-center gap-2 text-slate-600">
+                      <CheckCircle className="h-4 w-4 text-emerald-500 flex-shrink-0" />
+                      Audit & compliance reports
+                    </li>
+                    <li className="flex items-center gap-2 text-slate-600">
+                      <CheckCircle className="h-4 w-4 text-emerald-500 flex-shrink-0" />
+                      Bulk branded magnets
+                    </li>
+                    <li className="flex items-center gap-2 text-slate-600">
+                      <CheckCircle className="h-4 w-4 text-emerald-500 flex-shrink-0" />
+                      SMS limits per unit
+                    </li>
+                  </ul>
+                  <Button 
+                    className="w-full bg-emerald-500 hover:bg-emerald-600 text-white" 
+                    data-testid="button-property-manager"
+                    onClick={() => handleCheckout('property_manager_yearly', 'Property Manager')}
+                    disabled={loadingPlan === 'property_manager_yearly'}
+                  >
+                    {loadingPlan === 'property_manager_yearly' ? 'Loading...' : 'Start Free'}
                   </Button>
                 </CardContent>
               </Card>
 
             </div>
+            
+            {/* No credit card note */}
+            <p className="text-center text-sm text-slate-500 mt-8">
+              No credit card required to get started.
+            </p>
           </div>
         </section>
 
         {/* FAQ Section */}
-        <section className="w-full py-12 md:py-24 lg:py-32 bg-gray-50">
-          <div className="container px-4 md:px-6 mx-auto">
-            <div className="flex flex-col items-center justify-center space-y-4 text-center mb-12">
-              <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">Frequently Asked Questions</h2>
+        <section className="py-20 bg-slate-50">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-16">
+              <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">Frequently Asked Questions</h2>
             </div>
-            <div className="mx-auto max-w-4xl grid gap-6 lg:grid-cols-2">
-              <Card>
+            <div className="max-w-4xl mx-auto grid gap-6 lg:grid-cols-2">
+              <Card className="border-slate-200 shadow-sm bg-white">
                 <CardHeader>
-                  <CardTitle>How does the QR magnet work?</CardTitle>
+                  <CardTitle className="text-lg text-slate-900">How does the QR magnet work?</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <CardDescription>
+                  <CardDescription className="text-slate-600">
                     Simply scan the QR code with your phone camera to access the setup page. Enter your home details and we'll create a customized maintenance schedule based on your climate zone.
                   </CardDescription>
                 </CardContent>
               </Card>
               
-              <Card>
+              <Card className="border-slate-200 shadow-sm bg-white">
                 <CardHeader>
-                  <CardTitle>What maintenance tasks are included?</CardTitle>
+                  <CardTitle className="text-lg text-slate-900">What maintenance tasks are included?</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <CardDescription>
+                  <CardDescription className="text-slate-600">
                     Our system includes HVAC filter changes, gutter cleaning, deck maintenance, sprinkler winterization, and many more tasks tailored to your specific home type and local climate.
                   </CardDescription>
                 </CardContent>
               </Card>
               
-              <Card>
+              <Card className="border-slate-200 shadow-sm bg-white">
                 <CardHeader>
-                  <CardTitle>How often will I get reminders?</CardTitle>
+                  <CardTitle className="text-lg text-slate-900">How often will I get reminders?</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <CardDescription>
+                  <CardDescription className="text-slate-600">
                     Reminders are sent 7 days before each task is due. You'll receive an email with a calendar event you can add directly to your calendar app.
                   </CardDescription>
                 </CardContent>
               </Card>
               
-              <Card>
+              <Card className="border-slate-200 shadow-sm bg-white">
                 <CardHeader>
-                  <CardTitle>Can I customize my maintenance schedule?</CardTitle>
+                  <CardTitle className="text-lg text-slate-900">Can I customize my maintenance schedule?</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <CardDescription>
+                  <CardDescription className="text-slate-600">
                     Currently, our system automatically generates schedules based on proven best practices for your climate zone. Custom scheduling options will be available in future updates.
                   </CardDescription>
                 </CardContent>
               </Card>
               
-              <Card>
+              <Card className="border-slate-200 shadow-sm bg-white">
                 <CardHeader>
-                  <CardTitle>Do I need to download an app to use UpKeepQR?</CardTitle>
+                  <CardTitle className="text-lg text-slate-900">Do I need to download an app?</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <CardDescription>
+                  <CardDescription className="text-slate-600">
                     No. UpKeepQR works directly through your phone's camera. Just scan the magnet and set reminders instantly — no extra app required.
                   </CardDescription>
                 </CardContent>
               </Card>
               
-              <Card>
+              <Card className="border-slate-200 shadow-sm bg-white">
                 <CardHeader>
-                  <CardTitle>Will my personal data be safe if I use UpKeepQR?</CardTitle>
+                  <CardTitle className="text-lg text-slate-900">Is my data safe?</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <CardDescription>
-                    Yes. UpKeepQR only collects the information needed to send you reminders. Your data is never sold or shared with third parties, and you have full control over your reminder settings.
+                  <CardDescription className="text-slate-600">
+                    Yes. UpKeepQR only collects the information needed to send you reminders. Your data is never sold or shared with third parties, and you have full control over your settings.
                   </CardDescription>
                 </CardContent>
               </Card>
@@ -328,8 +877,30 @@ export default function Home() {
           </div>
         </section>
 
-      </main>
+        {/* Final CTA Section - Updated */}
+        <section className="py-20 bg-emerald-500">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 className="text-3xl sm:text-4xl font-bold text-white mb-6">
+              Ready to Stop Guessing and Start Protecting?
+            </h2>
+            <p className="text-lg text-emerald-100 mb-8 max-w-2xl mx-auto">
+              Join thousands of homeowners who never miss maintenance again.
+            </p>
+            <Button 
+              size="lg"
+              className="bg-white text-emerald-600 hover:bg-emerald-50 px-8 py-6 text-lg font-semibold"
+              onClick={() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })}
+              data-testid="button-final-cta"
+            >
+              Get Started Free
+            </Button>
+            <p className="text-sm text-emerald-100 mt-6">
+              No credit card required. Cancel anytime. 30-day guarantee.
+            </p>
+          </div>
+        </section>
 
+      </main>
     </div>
   );
 }

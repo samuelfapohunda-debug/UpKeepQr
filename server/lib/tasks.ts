@@ -1,7 +1,8 @@
 import { eq, sql } from 'drizzle-orm';
 import { 
   homeMaintenanceTasksTable, 
-  householdTaskAssignmentsTable, 
+  householdTaskAssignmentsTable,
+  reminderQueueTable,
   type HomeMaintenanceTask 
 } from '../../shared/schema';
 
@@ -35,6 +36,25 @@ function calculateDueDate(today: Date, daysFromNow: number): Date {
   const due = new Date(today);
   due.setDate(due.getDate() + daysFromNow);
   return due;
+}
+
+/**
+ * Get reminder days based on task priority
+ * High priority: 7, 3, 1, 0 days before due
+ * Medium priority: 7, 1, 0 days before due
+ * Low priority: 3, 0 days before due
+ */
+function getReminderDaysForPriority(priority: 'high' | 'medium' | 'low'): number[] {
+  switch (priority) {
+    case 'high':
+      return [7, 3, 1, 0];
+    case 'medium':
+      return [7, 1, 0];
+    case 'low':
+      return [3, 0];
+    default:
+      return [3, 0];
+  }
 }
 
 /**
@@ -279,14 +299,52 @@ export async function generateMaintenanceTasks(
       const assignmentValues = assignments.map(assignment => ({
         householdId,
         taskId: assignment.taskId,
-        dueDate: assignment.dueDate, // Pass as Date object, Drizzle will handle conversion
+        dueDate: assignment.dueDate,
         frequency: assignment.frequency,
         status: 'pending',
         priority: assignment.priority
-        // createdAt and updatedAt have defaultNow() in schema, don't provide manually
       }));
       
       await tx.insert(householdTaskAssignmentsTable).values(assignmentValues);
+      
+      // Create reminder queue entries for each task
+      // Note: This function is only called once during household setup (idempotency check above)
+      // So there shouldn't be any existing reminders - the idempotency check prevents re-runs
+      
+      const reminderEntries: any[] = [];
+      const now = new Date();
+      
+      for (const assignment of assignments) {
+        const dueDateObj = new Date(assignment.dueDate);
+        // Format as YYYY-MM-DD string for Drizzle date column type
+        const dueDateStr = dueDateObj.toISOString().split('T')[0];
+        const reminderDays = getReminderDaysForPriority(assignment.priority);
+        
+        for (const daysBeforeDue of reminderDays) {
+          const runAt = new Date(dueDateObj);
+          runAt.setDate(runAt.getDate() - daysBeforeDue);
+          runAt.setHours(14, 0, 0, 0); // 14:00 UTC = 9:00 AM EST (during standard time)
+          
+          // Only create reminders for future dates
+          if (runAt > now) {
+            reminderEntries.push({
+              householdId,
+              taskId: String(assignment.taskId),
+              taskName: assignment.taskName,
+              taskDescription: `${assignment.category} maintenance task`,
+              dueDate: dueDateStr, // YYYY-MM-DD string for Drizzle date column
+              runAt,
+              method: 'email',
+              status: 'pending'
+            });
+          }
+        }
+      }
+      
+      if (reminderEntries.length > 0) {
+        await tx.insert(reminderQueueTable).values(reminderEntries);
+        console.log(`📬 Created ${reminderEntries.length} reminder entries`);
+      }
     }
     
     console.log(`✅ Created ${assignments.length} task assignments for household ${householdId}`);

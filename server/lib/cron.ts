@@ -1,159 +1,199 @@
 import cron from 'node-cron';
-import { storage } from '../storage';
-import { sendReminderEmail } from './mail';
-import { createMaintenanceReminderEvent } from './ics';
+import { storage } from '../storage.js';
+import { db } from '../db.js';
+import { householdTaskAssignmentsTable, type ReminderQueue, type Household } from '../../shared/schema.js';
+import { eq, and, lt } from 'drizzle-orm';
+import { sendReminderEmail } from './mail.js';
+import { createMaintenanceReminderEvent } from './ics.js';
 
-/**
- * Start all cron jobs
- */
+let isReminderJobRunning = false;
+let isOverdueJobRunning = false;
+
 export function startCronJobs(): void {
-  // Daily job at 09:00 local time to process reminder queue
   cron.schedule('0 9 * * *', async () => {
-    console.log('🕘 Running daily reminder job at 09:00');
-    await processReminderQueue();
+    console.log('Running daily maintenance job at 09:00 EST');
+    
+    try {
+      await updateOverdueTasks();
+      await processReminderQueue();
+    } catch (error) {
+      console.error('Daily job failed:', error);
+    }
   }, {
-    timezone: 'America/New_York' // Default timezone, can be made configurable
+    timezone: 'America/New_York'
   });
 
-  console.log('✅ Cron jobs started successfully');
+  console.log('Cron jobs started successfully');
 }
 
-/**
- * Process pending reminders in the queue
- */
+async function updateOverdueTasks(): Promise<void> {
+  if (isOverdueJobRunning) {
+    console.log('Overdue job already running, skipping');
+    return;
+  }
+  
+  isOverdueJobRunning = true;
+  
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    await db.update(householdTaskAssignmentsTable)
+      .set({ 
+        status: 'overdue' as const,
+        updatedAt: new Date() 
+      })
+      .where(and(
+        eq(householdTaskAssignmentsTable.status, 'pending'),
+        lt(householdTaskAssignmentsTable.dueDate, today)
+      ));
+    
+    console.log('Updated overdue tasks');
+  } catch (error) {
+    console.error('Failed to update overdue tasks:', error);
+  } finally {
+    isOverdueJobRunning = false;
+  }
+}
+
 async function processReminderQueue(): Promise<void> {
+  if (isReminderJobRunning) {
+    console.log('Reminder job already running, skipping');
+    return;
+  }
+  
+  isReminderJobRunning = true;
+  
   try {
     const now = new Date();
-    
-    // Fetch pending reminders where run_at <= now
     const pendingReminders = await storage.getPendingReminders(now);
     
-    console.log(`📧 Processing ${pendingReminders.length} pending reminders`);
+    console.log(`Processing ${pendingReminders.length} pending reminders`);
+    
+    let successCount = 0;
+    let failCount = 0;
     
     for (const reminder of pendingReminders) {
       try {
         await processReminder(reminder);
+        await storage.updateReminderStatus(reminder.id, 'sent');
+        successCount++;
       } catch (error) {
-        console.error(`❌ Failed to process reminder ${reminder.id}:`, error);
-        
-        // Mark as failed
-        await storage.updateReminderStatus(reminder.id, 'failed');
+        console.error(`Reminder ${reminder.id} failed:`, error);
+        await storage.updateReminderStatus(
+          reminder.id,
+          'failed',
+          error instanceof Error ? error.message : 'Unknown error'
+        );
+        failCount++;
       }
     }
     
-    console.log('✅ Reminder queue processing completed');
+    console.log(`Processed ${successCount} reminders, ${failCount} failed`);
   } catch (error) {
-    console.error('❌ Error processing reminder queue:', error);
+    console.error('Reminder queue processing failed:', error);
+  } finally {
+    isReminderJobRunning = false;
   }
 }
 
-/**
- * Process a single reminder
- */
-async function processReminder(reminder: { id: string; userId: string; taskId: string; message: string; method: string }): Promise<void> {
-  // Get household information
+async function processReminder(reminder: ReminderQueue): Promise<void> {
   const household = await storage.getHouseholdById(reminder.householdId);
   if (!household) {
-    console.log(`⚠️ Skipping reminder ${reminder.id}: Household not found`);
-    await storage.updateReminderStatus(reminder.id, 'failed');
-    return;
+    throw new Error('Household not found');
+  }
+  
+  const { sendEmail, sendSMS } = determineReminderChannels(household);
+  
+  if (!sendEmail && !sendSMS) {
+    console.log(`No valid notification channels for household ${household.id}`);
+    throw new Error('No valid notification channels');
   }
 
   let emailSent = false;
   let smsSent = false;
 
-  // Send email reminder if email is available
-  if (household.email) {
+  if (sendEmail && household.email) {
     try {
-      // Get how-to steps for the task
-      const howToSteps = getTaskHowToSteps(reminder.taskName);
-      
-      // Create ICS calendar event
       const icsAttachment = createMaintenanceReminderEvent(
         reminder.taskName,
         new Date(reminder.dueDate),
         reminder.taskDescription || `Complete ${reminder.taskName} maintenance task`,
-        household.zip ? `Home in ${household.zip}` : undefined
+        household.zipcode ? `Home in ${household.zipcode}` : undefined
       );
       
-      // Extract first name from email (simple approach)
-      const firstName = household.email.split('@')[0].split('.')[0];
+      const firstName = household.name ? household.name.split(' ')[0] : 'Homeowner';
       
-      // Send reminder email
       await sendReminderEmail({
         email: household.email,
-        firstName: firstName.charAt(0).toUpperCase() + firstName.slice(1),
+        firstName: firstName,
         taskTitle: reminder.taskName,
-        dueDate: reminder.dueDate.toISOString(),
+        dueDate: new Date(reminder.dueDate).toISOString(),
         description: reminder.taskDescription || `Complete ${reminder.taskName} maintenance task`,
-        howToSteps,
-        icsAttachment
+        howToSteps: [],
+        icsAttachment: icsAttachment.toString()
       });
       
       emailSent = true;
-      console.log(`✅ Sent email reminder for ${reminder.taskName} to ${household.email}`);
+      console.log(`Sent email reminder for ${reminder.taskName} to ${household.email}`);
     } catch (emailError) {
-      console.error(`❌ Failed to send email reminder ${reminder.id}:`, emailError);
+      console.error(`Failed to send email reminder ${reminder.id}:`, emailError);
     }
   }
 
-  // Send SMS reminder if opted in and phone is available
-  if (household.smsOptIn && household.phone) {
+  if (sendSMS && household.phone) {
     try {
-      const { sendReminderSMS } = await import('./sms');
+      const { sendReminderSMS } = await import('./sms.js');
       await sendReminderSMS(
         household.phone,
         reminder.taskName,
-        reminder.dueDate.toISOString()
+        new Date(reminder.dueDate).toISOString()
       );
       
       smsSent = true;
-      console.log(`📱 Sent SMS reminder for ${reminder.taskName} to ${household.phone}`);
-      
-      // Create SMS sent event
-      await storage.createEvent({
-        householdId: reminder.householdId,
-        eventType: 'sms_sent',
-        eventData: JSON.stringify({
-          reminderId: reminder.id,
-          taskName: reminder.taskName,
-          dueDate: reminder.dueDate,
-          phone: household.phone,
-          sentAt: new Date().toISOString()
-        })
-      });
+      console.log(`Sent SMS reminder for ${reminder.taskName} to ${household.phone}`);
     } catch (smsError) {
-      console.error(`❌ Failed to send SMS reminder ${reminder.id}:`, smsError);
+      console.error(`Failed to send SMS reminder ${reminder.id}:`, smsError);
     }
   }
 
-  // Mark as sent if at least one method succeeded
-  if (emailSent || smsSent) {
-    await storage.updateReminderStatus(reminder.id, 'sent');
-    
-    // Create general reminder sent event
-    await storage.createEvent({
-      householdId: reminder.householdId,
-      eventType: 'reminder_sent',
-      eventData: JSON.stringify({
-        reminderId: reminder.id,
-        taskName: reminder.taskName,
-        dueDate: reminder.dueDate,
-        emailSent,
-        smsSent,
-        sentAt: new Date().toISOString()
-      })
-    });
-  } else {
-    console.log(`⚠️ No valid contact method for reminder ${reminder.id}`);
-    await storage.updateReminderStatus(reminder.id, 'failed');
+  if (!emailSent && !smsSent) {
+    throw new Error('Failed to send any notifications');
   }
 }
 
-/**
- * Manual trigger for testing (can be called from API endpoint)
- */
+function determineReminderChannels(household: Household): {
+  sendEmail: boolean;
+  sendSMS: boolean;
+} {
+  const hasEmail = !!household.email;
+  const hasPhone = !!household.phone;
+  const smsEnabled = household.smsOptIn === true;
+  const pref = household.notificationPreference || 'email_only';
+  
+  let sendEmail = false;
+  let sendSMS = false;
+  
+  if (pref === 'email_only' && hasEmail) {
+    sendEmail = true;
+  } else if (pref === 'sms_only' && hasPhone && smsEnabled) {
+    sendSMS = true;
+  } else if (pref === 'both') {
+    if (hasEmail) sendEmail = true;
+    if (hasPhone && smsEnabled) sendSMS = true;
+  } else {
+    if (hasEmail) sendEmail = true;
+  }
+  
+  return { sendEmail, sendSMS };
+}
+
 export async function triggerReminderProcessing(): Promise<void> {
-  console.log('🔄 Manually triggering reminder processing');
+  console.log('Manually triggering reminder processing');
   await processReminderQueue();
+}
+
+export async function triggerOverdueUpdate(): Promise<void> {
+  console.log('Manually triggering overdue task update');
+  await updateOverdueTasks();
 }

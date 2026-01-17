@@ -1,0 +1,84 @@
+@agent Perform comprehensive Firebase→PostgreSQL migration impact analysis for UpKeepQr.
+
+CONTEXT:
+- Current state: 32 Firebase calls in server/storage.ts
+- PostgreSQL already has: households, order_magnet_items, order_magnet_batches tables
+- Phase 1 complete: homeExtra.ts migrated
+- CRITICAL: Duplicate data exists in both databases
+
+TASKS:
+
+1. **Analyze Firebase Collections vs PostgreSQL Tables:**
+```bash
+# Check all Firebase collections
+grep "COLLECTIONS\." server/storage.ts | sort -u
+
+# Check all PostgreSQL tables
+psql $DATABASE_URL -c "\dt" 2>/dev/null || echo "Run: grep 'pgTable' shared/schema.ts"
+
+# Identify duplicates and gaps
+```
+
+2. **Data Duplication Assessment:**
+- Compare households in Firebase vs PostgreSQL
+- Compare magnets vs order_magnet_items
+- Identify which database has newer/more complete data
+- Check for data conflicts
+
+3. **Function-by-Function Analysis:**
+Map each of the 32 Firebase calls to:
+- Equivalent PostgreSQL table (if exists)
+- New table needed (if doesn't exist)
+- Migration complexity (LOW/MEDIUM/HIGH)
+- Risk level (LOW/MEDIUM/HIGH/CRITICAL)
+
+4. **Create Missing Table Schemas:**
+Generate PostgreSQL table definitions for:
+- agents
+- leads table (not just zod schema)
+- schedules
+- task_completions
+- reminder_queue
+
+5. **Migration Complexity Matrix:**
+For EACH Firebase collection, document:
+- Collection name
+- Row count estimate
+- PostgreSQL equivalent table
+- Data conflicts (if duplicate)
+- Migration priority
+- Rollback strategy
+
+6. **Risk Assessment:**
+- What if Firebase has data NOT in PostgreSQL?
+- What if PostgreSQL has data NOT in Firebase?
+- Which database should be source of truth?
+- Downtime requirements
+- Data loss risks
+
+7. **Cost-Benefit Analysis:**
+- Firebase monthly cost
+- Migration effort (hours)
+- Ongoing maintenance savings
+- Performance improvements
+- Architectural simplification
+
+8. **Recommendation:**
+Based on analysis, recommend:
+- ✅ PROCEED with full migration (if low risk)
+- ⚠️ PROCEED with caution (if medium risk, provide mitigation)
+- ❌ DO NOT PROCEED (if high risk, suggest alternatives)
+
+DELIVERABLE:
+Create: `docs/FIREBASE_MIGRATION_IMPACT_ANALYSIS.md`
+
+Include:
+- Executive summary
+- Detailed findings
+- Risk matrix
+- Step-by-step migration plan
+- Testing checklist
+- Rollback procedures
+- Timeline estimate
+
+START ANALYSIS NOW.

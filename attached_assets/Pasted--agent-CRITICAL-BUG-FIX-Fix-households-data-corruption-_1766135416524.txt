@@ -1,0 +1,82 @@
+@agent CRITICAL BUG FIX: Fix households data corruption in server/storage.ts
+
+PROBLEM:
+Four functions are reading/writing to Firebase instead of PostgreSQL, causing data corruption:
+- createHousehold() writes to PostgreSQL ✅
+- getHousehold() reads from Firebase ❌ (can't see new households!)
+- getHouseholdByToken() reads from Firebase ❌
+- getHouseholdsByAgent() reads from Firebase ❌
+- updateHousehold() writes to Firebase ❌ (updates lost!)
+
+This means households created after PostgreSQL migration are INVISIBLE to the application!
+
+INSTRUCTIONS:
+Follow the exact replacements in HOUSEHOLDS_FIX_INSTRUCTIONS.md
+
+REQUIRED CHANGES:
+
+**File:** server/storage.ts
+
+**1. Verify imports exist (add if missing):**
+```typescript
+import { db } from "./db";
+import { eq, desc } from "drizzle-orm";
+import { householdsTable } from "@shared/schema";
+```
+
+**2. Replace getHousehold() - around line 381-384:**
+Change Firebase code to:
+```typescript
+  async getHousehold(id: string): Promise<Household | undefined> {
+    const result = await db.query.householdsTable.findFirst({
+      where: eq(householdsTable.id, id)
+    });
+    return result;
+  }
+```
+
+**3. Replace getHouseholdByToken() - around line 386-393:**
+Change to:
+```typescript
+  async getHouseholdByToken(magnetToken: string): Promise<Household | undefined> {
+    const result = await db.query.householdsTable.findFirst({
+      where: eq(householdsTable.qrCode, magnetToken)
+    });
+    return result;
+  }
+```
+
+**4. Replace getHouseholdsByAgent() - around line 396-403:**
+Change to:
+```typescript
+  async getHouseholdsByAgent(agentId: string): Promise<Household[]> {
+    const results = await db.query.householdsTable.findMany({
+      where: eq(householdsTable.createdBy, agentId),
+      orderBy: desc(householdsTable.createdAt)
+    });
+    return results;
+  }
+```
+
+**5. Replace updateHousehold() - around line 572-578:**
+Change to:
+```typescript
+  async updateHousehold(id: string, data: Partial<Household>): Promise<Household | undefined> {
+    await db.update(householdsTable)
+      .set({
+        ...data,
+        updatedAt: new Date()
+      })
+      .where(eq(householdsTable.id, id));
+    
+    return this.getHousehold(id);
+  }
+```
+
+**VERIFICATION:**
+After making changes:
+1. Build: `npm run build`
+2. Check no Firebase references: `grep "adminDb.*HOUSEHOLDS" server/storage.ts` (should return nothing)
+3. Commit: `git add server/storage.ts && git commit -m "fix: Migrate households CRUD from Firebase to PostgreSQL" && git push origin main`
+
+START NOW - This is CRITICAL for data integrity!

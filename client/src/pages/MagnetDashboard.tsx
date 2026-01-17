@@ -451,10 +451,35 @@ export default function MagnetDashboard() {
                             <TableCell className="font-semibold">
                               ${parseFloat(order.total || '0').toFixed(2)}
                             </TableCell>
-                            <TableCell>
-                              <Badge className={`text-white ${statusColors[order.status] || 'bg-gray-500'}`}>
-                                {order.status.replace("_", " ")}
-                              </Badge>
+                            <TableCell onClick={(e) => e.stopPropagation()}>
+                              <Select
+                                value={order.status}
+                                onValueChange={(newStatus) => {
+                                  if (newStatus !== order.status) {
+                                    updateStatusMutation.mutate({ id: order.id, status: newStatus });
+                                  }
+                                }}
+                                disabled={updateStatusMutation.isPending}
+                              >
+                                <SelectTrigger 
+                                  className={`w-[140px] text-white border-0 ${statusColors[order.status] || 'bg-gray-500'}`}
+                                  data-testid={`select-status-${order.id}`}
+                                >
+                                  <SelectValue>
+                                    {order.status.replace("_", " ")}
+                                  </SelectValue>
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="new">New</SelectItem>
+                                  <SelectItem value="paid">Paid</SelectItem>
+                                  <SelectItem value="in_production">In Production</SelectItem>
+                                  <SelectItem value="shipped">Shipped</SelectItem>
+                                  <SelectItem value="delivered">Delivered</SelectItem>
+                                  <SelectItem value="activated">Activated</SelectItem>
+                                  <SelectItem value="canceled">Canceled</SelectItem>
+                                  <SelectItem value="refunded">Refunded</SelectItem>
+                                </SelectContent>
+                              </Select>
                             </TableCell>
                             <TableCell>-</TableCell>
                             <TableCell className="whitespace-nowrap">

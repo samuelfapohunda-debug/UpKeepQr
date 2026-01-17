@@ -1,0 +1,690 @@
+# SAFE TECH STACK REFACTORING PLAN
+## Remove Redundancies Without Breaking Production
+
+**CRITICAL:** This is a **phased migration** - each phase must be completed and tested before moving to the next.
+
+---
+
+## ⚠️ BEFORE YOU START - CRITICAL SAFETY MEASURES
+
+### 1. Create Full Backup
+```bash
+# Backup current working code
+git add .
+git commit -m "backup: Pre-refactoring snapshot - all features working"
+git push origin main
+
+# Create backup branch
+git checkout -b backup-pre-refactoring
+git push origin backup-pre-refactoring
+git checkout main
+```
+
+### 2. Document Current Production State
+```bash
+# Test production before changes
+curl https://upkeepqr.com/api/health
+curl https://upkeepqr.com/api/appliances
+
+# Document what's currently working:
+# ✅ Login works
+# ✅ Setup forms work
+# ✅ Appliances load
+# ✅ Payments work
+# ✅ SMS/Email notifications work
+```
+
+### 3. Create Rollback Plan
+If anything breaks:
+```bash
+git reset --hard backup-pre-refactoring
+git push origin main --force
+```
+
+---
+
+## PHASE 1: AUDIT CURRENT USAGE (DO NOT MODIFY CODE YET)
+
+### Step 1.1: Check Firebase Usage
+
+```bash
+# Find all Firebase imports
+echo "=== Firebase Usage Audit ==="
+grep -r "firebase\|Firebase\|firestore\|Firestore" server/ client/ --include="*.ts" --include="*.tsx" | grep -v node_modules | grep -v ".backup"
+
+# Check if Firebase is actually imported
+grep -r "from.*firebase" server/ client/ --include="*.ts" --include="*.tsx" | grep -v node_modules
+
+# Check environment variables
+echo "Firebase env vars in use:"
+grep -i firebase .env 2>/dev/null || echo "No Firebase env vars found"
+
+# Output results to file
+grep -r "firebase" server/ client/ --include="*.ts" --include="*.tsx" | grep -v node_modules > /tmp/firebase-audit.txt
+cat /tmp/firebase-audit.txt
+```
+
+**Decision Point:**
+- If output is empty or only in `node_modules` → Firebase is NOT used, safe to remove
+- If output shows actual usage → Document which files before removing
+
+### Step 1.2: Check SendGrid Usage
+
+```bash
+# Find all SendGrid usage
+echo "=== SendGrid Usage Audit ==="
+grep -r "sendgrid\|SendGrid\|@sendgrid" server/ client/ --include="*.ts" --include="*.tsx" | grep -v node_modules
+
+# Check package.json
+grep "sendgrid" package.json server/package.json 2>/dev/null
+
+# Check env vars
+grep -i sendgrid .env 2>/dev/null
+
+# Output results
+grep -r "sendgrid" server/ --include="*.ts" | grep -v node_modules > /tmp/sendgrid-audit.txt
+cat /tmp/sendgrid-audit.txt
+```
+
+**Decision Point:**
+- If using SendGrid → Keep it, remove Resend
+- If using Resend → Remove SendGrid
+- If using both → Migrate all to Resend
+
+### Step 1.3: Check FontAwesome Usage
+
+```bash
+# Find all FontAwesome class usage
+echo "=== FontAwesome Usage Audit ==="
+grep -r 'className.*fa-\|"fa \|fas \|far \|fab ' client/ --include="*.tsx" --include="*.ts" | grep -v node_modules
+
+# List all FontAwesome icons used
+grep -ro 'fa-[a-z-]*' client/src --include="*.tsx" | sort | uniq
+
+# Output results
+grep -r 'fa-' client/src --include="*.tsx" > /tmp/fontawesome-audit.txt
+cat /tmp/fontawesome-audit.txt
+```
+
+**Create replacement map:**
+```bash
+# Save to file for reference
+cat > /tmp/icon-replacement-map.md << 'EOF'
+# FontAwesome → Lucide React Mapping
+
+| FontAwesome | Lucide React |
+|-------------|--------------|
+| fa-home | Home |
+| fa-user | User |
+| fa-blender | Refrigerator or Package |
+| fa-calendar | Calendar |
+| fa-envelope | Mail |
+| fa-phone | Phone |
+| fa-trash | Trash2 |
+| fa-edit | Edit |
+| fa-check | Check |
+| fa-times | X |
+| fa-plus | Plus |
+| fa-minus | Minus |
+| fa-search | Search |
+| fa-cog | Settings |
+| fa-shield-alt | Shield |
+| fa-map-marker-alt | MapPin |
+EOF
+cat /tmp/icon-replacement-map.md
+```
+
+### Step 1.4: Check Google Fonts Usage
+
+```bash
+# See how many fonts are loaded
+echo "=== Google Fonts Audit ==="
+grep -o "family=[^&]*" client/index.html | wc -l
+echo "Total fonts loaded: ^"
+
+# List all font families
+grep -o "family=[^&]*" client/index.html | sed 's/family=//' | sed 's/:.*$//' | sed 's/+/ /g'
+
+# Check which fonts are actually used in CSS
+grep -r "font-family" client/src --include="*.css" --include="*.tsx" | grep -v node_modules
+```
+
+**Recommendation:**
+Keep only 2-3 essential fonts:
+- Primary: Inter or DM Sans (body text)
+- Secondary: Space Mono or Roboto Mono (code/monospace)
+- Optional: Playfair Display (headings)
+
+---
+
+## PHASE 2: REMOVE FIREBASE (IF NOT USED)
+
+### Prerequisites:
+- ✅ Audit shows Firebase is not actively used
+- ✅ All data is in PostgreSQL
+- ✅ Backup created
+
+### Step 2.1: Remove Firebase Dependencies
+
+```bash
+# Check if Firebase packages exist
+npm list firebase firebase-admin @firebase/app
+
+# If they exist, remove them
+npm uninstall firebase firebase-admin @firebase/app
+npm uninstall @firebase/storage @firebase/firestore
+
+# Remove from server package.json too
+cd server
+npm uninstall firebase firebase-admin
+cd ..
+```
+
+### Step 2.2: Remove Firebase Configuration Files
+
+```bash
+# Find Firebase config files
+find . -name "*firebase*" -type f | grep -v node_modules
+
+# Remove if found (ONLY if not in use)
+# DON'T RUN THIS YET - just identify files first
+# rm server/firebase.ts
+# rm .firebaserc
+# rm firebase.json
+```
+
+### Step 2.3: Remove Firebase Imports (Carefully)
+
+**Create a script to find and remove:**
+```bash
+# List files with Firebase imports
+grep -rl "from.*firebase" server/ client/ --include="*.ts" --include="*.tsx" | grep -v node_modules > /tmp/firebase-files.txt
+
+# Review each file manually
+cat /tmp/firebase-files.txt
+
+# For each file, check if it's actually used
+# If a file only has Firebase code and nothing else, it can be deleted
+# If a file has Firebase + other code, only remove Firebase parts
+```
+
+**Manual Review Required:**
+- Open each file in `/tmp/firebase-files.txt`
+- Check if file has other functionality
+- If yes: Remove only Firebase imports/code
+- If no: Delete entire file
+
+### Step 2.4: Remove Firebase Environment Variables
+
+```bash
+# Backup current .env
+cp .env .env.backup
+
+# Remove Firebase vars from .env (do NOT commit these)
+# Remove these lines:
+# FIREBASE_PROJECT_ID=...
+# FIREBASE_PRIVATE_KEY=...
+# FIREBASE_CLIENT_EMAIL=...
+# FIREBASE_API_KEY=...
+# FIREBASE_AUTH_DOMAIN=...
+# FIREBASE_STORAGE_BUCKET=...
+```
+
+**Also remove from Render.com:**
+1. Go to Render Dashboard → Your Service → Environment
+2. Delete Firebase-related variables
+3. Click "Save Changes"
+
+### Step 2.5: Test After Firebase Removal
+
+```bash
+# Build locally
+npm run build
+
+# If build succeeds, test key functionality
+npm run dev
+
+# Test in browser:
+# - Login works?
+# - Dashboard loads?
+# - Data shows correctly?
+
+# If all tests pass, commit
+git add .
+git commit -m "refactor: Remove Firebase - migrated to PostgreSQL only"
+git push origin main
+```
+
+---
+
+## PHASE 3: CONSOLIDATE EMAIL SERVICE
+
+### Option A: Keep Resend, Remove SendGrid
+
+```bash
+# 1. Check SendGrid usage
+grep -r "sendgrid" server/ --include="*.ts"
+
+# 2. Find all email sending code
+grep -r "sendEmail\|sendMail\|email.send" server/ --include="*.ts" | grep -v node_modules
+
+# 3. Replace SendGrid calls with Resend
+# Example replacement:
+# OLD (SendGrid):
+# await sgMail.send({ to, from, subject, html })
+# 
+# NEW (Resend):
+# await resend.emails.send({ from, to, subject, html })
+
+# 4. Remove SendGrid package
+npm uninstall @sendgrid/mail
+
+# 5. Remove SendGrid env var
+# Remove SENDGRID_API_KEY from .env and Render
+```
+
+### Option B: Keep SendGrid, Remove Resend
+
+```bash
+# If you're actually using SendGrid more
+npm uninstall resend
+
+# Remove RESEND_API_KEY from .env and Render
+```
+
+### Step 3.1: Create Email Service Abstraction
+
+**File:** `server/lib/email/email-service.ts`
+
+```typescript
+// Single email service interface
+import { Resend } from 'resend';
+
+const resend = new Resend(process.env.RESEND_API_KEY);
+
+export async function sendEmail({
+  to,
+  subject,
+  html,
+  from = 'UpKeepQR <noreply@upkeepqr.com>'
+}: {
+  to: string;
+  subject: string;
+  html: string;
+  from?: string;
+}) {
+  try {
+    const result = await resend.emails.send({
+      from,
+      to,
+      subject,
+      html,
+    });
+    
+    console.log('Email sent:', result);
+    return { success: true, result };
+  } catch (error) {
+    console.error('Email send failed:', error);
+    throw error;
+  }
+}
+```
+
+### Step 3.2: Replace All Email Calls
+
+```bash
+# Find all email sending locations
+grep -rn "sgMail\|sendEmail\|resend" server/src --include="*.ts"
+
+# Replace each with the new abstraction
+# Instead of:
+#   await sgMail.send(...)
+# Use:
+#   await sendEmail({ to, subject, html })
+```
+
+### Step 3.3: Test Email Functionality
+
+```bash
+# Build and test
+npm run build
+
+# Test each email type:
+# - Welcome email after setup
+# - Maintenance reminder
+# - Warranty alert
+# - Order confirmation
+# - Password reset (if applicable)
+
+# If all pass, commit
+git add .
+git commit -m "refactor: Consolidate to Resend email service only"
+git push origin main
+```
+
+---
+
+## PHASE 4: REPLACE FONTAWESOME WITH LUCIDE
+
+### Step 4.1: Install Dependencies (if not already)
+
+```bash
+# Check if Lucide is installed
+npm list lucide-react
+
+# If not:
+npm install lucide-react@0.263.1
+```
+
+### Step 4.2: Create Icon Replacement Script
+
+```bash
+# Create replacement script
+cat > replace-icons.sh << 'SCRIPT'
+#!/bin/bash
+
+# Backup files before replacement
+find client/src -name "*.tsx" -exec cp {} {}.icon-backup \;
+
+# Replace common FontAwesome icons with Lucide
+find client/src -name "*.tsx" -type f -exec sed -i 's/<i className="fas fa-home"[^>]*><\/i>/<Home className="h-4 w-4" \/>/g' {} \;
+find client/src -name "*.tsx" -type f -exec sed -i 's/<i className="fas fa-user"[^>]*><\/i>/<User className="h-4 w-4" \/>/g' {} \;
+find client/src -name "*.tsx" -type f -exec sed -i 's/<i className="fas fa-blender"[^>]*><\/i>/<Refrigerator className="h-4 w-4" \/>/g' {} \;
+find client/src -name "*.tsx" -type f -exec sed -i 's/<i className="fas fa-calendar"[^>]*><\/i>/<Calendar className="h-4 w-4" \/>/g' {} \;
+find client/src -name "*.tsx" -type f -exec sed -i 's/<i className="fas fa-envelope"[^>]*><\/i>/<Mail className="h-4 w-4" \/>/g' {} \;
+find client/src -name "*.tsx" -type f -exec sed -i 's/<i className="fas fa-phone"[^>]*><\/i>/<Phone className="h-4 w-4" \/>/g' {} \;
+find client/src -name "*.tsx" -type f -exec sed -i 's/<i className="fas fa-trash"[^>]*><\/i>/<Trash2 className="h-4 w-4" \/>/g' {} \;
+find client/src -name "*.tsx" -type f -exec sed -i 's/<i className="fas fa-shield-alt"[^>]*><\/i>/<Shield className="h-4 w-4" \/>/g' {} \;
+find client/src -name "*.tsx" -type f -exec sed -i 's/<i className="fas fa-map-marker-alt"[^>]*><\/i>/<MapPin className="h-4 w-4" \/>/g' {} \;
+find client/src -name "*.tsx" -type f -exec sed -i 's/<i className="fas fa-plus"[^>]*><\/i>/<Plus className="h-4 w-4" \/>/g' {} \;
+
+echo "Icon replacement complete. Review changes before committing."
+SCRIPT
+
+chmod +x replace-icons.sh
+```
+
+### Step 4.3: Manual Replacement (Safer)
+
+**Better approach - Do this manually for safety:**
+
+1. **Find all FontAwesome usage:**
+```bash
+grep -rn "fa-" client/src --include="*.tsx" > /tmp/icons-to-replace.txt
+cat /tmp/icons-to-replace.txt
+```
+
+2. **For each file, manually replace:**
+```typescript
+// BEFORE:
+<i className="fas fa-blender text-sm"></i>
+
+// AFTER:
+import { Refrigerator } from 'lucide-react';
+<Refrigerator className="h-4 w-4" />
+```
+
+3. **Common replacements:**
+```typescript
+// Add these to imports where needed:
+import { 
+  Home, User, Mail, Phone, Calendar,
+  Trash2, Edit, Check, X, Plus, Minus,
+  Search, Settings, Shield, MapPin, Package,
+  Refrigerator, Bell, Eye, Filter, ChevronLeft,
+  ChevronRight, ChevronsLeft, ChevronsRight
+} from 'lucide-react';
+```
+
+### Step 4.4: Remove FontAwesome CDN
+
+```bash
+# Edit client/index.html
+# Remove this line:
+# <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" ... />
+
+# Replace with nothing (Lucide is already imported in components)
+```
+
+### Step 4.5: Test Icon Replacement
+
+```bash
+# Build and visually inspect
+npm run build
+npm run dev
+
+# Check each page:
+# ✅ Setup Forms Dashboard - all icons visible?
+# ✅ Appliances page - icons work?
+# ✅ Navigation - icons show?
+# ✅ Buttons - icons display correctly?
+
+# If all good, commit
+git add .
+git commit -m "refactor: Replace FontAwesome with Lucide React icons"
+git push origin main
+```
+
+---
+
+## PHASE 5: OPTIMIZE GOOGLE FONTS
+
+### Step 5.1: Identify Used Fonts
+
+```bash
+# Check CSS for font-family usage
+grep -rh "font-family" client/src --include="*.css" --include="*.tsx" | sort | uniq
+
+# Check Tailwind config
+cat tailwind.config.js | grep -A20 "fontFamily"
+```
+
+### Step 5.2: Reduce to Essential Fonts
+
+**Edit:** `client/index.html`
+
+```html
+<!-- BEFORE (40+ fonts): -->
+<link href="https://fonts.googleapis.com/css2?family=Architects+Daughter&family=DM+Sans..." />
+
+<!-- AFTER (2-3 fonts only): -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+```
+
+**Update Tailwind config if needed:**
+```javascript
+// tailwind.config.js
+module.exports = {
+  theme: {
+    extend: {
+      fontFamily: {
+        sans: ['Inter', 'sans-serif'],
+        mono: ['Space Mono', 'monospace'],
+      },
+    },
+  },
+};
+```
+
+### Step 5.3: Test Font Changes
+
+```bash
+npm run build
+npm run dev
+
+# Visual inspection:
+# - Body text readable?
+# - Headings look good?
+# - Code blocks (if any) display correctly?
+
+git add .
+git commit -m "refactor: Reduce Google Fonts to essential 2 fonts"
+git push origin main
+```
+
+---
+
+## PHASE 6: CLEANUP & DOCUMENTATION
+
+### Step 6.1: Remove Dead Code
+
+```bash
+# Find unused files
+npx depcheck
+
+# Remove backup files
+find . -name "*.backup*" -type f | grep -v node_modules
+
+# Remove commented code
+# Manual review of files for large commented blocks
+```
+
+### Step 6.2: Update Documentation
+
+**Update:** `PROJECT_REFERENCE.md`
+
+```markdown
+# Removed (Redundant):
+- ❌ Firebase/Firestore (consolidated to PostgreSQL)
+- ❌ FontAwesome (replaced with Lucide React)
+- ❌ SendGrid (consolidated to Resend)
+- ❌ 40+ Google Fonts (reduced to 2 essential fonts)
+
+# Current Stack (Simplified):
+- Frontend: React + TypeScript + Vite + Tailwind + Lucide
+- Backend: Express + TypeScript + PostgreSQL + Drizzle ORM
+- Services: Stripe + Resend + Twilio + Google Calendar
+```
+
+### Step 6.3: Update package.json
+
+```bash
+# Remove unused dependencies
+npm prune
+
+# Update outdated packages (carefully)
+npm outdated
+
+# If safe updates available:
+npm update
+```
+
+### Step 6.4: Final Test Suite
+
+```bash
+# Run full test suite
+npm run type-check
+npm run lint
+npm run build
+
+# Test production locally
+npm run start
+
+# Manual testing checklist:
+# ✅ Login/Logout
+# ✅ Setup form submission
+# ✅ Appliances CRUD
+# ✅ Email notifications
+# ✅ SMS notifications
+# ✅ Stripe payments
+# ✅ Calendar sync
+# ✅ Admin dashboard
+
+# If all pass, final commit
+git add .
+git commit -m "refactor: Complete tech stack optimization - removed redundancies"
+git push origin main
+```
+
+---
+
+## ROLLBACK PROCEDURES
+
+### If Something Breaks in Phase 1-2:
+```bash
+git reset --hard HEAD~1
+git push origin main --force
+```
+
+### If Something Breaks in Phase 3-4:
+```bash
+git revert HEAD
+git push origin main
+```
+
+### Complete Rollback to Start:
+```bash
+git reset --hard backup-pre-refactoring
+git push origin main --force
+```
+
+---
+
+## SUCCESS CRITERIA
+
+After all phases complete:
+
+### Removed:
+- [ ] Firebase/Firestore dependencies removed
+- [ ] FontAwesome CDN removed from HTML
+- [ ] Duplicate email service removed
+- [ ] Excess Google Fonts removed (40+ → 2-3)
+- [ ] All .backup files cleaned up
+
+### Working:
+- [ ] All pages load correctly
+- [ ] All icons display
+- [ ] Emails send successfully
+- [ ] SMS sends successfully
+- [ ] Database queries work
+- [ ] Payments process
+- [ ] No console errors
+- [ ] Production deployment successful
+
+### Performance:
+- [ ] Page load time improved
+- [ ] Bundle size reduced
+- [ ] Fewer HTTP requests
+- [ ] Lower hosting costs
+
+---
+
+## ESTIMATED TIMELINE
+
+- **Phase 1 (Audit):** 1 hour
+- **Phase 2 (Firebase):** 2 hours
+- **Phase 3 (Email):** 1 hour
+- **Phase 4 (Icons):** 3-4 hours (manual replacement)
+- **Phase 5 (Fonts):** 30 minutes
+- **Phase 6 (Cleanup):** 1 hour
+
+**Total:** ~8-9 hours of work
+
+**Recommendation:** Do one phase per day, test thoroughly between phases.
+
+---
+
+## REPLIT AI AGENT COMMAND
+
+```bash
+@agent Execute tech stack refactoring following SAFE_REFACTORING_PLAN.md
+
+Rules:
+1. Complete Phase 1 (Audit) first - DO NOT modify any code yet
+2. Show me audit results before proceeding
+3. Wait for my approval before each phase
+4. Create git commits after each successful phase
+5. If any test fails, STOP and notify me immediately
+6. Test after every change
+7. Never skip the backup step
+
+Start with Phase 1: Run all audit commands and show me results.
+```
+
+---
+
+**Created:** December 11, 2024  
+**Purpose:** Safe migration without breaking production  
+**Approach:** Phased, tested, reversible changes

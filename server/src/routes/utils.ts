@@ -5,13 +5,17 @@ import { storage } from '../../storage.js';
 export async function createAuditLog(req: Request, action: string) {
   try {
     const actor = req.ip || 'unknown';
-    const meta = {
+    const data = {
       method: req.method,
       url: req.url,
       userAgent: req.get('user-agent'),
       timestamp: new Date().toISOString()
     };
-    await storage.createAuditLog({ actor, action: `${req.method} ${action}`, meta });
+    await storage.createAuditLog({ 
+      actor, 
+      type: `${req.method} ${action}`,
+      data 
+    });
   } catch (error) {
     console.error('Audit logging error:', error);
   }

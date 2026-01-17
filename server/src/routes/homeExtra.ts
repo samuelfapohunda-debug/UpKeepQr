@@ -7,7 +7,9 @@ import {
   updateHomeProfileExtra,
 } from "../../storage.js";
 import { authenticateAdmin } from "../../middleware/auth.js";
-import { adminDb } from "../../firebase.js";
+import { db } from "../../db.js";
+import { householdsTable } from "@shared/schema";
+import { eq } from "drizzle-orm";
 
 const router = Router();
 
@@ -15,8 +17,11 @@ router.get("/home-extra/:householdId", authenticateAdmin, async (req: Request, r
   try {
     const { householdId } = req.params;
     
-    const householdDoc = await adminDb.collection("households").doc(householdId).get();
-    if (!householdDoc.exists) {
+    const household = await db.query.householdsTable.findFirst({
+      where: eq(householdsTable.id, householdId)
+    });
+    
+    if (!household) {
       return res.status(404).json({ error: "Household not found" });
     }
     
@@ -32,8 +37,11 @@ router.patch("/home-extra/:householdId", authenticateAdmin, async (req: Request,
   try {
     const { householdId } = req.params;
     
-    const householdDoc = await adminDb.collection("households").doc(householdId).get();
-    if (!householdDoc.exists) {
+    const household = await db.query.householdsTable.findFirst({
+      where: eq(householdsTable.id, householdId)
+    });
+    
+    if (!household) {
       return res.status(404).json({ error: "Household not found" });
     }
     
@@ -48,10 +56,10 @@ router.patch("/home-extra/:householdId", authenticateAdmin, async (req: Request,
   } catch (error: unknown) {
     console.error("Error updating home extra:", error);
     
-    if (error.name === "ZodError") {
+    if ((error as { name?: string }).name === "ZodError") {
       return res.status(400).json({ 
         error: "Invalid data format",
-        details: error.errors 
+        details: (error as { errors?: unknown }).errors 
       });
     }
     

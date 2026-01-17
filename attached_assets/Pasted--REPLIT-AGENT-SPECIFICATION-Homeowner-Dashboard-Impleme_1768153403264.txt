@@ -1,0 +1,1782 @@
+# 🏠 REPLIT AGENT SPECIFICATION: Homeowner Dashboard Implementation
+
+## ⚠️ CRITICAL INSTRUCTIONS - READ FIRST
+
+**YOU ARE BUILDING A NEW FEATURE. DO NOT:**
+- ❌ Modify existing homepage or marketing pages
+- ❌ Change authentication or user management flows
+- ❌ Alter database schema without explicit instruction
+- ❌ Break existing checkout or subscription flows
+- ❌ Remove any existing features
+
+**YOU ARE ONLY:**
+- ✅ Creating new React components for dashboard
+- ✅ Creating new API endpoints for dashboard data
+- ✅ Adding new routes for dashboard access
+- ✅ Building mobile-first UI components
+- ✅ Implementing read-only task management
+
+**TESTING REQUIREMENT:**
+After each major section, verify:
+1. Dashboard renders without errors
+2. API endpoints return correct data
+3. Mobile view works properly
+4. No existing features are broken
+5. Console has no errors
+
+---
+
+## 📋 IMPLEMENTATION CHECKLIST
+
+Use this checklist to track your progress:
+
+**Phase 1: Setup & Structure**
+- [ ] 1. Create dashboard route structure
+- [ ] 2. Create base dashboard layout component
+- [ ] 3. Set up API endpoint stubs
+- [ ] 4. Create mock data for development
+
+**Phase 2: Core Components**
+- [ ] 5. Build Header Section component
+- [ ] 6. Build Next Action Panel component
+- [ ] 7. Build Upcoming Maintenance List component
+- [ ] 8. Build Maintenance History component
+- [ ] 9. Build Reminders Status component
+- [ ] 10. Build QR Assets Section component
+
+**Phase 3: Functionality**
+- [ ] 11. Implement task completion logic
+- [ ] 12. Implement API integration
+- [ ] 13. Add loading and error states
+- [ ] 14. Add empty states
+
+**Phase 4: Testing & Polish**
+- [ ] 15. Test on mobile (375px width)
+- [ ] 16. Test task completion flow
+- [ ] 17. Test all edge cases
+- [ ] 18. Verify no existing features broken
+
+---
+
+## 🎯 OBJECTIVE
+
+Build a mobile-first Homeowner Dashboard that allows homeowners to:
+- View upcoming maintenance tasks at a glance
+- Mark tasks as complete in ≤ 2 taps
+- See maintenance history for their property
+- Manage reminders (view status initially)
+- View assigned QR magnets
+
+**Key Principle:** User wants answers in under 30 seconds.
+
+---
+
+## 👤 TARGET USER
+
+### Profile
+- **Role:** Single-property homeowner
+- **Tech Comfort:** Low to medium
+- **Usage Frequency:** Monthly / quarterly (infrequent)
+- **Primary Device:** Mobile phone
+- **Primary Use Case:** Quick task check and completion
+
+### User Goals
+1. "What maintenance is due?"
+2. "How do I mark it as done?"
+3. "What did I complete last time?"
+4. "Are my reminders working?"
+
+---
+
+## 🔐 ACCESS MODEL (Authentication-Agnostic)
+
+### How Users Access Dashboard
+
+**Method 1: QR Scan Token**
+```
+User scans QR magnet → 
+Redirects to /dashboard?token={QR_TOKEN} →
+Token resolves to user_id + property_id →
+Dashboard loads
+```
+
+**Method 2: Temporary Session Token**
+```
+User clicks email reminder link →
+Redirects to /dashboard?session={SESSION_TOKEN} →
+Token resolves to user_id + property_id →
+Dashboard loads
+```
+
+### Token Resolution
+```typescript
+// Token should resolve to:
+{
+  user_id: string,
+  property_id: string,
+  role: "homeowner",
+  expires_at: timestamp
+}
+```
+
+### Implementation Note
+- DO NOT hardcode authentication
+- Assume `currentUser` and `propertyId` are resolved by middleware
+- Design must be easily wrapped by magic-link login later
+- For now, accept token via query parameter
+
+---
+
+## 📁 FILE STRUCTURE
+
+Create these new files:
+
+```
+client/src/
+├── pages/
+│   └── Dashboard.tsx                 # Main dashboard page
+├── components/
+│   └── dashboard/
+│       ├── DashboardLayout.tsx       # Layout wrapper
+│       ├── DashboardHeader.tsx       # Header with property info
+│       ├── NextActionPanel.tsx       # Most important section
+│       ├── UpcomingMaintenance.tsx   # Task list
+│       ├── MaintenanceHistory.tsx    # Completed tasks
+│       ├── RemindersStatus.tsx       # Reminder settings view
+│       ├── QRAssetsSection.tsx       # QR magnet management
+│       └── TaskCard.tsx              # Reusable task card
+└── hooks/
+    └── useDashboard.ts               # Dashboard data hook
+
+server/src/
+└── routes/
+    └── dashboard.ts                  # Dashboard API endpoints
+```
+
+---
+
+## 🎨 LAYOUT STRUCTURE (Top → Bottom)
+
+### Section Order (Must Follow This Order)
+1. **Header Section** - Property info and status
+2. **Next Action Panel** - Most important, above the fold
+3. **Upcoming Maintenance List** - Next 30-90 days
+4. **Maintenance History** - Completed tasks
+5. **Reminders & Notifications** - Status display
+6. **QR Assets Section** - Assigned magnets
+
+---
+
+## 1️⃣ HEADER SECTION
+
+### Component: `DashboardHeader.tsx`
+
+**Visual Layout:**
+```
+┌─────────────────────────────────────┐
+│ 🏠 My Home              ⚙️ ❓      │
+│ 123 Main St, Atlanta, GA           │
+│ ✅ All caught up                    │
+└─────────────────────────────────────┘
+```
+
+**Desktop Layout:**
+```
+┌─────────────────────────────────────┐
+│ 🏠 My Home                          │
+│ 123 Main Street, Atlanta, GA 30308 │
+│ ✅ All caught up                    │
+│                          ⚙️ Settings │
+│                          ❓ Help     │
+└─────────────────────────────────────┘
+```
+
+**Required Elements:**
+- Property nickname (editable later, display only for now)
+- Address (full on desktop, collapsed on mobile)
+- Status indicator with dynamic text and color:
+  - ✅ "All caught up" (green) - no tasks due this week
+  - ⚠️ "Tasks due" (amber) - tasks due this week
+  - 🔴 "Overdue tasks" (red) - tasks past due date
+- Settings icon (links to settings page - create stub)
+- Help icon (links to help page - create stub)
+
+**Implementation:**
+
+```tsx
+// client/src/components/dashboard/DashboardHeader.tsx
+
+import { Settings, HelpCircle } from 'lucide-react';
+
+interface DashboardHeaderProps {
+  propertyName: string;
+  address: {
+    street: string;
+    city: string;
+    state: string;
+    zip: string;
+  };
+  status: 'caught_up' | 'tasks_due' | 'overdue';
+}
+
+export default function DashboardHeader({ 
+  propertyName, 
+  address, 
+  status 
+}: DashboardHeaderProps) {
+  const statusConfig = {
+    caught_up: {
+      icon: '✅',
+      text: 'All caught up',
+      color: 'text-emerald-600'
+    },
+    tasks_due: {
+      icon: '⚠️',
+      text: 'Tasks due',
+      color: 'text-amber-600'
+    },
+    overdue: {
+      icon: '🔴',
+      text: 'Overdue tasks',
+      color: 'text-red-600'
+    }
+  };
+
+  const currentStatus = statusConfig[status];
+
+  return (
+    <header className="bg-white border-b border-gray-200 px-4 py-4 md:px-6">
+      <div className="max-w-4xl mx-auto">
+        <div className="flex items-start justify-between mb-2">
+          <div>
+            <h1 className="text-xl md:text-2xl font-bold text-gray-900 flex items-center gap-2">
+              🏠 {propertyName}
+            </h1>
+            <p className="text-sm text-gray-600 mt-1">
+              {/* Mobile: Show abbreviated address */}
+              <span className="md:hidden">
+                {address.city}, {address.state}
+              </span>
+              {/* Desktop: Show full address */}
+              <span className="hidden md:inline">
+                {address.street}, {address.city}, {address.state} {address.zip}
+              </span>
+            </p>
+          </div>
+          
+          <div className="flex items-center gap-2 md:gap-3">
+            <button 
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              aria-label="Settings"
+            >
+              <Settings className="w-5 h-5 text-gray-600" />
+            </button>
+            <button 
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              aria-label="Help"
+            >
+              <HelpCircle className="w-5 h-5 text-gray-600" />
+            </button>
+          </div>
+        </div>
+        
+        <div className={`flex items-center gap-2 ${currentStatus.color} font-medium`}>
+          <span>{currentStatus.icon}</span>
+          <span>{currentStatus.text}</span>
+        </div>
+      </div>
+    </header>
+  );
+}
+```
+
+---
+
+## 2️⃣ NEXT ACTION PANEL (MOST IMPORTANT)
+
+### Component: `NextActionPanel.tsx`
+
+**Purpose:** This section must be visible without scrolling. It's the PRIMARY value of the dashboard.
+
+**Visual Layout (Task Due):**
+```
+┌─────────────────────────────────────┐
+│ 🎯 Next Up                          │
+│                                     │
+│ Change HVAC Filter                  │
+│ Due: Tomorrow (Jan 12)              │
+│                                     │
+│ Replace your HVAC filter with a new│
+│ filter to maintain air quality.     │
+│                                     │
+│ [✓ Mark as Done]                    │
+└─────────────────────────────────────┘
+```
+
+**Visual Layout (All Caught Up):**
+```
+┌─────────────────────────────────────┐
+│ ✨ You're All Set!                  │
+│                                     │
+│ No maintenance due in the next week.│
+│                                     │
+│ Next Task:                          │
+│ Clean Gutters - Due Feb 15         │
+└─────────────────────────────────────┘
+```
+
+**Required Elements:**
+- Section header: "Next Up" or "You're All Set!"
+- Task name (large, bold)
+- Due date (relative: "Tomorrow", "In 3 days", "Today")
+- Short instruction (1-2 sentences)
+- Primary CTA: "Mark as Done" (emerald green, prominent)
+- If no task due: Preview of next scheduled task
+
+**Implementation:**
+
+```tsx
+// client/src/components/dashboard/NextActionPanel.tsx
+
+interface Task {
+  id: string;
+  name: string;
+  dueDate: Date;
+  instruction: string;
+  appliance?: string;
+}
+
+interface NextActionPanelProps {
+  nextTask: Task | null;
+  upcomingTask: Task | null; // For preview when all caught up
+  onMarkComplete: (taskId: string) => void;
+}
+
+export default function NextActionPanel({ 
+  nextTask, 
+  upcomingTask,
+  onMarkComplete 
+}: NextActionPanelProps) {
+  const getRelativeDate = (date: Date) => {
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    const diffDays = Math.ceil((date.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) return 'Today';
+    if (diffDays === 1) return 'Tomorrow';
+    if (diffDays < 7) return `In ${diffDays} days`;
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  };
+
+  // Task due soon - show action panel
+  if (nextTask) {
+    const isOverdue = nextTask.dueDate < new Date();
+    
+    return (
+      <section className="bg-emerald-50 border-2 border-emerald-200 rounded-lg p-6 mb-6">
+        <h2 className="text-lg font-semibold text-emerald-900 mb-4 flex items-center gap-2">
+          🎯 Next Up
+        </h2>
+        
+        <h3 className="text-2xl font-bold text-gray-900 mb-2">
+          {nextTask.name}
+        </h3>
+        
+        <p className={`text-sm font-medium mb-4 ${
+          isOverdue ? 'text-red-600' : 'text-emerald-700'
+        }`}>
+          Due: {isOverdue ? 'Overdue' : getRelativeDate(nextTask.dueDate)}
+        </p>
+        
+        <p className="text-gray-700 mb-6">
+          {nextTask.instruction}
+        </p>
+        
+        <button
+          onClick={() => onMarkComplete(nextTask.id)}
+          className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-4 px-6 rounded-lg transition-colors flex items-center justify-center gap-2"
+        >
+          <span>✓</span>
+          <span>Mark as Done</span>
+        </button>
+      </section>
+    );
+  }
+  
+  // All caught up - show celebration and preview
+  return (
+    <section className="bg-gradient-to-br from-emerald-50 to-cyan-50 border border-emerald-200 rounded-lg p-6 mb-6 text-center">
+      <h2 className="text-2xl font-bold text-emerald-900 mb-2">
+        ✨ You're All Set!
+      </h2>
+      
+      <p className="text-gray-700 mb-6">
+        No maintenance due in the next week. You're doing great!
+      </p>
+      
+      {upcomingTask && (
+        <div className="bg-white rounded-lg p-4 text-left">
+          <p className="text-sm text-gray-600 mb-1">Next Task:</p>
+          <p className="font-semibold text-gray-900">
+            {upcomingTask.name}
+          </p>
+          <p className="text-sm text-gray-600 mt-1">
+            Due: {getRelativeDate(upcomingTask.dueDate)}
+          </p>
+        </div>
+      )}
+    </section>
+  );
+}
+```
+
+---
+
+## 3️⃣ UPCOMING MAINTENANCE LIST
+
+### Component: `UpcomingMaintenance.tsx`
+
+**Purpose:** Show next 30-90 days of scheduled maintenance.
+
+**Visual Layout:**
+```
+┌─────────────────────────────────────┐
+│ 📅 Upcoming Maintenance             │
+│                                     │
+│ ┌─────────────────────────────────┐│
+│ │ Clean Gutters                   ││
+│ │ Roof System                     ││
+│ │ Due: Feb 15, 2026              ││
+│ │ [View Details] [Mark Complete] ││
+│ └─────────────────────────────────┘│
+│                                     │
+│ ┌─────────────────────────────────┐│
+│ │ Test Smoke Alarms               ││
+│ │ Safety Systems                  ││
+│ │ Due: Mar 1, 2026               ││
+│ │ [View Details] [Mark Complete] ││
+│ └─────────────────────────────────┘│
+└─────────────────────────────────────┘
+```
+
+**Required Elements:**
+- Section header: "Upcoming Maintenance"
+- Each task card includes:
+  - Task name (bold)
+  - Appliance/area (HVAC, Roof, Plumbing, etc.)
+  - Due date (formatted: "Feb 15, 2026")
+  - Status badge (Upcoming/Overdue)
+- Actions:
+  - "View Details" (secondary button)
+  - "Mark Complete" (text link)
+
+**Implementation:**
+
+```tsx
+// client/src/components/dashboard/TaskCard.tsx
+
+interface TaskCardProps {
+  task: {
+    id: string;
+    name: string;
+    appliance: string;
+    dueDate: Date;
+    status: 'upcoming' | 'overdue';
+    instruction?: string;
+  };
+  onViewDetails: (taskId: string) => void;
+  onMarkComplete: (taskId: string) => void;
+}
+
+export function TaskCard({ task, onViewDetails, onMarkComplete }: TaskCardProps) {
+  const isOverdue = task.status === 'overdue';
+  
+  return (
+    <div className={`border rounded-lg p-4 ${
+      isOverdue ? 'border-red-300 bg-red-50' : 'border-gray-200 bg-white'
+    }`}>
+      <div className="flex items-start justify-between mb-2">
+        <h3 className="font-semibold text-gray-900 text-lg">
+          {task.name}
+        </h3>
+        <span className={`text-xs font-medium px-2 py-1 rounded ${
+          isOverdue 
+            ? 'bg-red-100 text-red-700' 
+            : 'bg-emerald-100 text-emerald-700'
+        }`}>
+          {isOverdue ? 'Overdue' : 'Upcoming'}
+        </span>
+      </div>
+      
+      <p className="text-sm text-gray-600 mb-3">
+        {task.appliance}
+      </p>
+      
+      <p className={`text-sm font-medium mb-4 ${
+        isOverdue ? 'text-red-600' : 'text-gray-700'
+      }`}>
+        Due: {task.dueDate.toLocaleDateString('en-US', { 
+          month: 'short', 
+          day: 'numeric', 
+          year: 'numeric' 
+        })}
+      </p>
+      
+      <div className="flex items-center gap-3">
+        <button
+          onClick={() => onViewDetails(task.id)}
+          className="flex-1 border border-gray-300 hover:border-gray-400 text-gray-700 font-medium py-2 px-4 rounded-lg transition-colors"
+        >
+          View Details
+        </button>
+        <button
+          onClick={() => onMarkComplete(task.id)}
+          className="text-emerald-600 hover:text-emerald-700 font-medium text-sm"
+        >
+          Mark Complete
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// client/src/components/dashboard/UpcomingMaintenance.tsx
+
+interface UpcomingMaintenanceProps {
+  tasks: Task[];
+  onViewDetails: (taskId: string) => void;
+  onMarkComplete: (taskId: string) => void;
+}
+
+export default function UpcomingMaintenance({ 
+  tasks, 
+  onViewDetails, 
+  onMarkComplete 
+}: UpcomingMaintenanceProps) {
+  // Sort: Overdue first, then by due date
+  const sortedTasks = [...tasks].sort((a, b) => {
+    if (a.status === 'overdue' && b.status !== 'overdue') return -1;
+    if (a.status !== 'overdue' && b.status === 'overdue') return 1;
+    return a.dueDate.getTime() - b.dueDate.getTime();
+  });
+
+  return (
+    <section className="mb-8">
+      <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+        📅 Upcoming Maintenance
+      </h2>
+      
+      {sortedTasks.length === 0 ? (
+        <div className="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
+          <p className="text-gray-600">
+            No upcoming maintenance scheduled in the next 90 days.
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {sortedTasks.map(task => (
+            <TaskCard
+              key={task.id}
+              task={task}
+              onViewDetails={onViewDetails}
+              onMarkComplete={onMarkComplete}
+            />
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+```
+
+---
+
+## 4️⃣ MAINTENANCE HISTORY
+
+### Component: `MaintenanceHistory.tsx`
+
+**Purpose:** Build trust and show long-term value.
+
+**Visual Layout:**
+```
+┌─────────────────────────────────────┐
+│ 📜 Maintenance History              │
+│                                     │
+│ ┌─────────────────────────────────┐│
+│ │ ✓ Changed HVAC Filter           ││
+│ │ Completed: Jan 8, 2026          ││
+│ │ By: You                         ││
+│ │ [View Details]                  ││
+│ └─────────────────────────────────┘│
+│                                     │
+│ ┌─────────────────────────────────┐│
+│ │ ✓ Inspected Water Heater        ││
+│ │ Completed: Dec 15, 2025         ││
+│ │ By: ABC Plumbing               ││
+│ │ [View Details]                  ││
+│ └─────────────────────────────────┘│
+└─────────────────────────────────────┘
+```
+
+**Required Elements:**
+- Section header: "Maintenance History"
+- Chronological list (latest first)
+- Each item includes:
+  - Checkmark icon
+  - Task name
+  - Completion date
+  - Completed by (Self / Service Pro name)
+- Action: "View Details"
+
+**Implementation:**
+
+```tsx
+// client/src/components/dashboard/MaintenanceHistory.tsx
+
+interface CompletedTask {
+  id: string;
+  name: string;
+  completedDate: Date;
+  completedBy: 'self' | string; // 'self' or service pro name
+  notes?: string;
+}
+
+interface MaintenanceHistoryProps {
+  completedTasks: CompletedTask[];
+  onViewDetails: (taskId: string) => void;
+}
+
+export default function MaintenanceHistory({ 
+  completedTasks, 
+  onViewDetails 
+}: MaintenanceHistoryProps) {
+  return (
+    <section className="mb-8">
+      <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+        📜 Maintenance History
+      </h2>
+      
+      {completedTasks.length === 0 ? (
+        <div className="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
+          <p className="text-gray-600">
+            No completed tasks yet. Your history will appear here once you complete maintenance.
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {completedTasks.map(task => (
+            <div 
+              key={task.id}
+              className="border border-gray-200 rounded-lg p-4 bg-white hover:border-emerald-300 transition-colors"
+            >
+              <div className="flex items-start gap-3">
+                <span className="text-emerald-500 text-xl">✓</span>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-gray-900">
+                    {task.name}
+                  </h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Completed: {task.completedDate.toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric'
+                    })}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    By: {task.completedBy === 'self' ? 'You' : task.completedBy}
+                  </p>
+                </div>
+                <button
+                  onClick={() => onViewDetails(task.id)}
+                  className="text-emerald-600 hover:text-emerald-700 text-sm font-medium"
+                >
+                  View Details
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+```
+
+---
+
+## 5️⃣ REMINDERS & NOTIFICATIONS
+
+### Component: `RemindersStatus.tsx`
+
+**Purpose:** Show reminder status (read-only for now).
+
+**Visual Layout:**
+```
+┌─────────────────────────────────────┐
+│ 🔔 Reminders & Notifications        │
+│                                     │
+│ ✅ Email Reminders: On              │
+│ ✅ SMS Reminders: On                │
+│                                     │
+│ [Manage Reminders]                  │
+└─────────────────────────────────────┘
+```
+
+**Required Elements:**
+- Section header: "Reminders & Notifications"
+- Status display:
+  - Email reminders: On/Off (with checkmark/x icon)
+  - SMS reminders: On/Off (with checkmark/x icon)
+- CTA: "Manage Reminders" (links to settings - stub for now)
+
+**Implementation:**
+
+```tsx
+// client/src/components/dashboard/RemindersStatus.tsx
+
+interface RemindersStatusProps {
+  emailEnabled: boolean;
+  smsEnabled: boolean;
+}
+
+export default function RemindersStatus({ 
+  emailEnabled, 
+  smsEnabled 
+}: RemindersStatusProps) {
+  return (
+    <section className="mb-8">
+      <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+        🔔 Reminders & Notifications
+      </h2>
+      
+      <div className="bg-white border border-gray-200 rounded-lg p-6">
+        <div className="space-y-3 mb-6">
+          <div className="flex items-center justify-between">
+            <span className="text-gray-700 font-medium">Email Reminders</span>
+            <span className={`flex items-center gap-2 ${
+              emailEnabled ? 'text-emerald-600' : 'text-gray-400'
+            }`}>
+              {emailEnabled ? '✅' : '❌'}
+              <span className="font-medium">
+                {emailEnabled ? 'On' : 'Off'}
+              </span>
+            </span>
+          </div>
+          
+          <div className="flex items-center justify-between">
+            <span className="text-gray-700 font-medium">SMS Reminders</span>
+            <span className={`flex items-center gap-2 ${
+              smsEnabled ? 'text-emerald-600' : 'text-gray-400'
+            }`}>
+              {smsEnabled ? '✅' : '❌'}
+              <span className="font-medium">
+                {smsEnabled ? 'On' : 'Off'}
+              </span>
+            </span>
+          </div>
+        </div>
+        
+        <button className="w-full border border-emerald-500 text-emerald-600 hover:bg-emerald-50 font-medium py-3 px-6 rounded-lg transition-colors">
+          Manage Reminders
+        </button>
+      </div>
+    </section>
+  );
+}
+```
+
+---
+
+## 6️⃣ QR ASSETS SECTION
+
+### Component: `QRAssetsSection.tsx`
+
+**Purpose:** Show assigned QR magnets and their locations.
+
+**Visual Layout:**
+```
+┌─────────────────────────────────────┐
+│ 🏷️ Your QR Magnets                  │
+│                                     │
+│ ┌─────────────────────────────────┐│
+│ │ 📱 QR Magnet #1                 ││
+│ │ Location: HVAC Closet           ││
+│ │ [Rename] [Re-scan]              ││
+│ └─────────────────────────────────┘│
+│                                     │
+│ ┌─────────────────────────────────┐│
+│ │ 📱 QR Magnet #2                 ││
+│ │ Location: Water Heater          ││
+│ │ [Rename] [Re-scan]              ││
+│ └─────────────────────────────────┘│
+└─────────────────────────────────────┘
+```
+
+**Required Elements:**
+- Section header: "Your QR Magnets"
+- Each QR magnet card includes:
+  - QR icon
+  - Magnet number/ID
+  - Location label (editable later, display only for now)
+- Actions:
+  - "Rename" (stub for now)
+  - "Re-scan" (stub for now)
+
+**Implementation:**
+
+```tsx
+// client/src/components/dashboard/QRAssetsSection.tsx
+
+interface QRAsset {
+  id: string;
+  label: string;
+  location: string;
+  activatedAt: Date;
+}
+
+interface QRAssetsSectionProps {
+  qrAssets: QRAsset[];
+}
+
+export default function QRAssetsSection({ qrAssets }: QRAssetsSectionProps) {
+  return (
+    <section className="mb-8">
+      <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+        🏷️ Your QR Magnets
+      </h2>
+      
+      {qrAssets.length === 0 ? (
+        <div className="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
+          <p className="text-gray-600 mb-4">
+            No QR magnets assigned yet.
+          </p>
+          <button className="bg-emerald-500 hover:bg-emerald-600 text-white font-medium py-2 px-6 rounded-lg">
+            Order QR Magnets
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {qrAssets.map((asset, index) => (
+            <div 
+              key={asset.id}
+              className="border border-gray-200 rounded-lg p-4 bg-white"
+            >
+              <div className="flex items-start gap-3">
+                <span className="text-3xl">📱</span>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-gray-900">
+                    QR Magnet #{index + 1}
+                  </h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Location: {asset.location}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Activated: {asset.activatedAt.toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric'
+                    })}
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-3 mt-4">
+                <button className="flex-1 border border-gray-300 hover:border-gray-400 text-gray-700 font-medium py-2 px-4 rounded-lg text-sm">
+                  Rename
+                </button>
+                <button className="flex-1 border border-emerald-500 text-emerald-600 hover:bg-emerald-50 font-medium py-2 px-4 rounded-lg text-sm">
+                  Re-scan
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+```
+
+---
+
+## 7️⃣ MAIN DASHBOARD PAGE
+
+### Component: `Dashboard.tsx`
+
+**Purpose:** Assemble all sections into complete dashboard page.
+
+**Implementation:**
+
+```tsx
+// client/src/pages/Dashboard.tsx
+
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import DashboardLayout from '@/components/dashboard/DashboardLayout';
+import DashboardHeader from '@/components/dashboard/DashboardHeader';
+import NextActionPanel from '@/components/dashboard/NextActionPanel';
+import UpcomingMaintenance from '@/components/dashboard/UpcomingMaintenance';
+import MaintenanceHistory from '@/components/dashboard/MaintenanceHistory';
+import RemindersStatus from '@/components/dashboard/RemindersStatus';
+import QRAssetsSection from '@/components/dashboard/QRAssetsSection';
+
+export default function Dashboard() {
+  const [searchParams] = useSearchParams();
+  const token = searchParams.get('token');
+  
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [dashboardData, setDashboardData] = useState<any>(null);
+
+  useEffect(() => {
+    if (!token) {
+      setError('No access token provided');
+      setLoading(false);
+      return;
+    }
+
+    fetchDashboardData(token);
+  }, [token]);
+
+  const fetchDashboardData = async (token: string) => {
+    try {
+      const response = await fetch(`/api/dashboard?token=${token}`);
+      
+      if (!response.ok) {
+        throw new Error('Failed to load dashboard');
+      }
+      
+      const data = await response.json();
+      setDashboardData(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unknown error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleMarkComplete = async (taskId: string) => {
+    try {
+      const response = await fetch(`/api/dashboard/tasks/${taskId}/complete`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to mark task as complete');
+      }
+
+      // Refresh dashboard data
+      if (token) {
+        fetchDashboardData(token);
+      }
+
+      // Show success message (implement toast later)
+      alert('Task marked as complete! ✓');
+    } catch (err) {
+      alert('Failed to complete task. Please try again.');
+    }
+  };
+
+  const handleViewDetails = (taskId: string) => {
+    // TODO: Open task details modal or navigate to details page
+    console.log('View details for task:', taskId);
+  };
+
+  // Loading state
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <div className="w-16 h-16 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading your dashboard...</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  // Error state
+  if (error || !dashboardData) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center min-h-screen px-4">
+          <div className="max-w-md text-center">
+            <h1 className="text-2xl font-bold text-gray-900 mb-4">
+              Unable to Load Dashboard
+            </h1>
+            <p className="text-gray-600 mb-6">
+              {error || 'Something went wrong'}
+            </p>
+            <button 
+              onClick={() => window.location.reload()}
+              className="bg-emerald-500 hover:bg-emerald-600 text-white font-medium py-3 px-6 rounded-lg"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  // Main dashboard
+  return (
+    <DashboardLayout>
+      <DashboardHeader
+        propertyName={dashboardData.property.name}
+        address={dashboardData.property.address}
+        status={dashboardData.status}
+      />
+      
+      <div className="max-w-4xl mx-auto px-4 py-6 md:px-6">
+        <NextActionPanel
+          nextTask={dashboardData.nextTask}
+          upcomingTask={dashboardData.upcomingTask}
+          onMarkComplete={handleMarkComplete}
+        />
+        
+        <UpcomingMaintenance
+          tasks={dashboardData.upcomingTasks}
+          onViewDetails={handleViewDetails}
+          onMarkComplete={handleMarkComplete}
+        />
+        
+        <MaintenanceHistory
+          completedTasks={dashboardData.completedTasks}
+          onViewDetails={handleViewDetails}
+        />
+        
+        <RemindersStatus
+          emailEnabled={dashboardData.reminders.email}
+          smsEnabled={dashboardData.reminders.sms}
+        />
+        
+        <QRAssetsSection
+          qrAssets={dashboardData.qrAssets}
+        />
+      </div>
+    </DashboardLayout>
+  );
+}
+```
+
+---
+
+## 8️⃣ DASHBOARD LAYOUT WRAPPER
+
+### Component: `DashboardLayout.tsx`
+
+**Purpose:** Provide consistent layout wrapper for dashboard pages.
+
+**Implementation:**
+
+```tsx
+// client/src/components/dashboard/DashboardLayout.tsx
+
+import { ReactNode } from 'react';
+
+interface DashboardLayoutProps {
+  children: ReactNode;
+}
+
+export default function DashboardLayout({ children }: DashboardLayoutProps) {
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {children}
+    </div>
+  );
+}
+```
+
+---
+
+## 9️⃣ API ENDPOINTS
+
+### File: `server/src/routes/dashboard.ts`
+
+**Create these endpoints:**
+
+```typescript
+// server/src/routes/dashboard.ts
+
+import { Router } from 'express';
+import { db } from '../db';
+
+const router = Router();
+
+/**
+ * GET /api/dashboard?token={QR_TOKEN}
+ * 
+ * Returns dashboard data for a homeowner
+ */
+router.get('/dashboard', async (req, res) => {
+  try {
+    const { token } = req.query;
+    
+    if (!token || typeof token !== 'string') {
+      return res.status(400).json({ error: 'Token required' });
+    }
+
+    // TODO: Validate token and resolve to user_id + property_id
+    // For now, use mock data
+    
+    const dashboardData = {
+      property: {
+        name: 'My Home',
+        address: {
+          street: '123 Main Street',
+          city: 'Atlanta',
+          state: 'GA',
+          zip: '30308'
+        }
+      },
+      status: 'tasks_due', // 'caught_up' | 'tasks_due' | 'overdue'
+      nextTask: {
+        id: '1',
+        name: 'Change HVAC Filter',
+        dueDate: new Date('2026-01-12'),
+        instruction: 'Replace your HVAC filter with a new filter to maintain air quality and system efficiency.',
+        appliance: 'HVAC System'
+      },
+      upcomingTask: {
+        id: '2',
+        name: 'Clean Gutters',
+        dueDate: new Date('2026-02-15'),
+        instruction: 'Remove debris and check for proper drainage.',
+        appliance: 'Roof System'
+      },
+      upcomingTasks: [
+        {
+          id: '2',
+          name: 'Clean Gutters',
+          appliance: 'Roof System',
+          dueDate: new Date('2026-02-15'),
+          status: 'upcoming',
+          instruction: 'Remove debris and check for proper drainage.'
+        },
+        {
+          id: '3',
+          name: 'Test Smoke Alarms',
+          appliance: 'Safety Systems',
+          dueDate: new Date('2026-03-01'),
+          status: 'upcoming',
+          instruction: 'Press test button on each alarm and replace batteries if needed.'
+        }
+      ],
+      completedTasks: [
+        {
+          id: '100',
+          name: 'Changed HVAC Filter',
+          completedDate: new Date('2026-01-08'),
+          completedBy: 'self',
+          notes: ''
+        },
+        {
+          id: '101',
+          name: 'Inspected Water Heater',
+          completedDate: new Date('2025-12-15'),
+          completedBy: 'ABC Plumbing',
+          notes: 'All systems functioning normally'
+        }
+      ],
+      reminders: {
+        email: true,
+        sms: true
+      },
+      qrAssets: [
+        {
+          id: 'qr1',
+          label: 'QR Magnet #1',
+          location: 'HVAC Closet',
+          activatedAt: new Date('2025-11-20')
+        },
+        {
+          id: 'qr2',
+          label: 'QR Magnet #2',
+          location: 'Water Heater',
+          activatedAt: new Date('2025-11-20')
+        }
+      ]
+    };
+
+    return res.json(dashboardData);
+  } catch (error) {
+    console.error('Dashboard error:', error);
+    return res.status(500).json({ error: 'Failed to load dashboard' });
+  }
+});
+
+/**
+ * POST /api/dashboard/tasks/:taskId/complete
+ * 
+ * Mark a task as complete
+ */
+router.post('/dashboard/tasks/:taskId/complete', async (req, res) => {
+  try {
+    const { taskId } = req.params;
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    
+    if (!token) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    // TODO: Validate token
+    // TODO: Mark task as complete in database
+    // TODO: Schedule next occurrence
+    // TODO: Update task history
+    
+    console.log(`Task ${taskId} marked as complete`);
+    
+    return res.json({ 
+      success: true,
+      message: 'Task completed successfully' 
+    });
+  } catch (error) {
+    console.error('Task completion error:', error);
+    return res.status(500).json({ error: 'Failed to complete task' });
+  }
+});
+
+export default router;
+```
+
+**Register the router in your main server file:**
+
+```typescript
+// server/index.ts
+
+import dashboardRoutes from './routes/dashboard';
+
+// ... other imports ...
+
+app.use('/api', dashboardRoutes);
+```
+
+---
+
+## 🔟 ROUTING SETUP
+
+### Add Dashboard Route
+
+**In your main routing file (e.g., `client/src/App.tsx`):**
+
+```tsx
+import Dashboard from '@/pages/Dashboard';
+
+// In your Routes component:
+<Route path="/dashboard" element={<Dashboard />} />
+```
+
+---
+
+## 1️⃣1️⃣ MOBILE-FIRST UX RULES
+
+### Critical Requirements:
+
+**1. One Primary CTA Per Screen**
+- Only one prominent button visible at a time
+- "Mark as Done" is always the primary CTA when task is due
+
+**2. No Modals for Critical Actions**
+- Task completion happens inline
+- Confirmation is a simple alert or toast
+- No overlay modals required
+
+**3. Large Tap Targets**
+```css
+/* Minimum button size */
+button {
+  min-height: 44px; /* iOS guideline */
+  padding: 12px 16px;
+}
+```
+
+**4. Clear Confirmation After Task Completion**
+```tsx
+// Show success feedback
+const handleMarkComplete = async (taskId: string) => {
+  // ... API call ...
+  
+  // Simple confirmation
+  alert('✓ Task marked as complete!');
+  
+  // Refresh dashboard
+  fetchDashboardData(token);
+};
+```
+
+---
+
+## 1️⃣2️⃣ EMPTY & EDGE STATES
+
+### 1. No Tasks Yet
+
+**Display:**
+```tsx
+<div className="bg-emerald-50 border border-emerald-200 rounded-lg p-8 text-center">
+  <h3 className="text-xl font-semibold text-emerald-900 mb-2">
+    Welcome to Your Dashboard!
+  </h3>
+  <p className="text-gray-700 mb-4">
+    We're building your personalized maintenance schedule based on your home and climate.
+  </p>
+  <p className="text-sm text-gray-600">
+    You'll see your first tasks here within 24 hours.
+  </p>
+</div>
+```
+
+### 2. Overdue Tasks
+
+**Handling:**
+- Sort overdue tasks to top of list
+- Highlight in red (#ef4444)
+- Show "Overdue" badge
+- Keep "Mark as Done" CTA prominent
+
+**Visual:**
+```tsx
+{task.status === 'overdue' && (
+  <div className="bg-red-50 border-2 border-red-300 rounded-lg p-4">
+    <div className="flex items-center gap-2 mb-2">
+      <span className="text-red-600 font-bold">🔴 OVERDUE</span>
+    </div>
+    {/* Task details */}
+  </div>
+)}
+```
+
+### 3. Token Expired
+
+**Display:**
+```tsx
+<div className="flex items-center justify-center min-h-screen px-4">
+  <div className="max-w-md text-center">
+    <h1 className="text-2xl font-bold text-gray-900 mb-4">
+      Session Expired
+    </h1>
+    <p className="text-gray-600 mb-6">
+      Your access link has expired. We'll send you a new one via email.
+    </p>
+    <button className="bg-emerald-500 hover:bg-emerald-600 text-white font-medium py-3 px-6 rounded-lg">
+      Send New Link to Email
+    </button>
+  </div>
+</div>
+```
+
+---
+
+## 1️⃣3️⃣ DATA MODEL (Logical)
+
+### Database Tables Needed
+
+**Note:** Check if these tables exist. If not, create them.
+
+```sql
+-- Users table (should already exist)
+CREATE TABLE IF NOT EXISTS users (
+  id UUID PRIMARY KEY,
+  email TEXT NOT NULL,
+  role TEXT DEFAULT 'homeowner',
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Properties table
+CREATE TABLE IF NOT EXISTS properties (
+  id UUID PRIMARY KEY,
+  user_id UUID REFERENCES users(id),
+  name TEXT DEFAULT 'My Home',
+  address_street TEXT,
+  address_city TEXT,
+  address_state TEXT,
+  address_zip TEXT,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Maintenance tasks table
+CREATE TABLE IF NOT EXISTS maintenance_tasks (
+  id UUID PRIMARY KEY,
+  property_id UUID REFERENCES properties(id),
+  name TEXT NOT NULL,
+  appliance TEXT,
+  due_date TIMESTAMP NOT NULL,
+  status TEXT DEFAULT 'upcoming', -- 'upcoming', 'overdue', 'completed'
+  instruction TEXT,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Task history table
+CREATE TABLE IF NOT EXISTS task_history (
+  id UUID PRIMARY KEY,
+  task_id UUID REFERENCES maintenance_tasks(id),
+  property_id UUID REFERENCES properties(id),
+  completed_date TIMESTAMP NOT NULL,
+  completed_by TEXT, -- 'self' or service pro name
+  notes TEXT,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- QR assets table (may already exist)
+CREATE TABLE IF NOT EXISTS qr_assets (
+  id UUID PRIMARY KEY,
+  property_id UUID REFERENCES properties(id),
+  label TEXT,
+  location TEXT,
+  activated_at TIMESTAMP,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Access tokens table
+CREATE TABLE IF NOT EXISTS access_tokens (
+  id UUID PRIMARY KEY,
+  user_id UUID REFERENCES users(id),
+  property_id UUID REFERENCES properties(id),
+  token TEXT UNIQUE NOT NULL,
+  expires_at TIMESTAMP NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+```
+
+---
+
+## 1️⃣4️⃣ NON-GOALS (Out of Scope)
+
+**DO NOT IMPLEMENT:**
+- ❌ Manual task creation by user
+- ❌ Custom scheduling by user
+- ❌ File uploads (photos, receipts)
+- ❌ Multi-property switching
+- ❌ Admin controls
+- ❌ Advanced reminder configuration
+- ❌ Task deletion by user
+- ❌ Calendar export
+- ❌ Service pro marketplace integration
+
+**These are explicitly deferred to future phases.**
+
+---
+
+## 1️⃣5️⃣ TESTING CHECKLIST
+
+### Functionality Tests:
+- [ ] Dashboard loads with token
+- [ ] Header displays property info correctly
+- [ ] Next Action Panel shows correct task
+- [ ] "Mark as Done" button works
+- [ ] Task moves to history after completion
+- [ ] Upcoming tasks display in correct order
+- [ ] Overdue tasks appear at top in red
+- [ ] History section shows completed tasks
+- [ ] Reminders section displays status
+- [ ] QR Assets section shows magnets
+
+### Mobile Tests (375px width):
+- [ ] All sections stack vertically
+- [ ] Buttons are easily tappable (44px min)
+- [ ] Text is readable (not too small)
+- [ ] No horizontal scrolling
+- [ ] CTA buttons are prominent
+- [ ] Task cards fit on screen
+- [ ] Header is compact and clear
+
+### Edge Cases:
+- [ ] No tasks yet - shows empty state
+- [ ] All caught up - shows celebration
+- [ ] Overdue tasks - highlighted in red
+- [ ] Token expired - shows error message
+- [ ] API error - shows error state
+- [ ] Slow loading - shows loading spinner
+
+### Cross-Browser:
+- [ ] Chrome/Edge
+- [ ] Firefox
+- [ ] Safari (iOS)
+- [ ] Chrome (Android)
+
+---
+
+## 1️⃣6️⃣ ACCEPTANCE CRITERIA
+
+The dashboard is complete when:
+
+✅ **Speed:**
+- Homeowner can see upcoming tasks within 3 seconds of page load
+
+✅ **Usability:**
+- Homeowner can complete a task in ≤ 2 taps (click task → click "Mark as Done")
+
+✅ **Mobile:**
+- Dashboard works fully on mobile (375px width minimum)
+- All touch targets are 44px minimum height
+- No horizontal scrolling
+
+✅ **Access:**
+- No login required for initial access via token
+- Token resolves to correct user and property
+- Dashboard loads with valid token
+
+✅ **Functionality:**
+- Tasks display correctly (upcoming and overdue)
+- Task completion works end-to-end
+- History updates after completion
+- Reminders status displays
+- QR assets display
+
+✅ **Polish:**
+- Empty states are friendly and helpful
+- Loading states show spinner
+- Error states are clear
+- Success confirmations are immediate
+
+---
+
+## 1️⃣7️⃣ SUCCESS METRICS
+
+### Track These Metrics Post-Launch:
+
+**Engagement:**
+- Task completion rate (target: 70%+)
+- Return scans per property (target: 3+/quarter)
+- Time-to-first-action (target: <30 seconds)
+
+**User Satisfaction:**
+- "Dashboard is helpful" survey response
+- Support tickets related to dashboard
+- Feature requests
+
+**Technical:**
+- Page load time (target: <2 seconds)
+- API response time (target: <500ms)
+- Error rate (target: <1%)
+
+---
+
+## 1️⃣8️⃣ IMPLEMENTATION ORDER
+
+### Day 1: Setup & Structure
+1. Create file structure
+2. Create DashboardLayout component
+3. Set up routing
+4. Create API endpoint stubs
+5. Create mock data
+
+### Day 2: Core Components
+6. Build DashboardHeader
+7. Build NextActionPanel
+8. Build TaskCard component
+9. Test components with mock data
+
+### Day 3: Additional Sections
+10. Build UpcomingMaintenance
+11. Build MaintenanceHistory
+12. Build RemindersStatus
+13. Build QRAssetsSection
+
+### Day 4: Integration
+14. Connect Dashboard page to API
+15. Implement task completion flow
+16. Add loading and error states
+17. Test end-to-end flow
+
+### Day 5: Polish & Testing
+18. Mobile responsive testing
+19. Add empty states
+20. Fix any bugs
+21. Final testing
+22. Deploy
+
+---
+
+## 1️⃣9️⃣ DEPLOYMENT PROCESS
+
+### Step 1: Test Locally
+```bash
+npm run dev
+# Visit http://localhost:5173/dashboard?token=test123
+# Test all functionality
+```
+
+### Step 2: Commit Changes
+```bash
+git add .
+git commit -m "feat: Add Homeowner Dashboard
+
+- Create dashboard page with 6 main sections
+- Implement task completion flow
+- Add mobile-first responsive design
+- Create API endpoints for dashboard data
+- Add loading and error states
+- Implement empty state handling"
+```
+
+### Step 3: Push to Production
+```bash
+git push origin main
+```
+
+### Step 4: Monitor Deployment
+- Watch Render dashboard
+- Check for errors in logs
+- Test live dashboard with real token
+
+---
+
+## 2️⃣0️⃣ FUTURE ENHANCEMENTS (Not Now)
+
+### Phase 2 (Later):
+- Magic link login integration
+- Manual task creation
+- Photo uploads for completed tasks
+- Service pro recommendations
+- Advanced reminder configuration
+- Multi-property switching
+- Calendar export
+
+### Phase 3 (Much Later):
+- Mobile app
+- Smart home integrations
+- Predictive maintenance AI
+- Service marketplace
+- Realtor dashboard
+- Property manager portal
+
+---
+
+## 🆘 TROUBLESHOOTING
+
+### Issue: Dashboard won't load
+
+**Possible Causes:**
+1. Missing token parameter
+2. Invalid token
+3. API endpoint not registered
+4. Database connection issue
+
+**Solution:**
+- Check URL has ?token= parameter
+- Check console for errors
+- Verify API endpoint is registered in server
+- Check Render logs for errors
+
+---
+
+### Issue: "Mark as Done" doesn't work
+
+**Possible Causes:**
+1. API endpoint not working
+2. Token not being sent correctly
+3. Database update failing
+
+**Solution:**
+- Check network tab for API call
+- Verify Authorization header has token
+- Check server logs for errors
+- Test API endpoint with Postman
+
+---
+
+### Issue: Mobile view is broken
+
+**Possible Causes:**
+1. Missing responsive classes
+2. Fixed widths instead of responsive
+3. Not testing at correct breakpoints
+
+**Solution:**
+- Use grid-cols-1 on mobile, grid-cols-2+ on desktop
+- Use flex-col on mobile, flex-row on desktop
+- Test at 375px, 428px, and 768px widths
+- Ensure all buttons have min-h-[44px]
+
+---
+
+## ✅ FINAL CHECKLIST
+
+Before declaring complete:
+
+**Functionality:**
+- [ ] Dashboard loads with token
+- [ ] All sections render correctly
+- [ ] Task completion works
+- [ ] API integration works
+- [ ] Loading states work
+- [ ] Error states work
+- [ ] Empty states work
+
+**Design:**
+- [ ] Matches specifications
+- [ ] Mobile responsive (375px+)
+- [ ] Touch targets 44px minimum
+- [ ] Colors match brand (emerald green)
+- [ ] Typography is readable
+- [ ] Spacing is consistent
+
+**Code Quality:**
+- [ ] TypeScript types defined
+- [ ] Components are reusable
+- [ ] No console errors
+- [ ] No unused imports
+- [ ] Code is commented
+- [ ] Follows project patterns
+
+**Testing:**
+- [ ] Tested on Chrome
+- [ ] Tested on Firefox
+- [ ] Tested on mobile
+- [ ] Tested all user flows
+- [ ] Tested edge cases
+- [ ] No existing features broken
+
+**Documentation:**
+- [ ] Code is self-documenting
+- [ ] Complex logic has comments
+- [ ] README updated if needed
+- [ ] API endpoints documented
+
+---
+
+## 🎊 COMPLETION CRITERIA
+
+The Homeowner Dashboard is complete when:
+
+1. ✅ User can access dashboard via token
+2. ✅ User can see all upcoming tasks
+3. ✅ User can mark tasks as complete in ≤ 2 taps
+4. ✅ Dashboard works perfectly on mobile
+5. ✅ All sections display correctly
+6. ✅ Empty and error states are handled
+7. ✅ No existing features are broken
+8. ✅ Code is deployed to production
+
+---
+
+**END OF SPECIFICATION**
+
+*Document Created: January 10, 2026*
+*Status: Ready for Implementation*
+*Estimated Time: 4-5 days*
+*Risk Level: Low (new feature, no existing code changes)*
+*Priority: High (core product value)*
+
+---
+
+## 📞 QUESTIONS OR ISSUES?
+
+If you encounter problems during implementation:
+
+1. **Check this spec first** - Answer is probably here
+2. **Review similar components** - Learn from existing code
+3. **Test incrementally** - Build and test section by section
+4. **Ask for help** - If stuck, document the issue and ask
+
+**Remember:** This is a new feature. Take your time, test thoroughly, and don't break existing functionality!
+
+**Good luck! You've got this! 🚀**

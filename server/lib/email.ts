@@ -983,3 +983,380 @@ Setup completed at: ${new Date().toLocaleString()}
     throw error;
   }
 }
+
+/**
+ * Send subscription welcome email to customer with QR codes
+ */
+export async function sendSubscriptionWelcomeEmail(
+  customerEmail: string,
+  customerName: string,
+  planName: string,
+  amountPaid: string,
+  orderId?: string,
+  qrCodes?: Array<{ code: string; qrUrl: string; setupUrl: string }>
+): Promise<boolean> {
+  const subject = `Welcome to UpKeepQR - ${planName} Subscription Activated`;
+  const baseUrl = process.env.PUBLIC_BASE_URL || 'https://upkeepqr.com';
+  
+  // Build QR codes section if provided
+  let qrCodesHtml = '';
+  let qrCodesText = '';
+  let qrAttachments: any[] = [];
+  
+  if (qrCodes && qrCodes.length > 0) {
+    const downloadUrl = orderId ? `${baseUrl}/api/orders/${orderId}/qr-codes` : '#';
+    
+    // Prepare CID attachments for QR code images (limit to first 10 for email size)
+    const itemsToAttach = qrCodes.length > 10 ? qrCodes.slice(0, 2) : qrCodes;
+    
+    qrAttachments = itemsToAttach.map((qr, index) => {
+      if (!qr.qrUrl || !qr.qrUrl.includes('base64,')) {
+        console.warn(`Invalid QR code image format for item ${index}`);
+        return null;
+      }
+      
+      try {
+        const base64Data = qr.qrUrl.split(',')[1];
+        return {
+          filename: `qr-code-${index + 1}.png`,
+          content: base64Data,
+          encoding: 'base64',
+          type: 'image/png',
+          content_id: `qr_code_${index}`,
+          disposition: 'inline'
+        };
+      } catch (error) {
+        console.error(`Error processing QR code ${index}:`, error);
+        return null;
+      }
+    }).filter(Boolean);
+    
+    // HTML section for QR codes
+    const qrItemsHtml = itemsToAttach.map((qr, index) => `
+      <div style="text-align: center; margin: 20px 0; padding: 20px; background: white; border-radius: 8px; border: 1px solid #e5e7eb;">
+        <h4 style="margin: 0 0 10px 0; color: #166534;">
+          ${qrCodes.length > 1 ? `QR Code #${index + 1}` : 'Your QR Code'}
+        </h4>
+        <img 
+          src="cid:qr_code_${index}" 
+          alt="QR Code ${index + 1}" 
+          style="width: 200px; height: 200px; border: 2px solid #10b981; border-radius: 8px; margin-bottom: 15px;"
+        />
+        <div style="background: #f3f4f6; padding: 12px; border-radius: 6px; margin-bottom: 10px;">
+          <strong style="color: #059669;">Activation Code:</strong><br>
+          <code style="font-size: 16px; letter-spacing: 1px; color: #166534;">${qr.code}</code>
+        </div>
+        <a 
+          href="${qr.setupUrl}" 
+          style="display: inline-block; background: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600;"
+        >
+          Activate This QR Code
+        </a>
+      </div>
+    `).join('');
+    
+    // Show note if there are more QR codes than displayed
+    const remainingCodesNote = qrCodes.length > 2 ? `
+      <div style="background: #fef3c7; border: 1px solid #fbbf24; padding: 15px; border-radius: 6px; margin-top: 15px; text-align: center;">
+        <strong>Plus ${qrCodes.length - 2} more QR codes!</strong><br/>
+        <span style="font-size: 14px;">Download all your QR codes below.</span>
+      </div>
+    ` : '';
+    
+    qrCodesHtml = `
+      <div style="margin: 30px 0; padding: 30px; background: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb;">
+        <h3 style="margin-top: 0; color: #166534; text-align: center;">Your QR Codes Are Ready!</h3>
+        <p style="text-align: center;">Scan or click to activate each QR code and start tracking your home maintenance:</p>
+        
+        ${qrItemsHtml}
+        ${remainingCodesNote}
+        
+        ${orderId ? `
+          <div style="text-align: center; margin-top: 20px;">
+            <a 
+              href="${downloadUrl}" 
+              style="display: inline-block; background: #166534; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: 600;"
+            >
+              Download All QR Codes (PDF)
+            </a>
+          </div>
+        ` : ''}
+        
+        <div style="margin-top: 20px; padding: 15px; background: #e0f2fe; border-left: 4px solid #0284c7; border-radius: 4px;">
+          <strong style="color: #075985;">Quick Setup:</strong>
+          <ol style="margin: 10px 0 0 0; padding-left: 20px; color: #0c4a6e;">
+            <li>Scan each QR code with your phone camera</li>
+            <li>Follow the setup wizard to register your home</li>
+            <li>Attach QR magnets to your appliances</li>
+            <li>Receive automated maintenance reminders</li>
+          </ol>
+        </div>
+      </div>
+    `;
+    
+    // Plain text version
+    qrCodesText = `
+
+YOUR QR CODES
+==============
+
+You have ${qrCodes.length} QR code${qrCodes.length > 1 ? 's' : ''} included in your subscription.
+
+${qrCodes.map((qr, i) => `
+QR Code #${i + 1}:
+Activation Code: ${qr.code}
+Setup Link: ${qr.setupUrl}
+`).join('\n')}
+
+${orderId ? `Download all QR codes: ${downloadUrl}` : ''}
+
+Quick Setup:
+1. Scan each QR code with your phone camera
+2. Follow the setup wizard to register your home
+3. Attach QR magnets to your appliances
+4. Receive automated maintenance reminders
+`;
+  }
+  
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #333333; margin: 0; padding: 0; }
+        .container { max-width: 600px; margin: 0 auto; }
+        .header { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 40px 30px; text-align: center; border-radius: 8px 8px 0 0; }
+        .content { background: #ffffff; padding: 40px 30px; border: 1px solid #e5e7eb; }
+        .footer { background: #f9fafb; color: #6b7280; padding: 20px 30px; text-align: center; border-radius: 0 0 8px 8px; font-size: 14px; border: 1px solid #e5e7eb; border-top: none; }
+        .button { display: inline-block; background: #10b981; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: 600; margin: 20px 0; }
+        .feature-list { background: #f0fdf4; padding: 20px; border-radius: 8px; margin: 20px 0; }
+        .feature-list li { margin: 10px 0; color: #166534; }
+        .plan-badge { display: inline-block; background: #10b981; color: white; padding: 6px 16px; border-radius: 20px; font-size: 14px; font-weight: 600; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1 style="margin: 0 0 10px 0; font-size: 28px;">Welcome to UpKeepQR!</h1>
+          <p style="margin: 0; opacity: 0.9;">Your home maintenance journey starts now</p>
+        </div>
+        <div class="content">
+          <p>Hi ${customerName || 'there'},</p>
+          
+          <p>Thank you for subscribing to UpKeepQR! Your <span class="plan-badge">${planName}</span> subscription is now active.</p>
+          
+          <div class="feature-list">
+            <h3 style="margin-top: 0; color: #166534;">What's included:</h3>
+            <ul>
+              <li>Personalized maintenance task scheduling</li>
+              <li>Smart reminders via email and SMS</li>
+              <li>Appliance tracking with warranty alerts</li>
+              <li>Maintenance history and cost tracking</li>
+              <li>Access to professional service providers</li>
+            </ul>
+          </div>
+          
+          ${qrCodesHtml}
+          
+          ${!qrCodes || qrCodes.length === 0 ? `
+            <h3>Next Steps:</h3>
+            <ol>
+              <li><strong>Order Your QR Magnet</strong> - Place it on your fridge for easy access to your home profile</li>
+              <li><strong>Set Up Your Home Profile</strong> - Add your home details to get personalized maintenance tasks</li>
+              <li><strong>Add Your Appliances</strong> - Track warranties and maintenance schedules</li>
+            </ol>
+            
+            <p style="text-align: center;">
+              <a href="https://upkeepqr.com/order" class="button">Order Your QR Magnet</a>
+            </p>
+          ` : ''}
+          
+          <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
+            <strong>Subscription Details:</strong><br>
+            Plan: ${planName}<br>
+            Amount: $${amountPaid}/year${qrCodes && qrCodes.length > 0 ? `<br>QR Codes: ${qrCodes.length}` : ''}
+          </p>
+          
+          <p>Questions? Reply to this email or contact us at support@upkeepqr.com</p>
+        </div>
+        <div class="footer">
+          © ${new Date().getFullYear()} UpKeepQR. All rights reserved.<br>
+          <a href="https://upkeepqr.com" style="color: #10b981;">upkeepqr.com</a>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+  
+  const text = `Welcome to UpKeepQR - ${planName} Subscription Activated
+
+Hi ${customerName || 'there'},
+
+Thank you for subscribing to UpKeepQR! Your ${planName} subscription is now active.
+
+What's included:
+- Personalized maintenance task scheduling
+- Smart reminders via email and SMS
+- Appliance tracking with warranty alerts
+- Maintenance history and cost tracking
+- Access to professional service providers
+${qrCodesText}
+Subscription Details:
+Plan: ${planName}
+Amount: $${amountPaid}/year${qrCodes && qrCodes.length > 0 ? `\nQR Codes: ${qrCodes.length}` : ''}
+
+Questions? Contact us at support@upkeepqr.com
+
+© ${new Date().getFullYear()} UpKeepQR. All rights reserved.
+`;
+
+  return sendEmail({
+    to: customerEmail,
+    from: FROM_EMAIL,
+    subject,
+    html,
+    text,
+    attachments: qrAttachments.length > 0 ? qrAttachments : undefined
+  });
+}
+
+/**
+ * Send subscription notification to admin with QR count
+ */
+export async function sendAdminSubscriptionNotification(
+  customerEmail: string,
+  customerName: string,
+  planName: string,
+  amountPaid: string,
+  subscriptionId: string,
+  qrCodeCount?: number
+): Promise<boolean> {
+  const subject = `New Subscription: ${planName} - $${amountPaid}`;
+  
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <style>
+        body { font-family: monospace; color: #333333; }
+        .container { max-width: 600px; margin: 20px auto; padding: 20px; background: #f5f5f5; border: 2px solid #10b981; }
+        .detail { margin: 10px 0; padding: 10px; background: white; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <h2>New UpKeepQR Subscription</h2>
+        
+        <div class="detail">
+          <strong>Plan:</strong> ${planName}<br>
+          <strong>Customer:</strong> ${customerName}<br>
+          <strong>Email:</strong> ${customerEmail}<br>
+          <strong>Amount:</strong> $${amountPaid}/year<br>
+          <strong>Subscription ID:</strong> ${subscriptionId}<br>
+          ${qrCodeCount ? `<strong>QR Codes Generated:</strong> ${qrCodeCount}<br>` : ''}
+          <strong>Time:</strong> ${new Date().toLocaleString()}
+        </div>
+        
+        <p>Welcome email with ${qrCodeCount || 0} QR code${qrCodeCount !== 1 ? 's' : ''} has been sent to the customer.</p>
+      </div>
+    </body>
+    </html>
+  `;
+  
+  return sendEmail({
+    to: ADMIN_EMAIL,
+    from: FROM_EMAIL,
+    subject,
+    html
+  });
+}
+
+export async function sendMagicLinkEmail(
+  email: string,
+  name: string,
+  magicLink: string,
+  isFirstTime: boolean = true
+): Promise<boolean> {
+  const subject = isFirstTime 
+    ? 'Welcome to UpKeepQR! Access Your Dashboard'
+    : 'Access Your UpKeepQR Dashboard';
+  
+  const greeting = isFirstTime
+    ? `Welcome to UpKeepQR, ${name}!`
+    : `Hi ${name},`;
+  
+  const message = isFirstTime
+    ? `Your home maintenance dashboard is ready! Click the button below to access it and see your personalized maintenance schedule.`
+    : `You requested access to your dashboard. Click the button below to continue.`;
+  
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333333; margin: 0; padding: 0; }
+        .container { max-width: 600px; margin: 0 auto; padding: 40px 20px; }
+        .header { text-align: center; margin-bottom: 30px; }
+        .logo { font-size: 28px; font-weight: bold; color: #10b981; }
+        .content { background: #ffffff; border-radius: 12px; padding: 30px; border: 1px solid #e5e7eb; }
+        h1 { color: #111827; font-size: 24px; margin: 0 0 16px 0; }
+        p { color: #6b7280; margin: 0 0 16px 0; }
+        .button-wrapper { text-align: center; margin: 32px 0; }
+        .button { display: inline-block; background: #10b981; color: #ffffff !important; padding: 16px 40px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; }
+        .note { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 16px; margin-top: 24px; }
+        .note p { color: #166534; margin: 0; font-size: 14px; }
+        .footer { text-align: center; margin-top: 32px; padding-top: 24px; border-top: 1px solid #e5e7eb; }
+        .footer p { color: #9ca3af; font-size: 12px; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <div class="logo">UpKeepQR</div>
+        </div>
+        
+        <div class="content">
+          <h1>${greeting}</h1>
+          <p>${message}</p>
+          
+          <div class="button-wrapper">
+            <a href="${magicLink}" class="button">Access Dashboard</a>
+          </div>
+          
+          <div class="note">
+            <p><strong>Note:</strong> This link will expire in 24 hours and can only be used once. If you didn't request this, you can safely ignore this email.</p>
+          </div>
+        </div>
+        
+        <div class="footer">
+          <p>UpKeepQR - Your Home's Maintenance, Automated<br>
+          Questions? Reply to this email or visit upkeepqr.com/support</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+  
+  const text = `${greeting}
+
+${message}
+
+Access your dashboard: ${magicLink}
+
+This link will expire in 24 hours and can only be used once.
+If you didn't request this, you can safely ignore this email.
+
+---
+UpKeepQR - Your Home's Maintenance, Automated
+Questions? Reply to this email or visit upkeepqr.com/support`;
+  
+  return sendEmail({
+    to: email,
+    from: FROM_EMAIL,
+    subject,
+    html,
+    text
+  });
+}
