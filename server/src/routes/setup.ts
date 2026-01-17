@@ -1,18 +1,99 @@
 import { Router, Request, Response } from "express";
 import { z } from "zod";
 import { getUserFromAuth } from "../../middleware/auth";
-import { storage } from "../../storage";
+import { storage } from "../../storage.js";
 import { nanoid } from "nanoid";
 import { db } from "../../db";
 import { householdsTable, orderMagnetItemsTable, homeProfileExtras, setupActivateSchema } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import { 
   sendSetupConfirmationEmail,
-  sendAdminSetupNotification
+  sendAdminSetupNotification,
+  sendMagicLinkEmail
 } from '../../lib/email.js';
 import { generateMaintenanceTasks } from '../../lib/tasks.js';
+import { generateMagicLink } from '../../lib/magicLink.js';
 
 const router = Router();
+
+router.get("/check/:code", async (req: Request, res: Response) => {
+  try {
+    const { code } = req.params;
+    
+    if (!code || code.length < 6) {
+      return res.status(400).json({ error: "Invalid activation code" });
+    }
+    
+    console.log("🔍 Checking activation status for code:", code);
+    
+    const [magnetItem] = await db
+      .select()
+      .from(orderMagnetItemsTable)
+      .where(eq(orderMagnetItemsTable.activationCode, code))
+      .limit(1);
+    
+    if (!magnetItem) {
+      console.warn("⚠️ Invalid activation code:", code);
+      return res.status(404).json({ 
+        error: "Invalid activation code",
+        status: "invalid"
+      });
+    }
+    
+    await db
+      .update(orderMagnetItemsTable)
+      .set({
+        scanCount: magnetItem.scanCount + 1,
+        lastScanAt: new Date(),
+        updatedAt: new Date()
+      })
+      .where(eq(orderMagnetItemsTable.activationCode, code));
+    
+    if (magnetItem.activationStatus === 'active') {
+      console.log("📧 QR already activated, sending magic link to:", magnetItem.activatedByEmail);
+      
+      if (magnetItem.activatedByEmail && magnetItem.householdId) {
+        const [household] = await db
+          .select()
+          .from(householdsTable)
+          .where(eq(householdsTable.id, magnetItem.householdId))
+          .limit(1);
+        
+        const name = household?.name || 'Homeowner';
+        const magicLink = await generateMagicLink(magnetItem.activatedByEmail, magnetItem.householdId);
+        
+        void sendMagicLinkEmail(
+          magnetItem.activatedByEmail,
+          name,
+          magicLink,
+          false
+        ).catch(err => console.error('Failed to send magic link email:', err));
+        
+        return res.json({
+          status: "active",
+          message: "This QR code is already activated. We've sent a login link to your email.",
+          email: magnetItem.activatedByEmail.replace(/(.{2})(.*)(@.*)/, '$1***$3')
+        });
+      }
+      
+      return res.json({
+        status: "active",
+        message: "This QR code is already activated.",
+      });
+    }
+    
+    console.log("✅ QR code inactive, ready for activation");
+    return res.json({
+      status: "inactive",
+      activationCode: code,
+      message: "Ready for activation"
+    });
+    
+  } catch (error) {
+    console.error("❌ Check activation status error:", error);
+    return res.status(500).json({ error: "Failed to check activation status" });
+  }
+});
 
 router.post("/activate", async (req: Request, res: Response) => {
   try {
@@ -26,12 +107,27 @@ router.post("/activate", async (req: Request, res: Response) => {
     const isAdmin = authUser && authUser.role === 'admin';
     const allowAdminCreation = process.env.ALLOW_ADMIN_SETUP_CREATION === 'true';
     const hasToken = !!req.body.token;
+    const explicitAdminMode = req.body.adminMode === true; // Must be explicitly set
     
-    // Admin mode is only enabled if:
+    // Admin mode requires ALL of:
     // 1. User is authenticated as admin
     // 2. Feature flag allows it
-    // 3. No token provided (admin creates without QR)
-    const isAdminMode = isAdmin && allowAdminCreation && !hasToken;
+    // 3. Explicit adminMode flag in request body
+    // 4. No token provided (admin creates without QR)
+    // This prevents accidental admin mode when token is missing from customer flow
+    const isAdminMode = isAdmin && allowAdminCreation && explicitAdminMode && !hasToken;
+    
+    // SECURITY: If user has admin token but no explicit adminMode flag, treat as customer
+    if (isAdmin && !explicitAdminMode && !hasToken) {
+      console.warn("⚠️ Admin user attempting activation without token or explicit adminMode flag - rejecting");
+      return res.status(400).json({
+        error: "Invalid activation",
+        details: [{
+          code: "missing_token",
+          message: "Token is required. If creating without QR, use the admin dashboard."
+        }]
+      });
+    }
     
     console.log(`🔐 Authentication check: ${isAdminMode ? 'Admin mode' : 'Customer mode'}`);
     
@@ -221,13 +317,14 @@ router.post("/activate", async (req: Request, res: Response) => {
             activationStatus: 'active',
             activatedAt: now,
             activatedByEmail: data.email,
+            householdId: household.id,
             updatedAt: now,
           })
           .where(eq(orderMagnetItemsTable.activationCode, magnetToken))
           .returning();
 
         if (updatedItem) {
-          console.log("✅ QR code marked as active");
+          console.log("✅ QR code marked as active with household_id:", household.id);
         }
       }
 
@@ -251,8 +348,22 @@ router.post("/activate", async (req: Request, res: Response) => {
         return null;
       });
 
+    // Generate and send magic link for dashboard access
+    console.log("🔗 Generating magic link for dashboard access");
+    const magicLink = await generateMagicLink(result.email, result.id);
+    
     // Send emails (fire-and-forget - don't wait for completion)
     void Promise.all([
+      // Magic link email (priority - this is how they access dashboard)
+      sendMagicLinkEmail(
+        result.email,
+        result.name,
+        magicLink,
+        true
+      ).catch(err => {
+        console.error('❌ Failed to send magic link email:', err);
+      }),
+      
       // Customer confirmation email
       sendSetupConfirmationEmail(
         result.email,
@@ -305,21 +416,88 @@ router.post("/activate", async (req: Request, res: Response) => {
   } catch (error: unknown) {
     console.error("❌ Setup activation error:", error);
     
-    // Handle duplicate token error
+    // Handle duplicate token error - send magic link to existing household
     if (error instanceof Error && error.message.startsWith('DUPLICATE_TOKEN:')) {
       const householdId = error.message.split(':')[1];
+      console.log("🔄 QR already activated, sending magic link for household:", householdId);
+      
+      try {
+        const [household] = await db
+          .select()
+          .from(householdsTable)
+          .where(eq(householdsTable.id, householdId))
+          .limit(1);
+        
+        if (household && household.email) {
+          const magicLink = await generateMagicLink(household.email, householdId);
+          
+          void sendMagicLinkEmail(
+            household.email,
+            household.name || 'Homeowner',
+            magicLink,
+            false
+          ).catch(err => console.error('Failed to send magic link email:', err));
+          
+          const maskedEmail = household.email.replace(/(.{2})(.*)(@.*)/, '$1***$3');
+          
+          return res.status(200).json({
+            success: true,
+            alreadyActivated: true,
+            message: "This QR code is already activated. We've sent a login link to your email.",
+            email: maskedEmail
+          });
+        }
+      } catch (linkError) {
+        console.error("❌ Failed to send magic link for existing household:", linkError);
+      }
+      
       return res.status(409).json({
         error: "Activation code already used",
         householdId: householdId
       });
     }
     
-    // Handle already activated token error
+    // Handle already activated token error - send magic link
     if (error instanceof Error && error.message === 'ALREADY_ACTIVATED') {
+      const token = req.body.token;
+      console.log("🔄 QR already activated, looking up household for token:", token);
+      
+      try {
+        const [magnetItem] = await db
+          .select()
+          .from(orderMagnetItemsTable)
+          .where(eq(orderMagnetItemsTable.activationCode, token))
+          .limit(1);
+        
+        if (magnetItem && magnetItem.householdId && magnetItem.activatedByEmail) {
+          const magicLink = await generateMagicLink(magnetItem.activatedByEmail, magnetItem.householdId);
+          
+          void sendMagicLinkEmail(
+            magnetItem.activatedByEmail,
+            'Homeowner',
+            magicLink,
+            false
+          ).catch(err => console.error('Failed to send magic link email:', err));
+          
+          const maskedEmail = magnetItem.activatedByEmail.replace(/(.{2})(.*)(@.*)/, '$1***$3');
+          
+          return res.status(200).json({
+            success: true,
+            alreadyActivated: true,
+            message: "This QR code is already activated. We've sent a login link to your email.",
+            email: maskedEmail
+          });
+        }
+      } catch (linkError) {
+        console.error("❌ Failed to send magic link for already activated token:", linkError);
+      }
+      
+    }
+      
+      // If we get here, magic link failed - return 409
       return res.status(409).json({
         error: "This QR code has already been activated. Each code can only be used once.",
       });
-    }
     
     // Handle invalid token error
     if (error instanceof Error && error.message === 'INVALID_TOKEN') {

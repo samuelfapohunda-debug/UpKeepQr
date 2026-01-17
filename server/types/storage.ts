@@ -1,8 +1,8 @@
-// Extended FirebaseStorage interface to include missing methods
-import { FirebaseStorage as _FirebaseStorage } from '../storage';
+// Extended DatabaseStorage interface to include missing methods
+import { DatabaseStorage as _DatabaseStorage } from '../storage';
 
 declare module '../storage' {
-  interface FirebaseStorage {
+  interface DatabaseStorage {
     getPendingReminders(now: Date): Promise<unknown[]>;
     updateReminderStatus(id: string, status: string): Promise<void>;
     getHouseholdById(id: string): Promise<unknown>;

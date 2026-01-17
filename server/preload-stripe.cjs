@@ -1,8 +1,11 @@
 // This runs BEFORE tsx is loaded
 const Stripe = require('stripe');
 
-if (process.env.STRIPE_SECRET_KEY) {
-  global.__STRIPE_INSTANCE__ = new Stripe(process.env.STRIPE_SECRET_KEY, {
+// Support both correct and misspelled secret name
+const stripeKey = process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRETE_KEY;
+
+if (stripeKey) {
+  global.__STRIPE_INSTANCE__ = new Stripe(stripeKey, {
     apiVersion: '2024-06-20',
   });
   console.log('✅ Stripe pre-loaded before tsx');

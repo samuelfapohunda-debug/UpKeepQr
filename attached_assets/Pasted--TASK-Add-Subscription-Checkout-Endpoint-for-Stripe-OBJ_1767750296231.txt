@@ -1,0 +1,234 @@
+# TASK: Add Subscription Checkout Endpoint for Stripe
+
+## OBJECTIVE
+Add a new API endpoint that handles subscription-based Stripe checkout sessions for the new pricing model.
+
+---
+
+## 🚨 SAFETY RULES
+
+### DO NOT MODIFY:
+- ❌ Existing checkout endpoints (for one-time payments)
+- ❌ Stripe initialization code
+- ❌ Any other API routes
+- ❌ Database models
+- ❌ Frontend code (we'll do that separately)
+
+### ONLY ADD:
+- ✅ One new POST endpoint: `/create-subscription-checkout`
+- ✅ This is an ADDITION to existing code, not a replacement
+
+---
+
+## 📁 FILE TO MODIFY
+
+**Primary file:** `server/routes/checkout.ts`
+
+**Alternative files** (if checkout.ts doesn't exist):
+- `server/routes/payment.ts`
+- `server/routes/stripe.ts`
+- `server/index.ts` (if routes are defined there)
+
+**How to find it:**
+Look for the file that contains existing Stripe checkout code (search for `stripe.checkout.sessions.create`)
+
+---
+
+## 📝 CODE TO ADD
+
+**Location:** Add this code BEFORE the `export default router;` line (or at the end of router definitions)
+```typescript
+// Create subscription checkout session
+router.post('/create-subscription-checkout', async (req, res) => {
+  try {
+    const { priceId, plan } = req.body;
+
+    // Validate price ID
+    const validPriceIds = [
+      process.env.STRIPE_PRICE_HOMEOWNER_BASIC_MONTHLY,
+      process.env.STRIPE_PRICE_HOMEOWNER_BASIC_YEARLY,
+      process.env.STRIPE_PRICE_HOMEOWNER_PLUS_MONTHLY,
+      process.env.STRIPE_PRICE_HOMEOWNER_PLUS_YEARLY,
+      process.env.STRIPE_PRICE_REALTOR_MONTHLY,
+      process.env.STRIPE_PRICE_REALTOR_YEARLY,
+      process.env.STRIPE_PRICE_PROPERTY_MANAGER_MONTHLY,
+      process.env.STRIPE_PRICE_PROPERTY_MANAGER_YEARLY,
+    ];
+
+    if (!validPriceIds.includes(priceId)) {
+      return res.status(400).json({ error: 'Invalid price ID' });
+    }
+
+    // Create Stripe Checkout Session
+    const session = await stripe.checkout.sessions.create({
+      mode: 'subscription',
+      payment_method_types: ['card'],
+      line_items: [
+        {
+          price: priceId,
+          quantity: 1,
+        },
+      ],
+      success_url: `${process.env.CLIENT_URL}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.CLIENT_URL}/pricing`,
+      metadata: {
+        plan: plan,
+      },
+    });
+
+    res.json({ url: session.url });
+  } catch (error) {
+    console.error('Stripe checkout error:', error);
+    res.status(500).json({ error: 'Failed to create checkout session' });
+  }
+});
+```
+
+---
+
+## ✅ VERIFICATION CHECKLIST
+
+After adding the code, verify:
+
+### Code Quality:
+- [ ] No TypeScript errors
+- [ ] No syntax errors
+- [ ] Proper indentation maintained
+- [ ] Code is added BEFORE `export default router;`
+
+### Imports Present:
+- [ ] `import Stripe from 'stripe';` exists at top of file
+- [ ] `const stripe = new Stripe(...)` is initialized
+- [ ] `import { Router } from 'express';` or similar exists
+- [ ] `const router = Router();` or `express.Router()` exists
+
+### Structure:
+- [ ] New endpoint is inside the same router as existing endpoints
+- [ ] File still exports the router at the end
+- [ ] No duplicate route paths created
+
+### Functionality:
+- [ ] Existing checkout endpoints still present and unchanged
+- [ ] No console errors when server starts
+- [ ] TypeScript compiles successfully
+
+---
+
+## 🧪 HOW TO TEST (After Adding Code)
+
+1. **Check server starts:**
+```
+   Server should start without errors
+   Look for: "Server running on port..."
+```
+
+2. **Verify endpoint exists:**
+```
+   Console should show: POST /api/checkout/create-subscription-checkout
+   (or similar route depending on your setup)
+```
+
+3. **No TypeScript errors:**
+```
+   No red error messages in terminal
+   No build failures
+```
+
+---
+
+## 📋 CONTEXT FOR AGENT
+
+**What this endpoint does:**
+- Accepts `priceId` and `plan` name from frontend
+- Validates the price ID against allowed subscription tiers
+- Creates a Stripe Checkout Session in "subscription" mode
+- Returns checkout URL for frontend to redirect to
+- Handles success/cancel redirects
+
+**Why we need this:**
+- UpKeepQR is transitioning from one-time payments to subscriptions
+- New pricing: $6.99/month, $12.99/month, $39/month, $149/month
+- This endpoint handles the checkout for these subscription plans
+
+**What NOT to change:**
+- Existing one-time payment checkout (still needed for old flow)
+- Any product creation or QR generation logic
+- Database schema or models
+
+---
+
+## 🎯 SUCCESS CRITERIA
+
+This task is complete when:
+
+1. ✅ New endpoint added to checkout route file
+2. ✅ Code compiles without errors
+3. ✅ Server starts successfully
+4. ✅ Existing endpoints still work
+5. ✅ No console errors or warnings
+6. ✅ File structure remains intact
+
+---
+
+## 📝 COMMIT MESSAGE
+
+After successful implementation:
+```
+feat: Add subscription checkout endpoint for new pricing model
+
+- Add POST /create-subscription-checkout endpoint
+- Support 8 subscription price tiers (4 plans × monthly/yearly)
+- Validate price IDs before creating Stripe session
+- Redirect to /payment-success on completion
+- Mode set to 'subscription' for recurring billing
+
+This enables the new subscription-based pricing model alongside 
+existing one-time payment flow.
+```
+
+---
+
+## ⚠️ IMPORTANT NOTES
+
+1. **This is an addition, not a replacement**
+   - Existing checkout code should remain untouched
+   - Both old and new checkout can coexist
+
+2. **Environment variables**
+   - The code references STRIPE_PRICE_* environment variables
+   - These will be added separately (not part of this task)
+   - Don't worry if they're not set yet - code will still compile
+
+3. **Client URL**
+   - Uses `process.env.CLIENT_URL` for redirects
+   - Should already exist from current setup
+   - If missing, endpoint will still work (just won't redirect properly)
+
+4. **Stripe object**
+   - Assumes `stripe` is already initialized in the file
+   - Should be available from existing checkout code
+   - Don't create a duplicate Stripe instance
+
+---
+
+## 🔍 IF YOU ENCOUNTER ISSUES
+
+**Issue: Can't find checkout file**
+- Solution: Search for files containing "stripe.checkout" or "Stripe"
+- May be in `server/routes/`, `server/api/`, or `server/`
+
+**Issue: No router object**
+- Solution: Look for `const router = express.Router()` or similar
+- Add endpoint using the same pattern as existing routes
+
+**Issue: Stripe not imported**
+- Solution: This file should already have Stripe imported
+- If not, this might not be the right file
+
+**Issue: TypeScript errors about process.env**
+- Solution: This is expected - environment variables will be added later
+- Code should still compile (variables are optional with `?` operator)
+
+---
+
+**IMPLEMENT THIS NOW. ADD THE CODE. VERIFY IT COMPILES. COMMIT WITH THE MESSAGE ABOVE.**

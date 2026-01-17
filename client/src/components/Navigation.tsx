@@ -36,18 +36,6 @@ export default function Navigation() {
           {/* Navigation Links */}
           <div className="flex items-center space-x-1 sm:space-x-2 lg:space-x-4 flex-shrink-0">
             <Link 
-              href="/" 
-              className={`px-2 py-1.5 sm:px-3 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${
-                isActive('/') 
-                  ? 'bg-primary text-primary-foreground' 
-                  : 'hover:bg-accent hover:text-accent-foreground'
-              }`}
-              data-testid="link-home"
-            >
-              Home
-            </Link>
-            
-            <Link 
               href="/request-pro" 
               className={`px-2 py-1.5 sm:px-3 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-colors whitespace-nowrap ${
                 isActive('/request-pro') 

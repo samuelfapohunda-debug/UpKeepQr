@@ -28,6 +28,7 @@ import {
   orderMagnetShipmentsTable,
   orderMagnetAuditEventsTable,
   contactMessagesTable,
+  householdsTable,
   COLLECTIONS,
   timestampToDate 
 } from "@shared/schema";
@@ -35,6 +36,10 @@ import { v4 as uuidv4 } from 'uuid';
 import { nanoid } from "nanoid";
 import { eq, and, like, sql, desc, asc, or, inArray } from "drizzle-orm";
 import { db } from "./db";
+import { generateOrderId } from "./utils/orderIdGenerator";
+
+// System Agent ID for QR codes from Stripe orders (not tied to specific agent)
+export const SYSTEM_AGENT_ID = 'system-upkeepqr-agent';
 
 export interface IStorage {
   // Agent methods
@@ -62,13 +67,19 @@ export interface IStorage {
   getMagnetById(id: string): Promise<Magnet | undefined>;
 
   // Household methods
-  createHousehold(household: InsertHousehold): Promise<Household>;
+  createHousehold(household: InsertHousehold, trx?: any): Promise<Household>;
   getHousehold(id: string): Promise<Household | undefined>;
   getHouseholdByToken(magnetToken: string): Promise<Household | undefined>;
   getHouseholdsByAgent(agentId: string): Promise<Household[]>;
   // Additional household methods
   updateHousehold(id: string, data: Partial<Household>): Promise<Household | undefined>;
   getActivatedHouseholdsByAgentId(agentId: string): Promise<Household[]>;
+  getAllHouseholds(filters?: { 
+    setupStatus?: string; 
+    createdBy?: string;
+    limit?: number; 
+    offset?: number; 
+  }): Promise<{ households: Household[]; total: number }>;
 
   // Task methods
   createTask(task: InsertTask): Promise<Task>;
@@ -78,9 +89,9 @@ export interface IStorage {
   updateTaskStatus(id: string, status: Task['status']): Promise<void>;
   getOverdueTasks(): Promise<Task[]>;
   // Additional task methods
-  createSchedule(data: any): Promise<any>;
-  getScheduleByHouseholdAndTask(householdId: string, taskName: string): Promise<any>;
-  createTaskCompletion(data: any): Promise<any>;
+  createSchedule(data: Record<string, unknown>): Promise<unknown>;
+  getScheduleByHouseholdAndTask(householdId: string, taskName: string): Promise<unknown>;
+  createTaskCompletion(data: Record<string, unknown>): Promise<unknown>;
 
   // Lead methods  
   createLead(lead: InsertLead): Promise<Lead>;
@@ -89,12 +100,12 @@ export interface IStorage {
   updateLeadStatus(id: string, status: Lead['status']): Promise<void>;
 
   // Event/Audit methods
-  createEvent(event: { householdId: string; eventType: string; eventData: string }): Promise<any>;
-  createAuditLog(data: any): Promise<any>;
-  createReminderQueue(data: any): Promise<any>;
+  createEvent(event: { householdId: string; eventType: string; eventData: string }): Promise<unknown>;
+  createAuditLog(data: Record<string, unknown>): Promise<unknown>;
+  createReminderQueue(data: Record<string, unknown>): Promise<unknown>;
 
   // Agent metrics methods  
-  getAgentMetrics(agentId: string): Promise<any>;
+  getAgentMetrics(agentId: string): Promise<unknown>;
 
   // Pro Request methods
   createProRequest(proRequest: InsertProRequest): Promise<ProRequest>;
@@ -127,6 +138,7 @@ export interface IStorage {
   // Order operations
   createOrderMagnetOrder(order: InsertOrderMagnetOrder): Promise<OrderMagnetOrder>;
   getOrderMagnetOrder(id: string): Promise<OrderMagnetOrder | undefined>;
+  getOrderMagnetOrderByOrderId(orderId: string): Promise<OrderMagnetOrder | undefined>;
   getAllOrderMagnetOrders(): Promise<OrderMagnetOrder[]>;
   getOrderMagnetOrdersByStatus(status: string): Promise<OrderMagnetOrder[]>;
   updateOrderMagnetOrderStatus(id: string, status: string): Promise<OrderMagnetOrder | undefined>;
@@ -134,9 +146,11 @@ export interface IStorage {
   // Item operations
   createOrderMagnetItem(item: InsertOrderMagnetItem): Promise<OrderMagnetItem>;
   getOrderMagnetItem(id: string): Promise<OrderMagnetItem | undefined>;
+  getOrderMagnetItemByActivationCode(activationCode: string): Promise<OrderMagnetItem | undefined>;
   getOrderMagnetItemsByOrder(orderId: string): Promise<OrderMagnetItem[]>;
   getOrderMagnetItemsByBatch(batchId: string): Promise<OrderMagnetItem[]>;
   updateOrderMagnetItemStatus(id: string, activationStatus: string): Promise<OrderMagnetItem | undefined>;
+  claimOrderMagnetItemForActivation(activationCode: string, activatedByEmail: string, activatedAt: Date): Promise<OrderMagnetItem | null>;
   
   // Batch operations
   createOrderMagnetBatch(batch: InsertOrderMagnetBatch): Promise<OrderMagnetBatch>;
@@ -315,20 +329,53 @@ export class FirebaseStorage implements IStorage {
     }
   }
 
-  // Household methods
-  async createHousehold(household: InsertHousehold): Promise<Household> {
-    const id = household.id || uuidv4();
+  // Household methods (PostgreSQL)
+  async createHousehold(household: InsertHousehold, trx?: any): Promise<Household> {
+    const dbConnection = trx || db;
+    const id = nanoid();
     const now = new Date();
     
-    const newHousehold: Household = {
-      ...household,
+    const newHousehold = {
       id,
+      name: household.name,
+      email: household.email.toLowerCase().trim(),
+      phone: household.phone || null,
+      addressLine1: household.addressLine1 || null,
+      addressLine2: household.addressLine2 || null,
+      city: household.city || null,
+      state: household.state?.toUpperCase() || null,
+      zipcode: household.zipcode || null,
+      notificationPreference: household.notificationPreference || 'both',
+      smsOptIn: household.smsOptIn ?? false,
+      preferredContact: household.preferredContact || null,
+      setupStatus: household.setupStatus || 'in_progress',
+      setupStartedAt: household.setupStartedAt || now,
+      setupCompletedAt: household.setupCompletedAt || null,
+      setupNotes: household.setupNotes || null,
+      setupIssues: household.setupIssues || null,
+      magnetToken: household.magnetToken || null,
+      magnetCode: household.magnetCode || null,
+      orderId: household.orderId || null,
+      lastModifiedBy: household.lastModifiedBy || null,
+      createdBy: household.createdBy || 'customer',
+      createdByUserId: household.createdByUserId || null,
       createdAt: now,
-      updatedAt: now
+      updatedAt: now,
     };
 
-    await adminDb.collection(COLLECTIONS.HOUSEHOLDS).doc(id).set(newHousehold);
-    return newHousehold;
+    const [result] = await dbConnection
+      .insert(householdsTable)
+      .values(newHousehold)
+      .returning();
+    
+    console.log('✅ Household created in PostgreSQL:', {
+      id: result.id,
+      email: result.email,
+      setupStatus: result.setupStatus,
+      createdBy: result.createdBy
+    });
+    
+    return result;
   }
 
   async getHousehold(id: string): Promise<Household | undefined> {
@@ -354,6 +401,53 @@ export class FirebaseStorage implements IStorage {
     const households = query.docs.map(doc => this.convertFirestoreData<Household>(doc)!);
     // Sort in memory instead of using orderBy to avoid index requirement
     return households.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  }
+
+  async getAllHouseholds(filters?: { 
+    setupStatus?: string; 
+    createdBy?: string;
+    limit?: number; 
+    offset?: number; 
+  }): Promise<{ households: Household[]; total: number }> {
+    const limit = filters?.limit || 50;
+    const offset = filters?.offset || 0;
+    
+    // Build conditions array
+    const conditions = [];
+    if (filters?.setupStatus) {
+      conditions.push(eq(householdsTable.setupStatus, filters.setupStatus));
+    }
+    if (filters?.createdBy) {
+      conditions.push(eq(householdsTable.createdBy, filters.createdBy));
+    }
+    
+    // ✅ CORRECT - Conditional where clause (avoid .where(undefined))
+    let query = db.select().from(householdsTable);
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+    
+    // ✅ CORRECT - Conditional where for count
+    let countQuery = db
+      .select({ count: sql<number>`count(*)` })
+      .from(householdsTable);
+    
+    if (conditions.length > 0) {
+      countQuery = countQuery.where(and(...conditions));
+    }
+    
+    const [{ count }] = await countQuery;
+    
+    // Get paginated results
+    const householdsList = await query
+      .orderBy(desc(householdsTable.createdAt))
+      .limit(limit)
+      .offset(offset);
+    
+    return {
+      households: householdsList,
+      total: Number(count)
+    };
   }
 
   // Task methods
@@ -490,7 +584,7 @@ export class FirebaseStorage implements IStorage {
   }
 
   // Additional task methods
-  async createSchedule(data: any): Promise<any> {
+  async createSchedule(data: Record<string, unknown>): Promise<unknown> {
     // For now, create a basic task
     const scheduleId = uuidv4();
     const schedule = {
@@ -503,7 +597,7 @@ export class FirebaseStorage implements IStorage {
     return schedule;
   }
 
-  async getScheduleByHouseholdAndTask(householdId: string, taskName: string): Promise<any> {
+  async getScheduleByHouseholdAndTask(householdId: string, taskName: string): Promise<unknown> {
     const query = await adminDb.collection('schedules')
       .where('householdId', '==', householdId)
       .where('taskName', '==', taskName)
@@ -514,7 +608,7 @@ export class FirebaseStorage implements IStorage {
     return this.convertFirestoreData(query.docs[0]);
   }
 
-  async createTaskCompletion(data: any): Promise<any> {
+  async createTaskCompletion(data: Record<string, unknown>): Promise<unknown> {
     const completionId = uuidv4();
     const completion = {
       id: completionId,
@@ -527,7 +621,7 @@ export class FirebaseStorage implements IStorage {
   }
 
   // Event/Audit methods
-  async createEvent(event: { householdId: string; eventType: string; eventData: string }): Promise<any> {
+  async createEvent(event: { householdId: string; eventType: string; eventData: string }): Promise<unknown> {
     const eventId = uuidv4();
     const newEvent = {
       id: eventId,
@@ -539,7 +633,7 @@ export class FirebaseStorage implements IStorage {
     return newEvent;
   }
 
-  async createAuditLog(data: any): Promise<any> {
+  async createAuditLog(data: Record<string, unknown>): Promise<unknown> {
     const logId = uuidv4();
     const auditLog = {
       id: logId,
@@ -550,7 +644,7 @@ export class FirebaseStorage implements IStorage {
     return auditLog;
   }
 
-  async createReminderQueue(data: any): Promise<any> {
+  async createReminderQueue(data: Record<string, unknown>): Promise<unknown> {
     const reminderId = uuidv4();
     const reminder = {
       id: reminderId,
@@ -563,7 +657,7 @@ export class FirebaseStorage implements IStorage {
   }
 
   // Agent metrics methods
-  async getAgentMetrics(agentId: string): Promise<any> {
+  async getAgentMetrics(agentId: string): Promise<unknown> {
     // Calculate metrics from existing data
     const [households, leads, batches] = await Promise.all([
       this.getHouseholdsByAgent(agentId),
@@ -617,7 +711,7 @@ export class FirebaseStorage implements IStorage {
   }
 
   async updateProRequestStatus(id: string, status: string, providerAssigned?: string): Promise<ProRequest | undefined> {
-    const updateData: any = {
+    const updateData: Record<string, unknown> = {
       status,
       updatedAt: new Date(),
     };
@@ -846,11 +940,13 @@ export class FirebaseStorage implements IStorage {
   // Order operations
   async createOrderMagnetOrder(order: InsertOrderMagnetOrder): Promise<OrderMagnetOrder> {
     const id = uuidv4();
+    const orderId = await generateOrderId(); // Generate sequential order ID
     const activationCode = nanoid(8);
     const now = new Date();
     
     const newOrder = {
       id,
+      orderId,
       ...order,
       activationCode,
       createdAt: now,
@@ -864,6 +960,13 @@ export class FirebaseStorage implements IStorage {
 
   async getOrderMagnetOrder(id: string): Promise<OrderMagnetOrder | undefined> {
     const result = await db.select().from(orderMagnetOrdersTable).where(eq(orderMagnetOrdersTable.id, id)).limit(1);
+    return result[0] || undefined;
+  }
+
+  async getOrderMagnetOrderByOrderId(orderId: string): Promise<OrderMagnetOrder | undefined> {
+    const result = await db.select().from(orderMagnetOrdersTable)
+      .where(eq(orderMagnetOrdersTable.orderId, orderId))
+      .limit(1);
     return result[0] || undefined;
   }
 
@@ -914,6 +1017,13 @@ export class FirebaseStorage implements IStorage {
     return result[0] || undefined;
   }
 
+  async getOrderMagnetItemByActivationCode(activationCode: string): Promise<OrderMagnetItem | undefined> {
+    const result = await db.select().from(orderMagnetItemsTable)
+      .where(eq(orderMagnetItemsTable.activationCode, activationCode))
+      .limit(1);
+    return result[0] || undefined;
+  }
+
   async getOrderMagnetItemsByOrder(orderId: string): Promise<OrderMagnetItem[]> {
     const result = await db.select().from(orderMagnetItemsTable)
       .where(eq(orderMagnetItemsTable.orderId, orderId))
@@ -939,6 +1049,40 @@ export class FirebaseStorage implements IStorage {
       .where(eq(orderMagnetItemsTable.id, id));
     
     return this.getOrderMagnetItem(id);
+  }
+
+  async claimOrderMagnetItemForActivation(
+    activationCode: string, 
+    activatedByEmail: string, 
+    activatedAt: Date
+  ): Promise<OrderMagnetItem | null> {
+    // Atomic update: only succeeds if activation_status is NOT already 'activated'
+    // This prevents race conditions and ensures one-time use enforcement
+    const result = await db.update(orderMagnetItemsTable)
+      .set({
+        activationStatus: 'activated',
+        activatedByEmail,
+        activatedAt,
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(orderMagnetItemsTable.activationCode, activationCode),
+          sql`${orderMagnetItemsTable.activationStatus} != 'activated'`
+        )
+      )
+      .returning();
+    
+    // If no rows were updated, either:
+    // 1. The token doesn't exist, or
+    // 2. It's already been activated (race condition caught!)
+    if (result.length === 0) {
+      console.log(`⚠️  Atomic claim failed for token ${activationCode} - already activated or not found`);
+      return null;
+    }
+    
+    console.log(`✅ Atomic claim succeeded for token ${activationCode}`);
+    return result[0];
   }
   
   // Batch operations
@@ -1215,42 +1359,154 @@ export async function getHomeIdByToken(token: string): Promise<number | null> {
   }
 }
 
-// Also ensure these functions exist for home_profile_extra:
-export async function getHomeProfileExtra(homeId: number): Promise<any> {
+
+// Home Profile Extra Functions - Public API compatible
+
+
+// =============================================================================
+// ADAPTER FUNCTIONS FOR PUBLIC API COMPATIBILITY
+// Public routes expect homeId (number) but existing functions use householdId (string)
+// These adapters convert between the two
+// =============================================================================
+
+export async function getHomeProfileExtraByHomeId(homeId: number) {
   try {
-    const result = await db.query(
-      `SELECT * FROM home_profile_extra WHERE home_id = $1`,
-      [homeId]
-    );
-    return result.rows[0] || {};
+    // Convert numeric homeId to string householdId
+    const householdId = homeId.toString();
+    
+    const [result] = await db
+      .select()
+      .from(homeProfileExtras)
+      .where(eq(homeProfileExtras.householdId, householdId))
+      .limit(1);
+    
+    return result || null;
   } catch (error) {
-    console.error('Error getting home profile extra:', error);
-    return {};
+    console.error('Error in getHomeProfileExtraByHomeId:', error);
+    return null;
   }
 }
 
-export async function updateHomeProfileExtra(homeId: number, data: any): Promise<any> {
+export async function updateHomeProfileExtraByHomeId(homeId: number, data: Record<string, unknown>) {
   try {
-    const fields = Object.keys(data);
-    const values = Object.values(data);
+    // Convert numeric homeId to string householdId
+    const householdId = homeId.toString();
+    const existing = await getHomeProfileExtra(householdId);
     
-    if (fields.length === 0) {
-      return await getHomeProfileExtra(homeId);
+    if (existing) {
+      const [result] = await db
+        .update(homeProfileExtras)
+        .set(data)
+        .where(eq(homeProfileExtras.householdId, householdId))
+        .returning();
+      return result;
+    } else {
+      const [result] = await db
+        .insert(homeProfileExtras)
+        .values({
+          householdId,
+          ...data
+        })
+        .returning();
+      return result;
+    }
+  } catch (error) {
+    console.error('Error in updateHomeProfileExtraByHomeId:', error);
+    throw error;
+  }
+}
+
+// =============================================================================
+// QR CODE ACTIVATION FUNCTIONS
+// Used for one-time use enforcement and customer data pre-population
+// =============================================================================
+
+/**
+ * Get order item and associated order by activation code
+ * Used for customer data lookup and one-time use enforcement
+ */
+export async function getOrderItemByActivationCode(activationCode: string): Promise<{
+  item: OrderMagnetItem;
+  order: OrderMagnetOrder;
+} | null> {
+  try {
+    console.log(`🔍 Searching for activation code: ${activationCode}`);
+    
+    // Find item by activation code
+    const items = await db
+      .select()
+      .from(orderMagnetItemsTable)
+      .where(eq(orderMagnetItemsTable.activationCode, activationCode))
+      .limit(1);
+    
+    if (!items || items.length === 0) {
+      console.log(`❌ No item found for code: ${activationCode}`);
+      return null;
     }
     
-    const setClause = fields.map((field, index) => `${field} = $${index + 2}`).join(', ');
-    const query = `
-      INSERT INTO home_profile_extra (home_id, ${fields.join(', ')}, updated_at)
-      VALUES ($1, ${fields.map((_, i) => `$${i + 2}`).join(', ')}, CURRENT_TIMESTAMP)
-      ON CONFLICT (home_id) 
-      DO UPDATE SET ${setClause}, updated_at = CURRENT_TIMESTAMP
-      RETURNING *
-    `;
+    const item = items[0];
+    console.log(`✅ Found item: ${item.id} for order: ${item.orderId}`);
     
-    const result = await db.query(query, [homeId, ...values]);
-    return result.rows[0];
+    // Get associated order for customer details
+    const orders = await db
+      .select()
+      .from(orderMagnetOrdersTable)
+      .where(eq(orderMagnetOrdersTable.id, item.orderId))
+      .limit(1);
+    
+    if (!orders || orders.length === 0) {
+      console.log(`❌ No order found for item: ${item.id}`);
+      return null;
+    }
+    
+    const order = orders[0];
+    console.log(`✅ Found order: ${order.id} for customer: ${order.customerEmail}`);
+    
+    return {
+      item,
+      order
+    };
+    
   } catch (error) {
-    console.error('Error updating home profile extra:', error);
+    console.error('Error fetching order item by activation code:', error);
+    return null;
+  }
+}
+
+/**
+ * Update order magnet item activation status
+ * Used to mark QR code as used (one-time use enforcement)
+ */
+export async function updateOrderMagnetItemStatus(
+  itemId: string,
+  status: 'inactive' | 'activated' | 'deactivated',
+  activatedByEmail?: string
+): Promise<void> {
+  try {
+    console.log(`🔄 Updating item ${itemId} status to: ${status}`);
+    
+    const updateData: any = {
+      activationStatus: status,
+      updatedAt: new Date()
+    };
+    
+    // Set activated timestamp and email if activating
+    if (status === 'activated') {
+      updateData.activatedAt = new Date();
+      if (activatedByEmail) {
+        updateData.activatedByEmail = activatedByEmail;
+      }
+    }
+    
+    await db
+      .update(orderMagnetItemsTable)
+      .set(updateData)
+      .where(eq(orderMagnetItemsTable.id, itemId));
+    
+    console.log(`✅ Successfully updated item ${itemId} to ${status}`);
+    
+  } catch (error) {
+    console.error('Error updating order magnet item status:', error);
     throw error;
   }
 }

@@ -1,0 +1,619 @@
+# 📋 REPLIT AGENT INSTRUCTIONS: UpKeepQR Pricing Page Redesign
+
+## 🎯 PROJECT OBJECTIVE
+
+Replace the current pricing page with a **new subscription-based pricing model** that aligns with UpKeepQR's transition from one-time purchase to recurring SaaS revenue.
+
+**Critical Context:**
+- OLD MODEL: One-time purchase ($19, $35, $899) with lifetime reminders
+- NEW MODEL: Monthly subscription (billed annually) with ongoing service
+- Physical QR magnets still included but pricing shifted to recurring revenue
+- Must maintain consistency with recently implemented emerald UI design system
+
+---
+
+## 🚨 SAFETY RULES (NON-NEGOTIABLE)
+
+### ❌ DO NOT MODIFY:
+- Backend API routes or logic
+- Stripe integration code (we'll update product configs separately)
+- Database schema or models
+- QR code generation logic
+- Admin dashboard functionality
+- Authentication/authorization
+- Email/SMS reminder systems
+- Any existing checkout flows (until explicitly told to)
+
+### ✅ ONLY MODIFY:
+- Pricing page UI components
+- Pricing copy and content
+- Visual presentation of plans
+- Card layouts and styling
+- CTA button labels and routes (non-functional changes only)
+
+### ⚠️ IF UNSURE:
+- Do NOT make the change
+- Leave existing code untouched
+- Flag the question in your response
+
+---
+
+## 🎨 DESIGN SYSTEM CONSISTENCY
+
+**You recently implemented an emerald-based UI refresh. The new pricing page MUST match:**
+
+### Colors (Use Existing Variables):
+```css
+--color-primary: #10B981;        /* Emerald - CTAs, accents */
+--color-primary-dark: #059669;   /* Hover states */
+--color-primary-light: #D1FAE5;  /* Backgrounds, badges */
+--color-heading: #0F172A;        /* Headlines */
+--color-text: #334155;           /* Body text */
+--color-bg: #F8FAFC;            /* Page background */
+--color-border: #E2E8F0;        /* Card borders */
+```
+
+### Typography (Use Existing):
+- **Font Family:** Inter (already implemented)
+- **Headings:** 700 weight, tight line-height
+- **Body:** 400-500 weight, 1.6 line-height
+
+### Spacing (Use Existing Grid):
+- **Section padding:** 80px vertical (py-20)
+- **Card padding:** 32px (p-8)
+- **Element gaps:** 16-24px
+- **Border radius:** 12px (rounded-xl)
+
+### Components (Reuse Existing Patterns):
+- Button styles from recent UI refresh
+- Card hover effects (translateY + shadow)
+- Badge styles for "Most Popular"
+- Responsive grid system
+
+---
+
+## 📄 NEW PRICING PAGE STRUCTURE
+
+### File to Create/Modify:
+`client/src/pages/Pricing.tsx` (or `client/src/components/Pricing.tsx` if embedded)
+
+### Page Route:
+Ensure `/pricing` route exists in `client/src/App.tsx`
+
+---
+
+## 🏗️ IMPLEMENTATION STEPS
+
+### Step 1: Page Header Section
+
+**Location:** Top of pricing page
+**Layout:** Centered, max-width 800px
+```tsx
+<section className="bg-white py-20">
+  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="text-center max-w-3xl mx-auto mb-16">
+      <h1 className="text-5xl font-bold text-slate-900 mb-6">
+        Simple, Smart Home Maintenance Pricing
+      </h1>
+      <p className="text-xl text-slate-700 mb-4">
+        Monthly plans, billed annually.
+        <br />
+        Physical QR magnets included.
+      </p>
+      <p className="text-base text-slate-600">
+        No clutter. No complexity. Cancel anytime at renewal.
+      </p>
+    </div>
+  </div>
+</section>
+```
+
+**Design Notes:**
+- Use emerald for any accent underlines or highlights (optional)
+- Keep typography hierarchy clear
+- Mobile: Reduce h1 to text-3xl or text-4xl
+
+---
+
+### Step 2: Pricing Cards Grid
+
+**Layout:**
+- Desktop: 2x2 grid (4 cards, 2 per row)
+- Tablet: 2 columns
+- Mobile: 1 column (stacked)
+```tsx
+<div className="grid md:grid-cols-2 gap-8 max-w-6xl mx-auto">
+  {/* Card 1: Homeowner Basic */}
+  {/* Card 2: Homeowner Plus (MOST POPULAR) */}
+  {/* Card 3: Realtor/Agent */}
+  {/* Card 4: Property Manager */}
+</div>
+```
+
+---
+
+### Step 3: Pricing Card Component
+
+**Create reusable component:** `<PricingCard />`
+```tsx
+interface PricingCardProps {
+  title: string;
+  price: string;
+  billedAmount: string;
+  badge?: string;
+  features: string[];
+  ctaLabel: string;
+  ctaLink: string;
+  highlighted?: boolean;
+}
+
+function PricingCard({
+  title,
+  price,
+  billedAmount,
+  badge,
+  features,
+  ctaLabel,
+  ctaLink,
+  highlighted = false
+}: PricingCardProps) {
+  return (
+    <div className={`
+      relative bg-white rounded-xl p-8 
+      border-2 transition-all duration-300
+      hover:shadow-xl hover:-translate-y-1
+      ${highlighted 
+        ? 'border-emerald-500 shadow-lg' 
+        : 'border-slate-200 shadow-sm'
+      }
+    `}>
+      {/* Badge (if exists) */}
+      {badge && (
+        <div className="absolute -top-4 left-1/2 -translate-x-1/2">
+          <span className="bg-emerald-500 text-white px-4 py-1 rounded-full text-sm font-semibold">
+            {badge}
+          </span>
+        </div>
+      )}
+      
+      {/* Title */}
+      <h3 className="text-2xl font-bold text-slate-900 mb-2">
+        {title}
+      </h3>
+      
+      {/* Pricing */}
+      <div className="mb-6">
+        <div className="flex items-baseline gap-2">
+          <span className="text-4xl font-bold text-slate-900">
+            {price}
+          </span>
+          <span className="text-slate-600">/ month</span>
+        </div>
+        <p className="text-sm text-slate-600 mt-1">
+          {billedAmount}
+        </p>
+      </div>
+      
+      {/* Features List */}
+      <ul className="space-y-3 mb-8">
+        {features.map((feature, index) => (
+          <li key={index} className="flex items-start gap-3">
+            <svg className="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+            </svg>
+            <span className="text-slate-700">{feature}</span>
+          </li>
+        ))}
+      </ul>
+      
+      {/* CTA Button */}
+      
+        href={ctaLink}
+        className={`
+          block w-full text-center py-3 px-6 rounded-lg font-semibold
+          transition-all duration-200
+          ${highlighted
+            ? 'bg-emerald-600 text-white hover:bg-emerald-700 hover:shadow-lg'
+            : 'bg-white text-emerald-600 border-2 border-emerald-600 hover:bg-emerald-50'
+          }
+        `}
+      >
+        {ctaLabel}
+      </a>
+    </div>
+  );
+}
+```
+
+---
+
+### Step 4: Card Content (Exact Copy)
+
+#### Card 1: Homeowner Basic
+```tsx
+<PricingCard
+  title="Homeowner Basic"
+  price="$6.99"
+  billedAmount="Billed annually at $69"
+  features={[
+    "1 Premium QR Magnet",
+    "Smart maintenance task list",
+    "Climate-based scheduling",
+    "Email reminders",
+    "Up to 3 SMS reminders/month",
+    "Task completion history"
+  ]}
+  ctaLabel="Get Started"
+  ctaLink="/order-magnet"
+  highlighted={false}
+/>
+```
+
+#### Card 2: Homeowner Plus (MOST POPULAR)
+```tsx
+<PricingCard
+  title="Homeowner Plus"
+  price="$12.99"
+  billedAmount="Billed annually at $129"
+  badge="Most Popular"
+  features={[
+    "Up to 10 QR magnets",
+    "Manage up to 3 properties",
+    "Appliance-level maintenance tracking",
+    "Priority reminders",
+    "Exportable maintenance history",
+    "Everything in Homeowner Basic"
+  ]}
+  ctaLabel="Get Started"
+  ctaLink="/order-magnet"
+  highlighted={true}
+/>
+```
+
+#### Card 3: Realtor/Agent Plan
+```tsx
+<PricingCard
+  title="Realtor / Agent"
+  price="$39"
+  billedAmount="Billed annually at $390"
+  features={[
+    "25 branded QR magnets per year",
+    "25 homeowner activations",
+    "Agent dashboard",
+    "Client activation tracking",
+    "Co-branded QR experience"
+  ]}
+  ctaLabel="Request Agent Access"
+  ctaLink="/contact"
+  highlighted={false}
+/>
+```
+
+#### Card 4: Property/Maintenance Manager
+```tsx
+<PricingCard
+  title="Property / Maintenance Manager"
+  price="$149"
+  billedAmount="Billed annually at $1,490"
+  features={[
+    "Up to 200 units",
+    "Appliance & unit-level tracking",
+    "Maintenance & service history logs",
+    "Audit & compliance reports",
+    "Bulk branded magnets",
+    "SMS limits per unit"
+  ]}
+  ctaLabel="Contact Sales"
+  ctaLink="/contact"
+  highlighted={false}
+/>
+```
+
+---
+
+### Step 5: Footer Reassurance Section
+
+**Location:** Below pricing cards, before page footer
+```tsx
+<section className="bg-slate-50 py-16 mt-20">
+  <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    <h3 className="text-2xl font-bold text-slate-900 text-center mb-8">
+      All Plans Include
+    </h3>
+    
+    <div className="grid sm:grid-cols-2 gap-6">
+      <div className="flex items-start gap-3">
+        <svg className="w-6 h-6 text-emerald-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+        </svg>
+        <div>
+          <p className="font-semibold text-slate-900">Physical QR magnets shipped to you</p>
+          <p className="text-sm text-slate-600">High-quality, weatherproof magnets</p>
+        </div>
+      </div>
+      
+      <div className="flex items-start gap-3">
+        <svg className="w-6 h-6 text-emerald-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+        </svg>
+        <div>
+          <p className="font-semibold text-slate-900">Secure cloud access</p>
+          <p className="text-sm text-slate-600">Your data is encrypted and protected</p>
+        </div>
+      </div>
+      
+      <div className="flex items-start gap-3">
+        <svg className="w-6 h-6 text-emerald-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+        </svg>
+        <div>
+          <p className="font-semibold text-slate-900">No ads</p>
+          <p className="text-sm text-slate-600">Clean interface, focused on your needs</p>
+        </div>
+      </div>
+      
+      <div className="flex items-start gap-3">
+        <svg className="w-6 h-6 text-emerald-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+        </svg>
+        <div>
+          <p className="font-semibold text-slate-900">No long-term contracts</p>
+          <p className="text-sm text-slate-600">Cancel anytime at renewal</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+```
+
+---
+
+## 📱 RESPONSIVE DESIGN REQUIREMENTS
+
+### Mobile (< 768px):
+```css
+- Single column layout
+- Stack pricing cards vertically
+- Reduce h1 from text-5xl to text-3xl
+- Reduce card padding from p-8 to p-6
+- CTA buttons remain full-width
+```
+
+### Tablet (768px - 1024px):
+```css
+- 2-column grid for pricing cards
+- Maintain desktop spacing
+- Card 1 & 2 on row 1
+- Card 3 & 4 on row 2
+```
+
+### Desktop (> 1024px):
+```css
+- 2-column grid (as specified)
+- Full card padding and spacing
+- Hover effects enabled
+```
+
+---
+
+## 🧪 TESTING CHECKLIST (MANDATORY)
+
+Before marking complete, verify:
+
+### Visual Testing:
+- [ ] Page loads without errors
+- [ ] All 4 pricing cards display correctly
+- [ ] "Most Popular" badge appears on Homeowner Plus
+- [ ] Homeowner Plus card has emerald border
+- [ ] All checkmarks render (emerald color)
+- [ ] Hover effects work on all cards
+- [ ] Typography matches recent UI refresh
+
+### Responsive Testing:
+- [ ] Mobile view (375px width): Cards stack vertically
+- [ ] Tablet view (768px width): 2-column grid works
+- [ ] Desktop view (1280px width): Proper spacing and alignment
+- [ ] No horizontal scroll on any screen size
+
+### Content Verification:
+- [ ] All pricing amounts are correct
+- [ ] Feature lists match specifications exactly
+- [ ] CTA button labels are correct
+- [ ] CTA links point to correct routes
+
+### Consistency Testing:
+- [ ] Emerald color (#10B981) used for primary elements
+- [ ] Inter font family loads correctly
+- [ ] Button styles match recent UI refresh
+- [ ] Card shadows and borders match design system
+- [ ] Spacing follows existing grid system
+
+### Functionality Testing:
+- [ ] All CTA buttons are clickable
+- [ ] Links navigate correctly (even if target pages don't exist yet)
+- [ ] No console errors in browser DevTools
+- [ ] No React/TypeScript errors
+- [ ] Existing checkout flows still work
+
+---
+
+## 🎨 CURRENT UI REFERENCE
+
+**You recently implemented these components - reuse their patterns:**
+
+### Button Style (from UI refresh):
+```tsx
+className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold 
+           px-8 py-3 rounded-lg transition-all hover:shadow-lg"
+```
+
+### Card Style (from UI refresh):
+```tsx
+className="bg-white rounded-xl p-8 border border-slate-200 shadow-sm 
+           hover:shadow-md transition-shadow"
+```
+
+### Badge Style (create new, matching theme):
+```tsx
+className="bg-emerald-500 text-white px-4 py-1 rounded-full 
+           text-sm font-semibold"
+```
+
+---
+
+## 🔗 NAVIGATION UPDATES
+
+### Update Header Navigation (if needed):
+
+**File:** `client/src/components/Layout.tsx` or `client/src/components/Header.tsx`
+
+**Ensure "Pricing" link exists:**
+```tsx
+<nav>
+  <Link href="/">Home</Link>
+  <Link href="/pricing">Pricing</Link> {/* Add if missing */}
+  <Link href="/request-pro">Request a Pro</Link>
+  <Link href="/contact">Contact Us</Link>
+</nav>
+```
+
+---
+
+## 📋 FILE STRUCTURE
+
+**Expected files to create/modify:**
+```
+client/src/
+├── pages/
+│   └── Pricing.tsx              // Main pricing page (CREATE/REPLACE)
+├── components/
+│   └── PricingCard.tsx          // Reusable card component (CREATE)
+└── App.tsx                      // Add /pricing route (MODIFY)
+```
+
+---
+
+## 🚀 DEPLOYMENT CHECKLIST
+
+After implementation:
+
+### Code Quality:
+- [ ] No TypeScript errors
+- [ ] No ESLint warnings
+- [ ] Code follows existing patterns
+- [ ] Components are properly typed
+
+### Version Control:
+- [ ] Commit with clear message
+- [ ] Push to main branch
+- [ ] Verify Render deployment succeeds
+
+### Production Testing:
+- [ ] Test on production URL
+- [ ] Verify mobile responsiveness
+- [ ] Check all links work
+- [ ] Confirm no regressions
+
+---
+
+## 📝 COMMIT MESSAGE
+```
+feat: Implement new subscription-based pricing page
+
+- Replace one-time pricing ($19/$35/$899) with monthly subscription model
+- Add 4 pricing tiers: Homeowner Basic ($6.99), Homeowner Plus ($12.99), 
+  Realtor ($39), Property Manager ($149)
+- Create reusable PricingCard component
+- Highlight "Homeowner Plus" as most popular tier
+- Add reassurance section with included features
+- Maintain consistency with emerald UI design system
+- Fully responsive (mobile, tablet, desktop)
+
+All pricing is monthly, billed annually. Physical QR magnets included in all plans.
+No backend changes - UI/content update only.
+```
+
+---
+
+## ⚠️ IMPORTANT NOTES
+
+### Pricing Model Context:
+**OLD (Current):**
+- Single Pack: $19 (1 magnet, lifetime reminders)
+- Two Pack: $35 (2 magnets, lifetime reminders)
+- Agent 100-Pack: $899 (100 magnets, lifetime reminders)
+
+**NEW (Target):**
+- Homeowner Basic: $6.99/month ($69/year)
+- Homeowner Plus: $12.99/month ($129/year) ⭐
+- Realtor: $39/month ($390/year)
+- Property Manager: $149/month ($1,490/year)
+
+**Why the change:**
+- Transition from one-time purchase to SaaS recurring revenue
+- Ongoing service (reminders, updates, support) justifies subscription
+- Better aligns with home maintenance as ongoing need, not one-time fix
+
+### Stripe Integration Note:
+**DO NOT update Stripe products in this task.**
+We will handle Stripe product/price configuration separately.
+For now, CTAs can point to:
+- `/order-magnet` (existing)
+- `/contact` (for business plans)
+- `/request-access` (for agent plans)
+
+---
+
+## ✅ IMPLEMENTATION SUCCESS CRITERIA
+
+This task is complete when:
+
+1. ✅ New pricing page displays 4 tiers correctly
+2. ✅ Visual design matches emerald UI system
+3. ✅ "Most Popular" badge shows on Homeowner Plus
+4. ✅ All content matches specifications exactly
+5. ✅ Mobile, tablet, desktop layouts work perfectly
+6. ✅ No existing functionality is broken
+7. ✅ Page loads without errors
+8. ✅ Code is committed with proper message
+
+---
+
+## 🎯 FINAL REMINDER
+
+**This is a VISUAL UPDATE ONLY.**
+- No backend changes
+- No Stripe integration changes
+- No database changes
+- No API route changes
+
+**If you need to modify any backend logic, STOP and ask first.**
+
+---
+
+**IMPLEMENT THIS NOW. TEST THOROUGHLY. COMMIT WHEN COMPLETE.**
+```
+
+---
+
+## 🎁 BONUS: Quick Visual Comparison
+
+**Before (Current):**
+```
+"Simple, Transparent Pricing"
+One-time purchase. Lifetime reminders. No subscriptions.
+
+Single Pack: $19
+Two Pack: $35 (Save $3)
+Agent 100-Pack: $899 (Popular)
+```
+
+**After (New):**
+```
+"Simple, Smart Home Maintenance Pricing"
+Monthly plans, billed annually. Physical QR magnets included.
+
+Homeowner Basic: $6.99/month
+Homeowner Plus: $12.99/month (Most Popular) ⭐
+Realtor: $39/month
+Property Manager: $149/month

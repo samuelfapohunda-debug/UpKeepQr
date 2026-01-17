@@ -1,0 +1,341 @@
+# TASK: Connect Pricing Page "Get Started" Buttons to Stripe Checkout
+
+## 🎯 OBJECTIVE
+
+Fix the "Checkout Unavailable" error by wiring up the pricing page buttons to call the subscription checkout endpoint we created earlier.
+
+**Current Issue:** 
+- Pricing page displays correctly ✅
+- "Get Started" buttons exist ✅
+- BUT buttons show error: "Subscription checkout is being set up" ❌
+- Buttons are not connected to Stripe checkout endpoint ❌
+
+**Goal:**
+- Wire buttons to call `/api/checkout/create-subscription-checkout`
+- Pass correct price ID and plan name
+- Redirect user to Stripe checkout
+- Handle errors gracefully
+
+---
+
+## 🚨 SAFETY RULES
+
+### DO NOT MODIFY:
+- ❌ Backend checkout endpoint (already exists and works)
+- ❌ Stripe configuration or API keys
+- ❌ Database models or schemas
+- ❌ Any other components outside pricing page
+
+### ONLY MODIFY:
+- ✅ Pricing page component (button onClick handlers)
+- ✅ Add checkout function to handle API calls
+- ✅ Add loading states
+- ✅ Add error handling
+
+---
+
+## 📁 FILE TO MODIFY
+
+**Primary file:** `client/src/pages/Pricing.tsx`
+
+**Alternative locations:**
+- `client/src/components/Pricing.tsx`
+- `client/src/pages/pricing/index.tsx`
+
+**How to find:** Search for the component that renders the pricing cards with "Get Started" buttons.
+
+---
+
+## 🔧 IMPLEMENTATION
+
+### Step 1: Add Checkout Handler Function
+
+**At the top of the Pricing component, add this function:**
+```typescript
+import { useState } from 'react';
+
+const [isLoading, setIsLoading] = useState<string | null>(null);
+
+const handleCheckout = async (priceId: string, planName: string) => {
+  setIsLoading(planName);
+  
+  try {
+    const response = await fetch('/api/checkout/create-subscription-checkout', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        priceId: priceId,
+        plan: planName,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (data.url) {
+      // Redirect to Stripe Checkout
+      window.location.href = data.url;
+    } else if (data.error) {
+      alert(`Error: ${data.error}`);
+      setIsLoading(null);
+    } else {
+      alert('Failed to start checkout. Please try again.');
+      setIsLoading(null);
+    }
+  } catch (error) {
+    console.error('Checkout error:', error);
+    alert('An error occurred. Please try again or contact support.');
+    setIsLoading(null);
+  }
+};
+```
+
+---
+
+### Step 2: Update "Get Started" Buttons
+
+**Find each "Get Started" button and update like this:**
+
+#### Homeowner Basic Button:
+```typescript
+<button
+  onClick={() => handleCheckout(
+    import.meta.env.VITE_STRIPE_PRICE_HOMEOWNER_BASIC_YEARLY || 'price_basic',
+    'Homeowner Basic'
+  )}
+  disabled={isLoading !== null}
+  className="w-full py-3 px-6 rounded-lg font-semibold transition-all bg-white text-emerald-600 border-2 border-emerald-600 hover:bg-emerald-50 disabled:opacity-50 disabled:cursor-not-allowed"
+>
+  {isLoading === 'Homeowner Basic' ? 'Loading...' : 'Get Started'}
+</button>
+```
+
+#### Homeowner Plus Button:
+```typescript
+<button
+  onClick={() => handleCheckout(
+    import.meta.env.VITE_STRIPE_PRICE_HOMEOWNER_PLUS_YEARLY || 'price_plus',
+    'Homeowner Plus'
+  )}
+  disabled={isLoading !== null}
+  className="w-full py-3 px-6 rounded-lg font-semibold transition-all bg-emerald-600 text-white hover:bg-emerald-700 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+>
+  {isLoading === 'Homeowner Plus' ? 'Loading...' : 'Get Started'}
+</button>
+```
+
+#### Realtor/Agent Button:
+```typescript
+<button
+  onClick={() => handleCheckout(
+    import.meta.env.VITE_STRIPE_PRICE_REALTOR_YEARLY || 'price_realtor',
+    'Realtor / Agent'
+  )}
+  disabled={isLoading !== null}
+  className="w-full py-3 px-6 rounded-lg font-semibold transition-all bg-white text-emerald-600 border-2 border-emerald-600 hover:bg-emerald-50 disabled:opacity-50 disabled:cursor-not-allowed"
+>
+  {isLoading === 'Realtor / Agent' ? 'Loading...' : 'Request Agent Access'}
+</button>
+```
+
+#### Property Manager Button:
+```typescript
+<button
+  onClick={() => handleCheckout(
+    import.meta.env.VITE_STRIPE_PRICE_PROPERTY_MANAGER_YEARLY || 'price_manager',
+    'Property / Maintenance Manager'
+  )}
+  disabled={isLoading !== null}
+  className="w-full py-3 px-6 rounded-lg font-semibold transition-all bg-white text-emerald-600 border-2 border-emerald-600 hover:bg-emerald-50 disabled:opacity-50 disabled:cursor-not-allowed"
+>
+  {isLoading === 'Property / Maintenance Manager' ? 'Loading...' : 'Contact Sales'}
+</button>
+```
+
+---
+
+### Step 3: Add Environment Variables (Frontend)
+
+**Create/update:** `client/.env`
+
+**Add these variables (use values from Replit Secrets):**
+```bash
+# Stripe Price IDs (Yearly billing)
+VITE_STRIPE_PRICE_HOMEOWNER_BASIC_YEARLY=price_xxxxx
+VITE_STRIPE_PRICE_HOMEOWNER_PLUS_YEARLY=price_xxxxx
+VITE_STRIPE_PRICE_REALTOR_YEARLY=price_xxxxx
+VITE_STRIPE_PRICE_PROPERTY_MANAGER_YEARLY=price_xxxxx
+```
+
+**Note:** Replace `price_xxxxx` with actual Price IDs from Stripe Dashboard (Test Mode).
+
+---
+
+### Step 4: Remove Error Toast/Alert
+
+**Find and remove this code (if it exists):**
+```typescript
+// Remove this:
+toast.error('Subscription checkout is being set up. Please contact us to get started.');
+
+// Or this:
+alert('Checkout Unavailable - Subscription checkout is being set up...');
+
+// Or any similar error message code
+```
+
+---
+
+## 🎨 VISUAL FEEDBACK IMPROVEMENTS
+
+### Loading State:
+```typescript
+{isLoading === 'Homeowner Plus' ? (
+  <span className="flex items-center justify-center gap-2">
+    <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+    </svg>
+    Loading...
+  </span>
+) : (
+  'Get Started'
+)}
+```
+
+### Disabled State Styling:
+```css
+disabled:opacity-50 
+disabled:cursor-not-allowed
+disabled:hover:bg-emerald-600 (prevents hover effect when disabled)
+```
+
+---
+
+## ✅ TESTING CHECKLIST
+
+After implementation, verify:
+
+### Functionality:
+- [ ] Click "Get Started" on Homeowner Basic
+- [ ] Button shows "Loading..." text
+- [ ] Browser redirects to Stripe checkout page
+- [ ] Stripe checkout shows correct product and price
+- [ ] Repeat for all 4 pricing tiers
+
+### Error Handling:
+- [ ] Network failure shows error message
+- [ ] Invalid price ID shows error message
+- [ ] Button re-enables after error
+- [ ] No console errors
+
+### Loading States:
+- [ ] Button shows "Loading..." when clicked
+- [ ] Button is disabled during loading
+- [ ] Other buttons remain clickable
+- [ ] Loading state clears after redirect
+
+### Visual:
+- [ ] No "Checkout Unavailable" error shows
+- [ ] Button styling remains consistent
+- [ ] Hover effects work correctly
+- [ ] Mobile responsive
+
+---
+
+## 🐛 DEBUGGING
+
+### If buttons still show error:
+
+**Check 1:** Verify `handleCheckout` function exists
+```typescript
+console.log('Checkout function:', typeof handleCheckout);
+// Should log: "Checkout function: function"
+```
+
+**Check 2:** Test API endpoint directly
+```typescript
+// Add temporary button to test:
+<button onClick={async () => {
+  const response = await fetch('/api/checkout/create-subscription-checkout', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ priceId: 'price_test', plan: 'Test' })
+  });
+  console.log('Response:', await response.json());
+}}>
+  Test API
+</button>
+```
+
+**Check 3:** Verify environment variables loaded
+```typescript
+console.log('Price IDs:', {
+  basic: import.meta.env.VITE_STRIPE_PRICE_HOMEOWNER_BASIC_YEARLY,
+  plus: import.meta.env.VITE_STRIPE_PRICE_HOMEOWNER_PLUS_YEARLY,
+});
+```
+
+---
+
+## 📝 IMPLEMENTATION NOTES
+
+### Why Yearly Prices?
+- Users see monthly pricing ($6.99/month)
+- But billed annually ($69/year)
+- Yearly Price IDs give better value and lower churn
+
+### Fallback Values:
+- `|| 'price_basic'` provides fallback if env var missing
+- Prevents undefined errors
+- Shows clear error message if price not found
+
+### Loading State:
+- `isLoading` tracks which button was clicked
+- Disables all buttons during checkout
+- Prevents double-clicks and race conditions
+
+---
+
+## 🎯 SUCCESS CRITERIA
+
+This task is complete when:
+
+1. ✅ All 4 "Get Started" buttons are clickable
+2. ✅ Clicking button shows "Loading..." state
+3. ✅ User redirects to Stripe Checkout page
+4. ✅ No "Checkout Unavailable" error appears
+5. ✅ Stripe shows correct product and price
+6. ✅ No console errors
+7. ✅ Works on mobile and desktop
+
+---
+
+## 📝 COMMIT MESSAGE
+```
+feat: Wire up pricing page to Stripe subscription checkout
+
+- Add handleCheckout function to pricing page
+- Connect all "Get Started" buttons to checkout endpoint
+- Implement loading states during checkout
+- Add error handling for failed checkouts
+- Remove "Checkout Unavailable" error message
+- Add frontend environment variables for price IDs
+
+Pricing page now fully functional with Stripe integration.
+Users can click "Get Started" and proceed to Stripe checkout.
+```
+
+---
+
+## ⚠️ CRITICAL REMINDERS
+
+1. **DO NOT modify backend code** - checkout endpoint already works
+2. **DO NOT change Stripe configuration** - just wire up frontend
+3. **Test in development first** - verify locally before deploying
+4. **Use Test Mode price IDs** - don't charge real money during testing
+
+---
+
+**IMPLEMENT THIS NOW. TEST THOROUGHLY. COMMIT WHEN COMPLETE.**

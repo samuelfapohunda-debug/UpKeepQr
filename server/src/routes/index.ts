@@ -14,6 +14,13 @@ import publicRoutes from './public.js';
 import contactRoutes from './contact.js';
 import proRequestsRoutes from './proRequests.js';
 import adminProRequestsRoutes from './adminProRequests.js';
+import applianceRoutes from './appliances.js';
+import maintenanceLogRoutes from './maintenanceLogs.js';
+import reportRoutes from './reports.js';
+import householdsRoutes from './households.js';
+import checkoutRoutes from './checkout.js';
+import dashboardRoutes from './dashboard.js';
+import customerRoutes from './customer.js';
 
 export function registerRoutes(app: Express) {
   app.use('/health', healthRoutes);
@@ -31,8 +38,17 @@ export function registerRoutes(app: Express) {
   app.use('/api/pro-requests', proRequestsRoutes);  // Public professional service requests
   app.use('/api', contactRoutes);  // Contact form
   app.use('/api', publicRoutes);  // Customer data lookup and QR code download
+  app.use('/api', applianceRoutes);  // Appliance management
+  app.use('/api', maintenanceLogRoutes);  // Maintenance logs
+  app.use('/api', reportRoutes);  // Reports
+  app.use('/api', householdsRoutes);  // Households tasks
+  app.use('/api/checkout', checkoutRoutes);  // Stripe checkout
+  app.use('/api', dashboardRoutes);  // Homeowner dashboard
+  app.use('/api/customer', customerRoutes);  // Customer authenticated routes
   
   console.log('✅ Health routes registered at /health');
+  console.log('✅ Dashboard routes registered at /api/dashboard');
+  console.log('✅ Checkout routes registered at /api/checkout');
   console.log('✅ Auth routes registered at /api/auth');
   console.log('✅ QR routes registered at /api/qr');
   console.log('✅ Calendar routes registered at /api/calendar');
@@ -46,5 +62,9 @@ export function registerRoutes(app: Express) {
   console.log('✅ Setup routes registered at /api/setup');
   console.log('✅ Pro requests routes registered at /api/pro-requests');
   console.log('✅ Contact routes registered at /api/contact');
+  console.log('✅ Appliance routes registered at /api');
+  console.log('✅ Maintenance log routes registered at /api');
+  console.log('✅ Report routes registered at /api');
+  console.log('✅ Households routes registered at /api');
   console.log('🚀 All routes setup complete');
 }

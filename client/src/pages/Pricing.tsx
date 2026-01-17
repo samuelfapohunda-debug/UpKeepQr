@@ -1,163 +1,275 @@
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { CheckCircle, Users, Package } from "lucide-react";
+import { useState } from "react";
+import { Check } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
-// Stripe Payment Links mapping
-const STRIPE_PAYMENT_LINKS = {
-  single: "https://buy.stripe.com/test_14A00l9mwdUFbpncy9gIo07", // 1 QR Magnet - $19
-  twopack: "https://buy.stripe.com/test_8x27sNdCM03P3WVdCdgIo03", // 2 QR Magnets - $35
-  "100pack": "https://buy.stripe.com/test_eVq00l42c5o98db69LgIo01", // 100 QR Magnets - $899
-};
+interface PricingCardProps {
+  title: string;
+  price: string;
+  billedAmount: string;
+  badge?: string;
+  features: string[];
+  ctaLabel: string;
+  planId: string;
+  highlighted?: boolean;
+  onGetStarted: (planId: string, planName: string) => void;
+  isLoading?: boolean;
+}
 
-const openStripeCheckout = (sku: keyof typeof STRIPE_PAYMENT_LINKS) => {
-  const paymentLink = STRIPE_PAYMENT_LINKS[sku];
-  if (paymentLink) {
-    window.open(paymentLink, '_blank');
-  }
-};
+function PricingCard({
+  title,
+  price,
+  billedAmount,
+  badge,
+  features,
+  ctaLabel,
+  planId,
+  highlighted = false,
+  onGetStarted,
+  isLoading = false
+}: PricingCardProps) {
+  return (
+    <div className={`
+      relative bg-white dark:bg-slate-800 rounded-xl p-6 md:p-8 
+      border-2 transition-all duration-300
+      hover:shadow-xl hover:-translate-y-1
+      ${highlighted 
+        ? 'border-emerald-500 shadow-lg' 
+        : 'border-slate-200 dark:border-slate-700 shadow-sm'
+      }
+    `}>
+      {badge && (
+        <div className="absolute -top-4 left-1/2 -translate-x-1/2">
+          <span className="bg-emerald-500 text-white px-4 py-1 rounded-full text-sm font-semibold whitespace-nowrap">
+            {badge}
+          </span>
+        </div>
+      )}
+      
+      <h3 className="text-xl md:text-2xl font-bold text-slate-900 dark:text-white mb-2">
+        {title}
+      </h3>
+      
+      <div className="mb-6">
+        <div className="flex items-baseline gap-2">
+          <span className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white">
+            {price}
+          </span>
+          <span className="text-slate-600 dark:text-slate-400">/ month</span>
+        </div>
+        <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+          {billedAmount}
+        </p>
+      </div>
+      
+      <ul className="space-y-3 mb-8">
+        {features.map((feature, index) => (
+          <li key={index} className="flex items-start gap-3">
+            <Check className="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" />
+            <span className="text-slate-700 dark:text-slate-300 text-sm md:text-base">{feature}</span>
+          </li>
+        ))}
+      </ul>
+      
+      <button
+        onClick={() => onGetStarted(planId, title)}
+        disabled={isLoading}
+        className={`
+          block w-full text-center py-3 px-6 rounded-lg font-semibold
+          transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed
+          ${highlighted
+            ? 'bg-emerald-600 text-white hover:bg-emerald-700 hover:shadow-lg'
+            : 'bg-white dark:bg-slate-800 text-emerald-600 border-2 border-emerald-600 hover:bg-emerald-50 dark:hover:bg-slate-700'
+          }
+        `}
+        data-testid={`button-pricing-${title.toLowerCase().replace(/\s+/g, '-')}`}
+      >
+        {isLoading ? 'Loading...' : ctaLabel}
+      </button>
+    </div>
+  );
+}
 
 export default function Pricing() {
+  const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+  const { toast } = useToast();
+
+  const handleGetStarted = async (planId: string, planName: string) => {
+    setLoadingPlan(planId);
+    
+    try {
+      const response = await fetch('/api/checkout/create-subscription-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          priceId: planId,
+          plan: planName 
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to start checkout');
+      }
+      
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error('No checkout URL received');
+      }
+    } catch (error: any) {
+      console.error('Checkout error:', error);
+      toast({
+        title: "Checkout Unavailable",
+        description: "Subscription checkout is being set up. Please contact us to get started.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoadingPlan(null);
+    }
+  };
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen bg-white dark:bg-slate-900">
       <main className="flex-1 pt-16">
-        {/* Pricing Section */}
-        <section className="w-full py-12 md:py-24 lg:py-32">
-          <div className="container px-4 md:px-6 mx-auto">
-            <div className="flex flex-col items-center justify-center space-y-4 text-center">
-              <div className="space-y-2">
-                <h1 className="text-3xl font-bold tracking-tighter sm:text-5xl">Simple Pricing</h1>
-                <p className="max-w-[900px] text-gray-500 md:text-xl/relaxed">
-                  Choose the plan that fits your needs
-                </p>
-              </div>
+        <section className="w-full py-12 md:py-20">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center max-w-3xl mx-auto mb-12 md:mb-16">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-slate-900 dark:text-white mb-6">
+                Simple, Smart Home Maintenance Pricing
+              </h1>
+              <p className="text-lg md:text-xl text-slate-700 dark:text-slate-300 mb-4">
+                Monthly plans, billed annually.
+                <br />
+                Physical QR magnets included.
+              </p>
+              <p className="text-base text-slate-600 dark:text-slate-400">
+                No clutter. No complexity. Cancel anytime at renewal.
+              </p>
             </div>
-            <div className="mx-auto grid max-w-6xl items-center gap-6 py-12 lg:grid-cols-3">
-              {/* Single Pack */}
-              <Card className="relative">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Package className="h-5 w-5" />
-                    Single Pack
-                  </CardTitle>
-                  <CardDescription>Perfect for homeowners</CardDescription>
-                  <div className="text-3xl font-bold">$19</div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <ul className="space-y-2 text-sm">
-                    <li className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-green-500" />
-                      1 QR Magnet
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-green-500" />
-                      Lifetime Reminders
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-green-500" />
-                      Climate-Based Scheduling
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-green-500" />
-                      Email & Calendar Sync
-                    </li>
-                  </ul>
-                  <Button 
-                    className="w-full" 
-                    onClick={() => openStripeCheckout('single')}
-                    data-testid="button-single-pack"
-                  >
-                    Get Started
-                  </Button>
-                </CardContent>
-              </Card>
 
-              {/* Two Pack */}
-              <Card className="relative">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Package className="h-5 w-5" />
-                    Two Pack
-                  </CardTitle>
-                  <CardDescription>Great for sharing</CardDescription>
-                  <div className="text-3xl font-bold">$35</div>
-                  <Badge className="absolute -top-2 -right-2 bg-green-500">Save $3</Badge>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <ul className="space-y-2 text-sm">
-                    <li className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-green-500" />
-                      2 QR Magnets
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-green-500" />
-                      Lifetime Reminders
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-green-500" />
-                      Climate-Based Scheduling
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-green-500" />
-                      Email & Calendar Sync
-                    </li>
-                  </ul>
-                  <Button 
-                    className="w-full" 
-                    onClick={() => openStripeCheckout('twopack')}
-                    data-testid="button-two-pack"
-                  >
-                    Get Started
-                  </Button>
-                </CardContent>
-              </Card>
+            <div className="grid md:grid-cols-2 gap-8 max-w-6xl mx-auto">
+              <PricingCard
+                title="Homeowner Basic"
+                price="$6.99"
+                billedAmount="Billed annually at $69"
+                features={[
+                  "1 Premium QR Magnet",
+                  "Smart maintenance task list",
+                  "Climate-based scheduling",
+                  "Email reminders",
+                  "Up to 3 SMS reminders/month",
+                  "Task completion history"
+                ]}
+                ctaLabel="Get Started"
+                planId="homeowner_basic_yearly"
+                highlighted={false}
+                onGetStarted={handleGetStarted}
+                isLoading={loadingPlan === "homeowner_basic_yearly"}
+              />
 
-              {/* 100 Pack */}
-              <Card className="relative border-2 border-blue-500">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Users className="h-5 w-5" />
-                    Agent 100-Pack
-                  </CardTitle>
-                  <CardDescription>For real estate agents</CardDescription>
-                  <div className="text-3xl font-bold">$899</div>
-                  <Badge className="absolute -top-2 -right-2 bg-blue-500">Popular</Badge>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <ul className="space-y-2 text-sm">
-                    <li className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-green-500" />
-                      100 QR Magnets
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-green-500" />
-                      Agent Dashboard
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-green-500" />
-                      Customer Analytics
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-green-500" />
-                      CSV Download
-                    </li>
-                  </ul>
-                  <Button 
-                    className="w-full" 
-                    onClick={() => openStripeCheckout('100pack')}
-                    data-testid="button-100-pack"
-                  >
-                    Get Started
-                  </Button>
-                </CardContent>
-              </Card>
+              <PricingCard
+                title="Homeowner Plus"
+                price="$12.99"
+                billedAmount="Billed annually at $129"
+                badge="Most Popular"
+                features={[
+                  "Up to 10 QR magnets",
+                  "Manage up to 3 properties",
+                  "Appliance-level maintenance tracking",
+                  "Priority reminders",
+                  "Exportable maintenance history",
+                  "Everything in Homeowner Basic"
+                ]}
+                ctaLabel="Get Started"
+                planId="homeowner_plus_yearly"
+                highlighted={true}
+                onGetStarted={handleGetStarted}
+                isLoading={loadingPlan === "homeowner_plus_yearly"}
+              />
 
+              <PricingCard
+                title="Realtor / Agent"
+                price="$39"
+                billedAmount="Billed annually at $390"
+                features={[
+                  "25 branded QR magnets per year",
+                  "25 homeowner activations",
+                  "Agent dashboard",
+                  "Client activation tracking",
+                  "Co-branded QR experience"
+                ]}
+                ctaLabel="Request Agent Access"
+                planId="realtor_yearly"
+                highlighted={false}
+                onGetStarted={handleGetStarted}
+                isLoading={loadingPlan === "realtor_yearly"}
+              />
+
+              <PricingCard
+                title="Property / Maintenance Manager"
+                price="$149"
+                billedAmount="Billed annually at $1,490"
+                features={[
+                  "Up to 200 units",
+                  "Appliance & unit-level tracking",
+                  "Maintenance & service history logs",
+                  "Audit & compliance reports",
+                  "Bulk branded magnets",
+                  "SMS limits per unit"
+                ]}
+                ctaLabel="Contact Sales"
+                planId="property_manager_yearly"
+                highlighted={false}
+                onGetStarted={handleGetStarted}
+                isLoading={loadingPlan === "property_manager_yearly"}
+              />
+            </div>
+          </div>
+        </section>
+
+        <section className="bg-slate-50 dark:bg-slate-800 py-12 md:py-16 mt-12 md:mt-20">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h3 className="text-xl md:text-2xl font-bold text-slate-900 dark:text-white text-center mb-8">
+              All Plans Include
+            </h3>
+            
+            <div className="grid sm:grid-cols-2 gap-6">
+              <div className="flex items-start gap-3">
+                <Check className="w-6 h-6 text-emerald-500 flex-shrink-0" />
+                <div>
+                  <p className="font-semibold text-slate-900 dark:text-white">Physical QR magnets shipped to you</p>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">High-quality, weatherproof magnets</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-3">
+                <Check className="w-6 h-6 text-emerald-500 flex-shrink-0" />
+                <div>
+                  <p className="font-semibold text-slate-900 dark:text-white">Secure cloud access</p>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">Your data is encrypted and protected</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-3">
+                <Check className="w-6 h-6 text-emerald-500 flex-shrink-0" />
+                <div>
+                  <p className="font-semibold text-slate-900 dark:text-white">No ads</p>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">Clean interface, focused on your needs</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-3">
+                <Check className="w-6 h-6 text-emerald-500 flex-shrink-0" />
+                <div>
+                  <p className="font-semibold text-slate-900 dark:text-white">Easy cancellation</p>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">Cancel anytime before renewal, no hassle</p>
+                </div>
+              </div>
             </div>
           </div>
         </section>
       </main>
-
     </div>
   );
 }

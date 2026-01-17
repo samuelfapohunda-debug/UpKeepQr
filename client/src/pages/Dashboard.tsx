@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Calendar, Clock, CheckCircle, QrCode, UserPlus } from 'lucide-react';
 
 import { API_BASE_URL } from '../lib/api-config';
 
@@ -53,42 +54,42 @@ export default function Dashboard() {
         {/* Stats Grid */}
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <div className="bg-card p-6 rounded-xl border border-border" data-testid="stat-total-events">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-2">
               <div>
                 <p className="text-sm text-muted-foreground">Total Events</p>
                 <p className="text-2xl font-bold" data-testid="text-total-events">{stats.totalEvents}</p>
               </div>
-              <i className="fas fa-calendar text-primary text-xl"></i>
+              <Calendar className="h-5 w-5 text-primary" />
             </div>
           </div>
           
           <div className="bg-card p-6 rounded-xl border border-border" data-testid="stat-upcoming-events">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-2">
               <div>
                 <p className="text-sm text-muted-foreground">Upcoming Events</p>
                 <p className="text-2xl font-bold" data-testid="text-upcoming-events">{stats.upcomingEvents}</p>
               </div>
-              <i className="fas fa-clock text-blue-500 text-xl"></i>
+              <Clock className="h-5 w-5 text-blue-500" />
             </div>
           </div>
           
           <div className="bg-card p-6 rounded-xl border border-border" data-testid="stat-completed-tasks">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-2">
               <div>
                 <p className="text-sm text-muted-foreground">Completed Tasks</p>
                 <p className="text-2xl font-bold" data-testid="text-completed-tasks">{stats.completedTasks}</p>
               </div>
-              <i className="fas fa-check-circle text-green-500 text-xl"></i>
+              <CheckCircle className="h-5 w-5 text-green-500" />
             </div>
           </div>
           
           <div className="bg-card p-6 rounded-xl border border-border" data-testid="stat-qr-generated">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-2">
               <div>
                 <p className="text-sm text-muted-foreground">QR Codes Generated</p>
                 <p className="text-2xl font-bold" data-testid="text-qr-generated">{stats.qrCodesGenerated}</p>
               </div>
-              <i className="fas fa-qrcode text-purple-500 text-xl"></i>
+              <QrCode className="h-5 w-5 text-purple-500" />
             </div>
           </div>
         </div>
@@ -135,21 +136,21 @@ export default function Dashboard() {
             <h2 className="text-xl font-semibold mb-4" data-testid="activity-title">Recent Activity</h2>
             <div className="space-y-4">
               <div className="flex items-center space-x-3 p-3 bg-muted rounded-lg">
-                <i className="fas fa-user-plus text-primary"></i>
+                <UserPlus className="h-4 w-4 text-primary" />
                 <div>
                   <p className="font-medium text-sm">Agent setup completed</p>
                   <p className="text-xs text-muted-foreground">2 hours ago</p>
                 </div>
               </div>
               <div className="flex items-center space-x-3 p-3 bg-muted rounded-lg">
-                <i className="fas fa-qrcode text-purple-500"></i>
+                <QrCode className="h-4 w-4 text-purple-500" />
                 <div>
                   <p className="font-medium text-sm">QR code generated</p>
                   <p className="text-xs text-muted-foreground">4 hours ago</p>
                 </div>
               </div>
               <div className="flex items-center space-x-3 p-3 bg-muted rounded-lg">
-                <i className="fas fa-calendar text-blue-500"></i>
+                <Calendar className="h-4 w-4 text-blue-500" />
                 <div>
                   <p className="font-medium text-sm">Event scheduled</p>
                   <p className="text-xs text-muted-foreground">1 day ago</p>

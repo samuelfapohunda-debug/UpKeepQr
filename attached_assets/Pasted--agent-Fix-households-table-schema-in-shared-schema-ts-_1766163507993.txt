@@ -1,0 +1,79 @@
+@agent Fix households table schema in shared/schema.ts - missing calendar_sync_preference column causing data loss warning.
+
+PROBLEM:
+Database migration aborted because `calendar_sync_preference` column exists in the database (20 records) but is missing from the schema definition in shared/schema.ts.
+
+ALSO: The householdsTable schema has duplicate/corrupted entries (look at lines 30-38 in the grep output - they're from a different table mixed in).
+
+TASKS:
+
+1. **Find householdsTable definition** (around line 800-900 in shared/schema.ts)
+
+2. **Add missing column** after the notification preferences section:
+```typescript
+calendarSyncPreference: varchar("calendar_sync_preference", { length: 50 }).default('none'), // 'google', 'apple', 'none'
+```
+
+3. **Verify table structure is clean** - remove any duplicate or misplaced field definitions
+
+4. **Proper structure should be:**
+```typescript
+export const householdsTable = pgTable("households", {
+  // Identity fields
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name", { length: 255 }).notNull(),
+  email: varchar("email", { length: 255 }).notNull(),
+  phone: varchar("phone", { length: 30 }),
+  
+  // Address fields
+  addressLine1: varchar("address_line_1", { length: 255 }),
+  addressLine2: varchar("address_line_2", { length: 255 }),
+  city: varchar("city", { length: 100 }),
+  state: varchar("state", { length: 2 }),
+  zipcode: varchar("zipcode", { length: 10 }),
+  
+  // Notification preferences
+  notificationPreference: varchar("notification_preference", { length: 20 }).notNull().default('both'),
+  smsOptIn: boolean("sms_opt_in").default(false),
+  preferredContact: varchar("preferred_contact", { length: 20 }),
+  calendarSyncPreference: varchar("calendar_sync_preference", { length: 50 }).default('none'), // ADD THIS
+  
+  // Setup tracking
+  setupStatus: varchar("setup_status", { length: 20 }).notNull().default('not_started'),
+  setupCompletedAt: timestamp("setup_completed_at"),
+  setupStartedAt: timestamp("setup_started_at"),
+  setupNotes: text("setup_notes"),
+  setupIssues: text("setup_issues"),
+  
+  // QR/Magnet fields
+  qrCode: varchar("qr_code", { length: 50 }),
+  magnetCode: varchar("magnet_code", { length: 50 }),
+  magnetToken: varchar("magnet_token", { length: 50 }),
+  orderId: varchar("order_id", { length: 50 }),
+  
+  // Tracking fields
+  lastModifiedBy: varchar("last_modified_by"),
+  createdBy: varchar("created_by", { length: 20 }).notNull().default('customer'),
+  createdByUserId: varchar("created_by_user_id", { length: 255 }),
+  agentId: varchar("agent_id", { length: 255 }),
+  
+  // Timestamps
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+}, (table) => ({
+  setupStatusIdx: index("idx_households_setup_status").on(table.setupStatus),
+  completedDateIdx: index("idx_households_completed_date").on(table.setupCompletedAt),
+  orderIdIdx: index("idx_households_order_id").on(table.orderId),
+  locationIdx: index("idx_households_location").on(table.state, table.zipcode),
+  agentIdIdx: index("idx_households_agent_id").on(table.agentId)
+}));
+```
+
+VERIFICATION:
+```bash
+# After fix
+npm run build
+npm run db:push  # Should complete without data loss warnings
+```
+
+START NOW - This is blocking the Firebase migration!

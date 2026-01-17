@@ -1,5 +1,6 @@
 console.log("DEBUG DATABASE_URL:", process.env.DATABASE_URL);
 import cors from "cors";
+import cookieParser from "cookie-parser";
 
 import express, { type Request, Response, NextFunction } from "express";
 import { createServer } from "http";
@@ -65,6 +66,7 @@ app.use((req, res, next) => {
 
   app.use(express.json());
   app.use(express.urlencoded({ extended: false }));
+  app.use(cookieParser());
   
   // Bootstrap: Ensure order_id_counter sequence exists for Stripe webhook
   const { createOrderIdCounterSequence } = await import("./migrations/create_order_id_counter.js");

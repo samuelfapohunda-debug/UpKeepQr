@@ -1,0 +1,132 @@
+Replit AI Agent Instructions for UpKeepQR Calendar Sync Issues
+1. Verify environment variables
+
+Objective: Ensure backend knows the correct Client ID and URL.
+
+Instructions:
+
+Check that GOOGLE_CLIENT_ID exists in the backend environment.
+
+echo $GOOGLE_CLIENT_ID
+
+
+Check BACKEND_URL. If missing, add to .env:
+
+BACKEND_URL=https://upkeepqr-backend.onrender.com
+
+
+Reload the backend environment to apply changes.
+
+2. Verify backend routes
+
+Objective: Make sure all required routes exist and are correctly mounted.
+
+Instructions:
+
+Confirm calendar.ts routes are registered:
+
+router.post('/sync', syncTasksToCalendar);
+router.get('/google/callback', handleGoogleCallback);
+
+
+Confirm the router is mounted in the main Express app:
+
+app.use('/api/calendar', calendarRouter);
+
+
+Test route availability with curl:
+
+curl -X GET https://upkeepqr-backend.onrender.com/api/calendar/google/callback
+
+
+Should not return 404 (code may be 400 if no code param).
+
+3. Audit database query in syncTasksToCalendar
+
+Objective: Identify the PostgreSQL syntax error causing 500.
+
+Instructions:
+
+Open syncTasksToCalendar function in dist/server/index.js or src/server/index.ts.
+
+Locate all SQL queries sent via Drizzle ORM.
+
+Look for any line that contains = in a place that PostgreSQL would reject (common culprits: INSERT, UPDATE, SET clauses, template string interpolation).
+
+Log the generated SQL query before execution to see exactly what is being sent:
+
+console.log("Generated SQL:", query.toSQL?.());
+
+
+Compare logged query to PostgreSQL syntax and note any invalid = usage.
+
+4. Confirm Google OAuth redirect URI
+
+Objective: Ensure backend redirect URI matches Google Cloud.
+
+Instructions:
+
+In calendar.ts, verify the redirect URI construction:
+
+const redirectUri = `${process.env.BACKEND_URL || 'https://upkeepqr-backend.onrender.com'}/api/calendar/google/callback`;
+
+
+Confirm registered URI in Google Cloud:
+
+https://upkeepqr-backend.onrender.com/api/calendar/google/callback
+
+
+Optionally, add runtime log to verify URI:
+
+console.log("OAuth redirect_uri:", redirectUri);
+
+5. Test calendar sync flow
+
+Objective: Verify that triggering sync does not crash backend.
+
+Instructions:
+
+Use the frontend button or curl to POST to sync endpoint:
+
+curl -X POST https://upkeepqr-backend.onrender.com/api/calendar/sync \
+     -H "Content-Type: application/json" \
+     -d '{"householdId":"test-household-calendar"}'
+
+
+Check logs for errors:
+
+No 500 or syntax errors → database query issue resolved.
+
+OAuth redirect URL should appear in logs and eventually redirect to Google.
+
+6. Logging & verification
+
+Objective: Make sure future debugging is easier.
+
+Instructions:
+
+Add console logs at each step of syncTasksToCalendar:
+
+Starting sync
+
+SQL query being executed
+
+Tasks prepared for Google Calendar
+
+OAuth redirect URI
+
+Confirm health routes /health and /api/calendar work.
+
+Mentor Take
+
+This workflow addresses all the points we uncovered:
+
+Environment misalignment → BACKEND_URL / GOOGLE_CLIENT_ID
+
+Backend route registration → /sync and /google/callback
+
+Database query error → syntax error at or near =
+
+OAuth redirect URI verification → matches Google Cloud
+
+The Replit Agent should first reproduce errors in logs, then apply changes incrementally, logging results.

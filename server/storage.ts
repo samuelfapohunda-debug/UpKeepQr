@@ -1,4 +1,4 @@
-import { adminDb } from "./firebase";
+import { db } from "./db";
 import { 
   Agent, InsertAgent, 
   MagnetBatch, InsertMagnetBatch,
@@ -18,7 +18,14 @@ import {
   OrderMagnetAuditEvent, InsertOrderMagnetAuditEvent,
   ContactMessage, InsertContactMessage,
   AdminContactMessageFilters,
+  Schedule, InsertSchedule,
+  TaskCompletion, InsertTaskCompletion,
+  ReminderQueue, InsertReminderQueue,
+  LeadDb, InsertLeadDb,
+  HouseholdTaskAssignment, InsertHouseholdTaskAssignment,
   proRequestsTable,
+  leadsTable,
+  householdTaskAssignmentsTable,
   providersTable,
   auditEventsTable,
   notesTable,
@@ -29,13 +36,14 @@ import {
   orderMagnetAuditEventsTable,
   contactMessagesTable,
   householdsTable,
-  COLLECTIONS,
-  timestampToDate 
+  agentsTable,
+  schedulesTable,
+  taskCompletionsTable,
+  reminderQueueTable
 } from "@shared/schema";
 import { v4 as uuidv4 } from 'uuid';
 import { nanoid } from "nanoid";
 import { eq, and, like, sql, desc, asc, or, inArray } from "drizzle-orm";
-import { db } from "./db";
 import { generateOrderId } from "./utils/orderIdGenerator";
 
 // System Agent ID for QR codes from Stripe orders (not tied to specific agent)
@@ -103,6 +111,13 @@ export interface IStorage {
   createEvent(event: { householdId: string; eventType: string; eventData: string }): Promise<unknown>;
   createAuditLog(data: Record<string, unknown>): Promise<unknown>;
   createReminderQueue(data: Record<string, unknown>): Promise<unknown>;
+
+  // Reminder Queue methods
+  getPendingReminders(now: Date): Promise<ReminderQueue[]>;
+  updateReminderStatus(reminderId: string, status: string, errorMessage?: string): Promise<void>;
+  deleteTaskReminders(taskId: string): Promise<void>;
+  getHouseholdById(id: string): Promise<Household | undefined>;
+  getTasksWithDetailsByHousehold(householdId: string): Promise<any[]>;
 
   // Agent metrics methods  
   getAgentMetrics(agentId: string): Promise<unknown>;
@@ -176,114 +191,136 @@ export interface IStorage {
   updateContactMessageStatus(id: string, status: 'new' | 'read' | 'replied'): Promise<ContactMessage | undefined>;
 }
 
-export class FirebaseStorage implements IStorage {
-  // Helper method to convert Firestore data to our types
-  private convertFirestoreData<T>(doc: FirebaseFirestore.DocumentSnapshot): T | undefined {
-    if (!doc.exists) return undefined;
-    const data = doc.data()!;
-    
-    // Convert Firestore timestamps to Date objects
-    Object.keys(data).forEach(key => {
-      if (data[key] && typeof data[key] === 'object' && data[key].seconds !== undefined) {
-        data[key] = timestampToDate(data[key]);
-      }
-    });
-    
-    return { id: doc.id, ...data } as T;
-  }
-
-  // Agent methods
+export class DatabaseStorage implements IStorage {
+  // Agent methods (PostgreSQL)
   async getAgent(id: string): Promise<Agent | undefined> {
-    const doc = await adminDb.collection(COLLECTIONS.AGENTS).doc(id).get();
-    return this.convertFirestoreData<Agent>(doc);
+    return await db.query.agentsTable.findFirst({
+      where: eq(agentsTable.id, id)
+    });
   }
 
   async getAgentByEmail(email: string): Promise<Agent | undefined> {
-    const query = await adminDb.collection(COLLECTIONS.AGENTS)
-      .where('email', '==', email)
-      .limit(1)
-      .get();
-    
-    if (query.empty) return undefined;
-    return this.convertFirestoreData<Agent>(query.docs[0]);
-  }
-
-  async createAgent(agent: InsertAgent): Promise<Agent> {
-    const id = agent.id || uuidv4();
-    const now = new Date();
-    
-    const newAgent: Agent = {
-      ...agent,
-      id,
-      createdAt: now,
-      updatedAt: now
-    };
-
-    await adminDb.collection(COLLECTIONS.AGENTS).doc(id).set(newAgent);
-    return newAgent;
-  }
-
-  // Magnet Batch methods
-  async createMagnetBatch(batch: InsertMagnetBatch): Promise<MagnetBatch> {
-    const id = batch.id || uuidv4();
-    const now = new Date();
-    
-    const newBatch: MagnetBatch = {
-      ...batch,
-      id,
-      createdAt: now,
-      updatedAt: now
-    };
-
-    await adminDb.collection(COLLECTIONS.MAGNET_BATCHES).doc(id).set(newBatch);
-    return newBatch;
-  }
-
-  async getMagnetBatch(id: string): Promise<MagnetBatch | undefined> {
-    const doc = await adminDb.collection(COLLECTIONS.MAGNET_BATCHES).doc(id).get();
-    return this.convertFirestoreData<MagnetBatch>(doc);
-  }
-
-  async getMagnetBatchesByAgent(agentId: string): Promise<MagnetBatch[]> {
-    const query = await adminDb.collection(COLLECTIONS.MAGNET_BATCHES)
-      .where('agentId', '==', agentId)
-      .get();
-    
-    const batches = query.docs.map(doc => this.convertFirestoreData<MagnetBatch>(doc)!);
-    // Sort in memory instead of using orderBy to avoid index requirement
-    return batches.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-  }
-
-  async updateMagnetBatch(id: string, data: Partial<MagnetBatch>): Promise<void> {
-    await adminDb.collection(COLLECTIONS.MAGNET_BATCHES).doc(id).update({
-      ...data,
-      updatedAt: new Date()
+    return await db.query.agentsTable.findFirst({
+      where: eq(agentsTable.email, email)
     });
   }
 
-  // Magnet methods
-  async createMagnet(magnet: InsertMagnet): Promise<Magnet> {
-    const id = magnet.id || uuidv4();
-    const now = new Date();
-    
-    const newMagnet: Magnet = {
-      ...magnet,
-      id,
-      createdAt: now,
-      updatedAt: now
-    };
+  async createAgent(agent: InsertAgent): Promise<Agent> {
+    const [result] = await db.insert(agentsTable)
+      .values({
+        ...agent,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      })
+      .returning();
+    return result;
+  }
 
-    await adminDb.collection(COLLECTIONS.MAGNETS).doc(id).set(newMagnet);
-    return newMagnet;
+  // Magnet Batch methods (PostgreSQL)
+  async createMagnetBatch(batch: InsertMagnetBatch): Promise<MagnetBatch> {
+    const [result] = await db.insert(orderMagnetBatchesTable)
+      .values({
+        batchId: batch.id || uuidv4(),
+        agentId: batch.agentId,
+        quantity: batch.quantity || 0,
+        status: batch.status || 'pending',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      })
+      .returning();
+    // Map to legacy MagnetBatch format
+    return {
+      id: result.batchId,
+      agentId: result.agentId || '',
+      quantity: result.quantity || 0,
+      status: result.status || 'pending',
+      createdAt: result.createdAt || new Date(),
+      updatedAt: result.updatedAt || new Date()
+    } as MagnetBatch;
+  }
+
+  async getMagnetBatch(id: string): Promise<MagnetBatch | undefined> {
+    const result = await db.query.orderMagnetBatchesTable.findFirst({
+      where: eq(orderMagnetBatchesTable.batchId, id)
+    });
+    if (!result) return undefined;
+    return {
+      id: result.batchId,
+      agentId: result.agentId || '',
+      quantity: result.quantity || 0,
+      status: result.status || 'pending',
+      createdAt: result.createdAt || new Date(),
+      updatedAt: result.updatedAt || new Date()
+    } as MagnetBatch;
+  }
+
+  async getMagnetBatchesByAgent(agentId: string): Promise<MagnetBatch[]> {
+    const results = await db.query.orderMagnetBatchesTable.findMany({
+      where: eq(orderMagnetBatchesTable.agentId, agentId),
+      orderBy: desc(orderMagnetBatchesTable.createdAt)
+    });
+    return results.map(result => ({
+      id: result.batchId,
+      agentId: result.agentId || '',
+      quantity: result.quantity || 0,
+      status: result.status || 'pending',
+      createdAt: result.createdAt || new Date(),
+      updatedAt: result.updatedAt || new Date()
+    })) as MagnetBatch[];
+  }
+
+  async updateMagnetBatch(id: string, data: Partial<MagnetBatch>): Promise<void> {
+    await db.update(orderMagnetBatchesTable)
+      .set({
+        ...data,
+        updatedAt: new Date()
+      })
+      .where(eq(orderMagnetBatchesTable.batchId, id));
+  }
+
+  // Magnet methods (PostgreSQL)
+  async createMagnet(magnet: InsertMagnet): Promise<Magnet> {
+    const [result] = await db.insert(orderMagnetItemsTable)
+      .values({
+        itemId: magnet.id || uuidv4(),
+        batchId: magnet.batchId,
+        activationCode: magnet.token,
+        activationStatus: magnet.isUsed ? 'activated' : 'inactive',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      })
+      .returning();
+    // Map to legacy Magnet format
+    return {
+      id: result.itemId,
+      batchId: result.batchId || '',
+      agentId: magnet.agentId || '',
+      token: result.activationCode || '',
+      isUsed: result.activationStatus === 'activated',
+      setupUrl: magnet.setupUrl,
+      createdAt: result.createdAt || new Date(),
+      updatedAt: result.updatedAt || new Date()
+    } as Magnet;
   }
 
   async getMagnet(id: string): Promise<Magnet | undefined> {
-    const doc = await adminDb.collection(COLLECTIONS.MAGNETS).doc(id).get();
-    return this.convertFirestoreData<Magnet>(doc);
+    const result = await db.query.orderMagnetItemsTable.findFirst({
+      where: eq(orderMagnetItemsTable.itemId, id)
+    });
+    if (!result) return undefined;
+    return {
+      id: result.itemId,
+      batchId: result.batchId || '',
+      agentId: '',
+      token: result.activationCode || '',
+      isUsed: result.activationStatus === 'activated',
+      createdAt: result.createdAt || new Date(),
+      updatedAt: result.updatedAt || new Date()
+    } as Magnet;
   }
 
   async getMagnetByToken(token: string): Promise<Magnet | undefined> {
-    // Handle demo token when Firebase is disabled
+    // Handle demo token
     if (token === 'demo-token') {
       return {
         id: 'demo-magnet',
@@ -297,36 +334,48 @@ export class FirebaseStorage implements IStorage {
       };
     }
 
-    const query = await adminDb.collection(COLLECTIONS.MAGNETS)
-      .where('token', '==', token)
-      .limit(1)
-      .get();
+    // Case-insensitive search on activation_code
+    const results = await db.select().from(orderMagnetItemsTable)
+      .where(sql`LOWER(${orderMagnetItemsTable.activationCode}) = LOWER(${token})`)
+      .limit(1);
     
-    if (query.empty) return undefined;
-    return this.convertFirestoreData<Magnet>(query.docs[0]);
+    if (results.length === 0) return undefined;
+    const result = results[0];
+    return {
+      id: result.itemId,
+      batchId: result.batchId || '',
+      agentId: '',
+      token: result.activationCode || '',
+      isUsed: result.activationStatus === 'activated',
+      createdAt: result.createdAt || new Date(),
+      updatedAt: result.updatedAt || new Date()
+    } as Magnet;
   }
 
   async getMagnetsByBatch(batchId: string): Promise<Magnet[]> {
-    const query = await adminDb.collection(COLLECTIONS.MAGNETS)
-      .where('batchId', '==', batchId)
-      .orderBy('createdAt', 'asc')
-      .get();
-    
-    return query.docs.map(doc => this.convertFirestoreData<Magnet>(doc)!);
+    const results = await db.query.orderMagnetItemsTable.findMany({
+      where: eq(orderMagnetItemsTable.batchId, batchId),
+      orderBy: asc(orderMagnetItemsTable.createdAt)
+    });
+    return results.map(result => ({
+      id: result.itemId,
+      batchId: result.batchId || '',
+      agentId: '',
+      token: result.activationCode || '',
+      isUsed: result.activationStatus === 'activated',
+      createdAt: result.createdAt || new Date(),
+      updatedAt: result.updatedAt || new Date()
+    })) as Magnet[];
   }
 
   async updateMagnetUsed(token: string, isUsed: boolean): Promise<void> {
-    const query = await adminDb.collection(COLLECTIONS.MAGNETS)
-      .where('token', '==', token)
-      .limit(1)
-      .get();
-    
-    if (!query.empty) {
-      await query.docs[0].ref.update({ 
-        isUsed, 
-        updatedAt: new Date() 
-      });
-    }
+    await db.update(orderMagnetItemsTable)
+      .set({
+        activationStatus: isUsed ? 'activated' : 'inactive',
+        activatedAt: isUsed ? new Date() : null,
+        updatedAt: new Date()
+      })
+      .where(sql`LOWER(${orderMagnetItemsTable.activationCode}) = LOWER(${token})`);
   }
 
   // Household methods (PostgreSQL)
@@ -359,6 +408,7 @@ export class FirebaseStorage implements IStorage {
       lastModifiedBy: household.lastModifiedBy || null,
       createdBy: household.createdBy || 'customer',
       createdByUserId: household.createdByUserId || null,
+      agentId: household.agentId || null,
       createdAt: now,
       updatedAt: now,
     };
@@ -379,28 +429,25 @@ export class FirebaseStorage implements IStorage {
   }
 
   async getHousehold(id: string): Promise<Household | undefined> {
-    const doc = await adminDb.collection(COLLECTIONS.HOUSEHOLDS).doc(id).get();
-    return this.convertFirestoreData<Household>(doc);
+    const result = await db.query.householdsTable.findFirst({
+      where: eq(householdsTable.id, id)
+    });
+    return result;
   }
 
   async getHouseholdByToken(magnetToken: string): Promise<Household | undefined> {
-    const query = await adminDb.collection(COLLECTIONS.HOUSEHOLDS)
-      .where('magnetToken', '==', magnetToken)
-      .limit(1)
-      .get();
-    
-    if (query.empty) return undefined;
-    return this.convertFirestoreData<Household>(query.docs[0]);
+    const result = await db.query.householdsTable.findFirst({
+      where: eq(householdsTable.magnetToken, magnetToken)
+    });
+    return result;
   }
 
   async getHouseholdsByAgent(agentId: string): Promise<Household[]> {
-    const query = await adminDb.collection(COLLECTIONS.HOUSEHOLDS)
-      .where('agentId', '==', agentId)
-      .get();
-    
-    const households = query.docs.map(doc => this.convertFirestoreData<Household>(doc)!);
-    // Sort in memory instead of using orderBy to avoid index requirement
-    return households.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    const results = await db.query.householdsTable.findMany({
+      where: eq(householdsTable.agentId, agentId),
+      orderBy: desc(householdsTable.createdAt)
+    });
+    return results;
   }
 
   async getAllHouseholds(filters?: { 
@@ -450,99 +497,163 @@ export class FirebaseStorage implements IStorage {
     };
   }
 
-  // Task methods
+  // Task methods (PostgreSQL - using household_task_assignments)
   async createTask(task: InsertTask): Promise<Task> {
-    const id = task.id || uuidv4();
-    const now = new Date();
-    
-    const newTask: Task = {
-      ...task,
-      id,
-      createdAt: now,
-      updatedAt: now
-    };
-
-    await adminDb.collection(COLLECTIONS.TASKS).doc(id).set(newTask);
-    return newTask;
+    const [result] = await db.insert(householdTaskAssignmentsTable)
+      .values({
+        id: task.id || uuidv4(),
+        householdId: task.householdId || '',
+        taskId: task.taskId || 0,
+        dueDate: task.scheduledDate || new Date(),
+        status: task.status || 'pending',
+        priority: task.priority || 'medium',
+        notes: task.notes,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      })
+      .returning();
+    // Map to legacy Task format
+    return {
+      id: result.id,
+      householdId: result.householdId,
+      taskId: result.taskId,
+      status: result.status as Task['status'],
+      scheduledDate: result.dueDate,
+      completedAt: result.completedAt,
+      priority: result.priority,
+      notes: result.notes,
+      createdAt: result.createdAt || new Date(),
+      updatedAt: result.updatedAt || new Date()
+    } as Task;
   }
 
   async getTask(id: string): Promise<Task | undefined> {
-    const doc = await adminDb.collection(COLLECTIONS.TASKS).doc(id).get();
-    return this.convertFirestoreData<Task>(doc);
+    const result = await db.query.householdTaskAssignmentsTable.findFirst({
+      where: eq(householdTaskAssignmentsTable.id, id)
+    });
+    if (!result) return undefined;
+    return {
+      id: result.id,
+      householdId: result.householdId,
+      taskId: result.taskId,
+      status: result.status as Task['status'],
+      scheduledDate: result.dueDate,
+      completedAt: result.completedAt,
+      priority: result.priority,
+      notes: result.notes,
+      createdAt: result.createdAt || new Date(),
+      updatedAt: result.updatedAt || new Date()
+    } as Task;
   }
 
   async getTasksByHousehold(householdId: string): Promise<Task[]> {
-    const query = await adminDb.collection(COLLECTIONS.TASKS)
-      .where('householdId', '==', householdId)
-      .orderBy('scheduledDate', 'asc')
-      .get();
-    
-    return query.docs.map(doc => this.convertFirestoreData<Task>(doc)!);
+    const results = await db.query.householdTaskAssignmentsTable.findMany({
+      where: eq(householdTaskAssignmentsTable.householdId, householdId),
+      orderBy: asc(householdTaskAssignmentsTable.dueDate)
+    });
+    return results.map(result => ({
+      id: result.id,
+      householdId: result.householdId,
+      taskId: result.taskId,
+      status: result.status as Task['status'],
+      scheduledDate: result.dueDate,
+      completedAt: result.completedAt,
+      priority: result.priority,
+      notes: result.notes,
+      createdAt: result.createdAt || new Date(),
+      updatedAt: result.updatedAt || new Date()
+    })) as Task[];
   }
 
   async getTasksByAgent(agentId: string): Promise<Task[]> {
-    const query = await adminDb.collection(COLLECTIONS.TASKS)
-      .where('agentId', '==', agentId)
-      .orderBy('scheduledDate', 'asc')
-      .get();
+    // Get households for this agent first
+    const households = await this.getHouseholdsByAgent(agentId);
+    if (households.length === 0) return [];
     
-    return query.docs.map(doc => this.convertFirestoreData<Task>(doc)!);
+    const householdIds = households.map(h => h.id);
+    const results = await db.query.householdTaskAssignmentsTable.findMany({
+      where: inArray(householdTaskAssignmentsTable.householdId, householdIds),
+      orderBy: asc(householdTaskAssignmentsTable.dueDate)
+    });
+    return results.map(result => ({
+      id: result.id,
+      householdId: result.householdId,
+      taskId: result.taskId,
+      status: result.status as Task['status'],
+      scheduledDate: result.dueDate,
+      completedAt: result.completedAt,
+      priority: result.priority,
+      notes: result.notes,
+      createdAt: result.createdAt || new Date(),
+      updatedAt: result.updatedAt || new Date()
+    })) as Task[];
   }
 
   async updateTaskStatus(id: string, status: Task['status']): Promise<void> {
-    await adminDb.collection(COLLECTIONS.TASKS).doc(id).update({
-      status,
-      updatedAt: new Date(),
-      ...(status === 'completed' ? { completedAt: new Date() } : {})
-    });
+    await db.update(householdTaskAssignmentsTable)
+      .set({
+        status,
+        updatedAt: new Date(),
+        ...(status === 'completed' ? { completedAt: new Date() } : {})
+      })
+      .where(eq(householdTaskAssignmentsTable.id, id));
   }
 
   async getOverdueTasks(): Promise<Task[]> {
     const now = new Date();
-    const query = await adminDb.collection(COLLECTIONS.TASKS)
-      .where('status', '==', 'pending')
-      .where('scheduledDate', '<', now)
-      .get();
-    
-    return query.docs.map(doc => this.convertFirestoreData<Task>(doc)!);
+    const results = await db.select().from(householdTaskAssignmentsTable)
+      .where(and(
+        sql`${householdTaskAssignmentsTable.status} != 'completed'`,
+        sql`${householdTaskAssignmentsTable.dueDate} < ${now}`
+      ));
+    return results.map(result => ({
+      id: result.id,
+      householdId: result.householdId,
+      taskId: result.taskId,
+      status: result.status as Task['status'],
+      scheduledDate: result.dueDate,
+      completedAt: result.completedAt,
+      priority: result.priority,
+      notes: result.notes,
+      createdAt: result.createdAt || new Date(),
+      updatedAt: result.updatedAt || new Date()
+    })) as Task[];
   }
 
-  // Lead methods
+  // Lead methods (PostgreSQL)
   async createLead(lead: InsertLead): Promise<Lead> {
-    const id = lead.id || uuidv4();
-    const now = new Date();
-    
-    const newLead: Lead = {
-      ...lead,
-      id,
-      createdAt: now,
-      updatedAt: now
-    };
-
-    await adminDb.collection(COLLECTIONS.LEADS).doc(id).set(newLead);
-    return newLead;
+    const [result] = await db.insert(leadsTable)
+      .values({
+        ...lead,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      } as InsertLeadDb)
+      .returning();
+    return result as unknown as Lead;
   }
 
   async getLead(id: string): Promise<Lead | undefined> {
-    const doc = await adminDb.collection(COLLECTIONS.LEADS).doc(id).get();
-    return this.convertFirestoreData<Lead>(doc);
+    const result = await db.query.leadsTable.findFirst({
+      where: eq(leadsTable.id, id)
+    });
+    return result as unknown as Lead | undefined;
   }
 
   async getLeadsByAgent(agentId: string): Promise<Lead[]> {
-    const query = await adminDb.collection(COLLECTIONS.LEADS)
-      .where('agentId', '==', agentId)
-      .get();
-    
-    const leads = query.docs.map(doc => this.convertFirestoreData<Lead>(doc)!);
-    // Sort in memory instead of using orderBy to avoid index requirement
-    return leads.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    const results = await db.query.leadsTable.findMany({
+      where: eq(leadsTable.agentId, agentId),
+      orderBy: desc(leadsTable.createdAt)
+    });
+    return results as unknown as Lead[];
   }
 
   async updateLeadStatus(id: string, status: Lead['status']): Promise<void> {
-    await adminDb.collection(COLLECTIONS.LEADS).doc(id).update({
-      status,
-      updatedAt: new Date()
-    });
+    await db.update(leadsTable)
+      .set({
+        status,
+        updatedAt: new Date()
+      })
+      .where(eq(leadsTable.id, id));
   }
 
   // Additional batch methods
@@ -569,10 +680,12 @@ export class FirebaseStorage implements IStorage {
 
   // Additional household methods
   async updateHousehold(id: string, data: Partial<Household>): Promise<Household | undefined> {
-    await adminDb.collection(COLLECTIONS.HOUSEHOLDS).doc(id).update({
-      ...data,
-      updatedAt: new Date()
-    });
+    await db.update(householdsTable)
+      .set({
+        ...data,
+        updatedAt: new Date()
+      })
+      .where(eq(householdsTable.id, id));
     
     // Return the updated household
     return this.getHousehold(id);
@@ -583,77 +696,72 @@ export class FirebaseStorage implements IStorage {
     return this.getHouseholdsByAgent(agentId);
   }
 
-  // Additional task methods
-  async createSchedule(data: Record<string, unknown>): Promise<unknown> {
-    // For now, create a basic task
-    const scheduleId = uuidv4();
-    const schedule = {
-      id: scheduleId,
-      ...data,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-    await adminDb.collection('schedules').doc(scheduleId).set(schedule);
-    return schedule;
+  // Schedule methods (PostgreSQL)
+  async createSchedule(data: InsertSchedule): Promise<Schedule> {
+    const [result] = await db.insert(schedulesTable)
+      .values({
+        ...data,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      })
+      .returning();
+    return result;
   }
 
-  async getScheduleByHouseholdAndTask(householdId: string, taskName: string): Promise<unknown> {
-    const query = await adminDb.collection('schedules')
-      .where('householdId', '==', householdId)
-      .where('taskName', '==', taskName)
-      .limit(1)
-      .get();
-    
-    if (query.empty) return undefined;
-    return this.convertFirestoreData(query.docs[0]);
+  async getScheduleByHouseholdAndTask(householdId: string, taskName: string): Promise<Schedule | undefined> {
+    return await db.query.schedulesTable.findFirst({
+      where: and(
+        eq(schedulesTable.householdId, householdId),
+        eq(schedulesTable.taskName, taskName)
+      )
+    });
   }
 
-  async createTaskCompletion(data: Record<string, unknown>): Promise<unknown> {
-    const completionId = uuidv4();
-    const completion = {
-      id: completionId,
-      ...data,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-    await adminDb.collection('taskCompletions').doc(completionId).set(completion);
-    return completion;
+  // Task Completion methods (PostgreSQL)
+  async createTaskCompletion(data: InsertTaskCompletion): Promise<TaskCompletion> {
+    const [result] = await db.insert(taskCompletionsTable)
+      .values({
+        ...data,
+        createdAt: new Date()
+      })
+      .returning();
+    return result;
   }
 
-  // Event/Audit methods
-  async createEvent(event: { householdId: string; eventType: string; eventData: string }): Promise<unknown> {
-    const eventId = uuidv4();
-    const newEvent = {
-      id: eventId,
-      ...event,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-    await adminDb.collection('events').doc(eventId).set(newEvent);
-    return newEvent;
+  // Event/Audit methods (PostgreSQL)
+  async createEvent(event: { householdId?: string; eventType: string; eventData: string; requestId?: string }): Promise<AuditEvent> {
+    const [result] = await db.insert(auditEventsTable)
+      .values({
+        requestId: event.requestId || event.householdId || '',
+        eventType: event.eventType,
+        eventData: event.eventData,
+        createdAt: new Date()
+      })
+      .returning();
+    return result;
   }
 
-  async createAuditLog(data: Record<string, unknown>): Promise<unknown> {
-    const logId = uuidv4();
-    const auditLog = {
-      id: logId,
-      ...data,
-      createdAt: new Date()
-    };
-    await adminDb.collection('auditLogs').doc(logId).set(auditLog);
-    return auditLog;
+  async createAuditLog(data: Partial<InsertOrderMagnetAuditEvent>): Promise<OrderMagnetAuditEvent> {
+    const [result] = await db.insert(orderMagnetAuditEventsTable)
+      .values({
+        ...data,
+        createdAt: new Date()
+      } as InsertOrderMagnetAuditEvent)
+      .returning();
+    return result;
   }
 
-  async createReminderQueue(data: Record<string, unknown>): Promise<unknown> {
-    const reminderId = uuidv4();
-    const reminder = {
-      id: reminderId,
-      ...data,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-    await adminDb.collection('reminderQueue').doc(reminderId).set(reminder);
-    return reminder;
+  // Reminder Queue methods (PostgreSQL)
+  async createReminderQueue(data: InsertReminderQueue): Promise<ReminderQueue> {
+    const [result] = await db.insert(reminderQueueTable)
+      .values({
+        ...data,
+        status: 'pending',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      })
+      .returning();
+    return result;
   }
 
   // Agent metrics methods
@@ -1289,9 +1397,78 @@ export class FirebaseStorage implements IStorage {
     
     return this.getContactMessage(id);
   }
+
+  async getPendingReminders(now: Date): Promise<ReminderQueue[]> {
+    return await db.select().from(reminderQueueTable)
+      .where(
+        and(
+          eq(reminderQueueTable.status, 'pending'),
+          sql`${reminderQueueTable.runAt} <= ${now}`
+        )
+      )
+      .orderBy(asc(reminderQueueTable.runAt));
+  }
+
+  async updateReminderStatus(reminderId: string, status: string, errorMessage?: string): Promise<void> {
+    const updateData: any = {
+      status,
+      updatedAt: new Date()
+    };
+    if (status === 'sent') {
+      updateData.sentAt = new Date();
+    }
+    if (errorMessage) {
+      updateData.errorMessage = errorMessage;
+    }
+    await db.update(reminderQueueTable)
+      .set(updateData)
+      .where(eq(reminderQueueTable.id, reminderId));
+  }
+
+  async deleteTaskReminders(taskId: string): Promise<void> {
+    await db.delete(reminderQueueTable)
+      .where(eq(reminderQueueTable.taskId, taskId));
+  }
+
+  async getHouseholdById(id: string): Promise<Household | undefined> {
+    return this.getHousehold(id);
+  }
+
+  async getTasksWithDetailsByHousehold(householdId: string): Promise<any[]> {
+    const { homeMaintenanceTasksTable } = await import('../shared/schema.js');
+    
+    const result = await db
+      .select({
+        assignment: householdTaskAssignmentsTable,
+        task: homeMaintenanceTasksTable
+      })
+      .from(householdTaskAssignmentsTable)
+      .leftJoin(
+        homeMaintenanceTasksTable,
+        eq(householdTaskAssignmentsTable.taskId, homeMaintenanceTasksTable.id)
+      )
+      .where(eq(householdTaskAssignmentsTable.householdId, householdId))
+      .orderBy(asc(householdTaskAssignmentsTable.dueDate));
+    
+    return result.map(row => ({
+      id: row.assignment.id,
+      householdId: row.assignment.householdId,
+      taskId: row.assignment.taskId,
+      dueDate: row.assignment.dueDate,
+      status: row.assignment.status,
+      completedAt: row.assignment.completedAt,
+      createdAt: row.assignment.createdAt,
+      updatedAt: row.assignment.updatedAt,
+      taskName: row.task?.taskName || 'Unknown Task',
+      taskDescription: row.task?.howTo || '',
+      category: row.task?.category || 'general',
+      priority: row.assignment.priority || 'medium',
+      frequencyMonths: parseInt(row.task?.baseFrequency || '12', 10) || 12
+    }));
+  }
 }
 
-export const storage = new FirebaseStorage();
+export const storage = new DatabaseStorage();
 // ==========================================
 // HOME PROFILE EXTRA METHODS
 // ==========================================

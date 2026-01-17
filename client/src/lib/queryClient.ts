@@ -1,4 +1,5 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
+import { API_BASE_URL } from "./api-config";
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
@@ -12,8 +13,8 @@ export async function apiRequest(
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
-  // Get JWT token from localStorage (must match AuthContext TOKEN_KEY)
-  const token = localStorage.getItem('upkeepqr_admin_token');
+  // Get JWT token from localStorage OR sessionStorage (must match AuthContext TOKEN_KEY)
+  const token = localStorage.getItem('upkeepqr_admin_token') || sessionStorage.getItem('upkeepqr_admin_token');
   
   // Build headers with Content-Type and Authorization
   const headers: Record<string, string> = {};
@@ -24,7 +25,10 @@ export async function apiRequest(
     headers["Authorization"] = `Bearer ${token}`;
   }
   
-  const res = await fetch(url, {
+  // Prepend API_BASE_URL for production (Firebase -> Render)
+  const fullUrl = `${API_BASE_URL}${url}`;
+  
+  const res = await fetch(fullUrl, {
     method,
     headers,
     body: data ? JSON.stringify(data) : undefined,
@@ -41,7 +45,9 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    const res = await fetch(queryKey.join("/") as string, {
+    // Prepend API_BASE_URL for production (Firebase -> Render)
+    const url = `${API_BASE_URL}${queryKey.join("/")}`;
+    const res = await fetch(url, {
       credentials: "include",
     });
 

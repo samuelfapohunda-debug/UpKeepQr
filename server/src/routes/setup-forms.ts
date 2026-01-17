@@ -9,7 +9,7 @@ import {
 } from '../../../shared/schema.js';
 import { requireSystemAdmin } from '../../middleware/auth.js';
 import { createAuditLog, handleError } from './utils.js';
-import { eq, and, isNull, sql, desc, asc, like, or, gte, lte } from 'drizzle-orm';
+import { eq, and, isNull, sql, desc, asc, like, ilike, or, gte, lte } from 'drizzle-orm';
 import { NotificationDispatcher } from '../../lib/notificationDispatcher.js';
 
 const router = Router();
@@ -45,7 +45,7 @@ router.get('/', requireSystemAdmin, async (req: any, res: Response) => {
     }
 
     if (filters.city) {
-      conditions.push(eq(householdsTable.city, filters.city));
+      conditions.push(ilike(householdsTable.city, `%${filters.city}%`));
     }
 
     if (filters.state) {
@@ -339,6 +339,46 @@ router.post('/:id/test-notification', requireSystemAdmin, async (req: any, res: 
     });
   } catch (error) {
     handleError(error, req.path || 'admin-setup-forms', res);
+  }
+});
+
+// POST /setup-forms/create - Create new household (admin only)
+router.post('/create', requireSystemAdmin, async (req: any, res: Response) => {
+  try {
+    await createAuditLog(req, '/api/admin/setup-forms/create');
+
+    const { fullName, email, phone, zip, homeType, skipWelcomeEmail } = req.body;
+
+    if (!fullName || !email) {
+      return res.status(400).json({ error: 'Full name and email are required' });
+    }
+
+    const householdId = crypto.randomUUID();
+    const magnetToken = crypto.randomUUID().replace(/-/g, '').substring(0, 16);
+
+    const [newHousehold] = await db
+      .insert(householdsTable)
+      .values({
+        id: householdId,
+        magnetToken,
+        agentId: req.agentId || null,
+        name: fullName,
+        email,
+        phone: phone || '',
+        zipcode: zip || '',
+        homeType: homeType || 'single_family',
+        setupStatus: 'not_started',
+        smsOptIn: false,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .returning();
+
+    console.log(`[Admin Create] Household created: ${householdId} by ${req.agentEmail}`);
+
+    res.status(201).json(newHousehold);
+  } catch (error) {
+    handleError(error, req.path || 'admin-setup-forms-create', res);
   }
 });
 

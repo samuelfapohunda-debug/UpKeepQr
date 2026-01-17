@@ -1,0 +1,130 @@
+@agent Migrate LEADS Firebase functions to PostgreSQL in server/storage.ts - Phase 2B Batch 2
+
+OBJECTIVE:
+Migrate 4 Leads functions from Firebase to PostgreSQL (low risk, direct equivalent).
+
+CONTEXT:
+- Batch 1 complete: 7 functions migrated
+- Remaining: 21 Firebase calls
+- PostgreSQL leads table already exists
+- This is LOW RISK migration
+
+FUNCTIONS TO MIGRATE (around lines 511-545):
+
+## 1. createLead()
+
+**REPLACE Firebase:**
+```typescript
+async createLead(lead: Partial<Lead>): Promise<Lead> {
+  const id = lead.id || uuidv4();
+  const newLead: Lead = {
+    ...lead,
+    id,
+    createdAt: new Date(),
+    updatedAt: new Date()
+  } as Lead;
+  
+  await adminDb.collection(COLLECTIONS.LEADS).doc(id).set(newLead);
+  return newLead;
+}
+```
+
+**WITH PostgreSQL:**
+```typescript
+async createLead(lead: Partial<Lead>): Promise<Lead> {
+  const [result] = await db.insert(leadsTable)
+    .values({
+      ...lead,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    })
+    .returning();
+  return result;
+}
+```
+
+## 2. getLead()
+
+**REPLACE Firebase:**
+```typescript
+async getLead(id: string): Promise<Lead | undefined> {
+  const doc = await adminDb.collection(COLLECTIONS.LEADS).doc(id).get();
+  return this.convertFirestoreData<Lead>(doc);
+}
+```
+
+**WITH PostgreSQL:**
+```typescript
+async getLead(id: string): Promise<Lead | undefined> {
+  return await db.query.leadsTable.findFirst({
+    where: eq(leadsTable.id, id)
+  });
+}
+```
+
+## 3. getLeadsByAgent()
+
+**REPLACE Firebase:**
+```typescript
+async getLeadsByAgent(agentId: string): Promise<Lead[]> {
+  const query = await adminDb.collection(COLLECTIONS.LEADS)
+    .where('agentId', '==', agentId)
+    .get();
+  
+  return query.docs.map(doc => this.convertFirestoreData<Lead>(doc)!);
+}
+```
+
+**WITH PostgreSQL:**
+```typescript
+async getLeadsByAgent(agentId: string): Promise<Lead[]> {
+  return await db.query.leadsTable.findMany({
+    where: eq(leadsTable.agentId, agentId),
+    orderBy: desc(leadsTable.createdAt)
+  });
+}
+```
+
+## 4. updateLeadStatus()
+
+**REPLACE Firebase:**
+```typescript
+async updateLeadStatus(id: string, status: string): Promise<Lead | undefined> {
+  await adminDb.collection(COLLECTIONS.LEADS).doc(id).update({
+    status,
+    updatedAt: new Date()
+  });
+  
+  return this.getLead(id);
+}
+```
+
+**WITH PostgreSQL:**
+```typescript
+async updateLeadStatus(id: string, status: string): Promise<Lead | undefined> {
+  await db.update(leadsTable)
+    .set({
+      status,
+      updatedAt: new Date()
+    })
+    .where(eq(leadsTable.id, id));
+  
+  return this.getLead(id);
+}
+```
+
+## 5. ENSURE IMPORTS
+
+Verify these imports exist at the top of server/storage.ts:
+```typescript
+import { leadsTable, type Lead, type InsertLead } from "@shared/schema";
+```
+
+VERIFICATION:
+```bash
+npm run build
+grep -c "adminDb.*LEADS" server/storage.ts
+# Should return 0 after migration
+```
+
+START NOW - Migrate all 4 Leads functions!

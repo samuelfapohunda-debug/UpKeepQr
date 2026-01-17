@@ -1,10 +1,156 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
-import { CheckCircle, Calendar, Bell, Home, Download, Package, Wrench } from "lucide-react";
+import { CheckCircle, Calendar, Bell, Home, Download, Package, Wrench, Mail } from "lucide-react";
 import HomeProfileExtraForm from "@/components/HomeProfileExtraForm";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+
+function PaymentSuccessContent() {
+  const [, navigate] = useLocation();
+  const [countdown, setCountdown] = useState(10);
+
+  useEffect(() => {
+    const countdownInterval = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(countdownInterval);
+          navigate("/");
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(countdownInterval);
+  }, [navigate]);
+
+  const handleGoHomeNow = () => {
+    navigate("/");
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-50 to-blue-50 px-4">
+      <div className="max-w-2xl w-full bg-white rounded-2xl shadow-2xl p-8 md:p-12">
+        
+        {/* Success Icon */}
+        <div className="flex justify-center mb-6">
+          <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center">
+            <CheckCircle className="h-12 w-12 text-emerald-600" />
+          </div>
+        </div>
+        
+        {/* Main Heading */}
+        <h1 
+          className="text-3xl md:text-4xl font-bold text-slate-900 text-center mb-4"
+          data-testid="text-payment-success"
+        >
+          Payment Successful!
+        </h1>
+        
+        <p className="text-lg text-slate-700 text-center mb-8">
+          Thank you for your purchase. Your order has been confirmed.
+        </p>
+        
+        {/* Email Activation Section */}
+        <div className="bg-emerald-50 border-2 border-emerald-200 rounded-xl p-6 mb-8">
+          <div className="flex items-start gap-4">
+            <div className="flex-shrink-0">
+              <div className="w-12 h-12 bg-emerald-500 rounded-lg flex items-center justify-center">
+                <Mail className="h-6 w-6 text-white" />
+              </div>
+            </div>
+            <div className="flex-1">
+              <h2 className="text-xl font-semibold text-slate-900 mb-2">
+                Check Your Email to Activate Your Magnet
+              </h2>
+              <p className="text-slate-700 mb-4">
+                We've sent a welcome email with instructions on how to activate your UpKeepQR magnet. 
+                Please check your inbox (and spam folder) for the email titled:
+              </p>
+              <div className="bg-white border border-emerald-300 rounded-lg p-3 mb-4">
+                <p className="font-semibold text-emerald-800" data-testid="text-email-subject">
+                  "Welcome to UpKeepQR - Activate Your Magnet"
+                </p>
+              </div>
+              <p className="text-sm text-slate-600">
+                Can't find it? Check your spam folder or contact us at{" "}
+                <a 
+                  href="mailto:support@upkeepqr.com" 
+                  className="text-emerald-600 hover:text-emerald-700 font-medium"
+                  data-testid="link-support-email"
+                >
+                  support@upkeepqr.com
+                </a>
+              </p>
+            </div>
+          </div>
+        </div>
+        
+        {/* What's Next Section */}
+        <div className="bg-slate-50 rounded-xl p-6 mb-8">
+          <h3 className="text-lg font-semibold text-slate-900 mb-4">
+            What happens next?
+          </h3>
+          <ol className="space-y-3">
+            <li className="flex items-start gap-3">
+              <span className="flex-shrink-0 w-6 h-6 bg-emerald-500 text-white rounded-full flex items-center justify-center text-sm font-bold">
+                1
+              </span>
+              <span className="text-slate-700">
+                Check your email for the welcome message with activation instructions
+              </span>
+            </li>
+            <li className="flex items-start gap-3">
+              <span className="flex-shrink-0 w-6 h-6 bg-emerald-500 text-white rounded-full flex items-center justify-center text-sm font-bold">
+                2
+              </span>
+              <span className="text-slate-700">
+                Your magnet will arrive within 5-7 business days
+              </span>
+            </li>
+            <li className="flex items-start gap-3">
+              <span className="flex-shrink-0 w-6 h-6 bg-emerald-500 text-white rounded-full flex items-center justify-center text-sm font-bold">
+                3
+              </span>
+              <span className="text-slate-700">
+                Follow the setup guide to activate your magnet and start tracking maintenance
+              </span>
+            </li>
+          </ol>
+        </div>
+        
+        {/* Order Details */}
+        <div className="border-t border-slate-200 pt-6 mb-8">
+          <p className="text-sm text-slate-600 text-center">
+            A confirmation email with your order details has also been sent to your email address.
+          </p>
+        </div>
+        
+        {/* Redirect Notice & CTA */}
+        <div className="text-center">
+          <button
+            onClick={handleGoHomeNow}
+            className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-8 py-3 rounded-lg transition-all hover:shadow-lg mb-4"
+            data-testid="button-return-home"
+          >
+            <Home className="h-5 w-5" />
+            Return to Home
+          </button>
+          
+          <p className="text-sm text-slate-500">
+            You'll be automatically redirected in{" "}
+            <span className="font-semibold text-emerald-600" data-testid="text-countdown">
+              {countdown}
+            </span>{" "}
+            {countdown === 1 ? "second" : "seconds"}
+          </p>
+        </div>
+        
+      </div>
+    </div>
+  );
+}
 
 interface Household {
   id: string;
@@ -86,68 +232,9 @@ export default function SetupSuccess() {
     }
   };
 
-  // If this is a payment success page
-  if (sessionData?.isPayment) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 flex items-center justify-center p-4">
-        <Card className="w-full max-w-2xl">
-          <CardHeader className="text-center">
-            <div className="mx-auto bg-green-100 rounded-full w-16 h-16 flex items-center justify-center mb-4">
-              <CheckCircle className="h-8 w-8 text-green-600" />
-            </div>
-            <CardTitle className="text-2xl text-green-800">Payment Successful!</CardTitle>
-            <CardDescription className="text-lg">
-              Your order has been processed successfully
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="bg-white rounded-lg p-6 border">
-              <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
-                <Package className="h-5 w-5 text-blue-500" />
-                Order Details
-              </h3>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span>Order ID:</span>
-                  <Badge variant="outline">{sessionId?.slice(0, 12)}...</Badge>
-                </div>
-                <p className="text-gray-600">
-                  You'll receive an email confirmation with your order details shortly.
-                </p>
-                <div className="mt-4 p-4 bg-blue-50 rounded-lg">
-                  <h4 className="font-medium text-blue-800 mb-2">For Agent Packs:</h4>
-                  <p className="text-blue-700 text-sm mb-3">
-                    Your QR magnets are being generated. You'll receive download links for your CSV files and QR code sheets.
-                  </p>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => handleDownloadCSV('demo')}
-                    disabled={loading}
-                    className="w-full"
-                    data-testid="button-download-csv"
-                  >
-                    <Download className="h-4 w-4 mr-2" />
-                    {loading ? 'Generating...' : 'Download Sample CSV'}
-                  </Button>
-                </div>
-              </div>
-            </div>
-
-            <div className="text-center space-y-4">
-              <p className="text-gray-600">
-                Thank you for your purchase! Check your email for further instructions.
-              </p>
-              <Link href="/">
-                <Button size="lg" className="w-full sm:w-auto">
-                  Return Home
-                </Button>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
+  // If this is a payment success page (check sessionId directly, not state)
+  if (sessionId) {
+    return <PaymentSuccessContent />;
   }
 
   // If this is a setup completion page but no result data
