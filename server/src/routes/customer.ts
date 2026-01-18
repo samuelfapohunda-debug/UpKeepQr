@@ -73,12 +73,15 @@ router.get('/tasks', requireSessionAuth, async (req: SessionAuthRequest, res: Re
       .innerJoin(homeMaintenanceTasksTable, eq(householdTaskAssignmentsTable.taskId, homeMaintenanceTasksTable.id))
       .where(eq(householdTaskAssignmentsTable.householdId, householdId));
     
+    console.log('📊 Query result:', { householdId, assignmentsCount: assignments?.length, firstTask: assignments?.[0] });
+    
     if (!assignments || !Array.isArray(assignments)) {
       console.error('Assignments is not an array:', assignments);
       return res.json({ tasks: [], summary: { total: 0, completed: 0, pending: 0, overdue: 0 } });
     }
 
     const now = new Date();
+    console.log('🔍 About to process assignments:', { hasAssignments: !!assignments, isArray: Array.isArray(assignments) });
     const total = assignments?.length || 0;
     const completed = (assignments || []).filter(t => t?.status === 'completed').length;
     const overdue = (assignments || []).filter(t => {
