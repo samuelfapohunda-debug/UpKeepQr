@@ -50,7 +50,7 @@ router.get('/common-appliances', async (req: Request, res: Response) => {
 router.post('/households/:householdId/appliances', requireSessionAuth, validateHouseholdAccess, async (req: SessionAuthRequest, res: Response) => {
   try {
     const { householdId } = req.params;
-    }
+    // Auth handled by middleware
     
     const validated = insertHouseholdApplianceSchema.safeParse(req.body);
     if (!validated.success) {
@@ -111,7 +111,7 @@ router.post('/households/:householdId/appliances', requireSessionAuth, validateH
 router.get('/households/:householdId/appliances', requireSessionAuth, validateHouseholdAccess, async (req: SessionAuthRequest, res: Response) => {
   try {
     const { householdId } = req.params;
-    }
+    // Auth handled by middleware
     
     const { is_active, appliance_type } = req.query;
     
@@ -153,7 +153,7 @@ router.get('/households/:householdId/appliances', requireSessionAuth, validateHo
 router.get('/households/:householdId/appliances/:applianceId', requireSessionAuth, validateHouseholdAccess, async (req: SessionAuthRequest, res: Response) => {
   try {
     const { householdId, applianceId } = req.params;
-    }
+    // Auth handled by middleware
     
     const [appliance] = await db.select()
       .from(householdAppliancesTable)
@@ -181,7 +181,7 @@ router.get('/households/:householdId/appliances/:applianceId', requireSessionAut
 router.patch('/households/:householdId/appliances/:applianceId', requireSessionAuth, validateHouseholdAccess, async (req: SessionAuthRequest, res: Response) => {
   try {
     const { householdId, applianceId } = req.params;
-    }
+    // Auth handled by middleware
     
     const validated = updateHouseholdApplianceSchema.safeParse(req.body);
     if (!validated.success) {
@@ -245,7 +245,7 @@ router.patch('/households/:householdId/appliances/:applianceId', requireSessionA
 router.delete('/households/:householdId/appliances/:applianceId', requireSessionAuth, validateHouseholdAccess, async (req: SessionAuthRequest, res: Response) => {
   try {
     const { householdId, applianceId } = req.params;
-    }
+    // Auth handled by middleware
     
     const [existing] = await db.select()
       .from(householdAppliancesTable)
