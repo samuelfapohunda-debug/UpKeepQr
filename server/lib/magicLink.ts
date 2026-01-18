@@ -62,7 +62,8 @@ export async function verifyMagicLink(token: string): Promise<{
 
 export async function createSession(
   email: string,
-  householdId: string | null
+  householdId: string | null,
+  role: 'customer' | 'admin' | 'pro' = 'customer'
 ): Promise<string> {
   const token = nanoid(32);
   
@@ -73,6 +74,7 @@ export async function createSession(
     token,
     email,
     householdId,
+    role,
     expiresAt
   });
   
@@ -82,6 +84,8 @@ export async function createSession(
 export async function verifySession(token: string): Promise<{
   email: string;
   householdId: string | null;
+  role: string;
+  expiresAt: Date;
 } | null> {
   const [session] = await db
     .select()
@@ -100,7 +104,9 @@ export async function verifySession(token: string): Promise<{
   
   return {
     email: session.email,
-    householdId: session.householdId
+    householdId: session.householdId,
+    role: session.role,
+    expiresAt: session.expiresAt
   };
 }
 

@@ -1,6 +1,7 @@
 import { Express } from 'express';
 import healthRoutes from './health.js';
 import authRoutes from './auth.js';
+import adminAuthRoutes from './adminAuth.js';
 import qrRoutes from './qr.js';
 import calendarRoutes from './calendar.js';
 import homeExtraRoutes from './homeExtra.js';
@@ -25,6 +26,7 @@ import customerRoutes from './customer.js';
 export function registerRoutes(app: Express) {
   app.use('/health', healthRoutes);
   app.use('/api/auth', authRoutes);
+  app.use('/api/auth/admin', adminAuthRoutes);
   app.use('/api/qr', qrRoutes);
   app.use('/api/calendar', calendarRoutes);
   app.use('/api/admin/home-extra', homeExtraRoutes);
@@ -52,6 +54,7 @@ export function registerRoutes(app: Express) {
   console.log('✅ Dashboard routes registered at /api/dashboard');
   console.log('✅ Checkout routes registered at /api/checkout');
   console.log('✅ Auth routes registered at /api/auth');
+  console.log('✅ Admin auth routes registered at /api/auth/admin');
   console.log('✅ QR routes registered at /api/qr');
   console.log('✅ Calendar routes registered at /api/calendar');
   console.log('✅ Admin home extra routes registered at /api/admin/home-extra');
