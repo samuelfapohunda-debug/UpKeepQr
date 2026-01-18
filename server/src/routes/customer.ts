@@ -62,7 +62,6 @@ router.get('/tasks', requireSessionAuth, async (req: SessionAuthRequest, res: Re
       .select({
         id: householdTaskAssignmentsTable.id,
         taskName: homeMaintenanceTasksTable.taskName,
-        description: homeMaintenanceTasksTable.description,
         category: homeMaintenanceTasksTable.category,
         priority: householdTaskAssignmentsTable.priority,
         status: householdTaskAssignmentsTable.status,
@@ -155,7 +154,6 @@ router.patch('/tasks/:taskId', requireSessionAuth, async (req: SessionAuthReques
     const [taskDetails] = await db
       .select({
         taskName: homeMaintenanceTasksTable.taskName,
-        description: homeMaintenanceTasksTable.description,
         category: homeMaintenanceTasksTable.category,
         frequencyMonths: homeMaintenanceTasksTable.frequencyMonths
       })
