@@ -78,7 +78,12 @@ router.get('/tasks', requireSessionAuth, async (req: SessionAuthRequest, res: Re
     const completed = assignments.filter(t => t.status === 'completed').length;
     const overdue = assignments.filter(t => {
       if (t.status === 'completed') return false;
-      return t.dueDate && new Date(t.dueDate) < now;
+      if (!t.dueDate) return false;
+      try {
+        return new Date(t.dueDate) < now;
+      } catch {
+        return false;
+      }
     }).length;
     const pending = total - completed - overdue;
     
