@@ -67,7 +67,7 @@ router.get('/tasks', requireSessionAuth, async (req: SessionAuthRequest, res: Re
         priority: householdTaskAssignmentsTable.priority,
         status: householdTaskAssignmentsTable.status,
         dueDate: householdTaskAssignmentsTable.dueDate,
-        frequencyMonths: homeMaintenanceTasksTable.frequencyMonths
+        frequency: householdTaskAssignmentsTable.frequency
       })
       .from(householdTaskAssignmentsTable)
       .innerJoin(homeMaintenanceTasksTable, eq(householdTaskAssignmentsTable.taskId, homeMaintenanceTasksTable.id))
