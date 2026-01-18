@@ -73,11 +73,16 @@ router.get('/tasks', requireSessionAuth, async (req: SessionAuthRequest, res: Re
       .innerJoin(homeMaintenanceTasksTable, eq(householdTaskAssignmentsTable.taskId, homeMaintenanceTasksTable.id))
       .where(eq(householdTaskAssignmentsTable.householdId, householdId));
     
+    if (!assignments || !Array.isArray(assignments)) {
+      console.error('Assignments is not an array:', assignments);
+      return res.json({ tasks: [], summary: { total: 0, completed: 0, pending: 0, overdue: 0 } });
+    }
+
     const now = new Date();
-    const total = assignments.length;
-    const completed = assignments.filter(t => t.status === 'completed').length;
-    const overdue = assignments.filter(t => {
-      if (t.status === 'completed') return false;
+    const total = assignments?.length || 0;
+    const completed = (assignments || []).filter(t => t?.status === 'completed').length;
+    const overdue = (assignments || []).filter(t => {
+      if (t?.status === 'completed') return false;
       if (!t.dueDate) return false;
       try {
         return new Date(t.dueDate) < now;
