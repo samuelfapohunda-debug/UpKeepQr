@@ -234,27 +234,50 @@ router.post('/magic/complete', async (req, res) => {
 });
 
 router.get('/session/verify', async (req, res) => {
-  const sessionToken = req.cookies?.upkeepqr_session;
+  const customerToken = req.cookies?.upkeepqr_session;
+  const adminToken = req.cookies?.session_token;
   
-  if (!sessionToken) {
+  if (!customerToken && !adminToken) {
     return res.status(401).json({ valid: false, error: 'No session found' });
   }
   
   try {
     const { verifySession } = await import('../../lib/magicLink.js');
-    const session = await verifySession(sessionToken);
     
-    if (!session) {
+    // Try customer session first
+    if (customerToken) {
+      const session = await verifySession(customerToken);
+      if (session) {
+        return res.json({
+          valid: true,
+          email: session.email,
+          householdId: session.householdId,
+          role: session.role || 'customer',
+          expiresAt: session.expiresAt?.toISOString()
+        });
+      }
+      // Customer token invalid, clear only customer cookies
       res.clearCookie('upkeepqr_session');
       res.clearCookie('upkeepqr_household');
-      return res.status(401).json({ valid: false, error: 'Invalid or expired session' });
     }
     
-    return res.json({
-      valid: true,
-      email: session.email,
-      householdId: session.householdId
-    });
+    // Try admin session
+    if (adminToken) {
+      const session = await verifySession(adminToken);
+      if (session) {
+        return res.json({
+          valid: true,
+          email: session.email,
+          householdId: session.householdId,
+          role: session.role || 'admin',
+          expiresAt: session.expiresAt?.toISOString()
+        });
+      }
+      // Admin token invalid, clear only admin cookie
+      res.clearCookie('session_token');
+    }
+    
+    return res.status(401).json({ valid: false, error: 'Invalid or expired session' });
   } catch (error) {
     console.error("Session verification error:", error);
     return res.status(500).json({ valid: false, error: 'Failed to verify session' });
