@@ -118,7 +118,7 @@ router.patch('/tasks/:taskId', requireSessionAuth, async (req: SessionAuthReques
       .from(householdTaskAssignmentsTable)
       .where(
         and(
-          eq(householdTaskAssignmentsTable.id, parseInt(taskId)),
+          eq(householdTaskAssignmentsTable.id, taskId),
           eq(householdTaskAssignmentsTable.householdId, householdId)
         )
       )
@@ -144,7 +144,7 @@ router.patch('/tasks/:taskId', requireSessionAuth, async (req: SessionAuthReques
         completedAt,
         updatedAt: new Date()
       })
-      .where(eq(householdTaskAssignmentsTable.id, parseInt(taskId)))
+      .where(eq(householdTaskAssignmentsTable.id, taskId))
       .returning();
     
     if (!updatedAssignment) {
@@ -155,7 +155,8 @@ router.patch('/tasks/:taskId', requireSessionAuth, async (req: SessionAuthReques
       .select({
         taskName: homeMaintenanceTasksTable.taskName,
         category: homeMaintenanceTasksTable.category,
-        frequencyMonths: homeMaintenanceTasksTable.frequencyMonths
+        baseFrequency: homeMaintenanceTasksTable.baseFrequency,
+        howTo: homeMaintenanceTasksTable.howTo
       })
       .from(homeMaintenanceTasksTable)
       .where(eq(homeMaintenanceTasksTable.id, updatedAssignment.taskId))
@@ -164,12 +165,12 @@ router.patch('/tasks/:taskId', requireSessionAuth, async (req: SessionAuthReques
     return res.json({
       id: updatedAssignment.id,
       taskName: taskDetails?.taskName || '',
-      description: taskDetails?.description || '',
+      description: taskDetails?.howTo || '',
       category: taskDetails?.category || '',
       priority: updatedAssignment.priority,
       status: updatedAssignment.status,
       dueDate: updatedAssignment.dueDate,
-      frequencyMonths: taskDetails?.frequencyMonths || 12,
+      frequency: updatedAssignment.frequency || taskDetails?.baseFrequency || '12',
       completedAt: updatedAssignment.completedAt
     });
   } catch (error) {

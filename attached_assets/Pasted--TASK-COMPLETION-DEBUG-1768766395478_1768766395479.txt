@@ -1,0 +1,113 @@
+╔════════════════════════════════════════════════════════════════╗
+║           TASK COMPLETION DEBUG - ACTION STEPS                  ║
+║        Run these commands and share the output                  ║
+╚════════════════════════════════════════════════════════════════╝
+
+📍 STEP 1: Navigate to your project
+════════════════════════════════════════════════════════════════
+cd /path/to/upkeepqr
+pwd
+
+
+📍 STEP 2: Check what task routes exist in customer.ts
+════════════════════════════════════════════════════════════════
+# Show all task-related routes
+grep -n "'/tasks" server/src/routes/customer.ts
+
+# Show all HTTP methods (get, post, patch, put, delete)
+grep -n "router\.\(get\|post\|patch\|put\|delete\)" server/src/routes/customer.ts
+
+
+📍 STEP 3: Show me the full customer routes file
+════════════════════════════════════════════════════════════════
+cat server/src/routes/customer.ts
+
+
+📍 STEP 4: Check route registration
+════════════════════════════════════════════════════════════════
+cat server/src/routes/index.ts
+
+
+📍 STEP 5: Check frontend completion code
+════════════════════════════════════════════════════════════════
+# Find the complete task function
+grep -B 5 -A 30 "handleCompleteTask\|completeTask" client/src/pages/CustomerDashboard.tsx
+
+
+📍 STEP 6: Check recent commits
+════════════════════════════════════════════════════════════════
+git log --oneline -15
+
+
+📍 STEP 7: Check what's deployed on Render
+════════════════════════════════════════════════════════════════
+# Check if dist folder has customer routes compiled
+ls -la server/dist/routes/
+
+# If dist exists, check compiled customer routes
+cat server/dist/routes/customer.js | grep -i "tasks" | head -20
+
+
+📍 STEP 8: Test endpoint directly (Browser Console)
+════════════════════════════════════════════════════════════════
+Open https://upkeepqr.com/my-home in browser
+Open DevTools > Console
+Run this:
+
+fetch('/api/customer/tasks/test-123', {
+  method: 'PATCH',
+  credentials: 'include'
+})
+.then(r => r.text())
+.then(console.log)
+.catch(console.error)
+
+→ Share the result (404? 401? 500? something else?)
+
+
+📍 STEP 9: Check Network Request Details
+════════════════════════════════════════════════════════════════
+1. Open https://upkeepqr.com/my-home
+2. Open DevTools > Network tab
+3. Click "Complete" on any task
+4. Click on the failed request in Network tab
+5. Share screenshot or details of:
+   - Request URL (exact)
+   - Request Method
+   - Status Code
+   - Response body
+
+
+📍 STEP 10: Check server logs on Render
+════════════════════════════════════════════════════════════════
+1. Go to Render Dashboard
+2. Click on your service
+3. Go to "Logs" tab
+4. Look for errors when you click Complete button
+5. Share last 20-30 lines
+
+
+═══════════════════════════════════════════════════════════════
+
+🎯 PRIORITY OUTPUTS NEEDED:
+
+1. ⚠️  Output of STEP 2 (grep for routes)
+2. ⚠️  Output of STEP 3 (full customer.ts file)
+3. ⚠️  Output of STEP 4 (routes index.ts)
+4. ⚠️  Output of STEP 5 (frontend complete function)
+5. ⚠️  Output of STEP 8 (endpoint test in console)
+
+Share these 5 outputs and I can identify the exact problem!
+
+═══════════════════════════════════════════════════════════════
+
+💡 QUICK ONE-LINER (run from project root):
+
+echo "=== TASK ROUTES ===" && \
+grep -n "'/tasks" server/src/routes/customer.ts && \
+echo -e "\n=== ALL CUSTOMER ROUTES ===" && \
+cat server/src/routes/customer.ts && \
+echo -e "\n=== ROUTE REGISTRATION ===" && \
+cat server/src/routes/index.ts
+
+═══════════════════════════════════════════════════════════════
