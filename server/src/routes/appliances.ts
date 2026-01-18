@@ -96,8 +96,8 @@ router.post('/households/:householdId/appliances', requireSessionAuth, validateH
       warrantyProvider: data.warrantyProvider || null,
       warrantyPolicyNumber: data.warrantyPolicyNumber || null,
       warrantyCoverageDetails: data.warrantyCoverageDetails || null,
-      createdBy: authUser?.role === 'admin' ? 'admin' : 'customer',
-      createdByUserId: authUser?.id || null,
+      createdBy: 'customer',
+      createdByUserId: null,
     }).returning();
     
     console.log(`Created appliance ${appliance.id} for household ${householdId}`);
