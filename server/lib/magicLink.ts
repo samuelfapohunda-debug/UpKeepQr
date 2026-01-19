@@ -20,10 +20,9 @@ export async function generateMagicLink(
     used: false
   });
   
-  // Use PUBLIC_BASE_URL for production, or FRONTEND_URL, or fallback to upkeepqr.com
-  const baseUrl = process.env.PUBLIC_BASE_URL 
-    || process.env.FRONTEND_URL 
-    || 'https://upkeepqr.com';
+  const baseUrl = process.env.PUBLIC_BASE_URL || process.env.REPLIT_DEV_DOMAIN 
+    ? `https://${process.env.REPLIT_DEV_DOMAIN}` 
+    : 'https://upkeepqr.com';
   
   return `${baseUrl}/auth/magic?token=${token}`;
 }
