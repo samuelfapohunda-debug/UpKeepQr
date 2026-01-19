@@ -1367,38 +1367,16 @@ export const sessionsTable = pgTable("sessions", {
   token: varchar("token", { length: 64 }).unique().notNull(),
   email: varchar("email", { length: 255 }).notNull(),
   householdId: varchar("household_id", { length: 255 }).references(() => householdsTable.id),
-  role: varchar("role", { length: 20 }).default('customer').notNull(),
   expiresAt: timestamp("expires_at").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow()
+  createdAt: timestamp("created_at").defaultNow().notNull()
 }, (table) => ({
   sessionTokenIdx: uniqueIndex("idx_sessions_token").on(table.token),
   sessionEmailIdx: index("idx_sessions_email").on(table.email),
-  sessionExpiresIdx: index("idx_sessions_expires").on(table.expiresAt),
-  sessionRoleIdx: index("idx_sessions_role").on(table.role)
+  sessionExpiresIdx: index("idx_sessions_expires").on(table.expiresAt)
 }));
 
 export type Session = typeof sessionsTable.$inferSelect;
 export type InsertSession = typeof sessionsTable.$inferInsert;
-
-// Admin Users Table - For admin authentication with username/password
-export const adminUsersTable = pgTable("admin_users", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  username: varchar("username", { length: 255 }).unique().notNull(),
-  passwordHash: text("password_hash").notNull(),
-  email: varchar("email", { length: 255 }),
-  failedLoginAttempts: integer("failed_login_attempts").default(0),
-  lastFailedLogin: timestamp("last_failed_login"),
-  lockedUntil: timestamp("locked_until"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow()
-}, (table) => ({
-  usernameIdx: uniqueIndex("idx_admin_users_username").on(table.username),
-  lockedIdx: index("idx_admin_users_locked").on(table.lockedUntil)
-}));
-
-export type AdminUser = typeof adminUsersTable.$inferSelect;
-export type InsertAdminUser = typeof adminUsersTable.$inferInsert;
 
 // Lead Capture
 export * from "./lead-schema";
