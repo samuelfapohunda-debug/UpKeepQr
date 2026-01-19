@@ -29,6 +29,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Pencil, Trash2, Plus, Calendar, DollarSign, MapPin, Shield, AlertTriangle } from 'lucide-react';
 import { API_BASE_URL } from '@/lib/api-config';
+import { getAuthHeaders } from '@/contexts/AuthContext';
 
 interface Appliance {
   id: string;
@@ -135,6 +136,7 @@ export default function ApplianceManager({ householdId, onClose }: ApplianceMana
       setLoading(true);
       const response = await fetch(`${API_BASE_URL}/api/households/${householdId}/appliances`, {
         credentials: 'include',
+        headers: getAuthHeaders(),
       });
       if (!response.ok) throw new Error('Failed to fetch appliances');
       const data = await response.json();
@@ -240,9 +242,7 @@ export default function ApplianceManager({ householdId, onClose }: ApplianceMana
 
       const response = await fetch(url, {
         method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
         credentials: 'include',
         body: JSON.stringify(normalizedPayload),
       });
@@ -289,6 +289,7 @@ export default function ApplianceManager({ householdId, onClose }: ApplianceMana
         `${API_BASE_URL}/api/households/${householdId}/appliances/${applianceId}`,
         {
           method: 'DELETE',
+          headers: getAuthHeaders(),
           credentials: 'include',
         }
       );
