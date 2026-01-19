@@ -107,7 +107,7 @@ export default function Navigation() {
               Order Magnet
             </Link>
             
-            {isAuthenticated && (
+            {isAuthenticated ? (
               <div className="flex items-center gap-2 ml-2 pl-2 border-l border-border">
                 <span className="hidden md:inline text-xs text-muted-foreground truncate max-w-[150px]" title={adminEmail || ''}>
                   {adminEmail}
@@ -116,6 +116,12 @@ export default function Navigation() {
                   Logout
                 </Button>
               </div>
+            ) : (
+              <Link href="/login">
+                <Button variant="outline" size="sm" className="text-xs sm:text-sm ml-2" data-testid="button-admin-login">
+                  Admin Login
+                </Button>
+              </Link>
             )}
           </div>
         </div>

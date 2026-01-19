@@ -21,7 +21,6 @@ import AdminDashboard from "@/pages/AdminDashboard";
 import MagnetDashboard from "@/pages/MagnetDashboard";
 import SetupFormsDashboard from "@/pages/SetupFormsDashboard";
 import Login from "@/pages/Login";
-import AdminLogin from "@/pages/AdminLogin";
 import Appliances from "@/pages/Appliances";
 import RegistrationSuccess from "@/pages/RegistrationSuccess";
 import CustomerDashboard from "@/pages/CustomerDashboard";
@@ -46,7 +45,6 @@ function Router() {
         <Route path="/pricing" component={Pricing} />
         <Route path="/contact" component={Contact} />
         <Route path="/login" component={Login} />
-        <Route path="/admin/login" component={AdminLogin} />
         <Route path="/setup/success" component={SetupSuccess} />
         <Route path="/registration/success" component={RegistrationSuccess} />
         <Route path="/payment-success" component={PaymentSuccess} />

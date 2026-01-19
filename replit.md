@@ -61,7 +61,7 @@ The backend is a RESTful API built with Express.js and TypeScript. It uses Drizz
   - **Mobile-Responsive**: Full dark mode support with responsive grid layouts
 - **Magic Link Authentication** (Jan 2026):
   - **Passwordless Login**: Secure magic link-based authentication for QR code activation and dashboard access
-  - **Database Tables**: `magic_links` (24-hour expiry, single-use tokens) and `sessions` (30-day expiry, HTTP-only cookies, role field)
+  - **Database Tables**: `magic_links` (24-hour expiry, single-use tokens) and `sessions` (30-day expiry, HTTP-only cookies)
   - **Security Features**:
     - HTTP-only session cookies (not accessible to JavaScript)
     - Code exchange pattern to prevent programmatic token harvesting (GET returns HTML form that POSTs to set cookie)
@@ -75,27 +75,11 @@ The backend is a RESTful API built with Express.js and TypeScript. It uses Drizz
     - `POST /api/setup/activate` - Complete setup, create household, send magic link
     - `GET /api/auth/magic` - Verify magic link, return exchange form
     - `POST /api/auth/magic/complete` - Exchange code for session cookie
-    - `GET /api/auth/session/verify` - Verify session from HTTP-only cookie (includes role and expiry)
+    - `GET /api/auth/session/verify` - Verify session from HTTP-only cookie
     - `GET /api/customer/household` - Get household data (session-based auth)
     - `GET /api/customer/tasks` - Get tasks (session-based auth)
   - **Pages**: `/check-email` (magic link sent confirmation), `/auth/error` (error handling for expired/used links)
   - **Customer Dashboard**: Session-based authentication with logout functionality, no client-side household ID exposure
-- **Admin Authentication System** (Jan 2026):
-  - **Role-Based Sessions**: Sessions include role field (customer, admin, pro) with unified session verification
-  - **Database Tables**: `admin_users` table with bcrypt password hashing, `sessions` updated with role column and indexes
-  - **Security Features**:
-    - Rate limiting: 5 attempts per 15 minutes (adminRateLimit middleware)
-    - Account lockout: 15-minute lock after 5 failed attempts
-    - Bcrypt password hashing (12 rounds)
-    - HTTP-only session cookies (session_token)
-    - Structured logging for security events
-  - **Frontend**: AdminLogin page at `/admin/login`, useAuth hook with 5-minute cache and expiry awareness
-  - **Endpoints**:
-    - `POST /api/auth/admin/login` - Admin login with rate limiting and account lockout
-    - `GET /api/auth/admin/verify` - Admin session verification
-    - `POST /api/auth/admin/logout` - Clear admin session
-    - `GET /api/auth/session/verify` - Unified session verify (both customer and admin)
-  - **Middleware**: requireAdmin middleware for protected admin routes
 
 ## System Design Choices
 The database uses PostgreSQL with Drizzle ORM, connected via Neon serverless. A critical `order_id_counter` sequence is used for unique order IDs. The `household_task_assignments` table manages links between households and maintenance tasks, with robust indexing and foreign key constraints.
