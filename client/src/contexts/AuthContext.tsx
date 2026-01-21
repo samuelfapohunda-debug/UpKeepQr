@@ -7,14 +7,18 @@ interface AuthState {
   token: string | null;
   adminEmail: string | null;
   rememberMe: boolean;
+  isCustomer: boolean;
+  customerLoading: boolean;
 }
 
 interface AuthContextType extends AuthState {
   login: (email: string, password: string, rememberMe?: boolean) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
+  customerLogout: () => Promise<void>;
   checkAuth: () => boolean;
   clearError: () => void;
   error: string | null;
+  refreshCustomerSession: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -30,9 +34,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     token: null,
     adminEmail: null,
     rememberMe: true,
+    isCustomer: false,
+    customerLoading: true,
   });
 
   const [error, setError] = useState<string | null>(null);
+
+  const checkCustomerSession = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/auth/session/verify`, {
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.valid) {
+          setAuthState(prev => ({ ...prev, isCustomer: true, customerLoading: false }));
+          return true;
+        }
+      }
+      setAuthState(prev => ({ ...prev, isCustomer: false, customerLoading: false }));
+      return false;
+    } catch {
+      setAuthState(prev => ({ ...prev, isCustomer: false, customerLoading: false }));
+      return false;
+    }
+  };
+
+  useEffect(() => {
+    checkCustomerSession();
+  }, []);
 
   useEffect(() => {
     const storedToken = localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY);
@@ -46,13 +77,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const expirationTime = tokenData.exp * 1000;
         
         if (Date.now() < expirationTime) {
-          setAuthState({
+          setAuthState(prev => ({
+            ...prev,
             isAuthenticated: true,
             isLoading: false,
             token: storedToken,
             adminEmail: storedEmail,
             rememberMe: storedRememberMe === 'true',
-          });
+          }));
         } else {
           if (isFromLocalStorage) {
             localStorage.removeItem(TOKEN_KEY);
@@ -63,13 +95,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             sessionStorage.removeItem(EMAIL_KEY);
           }
           setError('Your session has expired. Please log in again.');
-          setAuthState({
+          setAuthState(prev => ({
+            ...prev,
             isAuthenticated: false,
             isLoading: false,
             token: null,
             adminEmail: null,
             rememberMe: true,
-          });
+          }));
         }
       } catch (error) {
         if (isFromLocalStorage) {
@@ -80,13 +113,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           sessionStorage.removeItem(TOKEN_KEY);
           sessionStorage.removeItem(EMAIL_KEY);
         }
-        setAuthState({
+        setAuthState(prev => ({
+          ...prev,
           isAuthenticated: false,
           isLoading: false,
           token: null,
           adminEmail: null,
           rememberMe: true,
-        });
+        }));
       }
     } else {
       setAuthState(prev => ({ ...prev, isLoading: false }));
@@ -129,13 +163,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           sessionStorage.setItem(EMAIL_KEY, email);
         }
 
-        setAuthState({
+        setAuthState(prev => ({
+          ...prev,
           isAuthenticated: true,
           isLoading: false,
           token: data.token,
           adminEmail: email,
           rememberMe,
-        });
+        }));
 
         return { success: true };
       } else {
@@ -166,9 +201,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       token: null,
       adminEmail: null,
       rememberMe: true,
+      isCustomer: authState.isCustomer,
+      customerLoading: authState.customerLoading,
     });
 
     setError(null);
+  };
+
+  const customerLogout = async () => {
+    try {
+      await fetch(`${API_BASE_URL}/api/auth/session/logout`, {
+        method: 'POST',
+        credentials: 'include'
+      });
+    } catch {
+      console.error('Customer logout failed');
+    }
+    setAuthState(prev => ({ ...prev, isCustomer: false, customerLoading: false }));
+  };
+
+  const refreshCustomerSession = async () => {
+    await checkCustomerSession();
   };
 
   const checkAuth = (): boolean => {
@@ -183,9 +236,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     ...authState,
     login,
     logout,
+    customerLogout,
     checkAuth,
     clearError,
     error,
+    refreshCustomerSession,
   };
 
   return (
