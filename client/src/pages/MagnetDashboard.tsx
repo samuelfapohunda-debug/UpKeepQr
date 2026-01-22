@@ -81,15 +81,31 @@ export default function MagnetDashboard() {
       console.log('[MagnetDashboard] Token present:', !!token);
       
       const response = await fetch(url, {
-        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+        credentials: 'include'
       });
 
       console.log('[MagnetDashboard] Response status:', response.status);
       
+      const contentType = response.headers.get('content-type');
+      console.log('[MagnetDashboard] Content-Type:', contentType);
+      
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('[MagnetDashboard] Error response:', errorText);
-        throw new Error(`Failed to fetch orders: ${response.status} - ${errorText}`);
+        if (contentType?.includes('application/json')) {
+          const errorData = await response.json();
+          console.error('[MagnetDashboard] JSON error response:', errorData);
+          throw new Error(errorData.error || `Request failed: ${response.status}`);
+        } else {
+          const errorText = await response.text();
+          console.error('[MagnetDashboard] Non-JSON error response:', errorText.substring(0, 200));
+          throw new Error(`Server returned HTML instead of JSON. Status: ${response.status}. This may indicate a server configuration issue.`);
+        }
+      }
+
+      if (!contentType?.includes('application/json')) {
+        const text = await response.text();
+        console.error('[MagnetDashboard] Unexpected content type:', contentType, text.substring(0, 200));
+        throw new Error('Server returned non-JSON response');
       }
 
       const data = await response.json();
@@ -123,15 +139,28 @@ export default function MagnetDashboard() {
       console.log('[MagnetDashboard] Fetching metrics from:', url);
       
       const response = await fetch(url, {
-        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+        credentials: 'include'
       });
 
       console.log('[MagnetDashboard] Metrics response status:', response.status);
       
+      const contentType = response.headers.get('content-type');
+      
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('[MagnetDashboard] Metrics error response:', errorText);
-        throw new Error(`Failed to fetch metrics: ${response.status} - ${errorText}`);
+        if (contentType?.includes('application/json')) {
+          const errorData = await response.json();
+          console.error('[MagnetDashboard] Metrics JSON error:', errorData);
+          throw new Error(errorData.error || `Request failed: ${response.status}`);
+        } else {
+          const errorText = await response.text();
+          console.error('[MagnetDashboard] Metrics non-JSON error:', errorText.substring(0, 200));
+          throw new Error(`Server returned HTML. Status: ${response.status}`);
+        }
+      }
+      
+      if (!contentType?.includes('application/json')) {
+        throw new Error('Server returned non-JSON response');
       }
       
       const data = await response.json();

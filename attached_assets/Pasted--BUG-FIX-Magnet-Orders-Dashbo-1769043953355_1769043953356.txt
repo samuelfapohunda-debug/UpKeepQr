@@ -1,0 +1,764 @@
+╔══════════════════════════════════════════════════════════════╗
+║  🐛 BUG FIX: Magnet Orders Dashboard Not Loading             ║
+║  API Returns HTML Instead of JSON                           ║
+╚══════════════════════════════════════════════════════════════╝
+
+ISSUE: Magnet orders fail to load in admin dashboard
+ERROR: "Unexpected token '<', "<!DOCTYPE "... is not valid JSON"
+PRIORITY: High - Admin cannot view orders
+COMPLEXITY: Medium (API endpoint issue)
+
+═══════════════════════════════════════════════════════════════
+
+🐛 PROBLEM IDENTIFIED
+
+Error Message:
+────────────────────────────────────────────────────────────
+Failed to load orders
+Unexpected token '<', "<!DOCTYPE "... is not valid JSON
+Check browser console for details
+
+Root Cause:
+────────────────────────────────────────────────────────────
+The API endpoint is returning HTML instead of JSON.
+
+This typically happens when:
+1. ❌ API endpoint doesn't exist (404 HTML page returned)
+2. ❌ API endpoint returns error HTML page
+3. ❌ Authentication fails (redirect to login HTML page)
+4. ❌ Server error (500 error HTML page)
+5. ❌ Wrong API route or method
+
+Current Behavior:
+────────────────────────────────────────────────────────────
+Frontend makes request to API endpoint
+↓
+Backend returns HTML error page (not JSON)
+↓
+Frontend tries to parse HTML as JSON
+↓
+❌ Error: "Unexpected token '<'"
+↓
+❌ "Failed to load orders" message shown
+
+Expected Behavior:
+────────────────────────────────────────────────────────────
+Frontend makes request to API endpoint
+↓
+Backend validates admin authentication
+↓
+Backend queries magnet orders from database
+↓
+Backend returns JSON with orders array
+↓
+✅ Frontend displays orders in table
+✅ Shows order count, status, revenue metrics
+
+═══════════════════════════════════════════════════════════════
+
+🔍 DIAGNOSTIC STEPS
+
+Step 1: Check Network Tab in Browser Console
+────────────────────────────────────────────────────────────
+1. Open DevTools (F12)
+2. Go to Network tab
+3. Refresh /admin/magnets page
+4. Look for API request (probably /api/admin/magnets)
+5. Click on the request
+6. Check:
+   - Status code (200, 401, 404, 500?)
+   - Response tab (HTML or JSON?)
+   - Headers tab (Authorization header present?)
+
+Expected Findings:
+• 404: Endpoint doesn't exist
+• 401: Authentication failed
+• 403: Admin authorization failed
+• 500: Server error
+• HTML response: Error page being returned
+
+Step 2: Check Backend Logs
+────────────────────────────────────────────────────────────
+Look for errors like:
+• "Route not found"
+• "Unauthorized"
+• "Admin access required"
+• SQL errors
+• Missing environment variables
+
+Step 3: Verify API Endpoint Exists
+────────────────────────────────────────────────────────────
+Check if route is registered:
+• File: server/src/routes/index.ts
+• Look for: /api/admin/magnets route
+• Verify middleware: requireAdmin
+
+Step 4: Check Frontend API Call
+────────────────────────────────────────────────────────────
+Check MagnetOrders component:
+• Correct API endpoint?
+• Authorization header included?
+• Proper error handling?
+
+═══════════════════════════════════════════════════════════════
+
+🎯 LIKELY CAUSES & FIXES
+
+Cause 1: API Endpoint Doesn't Exist (Most Likely)
+────────────────────────────────────────────────────────────
+Symptom: 404 status code
+
+Fix: Create the magnet orders API endpoint
+
+Backend Route Needed:
+File: server/src/routes/admin/magnets.ts
+
+```typescript
+import { Router } from 'express';
+import { requireAdmin } from '../../middleware/adminAuth';
+import { db } from '../../db';
+
+const router = Router();
+
+// GET /api/admin/magnets - Get all magnet orders
+router.get('/', requireAdmin, async (req, res) => {
+  try {
+    // Query parameters for filtering
+    const { 
+      search, 
+      sku, 
+      zipCode, 
+      dateFrom, 
+      dateTo, 
+      status,
+      page = 1,
+      limit = 50
+    } = req.query;
+    
+    // Build query
+    let query = `
+      SELECT 
+        mo.*,
+        h.address,
+        h.city,
+        h.state,
+        h.zip_code,
+        COUNT(*) OVER() as total_count
+      FROM magnet_orders mo
+      LEFT JOIN households h ON mo.household_id = h.id
+      WHERE 1=1
+    `;
+    
+    const params: any[] = [];
+    let paramIndex = 1;
+    
+    // Add filters
+    if (search) {
+      params.push(`%${search}%`);
+      query += ` AND (mo.order_id ILIKE $${paramIndex} OR h.address ILIKE $${paramIndex})`;
+      paramIndex++;
+    }
+    
+    if (sku) {
+      params.push(sku);
+      query += ` AND mo.product_sku = $${paramIndex}`;
+      paramIndex++;
+    }
+    
+    if (zipCode) {
+      params.push(zipCode);
+      query += ` AND h.zip_code = $${paramIndex}`;
+      paramIndex++;
+    }
+    
+    if (dateFrom) {
+      params.push(dateFrom);
+      query += ` AND mo.created_at >= $${paramIndex}`;
+      paramIndex++;
+    }
+    
+    if (dateTo) {
+      params.push(dateTo);
+      query += ` AND mo.created_at <= $${paramIndex}`;
+      paramIndex++;
+    }
+    
+    if (status) {
+      params.push(status);
+      query += ` AND mo.status = $${paramIndex}`;
+      paramIndex++;
+    }
+    
+    // Add ordering and pagination
+    query += ` ORDER BY mo.created_at DESC`;
+    
+    const offset = (Number(page) - 1) * Number(limit);
+    params.push(Number(limit), offset);
+    query += ` LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
+    
+    // Execute query
+    const result = await db.query(query, params);
+    
+    // Get metrics
+    const metricsQuery = `
+      SELECT 
+        COUNT(*) as total_orders,
+        COUNT(*) FILTER (WHERE status = 'new') as pending_orders,
+        COUNT(*) FILTER (WHERE status = 'in_production') as in_production_orders,
+        COUNT(*) FILTER (WHERE status = 'shipped') as shipped_orders,
+        COALESCE(SUM(price), 0) as total_revenue
+      FROM magnet_orders
+    `;
+    
+    const metrics = await db.query(metricsQuery);
+    
+    return res.json({
+      success: true,
+      orders: result.rows,
+      metrics: metrics.rows[0],
+      pagination: {
+        page: Number(page),
+        limit: Number(limit),
+        total: result.rows[0]?.total_count || 0
+      }
+    });
+    
+  } catch (err) {
+    console.error('[Admin] Failed to fetch magnet orders:', err);
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to fetch magnet orders'
+    });
+  }
+});
+
+// GET /api/admin/magnets/:id - Get single order
+router.get('/:id', requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const result = await db.query(`
+      SELECT 
+        mo.*,
+        h.address,
+        h.city,
+        h.state,
+        h.zip_code
+      FROM magnet_orders mo
+      LEFT JOIN households h ON mo.household_id = h.id
+      WHERE mo.id = $1
+    `, [id]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Order not found'
+      });
+    }
+    
+    return res.json({
+      success: true,
+      order: result.rows[0]
+    });
+    
+  } catch (err) {
+    console.error('[Admin] Failed to fetch order:', err);
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to fetch order'
+    });
+  }
+});
+
+// PATCH /api/admin/magnets/:id - Update order status
+router.patch('/:id', requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    
+    // Validate status
+    const validStatuses = [
+      'new', 'paid', 'in_production', 
+      'shipped', 'delivered', 'activated', 
+      'canceled', 'refunded'
+    ];
+    
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid status'
+      });
+    }
+    
+    const result = await db.query(`
+      UPDATE magnet_orders
+      SET status = $1, updated_at = NOW()
+      WHERE id = $2
+      RETURNING *
+    `, [status, id]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Order not found'
+      });
+    }
+    
+    console.log(`[Admin] Order ${id} status updated to ${status} by ${req.user.email}`);
+    
+    return res.json({
+      success: true,
+      order: result.rows[0]
+    });
+    
+  } catch (err) {
+    console.error('[Admin] Failed to update order:', err);
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to update order'
+    });
+  }
+});
+
+export default router;
+```
+
+Register Route:
+File: server/src/routes/index.ts
+
+```typescript
+import adminMagnetRoutes from './admin/magnets';
+
+// Register admin magnet routes
+router.use('/admin/magnets', requireAdmin, adminMagnetRoutes);
+```
+
+Cause 2: Authentication/Authorization Issue
+────────────────────────────────────────────────────────────
+Symptom: 401 or 403 status code, redirect to login
+
+Fix: Ensure JWT token is sent with request
+
+Frontend Fix:
+File: client/src/pages/admin/MagnetOrders.tsx (or similar)
+
+```typescript
+const fetchOrders = async () => {
+  try {
+    const response = await fetch('/api/admin/magnets', {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
+        'Content-Type': 'application/json'
+      },
+      credentials: 'include' // Include session cookies too
+    });
+    
+    if (!response.ok) {
+      // Check if it's an auth error
+      if (response.status === 401 || response.status === 403) {
+        // Redirect to admin login
+        window.location.href = '/admin/login';
+        return;
+      }
+      
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    setOrders(data.orders);
+    setMetrics(data.metrics);
+    
+  } catch (err) {
+    console.error('Failed to fetch orders:', err);
+    setError('Failed to load orders');
+  }
+};
+```
+
+Cause 3: Wrong API Endpoint URL
+────────────────────────────────────────────────────────────
+Symptom: 404 status code
+
+Check Frontend API Call:
+```typescript
+// Wrong (returns HTML 404 page)
+fetch('/admin/magnets')
+
+// Wrong (missing /api prefix)
+fetch('/magnets')
+
+// Correct
+fetch('/api/admin/magnets')
+```
+
+Cause 4: Server Error
+────────────────────────────────────────────────────────────
+Symptom: 500 status code, HTML error page
+
+Fix: Add proper error handling in backend:
+
+```typescript
+router.get('/', requireAdmin, async (req, res) => {
+  try {
+    // ... query logic
+  } catch (err) {
+    console.error('[Admin Magnets] Error:', err);
+    
+    // Return JSON error, not HTML
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to fetch magnet orders',
+      message: process.env.NODE_ENV === 'development' 
+        ? err.message 
+        : 'Internal server error'
+    });
+  }
+});
+```
+
+═══════════════════════════════════════════════════════════════
+
+🔧 COMPLETE FIX IMPLEMENTATION
+
+Backend: Magnet Orders API
+────────────────────────────────────────────────────────────
+File: server/src/routes/admin/magnets.ts
+
+[Full implementation above]
+
+Frontend: Proper API Call with Error Handling
+────────────────────────────────────────────────────────────
+File: client/src/pages/admin/MagnetOrders.tsx
+
+```typescript
+import React, { useState, useEffect } from 'react';
+import { getAuthHeaders } from '../utils/auth';
+
+export function MagnetOrders() {
+  const [orders, setOrders] = useState([]);
+  const [metrics, setMetrics] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [filters, setFilters] = useState({
+    search: '',
+    sku: '',
+    zipCode: '',
+    dateFrom: '',
+    dateTo: '',
+    status: ''
+  });
+  
+  useEffect(() => {
+    fetchOrders();
+  }, [filters]);
+  
+  const fetchOrders = async () => {
+    setLoading(true);
+    setError('');
+    
+    try {
+      // Build query string
+      const params = new URLSearchParams();
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value) params.append(key, value);
+      });
+      
+      const queryString = params.toString();
+      const url = `/api/admin/magnets${queryString ? `?${queryString}` : ''}`;
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: getAuthHeaders(), // Includes Authorization header
+        credentials: 'include'
+      });
+      
+      // Check for auth errors
+      if (response.status === 401 || response.status === 403) {
+        console.error('Authentication failed');
+        window.location.href = '/admin/login';
+        return;
+      }
+      
+      // Check for other errors
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      // Check content type
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error('Server returned non-JSON response');
+      }
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setOrders(data.orders || []);
+        setMetrics(data.metrics);
+      } else {
+        throw new Error(data.error || 'Failed to fetch orders');
+      }
+      
+    } catch (err) {
+      console.error('Failed to fetch magnet orders:', err);
+      setError(err.message || 'Failed to load orders');
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  if (loading) {
+    return <div className="loading">Loading orders...</div>;
+  }
+  
+  if (error) {
+    return (
+      <div className="error-container">
+        <h2>Failed to load orders</h2>
+        <p>{error}</p>
+        <button onClick={fetchOrders}>Retry</button>
+      </div>
+    );
+  }
+  
+  return (
+    <div className="magnet-orders">
+      {/* Metrics Cards */}
+      <div className="metrics-grid">
+        <div className="metric-card">
+          <div className="metric-icon">📦</div>
+          <div className="metric-label">Total Orders</div>
+          <div className="metric-value">{metrics?.total_orders || 0}</div>
+        </div>
+        
+        <div className="metric-card">
+          <div className="metric-icon">⏳</div>
+          <div className="metric-label">Pending</div>
+          <div className="metric-value">{metrics?.pending_orders || 0}</div>
+        </div>
+        
+        <div className="metric-card">
+          <div className="metric-icon">🏭</div>
+          <div className="metric-label">In Production</div>
+          <div className="metric-value">{metrics?.in_production_orders || 0}</div>
+        </div>
+        
+        <div className="metric-card">
+          <div className="metric-icon">🚚</div>
+          <div className="metric-label">Shipped</div>
+          <div className="metric-value">{metrics?.shipped_orders || 0}</div>
+        </div>
+        
+        <div className="metric-card">
+          <div className="metric-icon">💰</div>
+          <div className="metric-label">Revenue</div>
+          <div className="metric-value">
+            ${(Number(metrics?.total_revenue) || 0).toFixed(2)}
+          </div>
+        </div>
+      </div>
+      
+      {/* Filters */}
+      <div className="filters">
+        {/* Filter inputs */}
+      </div>
+      
+      {/* Orders Table */}
+      <div className="orders-table">
+        <h2>Orders</h2>
+        <p>{orders.length} total orders</p>
+        
+        {orders.length === 0 ? (
+          <div className="empty-state">
+            No orders found
+          </div>
+        ) : (
+          <table>
+            <thead>
+              <tr>
+                <th>Order ID</th>
+                <th>Address</th>
+                <th>Status</th>
+                <th>Date</th>
+                <th>Price</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {orders.map(order => (
+                <tr key={order.id}>
+                  <td>{order.order_id}</td>
+                  <td>
+                    {order.address}, {order.city}, {order.state} {order.zip_code}
+                  </td>
+                  <td>
+                    <span className={`status-badge status-${order.status}`}>
+                      {order.status}
+                    </span>
+                  </td>
+                  <td>{new Date(order.created_at).toLocaleDateString()}</td>
+                  <td>${Number(order.price).toFixed(2)}</td>
+                  <td>
+                    <button onClick={() => viewOrder(order.id)}>
+                      View
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </div>
+  );
+}
+```
+
+Utility: Auth Headers Helper
+────────────────────────────────────────────────────────────
+File: client/src/utils/auth.ts
+
+```typescript
+export function getAuthHeaders() {
+  const adminToken = localStorage.getItem('adminToken');
+  
+  const headers: HeadersInit = {
+    'Content-Type': 'application/json'
+  };
+  
+  if (adminToken) {
+    headers['Authorization'] = `Bearer ${adminToken}`;
+  }
+  
+  return headers;
+}
+```
+
+═══════════════════════════════════════════════════════════════
+
+🧪 TESTING CHECKLIST
+
+After Implementation:
+
+Test 1: Orders Load Successfully
+────────────────────────────────────────────────────────────
+□ Login as admin
+□ Navigate to /admin/magnets
+□ ✅ Page loads without errors
+□ ✅ Metrics cards show data
+□ ✅ Orders table displays (even if empty)
+□ ✅ No "Failed to load" error
+□ ✅ No JSON parse errors
+
+Test 2: API Returns JSON
+────────────────────────────────────────────────────────────
+□ Open DevTools → Network tab
+□ Refresh magnet orders page
+□ Find /api/admin/magnets request
+□ ✅ Status: 200
+□ ✅ Response type: application/json
+□ ✅ Response body: Valid JSON object
+□ ✅ Contains orders array and metrics object
+
+Test 3: Authentication Works
+────────────────────────────────────────────────────────────
+□ Request includes Authorization header
+□ ✅ Header: "Authorization: Bearer <token>"
+□ Backend accepts admin token
+□ ✅ Admin can access endpoint
+□ Non-admin cannot access
+□ ✅ Returns 403 for non-admin
+
+Test 4: Filters Work
+────────────────────────────────────────────────────────────
+□ Enter search term
+□ ✅ Orders filter by search
+□ Select status filter
+□ ✅ Orders filter by status
+□ Set date range
+□ ✅ Orders filter by date
+□ Clear filters
+□ ✅ Shows all orders
+
+Test 5: Error Handling
+────────────────────────────────────────────────────────────
+□ Logout (clear token)
+□ Try to access /admin/magnets
+□ ✅ Redirects to /admin/login
+□ ✅ No "Unexpected token" error
+□ Login and retry
+□ ✅ Orders load successfully
+
+═══════════════════════════════════════════════════════════════
+
+📊 ERROR TYPES & FIXES
+
+Error Type 1: "Unexpected token '<'"
+────────────────────────────────────────────────────────────
+Meaning: API returned HTML instead of JSON
+
+Cause: API endpoint doesn't exist or returns error page
+Fix: Create proper JSON API endpoint
+
+Error Type 2: 404 Not Found
+────────────────────────────────────────────────────────────
+Meaning: API route not registered
+
+Cause: Route not added to server
+Fix: Register route in server/src/routes/index.ts
+
+Error Type 3: 401 Unauthorized
+────────────────────────────────────────────────────────────
+Meaning: Not authenticated
+
+Cause: Missing or invalid JWT token
+Fix: Include Authorization header with valid token
+
+Error Type 4: 403 Forbidden
+────────────────────────────────────────────────────────────
+Meaning: Not authorized (not admin)
+
+Cause: User doesn't have admin role
+Fix: Ensure user is admin, check requireAdmin middleware
+
+Error Type 5: 500 Internal Server Error
+────────────────────────────────────────────────────────────
+Meaning: Server error
+
+Cause: Database error, missing env vars, code error
+Fix: Check server logs, add error handling
+
+═══════════════════════════════════════════════════════════════
+
+✅ SUCCESS CRITERIA
+
+Fix successful when:
+────────────────────────────────────────────────────────────
+✅ Magnet orders dashboard loads without errors
+✅ API returns JSON (not HTML)
+✅ Metrics cards show correct data
+✅ Orders table displays all orders
+✅ Filters work correctly
+✅ Authentication properly enforced
+✅ No "Unexpected token" errors
+✅ No console errors
+✅ Admin can view and manage orders
+
+═══════════════════════════════════════════════════════════════
+
+🎯 QUICK FIX PRIORITY
+
+Most Likely Issue: API endpoint doesn't exist
+
+Immediate Action:
+1. Create server/src/routes/admin/magnets.ts
+2. Implement GET /api/admin/magnets endpoint
+3. Register route in server/src/routes/index.ts
+4. Ensure requireAdmin middleware applied
+5. Test with Postman or browser
+
+Time Estimate: 1-2 hours
+
+═══════════════════════════════════════════════════════════════
+
+END OF SPECIFICATION
