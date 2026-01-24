@@ -8,7 +8,7 @@ import {
   HouseholdAppliance
 } from '@shared/schema';
 import { eq, and, desc, asc, sql } from 'drizzle-orm';
-import { requireSessionAuth, SessionAuthRequest, validateHouseholdAccess } from '../../middleware/sessionAuth';
+import { requireSessionAuth, requireSessionOrAdminAuth, SessionAuthRequest, validateHouseholdAccess } from '../../middleware/sessionAuth';
 
 const router = Router();
 
@@ -47,7 +47,7 @@ router.get('/common-appliances', async (req: Request, res: Response) => {
   }
 });
 
-router.post('/households/:householdId/appliances', requireSessionAuth, validateHouseholdAccess, async (req: SessionAuthRequest, res: Response) => {
+router.post('/households/:householdId/appliances', requireSessionOrAdminAuth, validateHouseholdAccess, async (req: SessionAuthRequest, res: Response) => {
   try {
     const { householdId } = req.params;
     // Auth handled by middleware
@@ -108,7 +108,7 @@ router.post('/households/:householdId/appliances', requireSessionAuth, validateH
   }
 });
 
-router.get('/households/:householdId/appliances', requireSessionAuth, validateHouseholdAccess, async (req: SessionAuthRequest, res: Response) => {
+router.get('/households/:householdId/appliances', requireSessionOrAdminAuth, validateHouseholdAccess, async (req: SessionAuthRequest, res: Response) => {
   try {
     const { householdId } = req.params;
     // Auth handled by middleware
@@ -150,7 +150,7 @@ router.get('/households/:householdId/appliances', requireSessionAuth, validateHo
   }
 });
 
-router.get('/households/:householdId/appliances/:applianceId', requireSessionAuth, validateHouseholdAccess, async (req: SessionAuthRequest, res: Response) => {
+router.get('/households/:householdId/appliances/:applianceId', requireSessionOrAdminAuth, validateHouseholdAccess, async (req: SessionAuthRequest, res: Response) => {
   try {
     const { householdId, applianceId } = req.params;
     // Auth handled by middleware
@@ -178,7 +178,7 @@ router.get('/households/:householdId/appliances/:applianceId', requireSessionAut
   }
 });
 
-router.patch('/households/:householdId/appliances/:applianceId', requireSessionAuth, validateHouseholdAccess, async (req: SessionAuthRequest, res: Response) => {
+router.patch('/households/:householdId/appliances/:applianceId', requireSessionOrAdminAuth, validateHouseholdAccess, async (req: SessionAuthRequest, res: Response) => {
   try {
     const { householdId, applianceId } = req.params;
     // Auth handled by middleware
@@ -242,7 +242,7 @@ router.patch('/households/:householdId/appliances/:applianceId', requireSessionA
   }
 });
 
-router.delete('/households/:householdId/appliances/:applianceId', requireSessionAuth, validateHouseholdAccess, async (req: SessionAuthRequest, res: Response) => {
+router.delete('/households/:householdId/appliances/:applianceId', requireSessionOrAdminAuth, validateHouseholdAccess, async (req: SessionAuthRequest, res: Response) => {
   try {
     const { householdId, applianceId } = req.params;
     // Auth handled by middleware
