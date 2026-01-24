@@ -133,9 +133,25 @@ export default function ApplianceManager({ householdId, onClose }: ApplianceMana
   const fetchAppliances = async () => {
     try {
       setLoading(true);
+      const token = localStorage.getItem('adminToken');
       const response = await fetch(`${API_BASE_URL}/api/households/${householdId}/appliances`, {
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : '',
+          'Content-Type': 'application/json',
+        },
         credentials: 'include',
       });
+      
+      if (response.status === 401 || response.status === 403) {
+        console.error('[Appliances] Authentication failed');
+        toast({
+          title: 'Authentication Required',
+          description: 'Please log in again to manage appliances',
+          variant: 'destructive',
+        });
+        return;
+      }
+      
       if (!response.ok) throw new Error('Failed to fetch appliances');
       const data = await response.json();
       setAppliances(data.appliances || []);
@@ -238,14 +254,26 @@ export default function ApplianceManager({ householdId, onClose }: ApplianceMana
       if (formData.warrantyPolicyNumber.trim()) normalizedPayload.warrantyPolicyNumber = formData.warrantyPolicyNumber.trim();
       if (formData.warrantyCoverageDetails.trim()) normalizedPayload.warrantyCoverageDetails = formData.warrantyCoverageDetails.trim();
 
+      const token = localStorage.getItem('adminToken');
       const response = await fetch(url, {
         method,
         headers: {
+          'Authorization': token ? `Bearer ${token}` : '',
           'Content-Type': 'application/json',
         },
         credentials: 'include',
         body: JSON.stringify(normalizedPayload),
       });
+      
+      if (response.status === 401 || response.status === 403) {
+        console.error('[Appliances] Authentication failed on save');
+        toast({
+          title: 'Authentication Required',
+          description: 'Please log in again to save appliance',
+          variant: 'destructive',
+        });
+        return;
+      }
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -285,13 +313,28 @@ export default function ApplianceManager({ householdId, onClose }: ApplianceMana
     if (!confirm('Are you sure you want to delete this appliance?')) return;
 
     try {
+      const token = localStorage.getItem('adminToken');
       const response = await fetch(
         `${API_BASE_URL}/api/households/${householdId}/appliances/${applianceId}`,
         {
           method: 'DELETE',
+          headers: {
+            'Authorization': token ? `Bearer ${token}` : '',
+            'Content-Type': 'application/json',
+          },
           credentials: 'include',
         }
       );
+
+      if (response.status === 401 || response.status === 403) {
+        console.error('[Appliances] Authentication failed on delete');
+        toast({
+          title: 'Authentication Required',
+          description: 'Please log in again to delete appliance',
+          variant: 'destructive',
+        });
+        return;
+      }
 
       if (!response.ok) throw new Error('Failed to delete appliance');
 

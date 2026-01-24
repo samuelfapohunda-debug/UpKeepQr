@@ -1,0 +1,416 @@
+╔══════════════════════════════════════════════════════════════╗
+║  🤖 REPLIT AGENT SPEC: Fix Appliances 401 Error             ║
+║  Add Admin Authentication to Appliances API Calls           ║
+╚══════════════════════════════════════════════════════════════╝
+
+TASK: Fix 401 Unauthorized error when loading appliances
+ISSUE: Missing admin authentication header in API request
+FIX TYPE: Frontend only (add auth headers)
+TIME ESTIMATE: 15 minutes
+
+═══════════════════════════════════════════════════════════════
+
+🎯 PROBLEM
+
+Error in Console:
+────────────────────────────────────────────────────────────
+Failed to load resource: the server responded with a status of 401 ()
+Error fetching appliances: Error: Failed to fetch appliances
+
+Root Cause:
+────────────────────────────────────────────────────────────
+Frontend is calling /api/households/{id}/appliances WITHOUT admin token
+Backend correctly returns 401 because request is not authenticated
+
+Current Flow (Broken):
+────────────────────────────────────────────────────────────
+Admin clicks "Manage Appliances"
+↓
+Frontend: fetch('/api/households/{id}/appliances')  // ❌ No auth header
+↓
+Backend: Returns 401 Unauthorized
+↓
+Frontend: Shows error "Failed to fetch appliances"
+
+Expected Flow (Fixed):
+────────────────────────────────────────────────────────────
+Admin clicks "Manage Appliances"
+↓
+Frontend: fetch('/api/households/{id}/appliances', {
+  headers: { Authorization: 'Bearer TOKEN' }  // ✅ With auth
+})
+↓
+Backend: Returns 200 with appliances
+↓
+Frontend: Displays appliances list
+
+═══════════════════════════════════════════════════════════════
+
+🔧 IMPLEMENTATION STEPS
+
+Step 1: Locate the Appliances Fetch Function
+────────────────────────────────────────────────────────────
+Find the file that fetches appliances. Most likely one of:
+• client/src/pages/admin/SetupForms.tsx
+• client/src/components/HouseholdDetails.tsx
+• client/src/components/admin/HouseholdModal.tsx
+• Any component with "Manage Appliances" button
+
+Search for:
+• Function that fetches from /api/households/*/appliances
+• Button with text "Manage Appliances"
+• useEffect or function that loads appliances
+
+Step 2: Update the Fetch Call
+────────────────────────────────────────────────────────────
+Find code similar to:
+
+```typescript
+// CURRENT CODE (BROKEN)
+const fetchAppliances = async (householdId: string) => {
+  const response = await fetch(`/api/households/${householdId}/appliances`);
+  const data = await response.json();
+  setAppliances(data.appliances);
+};
+```
+
+Replace with:
+
+```typescript
+// FIXED CODE (WITH AUTH)
+const fetchAppliances = async (householdId: string) => {
+  try {
+    const response = await fetch(`/api/households/${householdId}/appliances`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
+        'Content-Type': 'application/json'
+      },
+      credentials: 'include'
+    });
+    
+    // Handle authentication errors
+    if (response.status === 401 || response.status === 403) {
+      console.error('[Appliances] Authentication failed');
+      window.location.href = '/admin/login';
+      return;
+    }
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    
+    const data = await response.json();
+    setAppliances(data.appliances || []);
+    
+  } catch (err) {
+    console.error('[Appliances] Failed to fetch:', err);
+    setError('Failed to load appliances');
+  }
+};
+```
+
+Step 3: Verify Auth Token Available
+────────────────────────────────────────────────────────────
+The admin token should already be in localStorage from login.
+
+If not present, ensure admin login sets it:
+```typescript
+// In admin login component
+localStorage.setItem('adminToken', response.token);
+```
+
+Step 4: Update Any Other Appliance API Calls
+────────────────────────────────────────────────────────────
+Also fix these if present in the same file:
+
+Create Appliance:
+```typescript
+const createAppliance = async (householdId: string, applianceData: any) => {
+  const response = await fetch(`/api/households/${householdId}/appliances`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
+      'Content-Type': 'application/json'
+    },
+    credentials: 'include',
+    body: JSON.stringify(applianceData)
+  });
+  // ... rest of code
+};
+```
+
+Update Appliance:
+```typescript
+const updateAppliance = async (householdId: string, applianceId: string, applianceData: any) => {
+  const response = await fetch(`/api/households/${householdId}/appliances/${applianceId}`, {
+    method: 'PUT',
+    headers: {
+      'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
+      'Content-Type': 'application/json'
+    },
+    credentials: 'include',
+    body: JSON.stringify(applianceData)
+  });
+  // ... rest of code
+};
+```
+
+Delete Appliance:
+```typescript
+const deleteAppliance = async (householdId: string, applianceId: string) => {
+  const response = await fetch(`/api/households/${householdId}/appliances/${applianceId}`, {
+    method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
+      'Content-Type': 'application/json'
+    },
+    credentials: 'include'
+  });
+  // ... rest of code
+};
+```
+
+Step 5: Test the Fix
+────────────────────────────────────────────────────────────
+1. Login as admin
+2. Navigate to Setup Forms (/admin/setup-forms)
+3. Click on a household
+4. Click "Manage Appliances" button
+5. Verify:
+   □ Modal opens successfully
+   □ Appliances list loads (no 401 error)
+   □ No console errors
+   □ Can view appliances
+   □ Can add/edit/delete appliances
+
+═══════════════════════════════════════════════════════════════
+
+📋 CODE PATTERN TO APPLY
+
+This is the SAME pattern used in MagnetDashboard fix.
+
+Standard Admin API Call Pattern:
+────────────────────────────────────────────────────────────
+```typescript
+const response = await fetch(API_ENDPOINT, {
+  method: 'GET', // or 'POST', 'PUT', 'DELETE'
+  headers: {
+    'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
+    'Content-Type': 'application/json'
+  },
+  credentials: 'include',
+  body: method !== 'GET' ? JSON.stringify(data) : undefined
+});
+
+// Always check for auth errors
+if (response.status === 401 || response.status === 403) {
+  window.location.href = '/admin/login';
+  return;
+}
+
+// Check for other errors
+if (!response.ok) {
+  throw new Error(`HTTP ${response.status}`);
+}
+
+// Parse JSON
+const result = await response.json();
+```
+
+Apply this pattern to ALL appliance API calls in the component.
+
+═══════════════════════════════════════════════════════════════
+
+🔍 FILES TO MODIFY
+
+Most Likely File:
+────────────────────────────────────────────────────────────
+• client/src/pages/admin/SetupForms.tsx
+
+OR
+
+• client/src/components/HouseholdDetails.tsx
+• client/src/components/admin/HouseholdDetailsModal.tsx
+
+Search Strategy:
+────────────────────────────────────────────────────────────
+1. Search for: "Manage Appliances"
+2. Search for: "/api/households" + "/appliances"
+3. Search for: fetchAppliances or loadAppliances
+4. Check files in client/src/pages/admin/
+5. Check files in client/src/components/admin/
+
+Changes Required:
+────────────────────────────────────────────────────────────
+• Add Authorization header to all appliance API calls
+• Add credentials: 'include'
+• Add error handling for 401/403
+• Add logging for debugging
+
+No Backend Changes Required:
+────────────────────────────────────────────────────────────
+Backend is already correctly protecting the route.
+This is purely a frontend authentication fix.
+
+═══════════════════════════════════════════════════════════════
+
+✅ SUCCESS CRITERIA
+
+Fix is complete when:
+────────────────────────────────────────────────────────────
+□ Code modified in correct component
+□ Authorization header added to fetch calls
+□ credentials: 'include' added
+□ Error handling for 401/403 added
+□ File saved
+
+Testing successful when:
+────────────────────────────────────────────────────────────
+□ Admin can click "Manage Appliances"
+□ Appliances modal opens
+□ Appliances list loads without errors
+□ No 401 errors in console
+□ Network tab shows 200 response
+□ Request includes Authorization header
+□ Can add/edit/delete appliances
+
+═══════════════════════════════════════════════════════════════
+
+🎯 EXAMPLE BEFORE/AFTER
+
+BEFORE (Broken):
+────────────────────────────────────────────────────────────
+```typescript
+const fetchAppliances = async (householdId) => {
+  const response = await fetch(`/api/households/${householdId}/appliances`);
+  const data = await response.json();
+  setAppliances(data.appliances);
+};
+```
+
+Issues:
+❌ No Authorization header
+❌ No credentials
+❌ No error handling
+❌ Returns 401 error
+
+AFTER (Fixed):
+────────────────────────────────────────────────────────────
+```typescript
+const fetchAppliances = async (householdId) => {
+  try {
+    const response = await fetch(`/api/households/${householdId}/appliances`, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
+        'Content-Type': 'application/json'
+      },
+      credentials: 'include'
+    });
+    
+    if (response.status === 401 || response.status === 403) {
+      window.location.href = '/admin/login';
+      return;
+    }
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    
+    const data = await response.json();
+    setAppliances(data.appliances || []);
+    
+  } catch (err) {
+    console.error('Failed to fetch appliances:', err);
+    setError('Failed to load appliances');
+  }
+};
+```
+
+Benefits:
+✅ Includes Authorization header
+✅ Includes credentials
+✅ Handles auth errors
+✅ Proper error handling
+✅ Works correctly
+
+═══════════════════════════════════════════════════════════════
+
+🚨 IMPORTANT NOTES
+
+1. Same Pattern as MagnetDashboard Fix
+────────────────────────────────────────────────────────────
+We just fixed this exact issue for magnet orders.
+Apply the SAME solution here.
+
+2. Apply to ALL Appliance API Calls
+────────────────────────────────────────────────────────────
+Not just GET, but also:
+• POST (create appliance)
+• PUT (update appliance)
+• DELETE (delete appliance)
+
+3. Don't Modify Backend
+────────────────────────────────────────────────────────────
+Backend is already correct.
+This is purely a frontend fix.
+
+4. Verify Admin Token Exists
+────────────────────────────────────────────────────────────
+Admin login should already be setting token.
+If not, that's a separate issue.
+
+5. Test Thoroughly
+────────────────────────────────────────────────────────────
+Make sure to test:
+• Viewing appliances
+• Adding appliances
+• Editing appliances
+• Deleting appliances
+
+═══════════════════════════════════════════════════════════════
+
+📊 DEBUGGING CHECKLIST
+
+If Fix Doesn't Work:
+────────────────────────────────────────────────────────────
+
+Check 1: Admin Token Exists
+```javascript
+console.log('Admin Token:', localStorage.getItem('adminToken'));
+```
+Should show JWT token, not null
+
+Check 2: Request Has Auth Header
+DevTools → Network → Request Headers
+Should see: Authorization: Bearer eyJ...
+
+Check 3: Backend Accepts Admin Token
+Server logs should show successful auth
+Not "Unauthorized" or "Invalid token"
+
+Check 4: Correct API Endpoint
+Should be: /api/households/{id}/appliances
+Not: /households/{id}/appliances (missing /api)
+
+Check 5: Admin Logged In
+Admin should be logged in
+Token should not be expired
+
+═══════════════════════════════════════════════════════════════
+
+✅ IMPLEMENTATION READY
+
+This specification is complete and ready for Replit Agent.
+
+Task: Fix appliances 401 error
+Solution: Add admin auth headers to API calls
+Pattern: Same as MagnetDashboard fix
+Time: 15 minutes
+Risk: Very low (frontend only)
+
+The fix is straightforward and proven (same pattern as magnet fix).
+
+═══════════════════════════════════════════════════════════════
+
+END OF REPLIT AGENT SPECIFICATION
