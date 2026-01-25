@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,9 +6,31 @@ import { Badge } from "@/components/ui/badge";
 import { CheckCircle, Users, Package, Bell, Shield, Calendar, MapPin, Wrench, Home as HomeIcon, X, Building2, Briefcase } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
+const trustStatistics = [
+  { number: "5000+", label: "Homeowner subscriptions in North America" },
+  { number: "100+", label: "Realtor subscriptions in North America" },
+  { number: "20+", label: "Apartment Complex subscriptions in North America" },
+];
+
 export default function Home() {
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+  const [currentStatIndex, setCurrentStatIndex] = useState(0);
+  const [isAnimating, setIsAnimating] = useState(false);
   const { toast } = useToast();
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setIsAnimating(true);
+      
+      setTimeout(() => {
+        setCurrentStatIndex((prevIndex) => (prevIndex + 1) % trustStatistics.length);
+        setIsAnimating(false);
+      }, 500);
+      
+    }, 4000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   const handleCheckout = async (planId: string, planName: string) => {
     setLoadingPlan(planId);
@@ -79,7 +101,7 @@ export default function Home() {
                 
                 {/* Trust Badge */}
                 <p className="text-sm text-slate-500 mt-6">
-                  Trusted by 5,000+ homeowners in North US and Canada
+                  Trusted by <span className="font-semibold">5,000+</span> homeowners in North US and Canada
                 </p>
               </div>
               
@@ -118,12 +140,26 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Social Proof Section */}
+        {/* Social Proof Section - Rotating Statistics */}
         <section className="py-8 bg-slate-50 border-y border-slate-200">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <p className="text-center text-slate-600 text-lg">
-              Trusted by <span className="font-semibold text-slate-900">5,000+</span> homeowners nationwide
-            </p>
+            <div className="h-14 md:h-10 flex items-center justify-center overflow-hidden relative">
+              <p 
+                key={currentStatIndex}
+                className={`text-center text-slate-600 text-lg absolute transition-all duration-500 ease-in-out ${
+                  isAnimating 
+                    ? 'opacity-0 -translate-y-4 rotate-3' 
+                    : 'opacity-100 translate-y-0 rotate-0'
+                }`}
+                data-testid="trust-badge-rotating"
+              >
+                Trusted by{' '}
+                <span className="font-bold text-blue-600 text-xl">
+                  {trustStatistics[currentStatIndex].number}
+                </span>{' '}
+                {trustStatistics[currentStatIndex].label}
+              </p>
+            </div>
           </div>
         </section>
 
