@@ -79,6 +79,14 @@ export default function Navigation() {
                 Setup Forms
               </Link>
 
+              <Link 
+                href="/contact?type=demo" 
+                className="px-4 py-1.5 sm:px-6 sm:py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-xs sm:text-sm font-semibold transition-colors whitespace-nowrap"
+                data-testid="button-demo-request"
+              >
+                Demo Request
+              </Link>
+
               <div className="flex items-center gap-2 ml-2 pl-2 border-l border-slate-600">
                 <span className="hidden md:inline text-xs text-gray-400 truncate max-w-[150px]" title={adminEmail || ''}>
                   {adminEmail}
@@ -163,6 +171,14 @@ export default function Navigation() {
               data-testid="button-order-magnet"
             >
               Order Magnet
+            </Link>
+
+            <Link 
+              href="/contact?type=demo" 
+              className="px-3 py-1.5 sm:px-6 sm:py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-xs sm:text-sm font-semibold transition-colors whitespace-nowrap"
+              data-testid="button-demo-request"
+            >
+              Demo Request
             </Link>
             
             {showLoading ? (
