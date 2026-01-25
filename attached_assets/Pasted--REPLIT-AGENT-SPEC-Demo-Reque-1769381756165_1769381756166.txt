@@ -1,0 +1,816 @@
+╔══════════════════════════════════════════════════════════════╗
+║  🤖 REPLIT AGENT SPEC: Demo Request Button                  ║
+║  Navigation Button with Contact Form Pre-Population         ║
+╚══════════════════════════════════════════════════════════════╝
+
+TASK: Add "Demo Request" button to navigation with smart form pre-fill
+PRIORITY: High
+TIME ESTIMATE: 30-45 minutes
+COMPONENTS AFFECTED: Navigation, Contact Form, Routing
+
+═══════════════════════════════════════════════════════════════
+
+🎯 OBJECTIVE
+
+Add a prominent "Demo Request" button to the top-right navigation that:
+1. Links to the Contact Us page (/contact)
+2. Pre-fills the "How can we help?" dropdown with "Request a demo"
+3. Works across all navigation contexts (public, customer, admin)
+4. Maintains proper styling and responsive behavior
+
+═══════════════════════════════════════════════════════════════
+
+📐 BUTTON PLACEMENT & DESIGN
+
+Location:
+────────────────────────────────────────────────────────────
+Position: Top-right navigation area
+Placement: AFTER all navigation tabs/links, BEFORE the logout button
+Order (Public): Home | Pricing | Admin Login | [Demo Request]
+Order (Customer): My Home | Order Magnet | [Demo Request] | Logout
+Order (Admin): Pro Dashboard | Magnet Orders | Setup Forms | [Demo Request] | Logout
+
+Visual Design:
+────────────────────────────────────────────────────────────
+Style: Call-to-action button (prominent, stands out)
+Background: Red (#ef4444 or #dc2626 - similar to uploaded image)
+Text Color: White (#ffffff)
+Text: "Demo Request"
+Font Size: 16px
+Font Weight: 600 (semibold)
+Padding: 10px 24px
+Border Radius: 8px (rounded corners)
+Border: None
+Hover Effect: Slightly darker red (#dc2626 → #b91c1c)
+Cursor: Pointer
+Transition: All 0.2s ease
+
+Button States:
+────────────────────────────────────────────────────────────
+Normal: Red background, white text
+Hover: Darker red background
+Active/Focus: Focus ring (optional)
+Mobile: Full width on small screens OR slightly smaller padding
+
+Responsive Behavior:
+────────────────────────────────────────────────────────────
+Desktop (≥1024px): Full button with padding
+Tablet (768-1023px): Slightly reduced padding
+Mobile (<768px): 
+  Option A: Full text, adjusted padding
+  Option B: "Demo" only (shorter text)
+  Option C: Icon + text
+
+═══════════════════════════════════════════════════════════════
+
+🔗 ROUTING & NAVIGATION
+
+Button Link:
+────────────────────────────────────────────────────────────
+Destination: /contact
+Method: React Router Link (not <a> tag)
+Query Parameter: ?type=demo
+Full URL: /contact?type=demo
+
+Example:
+```tsx
+<Link to="/contact?type=demo" className="demo-request-button">
+  Demo Request
+</Link>
+```
+
+Navigation Flow:
+────────────────────────────────────────────────────────────
+1. User clicks "Demo Request" button
+2. Browser navigates to /contact?type=demo
+3. Contact page loads
+4. Contact form detects ?type=demo in URL
+5. Dropdown automatically selects "Request a demo"
+6. User can fill remaining fields and submit
+
+Alternative URLs (all should work):
+────────────────────────────────────────────────────────────
+• /contact?type=demo
+• /contact?inquiry=demo
+• /contact?reason=demo
+
+Choose ONE consistent approach (recommended: ?type=demo)
+
+═══════════════════════════════════════════════════════════════
+
+📝 CONTACT FORM PRE-POPULATION
+
+Form Detection Logic:
+────────────────────────────────────────────────────────────
+When Contact page loads:
+1. Check URL for query parameter (e.g., ?type=demo)
+2. If ?type=demo exists, pre-select "Request a demo" in dropdown
+3. User can still change selection if needed
+4. All other fields remain empty (user must fill)
+
+Implementation Approach:
+────────────────────────────────────────────────────────────
+
+Option 1: URL Query Parameters (RECOMMENDED)
+```tsx
+import { useEffect } from 'react';
+import { useLocation, useSearchParams } from 'react-router-dom';
+
+export default function Contact() {
+  const [searchParams] = useSearchParams();
+  const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    usage: '', // Will be set to 'demo' if ?type=demo
+    message: ''
+  });
+
+  useEffect(() => {
+    // Check for query parameter on page load
+    const type = searchParams.get('type');
+    if (type === 'demo') {
+      setFormData(prev => ({
+        ...prev,
+        usage: 'demo' // This matches the dropdown value
+      }));
+    }
+  }, [searchParams]);
+
+  // Rest of component...
+}
+```
+
+Option 2: React Router State (Alternative)
+```tsx
+import { useLocation } from 'react-router-dom';
+
+export default function Contact() {
+  const location = useLocation();
+  const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    usage: location.state?.preselect || '', // From navigation state
+    message: ''
+  });
+
+  // Rest of component...
+}
+
+// In Navigation component:
+<Link 
+  to="/contact" 
+  state={{ preselect: 'demo' }}
+  className="demo-request-button"
+>
+  Demo Request
+</Link>
+```
+
+Recommended: Option 1 (URL Query Parameters)
+────────────────────────────────────────────────────────────
+Advantages:
+✅ Bookmarkable URL
+✅ Shareable link
+✅ Works with browser back/forward
+✅ Clearer user intent
+✅ Better for analytics/tracking
+
+Dropdown Value Mapping:
+────────────────────────────────────────────────────────────
+Query Parameter: ?type=demo
+Dropdown Value: "demo"
+Dropdown Display: "Request a demo"
+
+Ensure the dropdown option value matches:
+```tsx
+<option value="demo">Request a demo</option>
+```
+
+═══════════════════════════════════════════════════════════════
+
+🎨 IMPLEMENTATION CODE
+
+Step 1: Add Button to Navigation Components
+────────────────────────────────────────────────────────────
+
+File: client/src/components/Navigation.tsx (or similar)
+
+For Public Navigation:
+```tsx
+import { Link } from 'react-router-dom';
+
+export default function PublicNavigation() {
+  return (
+    <nav className="navigation">
+      <div className="nav-left">
+        {/* Logo */}
+      </div>
+      
+      <div className="nav-right">
+        <Link to="/">Home</Link>
+        <Link to="/pricing">Pricing</Link>
+        <Link to="/admin/login">Admin Login</Link>
+        
+        {/* NEW: Demo Request Button */}
+        <Link to="/contact?type=demo" className="demo-request-button">
+          Demo Request
+        </Link>
+      </div>
+    </nav>
+  );
+}
+```
+
+For Customer Navigation:
+```tsx
+export default function CustomerNavigation() {
+  return (
+    <nav className="navigation">
+      <div className="nav-left">
+        {/* Logo */}
+      </div>
+      
+      <div className="nav-right">
+        <Link to="/my-home">🏠 My Home</Link>
+        <Link to="/order-magnet">Order Magnet</Link>
+        
+        {/* NEW: Demo Request Button */}
+        <Link to="/contact?type=demo" className="demo-request-button">
+          Demo Request
+        </Link>
+        
+        <button onClick={handleLogout}>Logout</button>
+      </div>
+    </nav>
+  );
+}
+```
+
+For Admin Navigation:
+```tsx
+export default function AdminNavigation() {
+  return (
+    <nav className="admin-navigation">
+      <div className="nav-left">
+        {/* Logo */}
+      </div>
+      
+      <div className="nav-right">
+        <Link to="/admin/dashboard">Pro Dashboard</Link>
+        <Link to="/admin/magnets">Magnet Orders</Link>
+        <Link to="/admin/setup-forms">Setup Forms</Link>
+        
+        {/* NEW: Demo Request Button */}
+        <Link to="/contact?type=demo" className="demo-request-button">
+          Demo Request
+        </Link>
+        
+        <span>{adminEmail}</span>
+        <button onClick={handleLogout}>Logout</button>
+      </div>
+    </nav>
+  );
+}
+```
+
+Step 2: Style the Button
+────────────────────────────────────────────────────────────
+
+Option A: Tailwind CSS
+```tsx
+<Link 
+  to="/contact?type=demo" 
+  className="bg-red-500 hover:bg-red-600 text-white font-semibold px-6 py-2.5 rounded-lg transition-colors duration-200"
+>
+  Demo Request
+</Link>
+```
+
+Option B: Regular CSS
+```css
+.demo-request-button {
+  background-color: #ef4444; /* Red */
+  color: white;
+  font-size: 16px;
+  font-weight: 600;
+  padding: 10px 24px;
+  border-radius: 8px;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  border: none;
+  white-space: nowrap;
+}
+
+.demo-request-button:hover {
+  background-color: #dc2626; /* Darker red */
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.demo-request-button:active {
+  transform: translateY(0);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .demo-request-button {
+    padding: 8px 16px;
+    font-size: 14px;
+  }
+}
+```
+
+Option C: CSS Module
+```module.css
+.demoRequestButton {
+  background-color: #ef4444;
+  color: white;
+  font-size: 16px;
+  font-weight: 600;
+  padding: 10px 24px;
+  border-radius: 8px;
+  text-decoration: none;
+  transition: background-color 0.2s;
+}
+
+.demoRequestButton:hover {
+  background-color: #dc2626;
+}
+```
+
+Step 3: Update Contact Form for Pre-Population
+────────────────────────────────────────────────────────────
+
+File: client/src/pages/Contact.tsx (or Contact.jsx)
+
+```tsx
+import React, { useState, useEffect } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
+
+export default function Contact() {
+  const [searchParams] = useSearchParams();
+  
+  const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    usage: '',
+    message: ''
+  });
+
+  // Pre-populate dropdown based on query parameter
+  useEffect(() => {
+    const type = searchParams.get('type');
+    
+    if (type === 'demo') {
+      setFormData(prev => ({
+        ...prev,
+        usage: 'demo' // Matches dropdown value
+      }));
+    }
+  }, [searchParams]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    // Existing form submission logic
+    console.log('Form submitted:', formData);
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  return (
+    <div className="contact-page">
+      <div className="contact-container">
+        
+        {/* LEFT COLUMN - CONTACT FORM */}
+        <div className="contact-form-column">
+          <div className="form-card">
+            <h1 className="form-title">Let's Chat</h1>
+            <p className="form-subtitle">
+              An UpKeepQR expert will reach out to discuss your needs.
+            </p>
+
+            <form onSubmit={handleSubmit}>
+              {/* Form fields */}
+              
+              <select
+                name="usage"
+                value={formData.usage} // Will be 'demo' if ?type=demo
+                onChange={handleChange}
+                required
+                className="form-input full-width"
+              >
+                <option value="">How can we help?</option>
+                <option value="general">General question</option>
+                <option value="demo">Request a demo</option>
+                <option value="partner">Partner Opportunity</option>
+                <option value="career">Career Opportunity</option>
+              </select>
+
+              {/* Rest of form */}
+            </form>
+          </div>
+        </div>
+
+        {/* RIGHT COLUMN - STATISTICS */}
+        <div className="stats-column">
+          {/* Stats content */}
+        </div>
+
+      </div>
+    </div>
+  );
+}
+```
+
+═══════════════════════════════════════════════════════════════
+
+🎯 COMPLETE IMPLEMENTATION EXAMPLE
+
+Navigation Component with Button:
+────────────────────────────────────────────────────────────
+```tsx
+import { Link } from 'react-router-dom';
+
+export default function Navigation({ userRole }: { userRole: 'public' | 'customer' | 'admin' }) {
+  return (
+    <nav className="flex items-center justify-between px-6 py-4 bg-white shadow">
+      <div className="flex items-center">
+        <Link to="/" className="text-xl font-bold">
+          UpKeepQR
+        </Link>
+      </div>
+      
+      <div className="flex items-center gap-6">
+        {userRole === 'public' && (
+          <>
+            <Link to="/" className="nav-link">Home</Link>
+            <Link to="/pricing" className="nav-link">Pricing</Link>
+            <Link to="/admin/login" className="nav-link">Admin Login</Link>
+          </>
+        )}
+        
+        {userRole === 'customer' && (
+          <>
+            <Link to="/my-home" className="nav-link">🏠 My Home</Link>
+            <Link to="/order-magnet" className="nav-link">Order Magnet</Link>
+          </>
+        )}
+        
+        {userRole === 'admin' && (
+          <>
+            <Link to="/admin/dashboard" className="nav-link">Pro Dashboard</Link>
+            <Link to="/admin/magnets" className="nav-link">Magnet Orders</Link>
+            <Link to="/admin/setup-forms" className="nav-link">Setup Forms</Link>
+          </>
+        )}
+        
+        {/* DEMO REQUEST BUTTON - ALWAYS VISIBLE */}
+        <Link 
+          to="/contact?type=demo" 
+          className="bg-red-500 hover:bg-red-600 text-white font-semibold px-6 py-2.5 rounded-lg transition-colors duration-200"
+        >
+          Demo Request
+        </Link>
+        
+        {(userRole === 'customer' || userRole === 'admin') && (
+          <button onClick={handleLogout} className="nav-link">
+            Logout
+          </button>
+        )}
+      </div>
+    </nav>
+  );
+}
+```
+
+Contact Form with Pre-Population:
+────────────────────────────────────────────────────────────
+```tsx
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
+
+export default function Contact() {
+  const [searchParams] = useSearchParams();
+  const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    usage: '',
+    message: ''
+  });
+
+  useEffect(() => {
+    // Pre-populate dropdown if ?type=demo in URL
+    const type = searchParams.get('type');
+    if (type === 'demo') {
+      setFormData(prev => ({ ...prev, usage: 'demo' }));
+    }
+  }, [searchParams]);
+
+  // Rest of component implementation...
+}
+```
+
+═══════════════════════════════════════════════════════════════
+
+📋 IMPLEMENTATION STEPS
+
+Step 1: Identify Navigation Components
+────────────────────────────────────────────────────────────
+Find these files (names may vary):
+□ client/src/components/Navigation.tsx
+□ client/src/components/PublicNav.tsx
+□ client/src/components/CustomerNav.tsx
+□ client/src/components/AdminNav.tsx
+□ OR client/src/components/Header.tsx
+
+Step 2: Add Demo Request Button
+────────────────────────────────────────────────────────────
+In each navigation component:
+□ Add Link component from react-router-dom
+□ Set destination: /contact?type=demo
+□ Style as red call-to-action button
+□ Position BEFORE logout button
+□ Position AFTER all navigation tabs
+
+Step 3: Update Contact Form Component
+────────────────────────────────────────────────────────────
+File: client/src/pages/Contact.tsx
+□ Import useSearchParams from react-router-dom
+□ Add useEffect to detect query parameter
+□ Pre-populate usage field if ?type=demo
+□ Ensure dropdown value="demo" matches option
+
+Step 4: Test Query Parameter
+────────────────────────────────────────────────────────────
+□ Navigate to /contact?type=demo manually
+□ Verify dropdown shows "Request a demo" selected
+□ Verify form submission still works
+
+Step 5: Test Button Navigation
+────────────────────────────────────────────────────────────
+□ Click "Demo Request" button
+□ Verify navigates to /contact page
+□ Verify dropdown auto-selects "Request a demo"
+□ Verify user can still change selection
+
+Step 6: Test Responsive Design
+────────────────────────────────────────────────────────────
+□ Test on desktop (button visible)
+□ Test on tablet (button visible)
+□ Test on mobile (button visible or adjusted)
+
+Step 7: Test All Navigation Contexts
+────────────────────────────────────────────────────────────
+□ Public navigation (not logged in)
+□ Customer navigation (logged in as customer)
+□ Admin navigation (logged in as admin)
+
+═══════════════════════════════════════════════════════════════
+
+✅ ACCEPTANCE CRITERIA
+
+Button Placement:
+────────────────────────────────────────────────────────────
+□ Button visible in top-right navigation
+□ Button appears in ALL navigation contexts (public, customer, admin)
+□ Button positioned AFTER navigation tabs
+□ Button positioned BEFORE logout button
+□ Button maintains consistent styling across contexts
+
+Button Styling:
+────────────────────────────────────────────────────────────
+□ Red background (#ef4444 or similar)
+□ White text
+□ "Demo Request" text visible
+□ Rounded corners (8px)
+□ Hover effect (darker red)
+□ Stands out as call-to-action
+□ Responsive on mobile
+
+Navigation:
+────────────────────────────────────────────────────────────
+□ Clicking button navigates to /contact
+□ URL includes ?type=demo parameter
+□ Browser URL updates correctly
+□ Back button works
+
+Form Pre-Population:
+────────────────────────────────────────────────────────────
+□ Contact form loads
+□ "How can we help?" dropdown auto-selects "Request a demo"
+□ Other fields remain empty
+□ User can change dropdown selection
+□ Form submission works correctly
+
+Functionality:
+────────────────────────────────────────────────────────────
+□ No console errors
+□ No broken links
+□ Doesn't break existing navigation
+□ Works with React Router
+□ URL is shareable/bookmarkable
+
+Responsive:
+────────────────────────────────────────────────────────────
+□ Button visible on desktop
+□ Button visible on tablet
+□ Button visible on mobile (or adjusted)
+□ Doesn't break navigation layout
+□ Maintains usability on all screen sizes
+
+═══════════════════════════════════════════════════════════════
+
+🎨 DESIGN VARIATIONS
+
+Standard Button (Recommended):
+────────────────────────────────────────────────────────────
+Background: Red (#ef4444)
+Text: "Demo Request"
+Padding: 10px 24px
+Border Radius: 8px
+
+Compact Button (Mobile):
+────────────────────────────────────────────────────────────
+Background: Red (#ef4444)
+Text: "Demo"
+Padding: 8px 16px
+Border Radius: 6px
+
+Icon Button (Alternative):
+────────────────────────────────────────────────────────────
+Icon: 📅 or video camera icon
+Text: "Demo Request"
+Padding: 10px 20px
+
+Outlined Button (Alternative):
+────────────────────────────────────────────────────────────
+Background: Transparent
+Border: 2px solid red
+Text Color: Red
+Hover: Red background, white text
+
+Choose ONE style consistently across all navigation contexts.
+
+═══════════════════════════════════════════════════════════════
+
+⚠️ IMPORTANT NOTES
+
+1. Query Parameter Consistency:
+────────────────────────────────────────────────────────────
+Use SAME query parameter throughout:
+✅ /contact?type=demo
+❌ /contact?inquiry=demo (inconsistent)
+❌ /contact?reason=demo (inconsistent)
+
+2. Dropdown Value Matching:
+────────────────────────────────────────────────────────────
+Ensure dropdown value matches query parameter:
+```tsx
+// If using ?type=demo
+<option value="demo">Request a demo</option>
+          ↑ Must match
+```
+
+3. React Router Compatibility:
+────────────────────────────────────────────────────────────
+Use <Link> component, NOT <a> tag:
+✅ <Link to="/contact?type=demo">Demo Request</Link>
+❌ <a href="/contact?type=demo">Demo Request</a>
+
+4. Navigation Context:
+────────────────────────────────────────────────────────────
+Add button to ALL navigation components:
+□ Public navigation
+□ Customer navigation
+□ Admin navigation
+
+5. Position Before Logout:
+────────────────────────────────────────────────────────────
+Correct order:
+[Nav Links] → [Demo Request] → [Logout]
+
+Not:
+[Nav Links] → [Logout] → [Demo Request] ❌
+
+6. Maintain Existing Functionality:
+────────────────────────────────────────────────────────────
+Don't break:
+□ Existing navigation
+□ Logout functionality
+□ Form submission
+□ Routing
+
+═══════════════════════════════════════════════════════════════
+
+🧪 TESTING SCENARIOS
+
+Test 1: Direct Navigation
+────────────────────────────────────────────────────────────
+1. Open any page
+2. Click "Demo Request" button
+3. ✅ Should navigate to /contact
+4. ✅ URL should show /contact?type=demo
+5. ✅ Dropdown should show "Request a demo"
+
+Test 2: Manual URL Entry
+────────────────────────────────────────────────────────────
+1. Type /contact?type=demo in browser
+2. Press Enter
+3. ✅ Dropdown should show "Request a demo"
+
+Test 3: User Can Change Selection
+────────────────────────────────────────────────────────────
+1. Click "Demo Request" button
+2. Dropdown shows "Request a demo"
+3. User clicks dropdown
+4. User selects "General question"
+5. ✅ Dropdown should change to "General question"
+
+Test 4: Form Submission
+────────────────────────────────────────────────────────────
+1. Click "Demo Request" button
+2. Fill in all form fields
+3. Click Submit
+4. ✅ Form should submit with "demo" type
+
+Test 5: Responsive Mobile
+────────────────────────────────────────────────────────────
+1. Resize browser to 375px width
+2. ✅ Button should be visible
+3. ✅ Button should be clickable
+4. ✅ Navigation should not break
+
+Test 6: All User Contexts
+────────────────────────────────────────────────────────────
+1. Test as logged-out user (public)
+2. Test as logged-in customer
+3. Test as logged-in admin
+4. ✅ Button should work in all contexts
+
+Test 7: Browser Back Button
+────────────────────────────────────────────────────────────
+1. Click "Demo Request" button
+2. Navigate to contact page
+3. Click browser back button
+4. ✅ Should return to previous page
+5. ✅ No errors
+
+═══════════════════════════════════════════════════════════════
+
+🎯 EXPECTED RESULT
+
+After implementation:
+
+Navigation Bar:
+────────────────────────────────────────────────────────────
+[Logo] [Nav Links...] [Demo Request] [Logout]
+                      ↑ Red button, stands out
+
+Contact Page (when accessed via Demo Request button):
+────────────────────────────────────────────────────────────
+How can we help? [Request a demo ▼]
+                  ↑ Pre-selected
+
+User Experience Flow:
+────────────────────────────────────────────────────────────
+1. User sees prominent "Demo Request" button
+2. User clicks button
+3. Navigates to contact form
+4. "Request a demo" already selected
+5. User fills remaining fields
+6. User submits form
+7. Sales team receives demo request
+
+═══════════════════════════════════════════════════════════════
+
+✅ IMPLEMENTATION READY
+
+This specification is complete and ready for Replit Agent.
+
+Key Features:
+────────────────────────────────────────────────────────────
+• Prominent call-to-action button
+• Smart form pre-population
+• Works across all navigation contexts
+• Fully responsive
+• URL-based (shareable/bookmarkable)
+• Production-ready code provided
+
+Deploy and test!
+
+═══════════════════════════════════════════════════════════════
+
+END OF SPECIFICATION

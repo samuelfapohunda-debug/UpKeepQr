@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Link } from "wouter";
+import { Link, useSearch } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -24,6 +24,7 @@ type ContactFormData = z.infer<typeof contactSchema>;
 export default function Contact() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+  const searchString = useSearch();
 
   const form = useForm<ContactFormData>({
     resolver: zodResolver(contactSchema),
@@ -35,6 +36,14 @@ export default function Contact() {
       message: "",
     },
   });
+
+  useEffect(() => {
+    const params = new URLSearchParams(searchString);
+    const type = params.get('type');
+    if (type === 'demo') {
+      form.setValue('helpType', 'demo', { shouldValidate: false });
+    }
+  }, [searchString, form]);
 
   const onSubmit = async (data: ContactFormData) => {
     setIsSubmitting(true);
