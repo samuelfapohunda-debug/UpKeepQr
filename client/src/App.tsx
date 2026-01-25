@@ -7,6 +7,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
+import ScrollToTop from "@/components/ScrollToTop";
 import Home from "@/pages/Home";
 import Pricing from "@/pages/Pricing";
 import Contact from "@/pages/Contact";
@@ -37,6 +38,7 @@ import HomeownerDashboard from "@/features/homeowner/Dashboard";
 function Router() {
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
+      <ScrollToTop />
       <Navigation />
       <div className="pt-20 flex-1">
       <Switch>
