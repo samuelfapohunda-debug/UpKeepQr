@@ -1,0 +1,555 @@
+UPKEEPQR PRIVACY POLICY
+
+Last Updated: January 25, 2026
+
+1. INTRODUCTION
+
+This Privacy Policy ("Policy") describes how UpKeepQR, LLC ("UpKeepQR", "we", "us", "our") collects, uses, and discloses your personal information in the course of our business operations.
+
+"Personal Data" means any data relating to an identified or identifiable natural person that is processed by UpKeepQR as described in this Policy when such information is protected as "personal data" or "personal information" under applicable data protection laws.
+
+"Services" means all of UpKeepQR's websites, applications (including mobile and web applications), QR code-based home maintenance management tools, platforms, and services offered by UpKeepQR.
+
+"Website" means the UpKeepQR.com website or any other proprietary website owned by UpKeepQR or that UpKeepQR has the authority to manage and control and which link to this Policy.
+
+2. APPLICABILITY
+
+This Privacy Policy applies to Personal Data for which UpKeepQR acts as a controller, such as when you:
+- Visit our Website
+- Create a homeowner account
+- Purchase QR code magnets
+- Use our home maintenance management services
+- Subscribe to SMS reminders
+- Contact us for support
+
+When our customers (homeowners) use our Services to manage their home maintenance data, UpKeepQR acts as a controller of that data and processes it in accordance with this Policy and our Terms of Service.
+
+3. INFORMATION WE COLLECT
+
+3.1 Account Information
+
+When you create an account with UpKeepQR, we collect:
+- Full name
+- Email address
+- Phone number (for SMS reminders)
+- Username and password
+- Home address (for household setup)
+- City, state, and ZIP code
+
+3.2 Payment Information
+
+If you purchase QR code magnets or subscribe to premium services, our third-party payment processor (Stripe) collects and stores:
+- Billing address
+- Credit card information (we only store the last four digits, card type, and expiration date)
+- Payment transaction details
+
+3.3 Home Maintenance Data
+
+When you use our Services, we collect and store:
+- Household information (address, property details)
+- Appliance information (make, model, purchase date, warranty information)
+- Maintenance task records (completion dates, notes, photos)
+- Service provider information (if you connect professionals)
+- Maintenance schedules and reminders
+- QR code activation and usage data
+
+3.4 Marketing and Communications
+
+If you sign up for our newsletter or marketing communications:
+- Name
+- Email address
+- Communication preferences
+- Engagement metrics (email opens, clicks)
+
+3.5 Automatically Collected Information
+
+When you access our Website or Services, we automatically collect:
+- IP address
+- Browser type and version
+- Device type and operating system
+- Pages visited and features used
+- Time and date of access
+- Referring website
+- Approximate location (based on IP address)
+- Mobile network carrier (for mobile app users)
+
+3.6 Cookies and Tracking Technologies
+
+We use cookies, pixels, web beacons, and similar technologies to:
+- Keep you logged into your account
+- Remember your preferences
+- Analyze usage patterns
+- Improve our Services
+- Detect and prevent fraud
+
+You can manage your cookie preferences through your browser settings or our cookie management banner.
+
+3.7 SMS and Communication Data
+
+If you opt in to SMS reminders:
+- Phone number
+- SMS delivery status
+- Message engagement (delivered, opened)
+- Opt-in/opt-out preferences
+
+3.8 Usage Analytics
+
+We collect information about how you use our Services:
+- Features most frequently used
+- Maintenance tasks completed
+- QR code scans
+- Time spent on platform
+- App interactions
+- Error reports and crash data
+
+4. HOW WE USE YOUR INFORMATION
+
+We use your Personal Data for the following purposes:
+
+4.1 Service Delivery
+- Create and manage your account
+- Provide home maintenance management services
+- Generate and deliver QR code magnets
+- Send maintenance reminders and alerts
+- Process payments and manage subscriptions
+- Provide customer support
+- Authenticate your identity
+- Prevent fraud and ensure security
+
+4.2 Communications
+- Send service-related notifications (account updates, security alerts)
+- Deliver maintenance reminders via email or SMS
+- Send important safety alerts (smoke alarm tests, seasonal maintenance)
+- Respond to your inquiries and support requests
+- Send transactional emails (purchase confirmations, shipping updates)
+
+4.3 Marketing (with your consent)
+- Send newsletters and product updates
+- Notify you of new features or services
+- Share home maintenance tips and seasonal advice
+- Provide special offers and promotions
+
+You can opt out of marketing communications at any time by clicking the unsubscribe link in emails or by contacting us.
+
+4.4 Service Improvement
+- Analyze usage patterns to improve our Services
+- Develop new features and functionality
+- Conduct research and analytics
+- Monitor and improve system performance
+- Fix bugs and technical issues
+
+4.5 Legal and Safety
+- Comply with legal obligations and regulations
+- Enforce our Terms of Service
+- Protect our rights and property
+- Investigate and prevent fraud or security issues
+- Respond to law enforcement requests
+- Resolve disputes
+
+5. HOW WE SHARE YOUR INFORMATION
+
+We may share your Personal Data in the following circumstances:
+
+5.1 Service Providers
+
+We share information with trusted third-party service providers who assist us with:
+- Payment processing (Stripe)
+- SMS delivery (Twilio)
+- Email services
+- Cloud hosting and storage
+- Analytics and monitoring
+- Customer support tools
+- Security and fraud prevention
+- Marketing and advertising
+
+These providers are contractually obligated to protect your data and use it only for the services they provide to us.
+
+5.2 Business Transfers
+
+In the event of a merger, acquisition, reorganization, or sale of assets, your Personal Data may be transferred to the acquiring entity. We will notify you of any such change and the choices you may have regarding your data.
+
+5.3 Legal Requirements
+
+We may disclose your information when required by law or to:
+- Comply with legal obligations, subpoenas, or court orders
+- Enforce our Terms of Service
+- Protect the rights, property, or safety of UpKeepQR, our customers, or others
+- Investigate fraud, security issues, or violations of our policies
+- Respond to government or law enforcement requests
+
+5.4 With Your Consent
+
+We may share your information with third parties when you explicitly consent to such sharing.
+
+6. DATA SECURITY
+
+We take the security of your Personal Data seriously and implement industry-standard measures to protect it:
+
+- Encryption of data in transit (SSL/TLS)
+- Encryption of sensitive data at rest
+- Secure authentication mechanisms
+- Regular security audits and monitoring
+- Access controls and authentication
+- Employee training on data protection
+- Incident response procedures
+
+However, no system is 100% secure. We encourage you to:
+- Use a strong, unique password
+- Enable two-factor authentication when available
+- Keep your login credentials confidential
+- Log out after using shared devices
+- Report any suspicious activity immediately
+
+7. DATA RETENTION
+
+We retain your Personal Data for as long as:
+- Your account is active
+- Necessary to provide our Services
+- Required to comply with legal obligations
+- Needed to resolve disputes or enforce our agreements
+
+When you delete your account, we will delete or anonymize your Personal Data within 90 days, except where we must retain it for legal or regulatory purposes.
+
+Specifically:
+- Account data: Retained while account is active
+- Maintenance records: Retained for 7 years (typical home maintenance cycle)
+- Payment records: Retained for 7 years (tax and legal requirements)
+- Marketing data: Retained until you opt out, then deleted within 30 days
+- Support tickets: Retained for 3 years
+
+8. YOUR RIGHTS AND CHOICES
+
+Depending on your location, you may have the following rights:
+
+8.1 Access and Portability
+- Request a copy of your Personal Data
+- Download your maintenance records and data
+- Receive your data in a portable format
+
+8.2 Correction
+- Update your account information
+- Correct inaccurate Personal Data
+- Complete incomplete data
+
+8.3 Deletion
+- Request deletion of your account
+- Request deletion of specific Personal Data
+- Right to be forgotten (where applicable)
+
+8.4 Opt-Out Rights
+- Unsubscribe from marketing emails
+- Opt out of SMS reminders
+- Disable cookies through browser settings
+- Opt out of targeted advertising
+
+8.5 Restriction and Objection
+- Request restriction of processing
+- Object to certain types of processing
+- Withdraw consent at any time
+
+8.6 How to Exercise Your Rights
+
+To exercise any of these rights:
+- Email us at: support@upkeepqr.com
+- Log into your account and update your settings
+- Use the unsubscribe link in emails
+- Contact us via our website contact form
+
+We will respond to your request within 30 days.
+
+9. CHILDREN'S PRIVACY
+
+UpKeepQR's Services are not directed to children under 18 years of age. We do not knowingly collect Personal Data from children under 18. If we discover that we have collected Personal Data from a child under 18, we will promptly delete such information from our systems.
+
+If you are a parent or guardian and believe your child has provided us with Personal Data, please contact us at support@upkeepqr.com.
+
+10. INTERNATIONAL DATA TRANSFERS
+
+UpKeepQR is based in the United States. If you access our Services from outside the United States, your Personal Data may be transferred to, processed, and stored in the United States or other countries where we or our service providers operate.
+
+These countries may have data protection laws that differ from those in your country. By using our Services, you consent to the transfer of your Personal Data to the United States and other countries.
+
+For users in the European Economic Area (EEA), United Kingdom, or Switzerland, we rely on:
+- Standard Contractual Clauses approved by the European Commission
+- EU-U.S. Data Privacy Framework (where applicable)
+- Other appropriate safeguards as required by law
+
+11. STATE-SPECIFIC PRIVACY RIGHTS
+
+11.1 California Residents (CCPA/CPRA)
+
+If you are a California resident, you have additional rights under the California Consumer Privacy Act (CCPA) and California Privacy Rights Act (CPRA):
+
+Categories of Personal Data Collected:
+- Identifiers (name, email, phone, address)
+- Personal information (payment details, household info)
+- Commercial information (purchase history, subscriptions)
+- Internet activity (usage data, browsing behavior)
+- Geolocation data (approximate location)
+- Professional information (if applicable)
+- Inferences (maintenance preferences, usage patterns)
+
+Your Rights:
+- Right to know what Personal Data we collect
+- Right to access your Personal Data
+- Right to delete your Personal Data
+- Right to correct inaccurate Personal Data
+- Right to opt out of "sale" or "sharing" of Personal Data
+- Right to limit use of sensitive Personal Data
+- Right to non-discrimination
+
+We do not sell your Personal Data for monetary consideration. However, our use of certain cookies and tracking technologies for targeted advertising may constitute a "sale" or "share" under California law.
+
+To opt out of "sales" or "sharing":
+- Click "Your Privacy Choices" in the website footer
+- Use the Global Privacy Control (GPC) signal
+- Contact us at support@upkeepqr.com
+
+To exercise your CCPA rights, email support@upkeepqr.com or visit our Privacy Center.
+
+11.2 Virginia, Colorado, Connecticut, Utah Residents
+
+If you are a resident of Virginia, Colorado, Connecticut, or Utah, you have rights similar to those described above for California residents, subject to certain exemptions under your state's privacy law.
+
+12. COOKIES AND TRACKING TECHNOLOGIES
+
+12.1 Types of Cookies We Use
+
+Essential Cookies:
+- Authentication and account access
+- Security and fraud prevention
+- Core functionality
+
+Performance Cookies:
+- Usage analytics
+- Error tracking
+- Performance monitoring
+
+Functional Cookies:
+- Preference storage
+- Language settings
+- User interface customization
+
+Targeting Cookies:
+- Advertising and marketing
+- Retargeting campaigns
+- Social media integration
+
+12.2 Managing Cookies
+
+You can control cookies through:
+- Our cookie banner (first visit)
+- "Cookie Settings" link in the website footer
+- Your account settings
+- Browser settings (block, delete, or receive alerts)
+
+Note: Disabling essential cookies may affect your ability to use certain features.
+
+12.3 Third-Party Cookies
+
+We use third-party cookies for:
+- Google Analytics (usage analytics)
+- Stripe (payment processing)
+- Twilio (SMS delivery)
+- Social media platforms (sharing and integration)
+
+Each third party has its own privacy policy and cookie practices.
+
+13. DO NOT TRACK SIGNALS
+
+Some browsers transmit "Do Not Track" (DNT) signals. We currently do not respond to DNT signals, but we honor opt-out preferences set through our cookie banner and the Global Privacy Control (GPC) signal where required by law.
+
+14. THIRD-PARTY LINKS
+
+Our Website may contain links to third-party websites, including:
+- Home improvement retailers
+- Service provider marketplaces
+- Social media platforms
+- Product manufacturers
+
+We are not responsible for the privacy practices of these third-party sites. We encourage you to read their privacy policies before providing any information.
+
+15. SMS AND TEXT MESSAGING
+
+If you opt in to receive SMS reminders:
+
+What We Send:
+- Maintenance task reminders
+- Safety alerts (smoke alarm tests, filter changes)
+- Seasonal maintenance tips
+- Service confirmations
+
+Your Choices:
+- Opt in by providing your phone number and consent
+- Opt out at any time by replying "STOP"
+- Get help by replying "HELP"
+- Update preferences in your account settings
+
+Message Frequency:
+- Varies based on your maintenance schedule
+- Typically 1-4 messages per week
+
+Standard message and data rates may apply. Message frequency depends on your preferences and maintenance schedule.
+
+By opting in, you consent to receive automated text messages at the phone number provided. Consent is not a condition of purchase.
+
+Carrier Support:
+- Compatible with major U.S. carriers
+- Contact your carrier with any issues
+
+16. EMAIL COMMUNICATIONS
+
+We send the following types of emails:
+
+Transactional Emails (cannot opt out):
+- Account creation and verification
+- Password resets
+- Purchase confirmations
+- Shipping notifications
+- Security alerts
+- Important service updates
+
+Marketing Emails (can opt out):
+- Newsletter and tips
+- New feature announcements
+- Special offers and promotions
+- Home maintenance advice
+
+To unsubscribe from marketing emails:
+- Click "Unsubscribe" in any marketing email
+- Update preferences in your account settings
+- Email support@upkeepqr.com
+
+17. CHANGES TO THIS PRIVACY POLICY
+
+We may update this Privacy Policy from time to time to reflect:
+- Changes in our practices
+- New features or services
+- Legal or regulatory requirements
+- Industry best practices
+
+When we make material changes:
+- We will post the updated Policy on this page
+- We will update the "Last Updated" date
+- We may notify you via email or website notification
+- We will provide notice as required by applicable law
+
+We encourage you to review this Policy periodically to stay informed about how we protect your information.
+
+18. CONTACT US
+
+If you have questions or concerns about this Privacy Policy or our data practices, please contact us:
+
+UpKeepQR Privacy Team
+Email: support@upkeepqr.com
+Address: 
+UpKeepQR, LLC
+Attn: Privacy Department
+[Your Business Address]
+Stockbridge, GA 30281
+United States
+
+For data protection inquiries:
+Email: support@upkeepqr.com
+
+For European Economic Area (EEA) residents:
+EU Representative: support@upkeepqr.com
+
+For United Kingdom (UK) residents:
+UK Representative: support@upkeepqr.com
+
+For general inquiries:
+Support: support@upkeepqr.com
+Website: https://upkeepqr.com/contact
+
+We aim to respond to all privacy inquiries within 30 days.
+
+19. SPECIFIC USE CASES
+
+19.1 QR Code Magnet Users
+
+When you purchase and use a QR code magnet:
+- We link the QR code to your household account
+- We track QR code scans (date, time, location)
+- We use scan data to verify product activation
+- We may use aggregate scan data for analytics
+- Individual scan data is only visible to you
+
+19.2 Magic Link Authentication
+
+When you use magic link login:
+- We send a one-time link to your email
+- The link expires after 15 minutes or one use
+- We log the authentication event for security
+- We do not share magic link data with third parties
+
+19.3 Maintenance Task Photos
+
+When you upload photos to document maintenance:
+- Photos are stored securely in our cloud infrastructure
+- Photos are linked to your account and household
+- We do not use photos for any purpose other than displaying them to you
+- You can delete photos at any time
+- Photos are deleted when you delete your account
+
+20. LEGAL BASIS FOR PROCESSING (EEA/UK RESIDENTS)
+
+For users in the European Economic Area and United Kingdom, we process your Personal Data based on the following legal grounds:
+
+Contract Performance:
+- Account creation and management
+- Service delivery
+- Payment processing
+
+Legitimate Interests:
+- Service improvement and analytics
+- Fraud prevention and security
+- Customer support
+- Marketing to existing customers
+
+Consent:
+- Marketing communications to non-customers
+- SMS reminders and alerts
+- Optional cookies and tracking
+- Special categories of data (if applicable)
+
+Legal Obligation:
+- Tax and accounting requirements
+- Regulatory compliance
+- Law enforcement requests
+
+You have the right to object to processing based on legitimate interests and to withdraw consent at any time.
+
+21. DATA PROTECTION OFFICER
+
+For privacy-related inquiries, our Data Protection Officer can be reached at:
+
+Email: support@upkeepqr.com
+Address: UpKeepQR, LLC, Attn: Data Protection Officer, Stockbridge, GA 30281
+
+22. SUPERVISORY AUTHORITY
+
+If you are located in the EEA or UK, you have the right to lodge a complaint with your local data protection supervisory authority if you believe we have violated your privacy rights.
+
+23. AUTOMATED DECISION-MAKING
+
+We do not use automated decision-making or profiling that produces legal or similarly significant effects. Any automated processing we perform is for:
+- Service personalization (maintenance recommendations)
+- Fraud detection and security
+- Analytics and service improvement
+
+You have the right to object to automated processing and request human review of any automated decisions.
+
+24. ACCESSIBILITY
+
+We are committed to making this Privacy Policy accessible to all users. If you need this Policy in an alternative format or have trouble accessing it, please contact us at support@upkeepqr.com.
+
+---
+
+© 2026 UpKeepQR, LLC. All rights reserved.
+
+This Privacy Policy is effective as of January 25, 2026.
+
+Last reviewed: January 25, 2026
+Version: 2.0
+
