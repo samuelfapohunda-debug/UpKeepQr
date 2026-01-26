@@ -1,0 +1,1181 @@
+╔══════════════════════════════════════════════════════════════╗
+║  🤖 REPLIT AGENT SPEC: Contact Form Styling Uniformity      ║
+║  Match "Request a Professional Service" Design Standards     ║
+╚══════════════════════════════════════════════════════════════╝
+
+TASK: Update Contact Us form styling to match Request a Pro form
+PRIORITY: High
+TIME ESTIMATE: 30-45 minutes
+PURPOSE: Form uniformity and consistent user experience
+
+═══════════════════════════════════════════════════════════════
+
+🎯 OBJECTIVE
+
+Update the Contact Us form (/contact) to match the exact styling of the "Request a Professional Service" form (/request-pro) for visual consistency across the platform.
+
+Key Changes:
+────────────────────────────────────────────────────────────
+1. Remove in-field placeholder text (label text inside inputs)
+2. Add above-field labels (external labels above each input)
+3. Change input backgrounds to white
+4. Add light grayish background to overall form container
+5. Match border styles, spacing, and typography
+6. Maintain two-column layout (form + statistics)
+
+═══════════════════════════════════════════════════════════════
+
+📐 REFERENCE: Request a Pro Form Styling
+
+Current "Request a Pro" Form Style (Target Design):
+────────────────────────────────────────────────────────────
+
+Overall Container:
+• Background: Light gray (#f7f9fc or #f3f4f6)
+• Padding: 40px
+• Border radius: 8px
+• Max width: Centered, responsive
+
+Form Fields:
+• Labels: ABOVE the input field (not inside)
+• Label text: Dark gray or black (#1f2937 or #374151)
+• Label font size: 14px
+• Label font weight: 500-600 (medium to semibold)
+• Label spacing: 8px margin-bottom
+
+Input Fields:
+• Background: WHITE (#ffffff)
+• Border: 1px solid #d1d5db (light gray)
+• Border radius: 6px
+• Padding: 12px 16px
+• Font size: 16px
+• Text color: #1f2937 (dark)
+• Placeholder: NONE (or very subtle if needed)
+• Focus state: Blue border (#3b82f6)
+
+Example Structure:
+┌─────────────────────────────────────┐
+│  Full Name                          │  ← Label (above field)
+│  ┌───────────────────────────────┐  │
+│  │                               │  │  ← White input field
+│  └───────────────────────────────┘  │
+│                                     │
+│  Email Address                      │  ← Label (above field)
+│  ┌───────────────────────────────┐  │
+│  │                               │  │  ← White input field
+│  └───────────────────────────────┘  │
+└─────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════
+
+📝 CURRENT CONTACT FORM (Before Changes)
+
+Current Style Issues to Fix:
+────────────────────────────────────────────────────────────
+❌ In-field placeholder text ("First Name", "Last Name", etc.)
+❌ Input backgrounds may be transparent or light
+❌ Form container background may be white
+❌ Labels are inside the input fields (placeholders)
+❌ Inconsistent with Request a Pro form
+
+Current Structure (Two-Column):
+────────────────────────────────────────────────────────────
+Left Column: Contact Form
+  - Title: "Let's Chat"
+  - Subtitle: "An UpKeepQR expert will reach out..."
+  - Fields:
+    • First Name (placeholder inside)
+    • Last Name (placeholder inside)
+    • Work Email (placeholder inside)
+    • Dropdown: "How can we help?"
+    • Message: "Comment is required" (placeholder inside)
+  - Submit button
+  - Consent footer
+
+Right Column: Statistics
+  - Headline: "Built for Homeowners..."
+  - Three statistics with numbers
+
+═══════════════════════════════════════════════════════════════
+
+🎨 NEW CONTACT FORM STYLING (Target Design)
+
+Overall Layout (Maintain Two-Column):
+────────────────────────────────────────────────────────────
+Container: Two-column grid (50% / 50% on desktop)
+Left Column: Form with new styling
+Right Column: Statistics (NO CHANGES)
+
+Form Container Styling:
+────────────────────────────────────────────────────────────
+Background: Light gray (#f7f9fc or #f3f4f6)
+Padding: 40px (desktop), 24px (mobile)
+Border radius: 8px or 12px
+Shadow: Optional subtle shadow
+
+Form Card/Section:
+────────────────────────────────────────────────────────────
+Background: Light gray (same as container)
+OR slightly lighter: #fafbfc
+Display: Flex column
+Gap: 20px between fields
+
+Field Labels (NEW - Add Above Inputs):
+────────────────────────────────────────────────────────────
+Position: ABOVE each input field
+Text: "First Name", "Last Name", "Work Email", etc.
+Font size: 14px
+Font weight: 600 (semibold)
+Color: #374151 or #1f2937 (dark gray/black)
+Margin bottom: 8px
+Display: block
+
+Input Fields (Updated):
+────────────────────────────────────────────────────────────
+Background: WHITE (#ffffff)
+Border: 1px solid #d1d5db
+Border radius: 6px
+Padding: 12px 16px
+Font size: 16px
+Color: #1f2937
+Placeholder: REMOVE or make very subtle (#9ca3af, minimal text)
+Width: 100%
+Focus border: 2px solid #3b82f6
+Transition: border 0.2s ease
+
+Dropdown (Select):
+────────────────────────────────────────────────────────────
+Label above: "How can we help?" (14px, semibold)
+Background: WHITE (#ffffff)
+Border: 1px solid #d1d5db
+Border radius: 6px
+Padding: 12px 16px
+Font size: 16px
+First option: Empty or "Select an option"
+No in-field placeholder text
+
+Textarea (Message):
+────────────────────────────────────────────────────────────
+Label above: "Message" or "Comment" (14px, semibold)
+Background: WHITE (#ffffff)
+Border: 1px solid #d1d5db
+Border radius: 6px
+Padding: 12px 16px
+Font size: 16px
+Rows: 5
+Placeholder: REMOVE or make very subtle
+Resize: vertical (allow user to resize)
+
+Submit Button:
+────────────────────────────────────────────────────────────
+Background: Blue (#3b82f6)
+Color: White
+Padding: 12px 24px
+Border radius: 6px
+Font size: 16px
+Font weight: 600
+Width: 100%
+Hover: Darker blue (#2563eb)
+Transition: all 0.2s ease
+
+Consent Footer (Keep As-Is):
+────────────────────────────────────────────────────────────
+Font size: 12px
+Color: #6b7280
+Margin top: 16px
+Links: Blue (#3b82f6)
+
+═══════════════════════════════════════════════════════════════
+
+💻 DETAILED IMPLEMENTATION
+
+Step 1: Update Form Container Background
+────────────────────────────────────────────────────────────
+
+Current (likely):
+```tsx
+<div className="contact-form-column">
+  <div className="form-card bg-white">
+    {/* Form fields */}
+  </div>
+</div>
+```
+
+Change to:
+```tsx
+<div className="contact-form-column">
+  <div className="form-card bg-gray-50 p-10 rounded-lg">
+    {/* Form fields */}
+  </div>
+</div>
+```
+
+Tailwind Classes:
+• bg-gray-50 (light gray background: #f9fafb)
+• OR bg-gray-100 (slightly darker: #f3f4f6)
+• p-10 (padding: 40px all sides)
+• rounded-lg (border radius: 8px)
+
+Step 2: Add External Labels (Above Fields)
+────────────────────────────────────────────────────────────
+
+Current (placeholder inside):
+```tsx
+<input
+  type="text"
+  name="firstName"
+  placeholder="First Name"
+  className="form-input"
+/>
+```
+
+Change to (label above, no placeholder):
+```tsx
+<div className="form-field">
+  <label htmlFor="firstName" className="form-label">
+    First Name *
+  </label>
+  <input
+    id="firstName"
+    type="text"
+    name="firstName"
+    placeholder=""
+    className="form-input"
+  />
+</div>
+```
+
+Label Styling:
+```css
+.form-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 8px;
+}
+```
+
+Or Tailwind:
+```tsx
+<label className="block text-sm font-semibold text-gray-700 mb-2">
+  First Name *
+</label>
+```
+
+Step 3: Update Input Field Styling (White Background)
+────────────────────────────────────────────────────────────
+
+Current (may have gray or transparent background):
+```css
+.form-input {
+  background: #f9fafb; /* or transparent */
+  border: 1px solid #e5e7eb;
+}
+```
+
+Change to (white background):
+```css
+.form-input {
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 12px 16px;
+  font-size: 16px;
+  color: #1f2937;
+  width: 100%;
+  transition: border-color 0.2s ease;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  border-width: 2px;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+```
+
+Or Tailwind:
+```tsx
+<input
+  className="w-full bg-white border border-gray-300 rounded-md px-4 py-3 text-base text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+/>
+```
+
+Step 4: Remove Placeholder Text
+────────────────────────────────────────────────────────────
+
+Current:
+```tsx
+<input placeholder="First Name" />
+<input placeholder="Last Name" />
+<input placeholder="your.email@company.com" />
+<textarea placeholder="Comment is required" />
+```
+
+Change to (empty or minimal):
+```tsx
+<input placeholder="" />
+<input placeholder="" />
+<input placeholder="" />
+<textarea placeholder="" />
+```
+
+Optional subtle placeholder (if needed):
+```tsx
+<input placeholder="Enter your first name" />
+```
+
+With subtle styling:
+```css
+.form-input::placeholder {
+  color: #9ca3af;
+  font-size: 14px;
+}
+```
+
+Step 5: Update All Form Fields
+────────────────────────────────────────────────────────────
+
+Complete structure for each field:
+
+First Name:
+```tsx
+<div className="mb-5">
+  <label htmlFor="firstName" className="block text-sm font-semibold text-gray-700 mb-2">
+    First Name *
+  </label>
+  <input
+    id="firstName"
+    type="text"
+    name="firstName"
+    value={formData.firstName}
+    onChange={handleChange}
+    required
+    className="w-full bg-white border border-gray-300 rounded-md px-4 py-3 text-base text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+  />
+</div>
+```
+
+Last Name:
+```tsx
+<div className="mb-5">
+  <label htmlFor="lastName" className="block text-sm font-semibold text-gray-700 mb-2">
+    Last Name *
+  </label>
+  <input
+    id="lastName"
+    type="text"
+    name="lastName"
+    value={formData.lastName}
+    onChange={handleChange}
+    required
+    className="w-full bg-white border border-gray-300 rounded-md px-4 py-3 text-base text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+  />
+</div>
+```
+
+Work Email:
+```tsx
+<div className="mb-5">
+  <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-2">
+    Work Email *
+  </label>
+  <input
+    id="email"
+    type="email"
+    name="email"
+    value={formData.email}
+    onChange={handleChange}
+    required
+    className="w-full bg-white border border-gray-300 rounded-md px-4 py-3 text-base text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+  />
+</div>
+```
+
+Dropdown:
+```tsx
+<div className="mb-5">
+  <label htmlFor="usage" className="block text-sm font-semibold text-gray-700 mb-2">
+    How can we help? *
+  </label>
+  <select
+    id="usage"
+    name="usage"
+    value={formData.usage}
+    onChange={handleChange}
+    required
+    className="w-full bg-white border border-gray-300 rounded-md px-4 py-3 text-base text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+  >
+    <option value="">Select an option</option>
+    <option value="general">General question</option>
+    <option value="demo">Request a demo</option>
+    <option value="partner">Partner Opportunity</option>
+    <option value="career">Career Opportunity</option>
+  </select>
+</div>
+```
+
+Message:
+```tsx
+<div className="mb-5">
+  <label htmlFor="message" className="block text-sm font-semibold text-gray-700 mb-2">
+    Message *
+  </label>
+  <textarea
+    id="message"
+    name="message"
+    value={formData.message}
+    onChange={handleChange}
+    required
+    rows={5}
+    className="w-full bg-white border border-gray-300 rounded-md px-4 py-3 text-base text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-y"
+  />
+</div>
+```
+
+Step 6: Update Submit Button
+────────────────────────────────────────────────────────────
+
+```tsx
+<button
+  type="submit"
+  className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 px-6 rounded-md transition-colors duration-200"
+>
+  Submit
+</button>
+```
+
+Step 7: Keep Consent Footer As-Is
+────────────────────────────────────────────────────────────
+
+```tsx
+<p className="text-xs text-gray-500 mt-4 leading-relaxed">
+  By clicking submit you consent to receive email communications about UpKeepQR products 
+  and services and agree to our{' '}
+  <Link to="/privacy" className="text-blue-500 hover:underline">
+    Privacy Policy
+  </Link>
+  . Your data will be processed in accordance with our{' '}
+  <Link to="/terms" className="text-blue-500 hover:underline">
+    Terms of Service
+  </Link>
+  . You may opt out at any time.
+</p>
+```
+
+═══════════════════════════════════════════════════════════════
+
+🎨 COMPLETE CODE EXAMPLE
+
+Full Contact Form Component with New Styling:
+────────────────────────────────────────────────────────────
+
+```tsx
+import { useState } from 'react';
+import { Link } from 'wouter';
+
+export default function Contact() {
+  const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    usage: '',
+    message: ''
+  });
+
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    // Form submission logic
+    console.log('Form submitted:', formData);
+  };
+
+  return (
+    <div className="contact-page min-h-screen bg-white">
+      <div className="max-w-7xl mx-auto px-4 py-12">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+          
+          {/* LEFT COLUMN - CONTACT FORM */}
+          <div className="contact-form-column">
+            {/* FORM CONTAINER - LIGHT GRAY BACKGROUND */}
+            <div className="bg-gray-50 p-10 rounded-lg">
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                Let's Chat
+              </h1>
+              <p className="text-gray-600 mb-8">
+                An UpKeepQR expert will reach out to discuss your needs.
+              </p>
+
+              <form onSubmit={handleSubmit} className="space-y-5">
+                {/* FIRST NAME - LABEL ABOVE, WHITE INPUT */}
+                <div>
+                  <label 
+                    htmlFor="firstName" 
+                    className="block text-sm font-semibold text-gray-700 mb-2"
+                  >
+                    First Name *
+                  </label>
+                  <input
+                    id="firstName"
+                    type="text"
+                    name="firstName"
+                    value={formData.firstName}
+                    onChange={handleChange}
+                    required
+                    className="w-full bg-white border border-gray-300 rounded-md px-4 py-3 text-base text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                    placeholder=""
+                  />
+                </div>
+
+                {/* LAST NAME - LABEL ABOVE, WHITE INPUT */}
+                <div>
+                  <label 
+                    htmlFor="lastName" 
+                    className="block text-sm font-semibold text-gray-700 mb-2"
+                  >
+                    Last Name *
+                  </label>
+                  <input
+                    id="lastName"
+                    type="text"
+                    name="lastName"
+                    value={formData.lastName}
+                    onChange={handleChange}
+                    required
+                    className="w-full bg-white border border-gray-300 rounded-md px-4 py-3 text-base text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                    placeholder=""
+                  />
+                </div>
+
+                {/* WORK EMAIL - LABEL ABOVE, WHITE INPUT */}
+                <div>
+                  <label 
+                    htmlFor="email" 
+                    className="block text-sm font-semibold text-gray-700 mb-2"
+                  >
+                    Work Email *
+                  </label>
+                  <input
+                    id="email"
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    required
+                    className="w-full bg-white border border-gray-300 rounded-md px-4 py-3 text-base text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                    placeholder=""
+                  />
+                </div>
+
+                {/* DROPDOWN - LABEL ABOVE, WHITE SELECT */}
+                <div>
+                  <label 
+                    htmlFor="usage" 
+                    className="block text-sm font-semibold text-gray-700 mb-2"
+                  >
+                    How can we help? *
+                  </label>
+                  <select
+                    id="usage"
+                    name="usage"
+                    value={formData.usage}
+                    onChange={handleChange}
+                    required
+                    className="w-full bg-white border border-gray-300 rounded-md px-4 py-3 text-base text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                  >
+                    <option value="">Select an option</option>
+                    <option value="general">General question</option>
+                    <option value="demo">Request a demo</option>
+                    <option value="partner">Partner Opportunity</option>
+                    <option value="career">Career Opportunity</option>
+                  </select>
+                </div>
+
+                {/* MESSAGE - LABEL ABOVE, WHITE TEXTAREA */}
+                <div>
+                  <label 
+                    htmlFor="message" 
+                    className="block text-sm font-semibold text-gray-700 mb-2"
+                  >
+                    Message *
+                  </label>
+                  <textarea
+                    id="message"
+                    name="message"
+                    value={formData.message}
+                    onChange={handleChange}
+                    required
+                    rows={5}
+                    className="w-full bg-white border border-gray-300 rounded-md px-4 py-3 text-base text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-y transition"
+                    placeholder=""
+                  />
+                </div>
+
+                {/* SUBMIT BUTTON */}
+                <button
+                  type="submit"
+                  className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 px-6 rounded-md transition-colors duration-200"
+                >
+                  Submit
+                </button>
+
+                {/* CONSENT FOOTER */}
+                <p className="text-xs text-gray-500 mt-4 leading-relaxed">
+                  By clicking submit you consent to receive email communications about UpKeepQR 
+                  products and services and agree to our{' '}
+                  <Link href="/privacy" className="text-blue-500 hover:underline">
+                    Privacy Policy
+                  </Link>
+                  . Your data will be processed in accordance with our{' '}
+                  <Link href="/terms" className="text-blue-500 hover:underline">
+                    Terms of Service
+                  </Link>
+                  . You may opt out at any time.
+                </p>
+              </form>
+            </div>
+          </div>
+
+          {/* RIGHT COLUMN - STATISTICS (NO CHANGES) */}
+          <div className="stats-column">
+            <div className="stats-content">
+              <h2 className="text-3xl font-bold text-gray-900 mb-4">
+                Built for Homeowners — Powerful Enough for Professionals
+              </h2>
+              <p className="text-lg text-gray-600 mb-8">
+                Whether you're protecting your own home or managing properties for clients, 
+                UpKeepQR scales with your needs.
+              </p>
+
+              <div className="space-y-6">
+                <div>
+                  <div className="text-5xl font-bold text-blue-600 mb-2">
+                    5000+
+                  </div>
+                  <p className="text-lg text-gray-700">
+                    Homeowner subscriptions in North America
+                  </p>
+                </div>
+
+                <div>
+                  <div className="text-5xl font-bold text-blue-600 mb-2">
+                    100+
+                  </div>
+                  <p className="text-lg text-gray-700">
+                    Realtor subscriptions in North America
+                  </p>
+                </div>
+
+                <div>
+                  <div className="text-5xl font-bold text-blue-600 mb-2">
+                    20+
+                  </div>
+                  <p className="text-lg text-gray-700">
+                    Apartment Complex subscriptions in North America
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  );
+}
+```
+
+═══════════════════════════════════════════════════════════════
+
+🎨 CSS ALTERNATIVE (If Not Using Tailwind)
+
+If using regular CSS instead of Tailwind:
+────────────────────────────────────────────────────────────
+
+```css
+/* Form Container */
+.contact-form-column {
+  padding: 20px;
+}
+
+.contact-form-card {
+  background: #f9fafb; /* Light gray */
+  padding: 40px;
+  border-radius: 12px;
+}
+
+/* Form Title */
+.form-title {
+  font-size: 32px;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 8px;
+}
+
+.form-subtitle {
+  font-size: 16px;
+  color: #6b7280;
+  margin-bottom: 32px;
+}
+
+/* Form Field Container */
+.form-field {
+  margin-bottom: 20px;
+}
+
+/* Labels (Above Fields) */
+.form-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 8px;
+}
+
+/* Input Fields */
+.form-input,
+.form-select,
+.form-textarea {
+  width: 100%;
+  background: #ffffff; /* WHITE */
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 12px 16px;
+  font-size: 16px;
+  color: #1f2937;
+  transition: all 0.2s ease;
+}
+
+.form-input:focus,
+.form-select:focus,
+.form-textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+  border-width: 2px;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Placeholder (if used) */
+.form-input::placeholder,
+.form-textarea::placeholder {
+  color: #9ca3af;
+  font-size: 14px;
+}
+
+/* Textarea */
+.form-textarea {
+  resize: vertical;
+  min-height: 120px;
+}
+
+/* Submit Button */
+.form-submit {
+  width: 100%;
+  background: #3b82f6;
+  color: white;
+  font-size: 16px;
+  font-weight: 600;
+  padding: 12px 24px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.form-submit:hover {
+  background: #2563eb;
+}
+
+/* Consent Footer */
+.consent-footer {
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 16px;
+  line-height: 1.6;
+}
+
+.consent-footer a {
+  color: #3b82f6;
+  text-decoration: none;
+}
+
+.consent-footer a:hover {
+  text-decoration: underline;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .contact-form-card {
+    padding: 24px;
+  }
+
+  .form-title {
+    font-size: 28px;
+  }
+
+  .form-input,
+  .form-select,
+  .form-textarea {
+    font-size: 16px; /* Prevent zoom on iOS */
+  }
+}
+```
+
+═══════════════════════════════════════════════════════════════
+
+📋 IMPLEMENTATION STEPS
+
+Step 1: Locate Contact Page Component
+────────────────────────────────────────────────────────────
+□ Find file: client/src/pages/Contact.tsx (or .jsx)
+□ Open in editor
+
+Step 2: Update Form Container Background
+────────────────────────────────────────────────────────────
+□ Find form container div
+□ Change background from white to gray-50 or gray-100
+□ Add padding (p-10 or 40px)
+□ Add border radius (rounded-lg or 12px)
+
+Step 3: Add Labels Above Each Field
+────────────────────────────────────────────────────────────
+□ For each input, add <label> element above it
+□ Label text: "First Name *", "Last Name *", etc.
+□ Style: text-sm font-semibold text-gray-700 mb-2
+□ Add htmlFor attribute matching input id
+
+Step 4: Remove In-Field Placeholders
+────────────────────────────────────────────────────────────
+□ Find all placeholder attributes
+□ Change to placeholder="" (empty)
+□ OR remove placeholder attribute entirely
+
+Step 5: Update Input Field Backgrounds
+────────────────────────────────────────────────────────────
+□ Add bg-white class to all inputs
+□ Add border border-gray-300
+□ Add rounded-md
+□ Add focus states (focus:ring-2 focus:ring-blue-500)
+
+Step 6: Update Dropdown Styling
+────────────────────────────────────────────────────────────
+□ Add label above: "How can we help? *"
+□ Change background to white
+□ First option: "Select an option" (value="")
+□ Match input styling
+
+Step 7: Update Textarea Styling
+────────────────────────────────────────────────────────────
+□ Add label above: "Message *"
+□ Change background to white
+□ Remove placeholder or make empty
+□ Match input styling
+□ Add resize-y class (allow vertical resize)
+
+Step 8: Update Submit Button
+────────────────────────────────────────────────────────────
+□ Ensure blue background (bg-blue-500)
+□ White text
+□ Full width (w-full)
+□ Proper padding (py-3 px-6)
+□ Hover effect (hover:bg-blue-600)
+
+Step 9: Test Responsive Behavior
+────────────────────────────────────────────────────────────
+□ Test on desktop (two columns)
+□ Test on mobile (single column)
+□ Verify form stacks on mobile
+□ Check all fields accessible
+
+Step 10: Verify Uniformity
+────────────────────────────────────────────────────────────
+□ Compare side-by-side with Request a Pro form
+□ Match colors exactly
+□ Match spacing
+□ Match typography
+□ Match border styles
+
+═══════════════════════════════════════════════════════════════
+
+✅ ACCEPTANCE CRITERIA
+
+Visual Uniformity:
+────────────────────────────────────────────────────────────
+□ Form container has light gray background (matching Request a Pro)
+□ All input fields have WHITE background
+□ Labels are positioned ABOVE fields (not inside)
+□ No in-field placeholder text (or minimal/subtle)
+□ Border styles match Request a Pro form
+□ Border radius matches
+□ Padding and spacing consistent
+
+Typography:
+────────────────────────────────────────────────────────────
+□ Label font size: 14px
+□ Label font weight: 600 (semibold)
+□ Label color: Dark gray (#374151 or #1f2937)
+□ Input font size: 16px
+□ Input text color: Dark (#1f2937)
+
+Color Scheme:
+────────────────────────────────────────────────────────────
+□ Form container background: #f9fafb or #f3f4f6 (light gray)
+□ Input backgrounds: #ffffff (white)
+□ Borders: #d1d5db (light gray)
+□ Focus borders: #3b82f6 (blue)
+□ Submit button: #3b82f6 (blue)
+
+Field Structure:
+────────────────────────────────────────────────────────────
+□ Each field has:
+  - Label above (with asterisk for required)
+  - White input/select/textarea below
+  - Proper spacing between fields
+  - Consistent styling
+
+Functionality:
+────────────────────────────────────────────────────────────
+□ All fields still work correctly
+□ Form validation works
+□ Submit button functional
+□ Consent footer links work
+□ Two-column layout maintained
+□ Statistics column unchanged
+
+Responsive:
+────────────────────────────────────────────────────────────
+□ Desktop: Two columns side-by-side
+□ Mobile: Single column, form on top
+□ All fields accessible and usable
+□ No layout breaking
+
+Consistency:
+────────────────────────────────────────────────────────────
+□ Contact form visually matches Request a Pro form
+□ Same color palette
+□ Same spacing system
+□ Same typography
+□ Professional, uniform appearance
+
+═══════════════════════════════════════════════════════════════
+
+🎯 COLOR REFERENCE
+
+Exact Colors to Use (Match Request a Pro):
+────────────────────────────────────────────────────────────
+
+Background Colors:
+• Form container: #f9fafb (gray-50) OR #f3f4f6 (gray-100)
+• Input fields: #ffffff (white)
+• Submit button: #3b82f6 (blue-500)
+• Button hover: #2563eb (blue-600)
+
+Border Colors:
+• Default border: #d1d5db (gray-300)
+• Focus border: #3b82f6 (blue-500)
+• Focus ring: rgba(59, 130, 246, 0.1) (blue with transparency)
+
+Text Colors:
+• Labels: #374151 (gray-700) OR #1f2937 (gray-800)
+• Input text: #1f2937 (gray-800)
+• Placeholder: #9ca3af (gray-400) - if used
+• Consent text: #6b7280 (gray-500)
+• Links: #3b82f6 (blue-500)
+
+Tailwind Class Reference:
+────────────────────────────────────────────────────────────
+• bg-gray-50: #f9fafb
+• bg-gray-100: #f3f4f6
+• bg-white: #ffffff
+• border-gray-300: #d1d5db
+• text-gray-700: #374151
+• text-gray-800: #1f2937
+• text-gray-900: #111827
+• text-blue-500: #3b82f6
+• bg-blue-500: #3b82f6
+• bg-blue-600: #2563eb
+
+═══════════════════════════════════════════════════════════════
+
+🧪 TESTING CHECKLIST
+
+Visual Testing:
+────────────────────────────────────────────────────────────
+□ Form container has light gray background
+□ Input fields have white background
+□ Labels are visible above each field
+□ No text inside empty input fields
+□ Borders are light gray (1px)
+□ Focus states show blue border
+□ Submit button is blue
+□ Spacing looks professional
+
+Side-by-Side Comparison:
+────────────────────────────────────────────────────────────
+□ Open Request a Pro form (/request-pro)
+□ Open Contact form (/contact) in another tab
+□ Compare visually:
+  - Same gray background color ✓
+  - Same white input backgrounds ✓
+  - Same label styling ✓
+  - Same border styles ✓
+  - Same button styling ✓
+
+Functionality Testing:
+────────────────────────────────────────────────────────────
+□ Can type in First Name field
+□ Can type in Last Name field
+□ Can type in Work Email field
+□ Can select from dropdown
+□ Can type in Message field
+□ Can click Submit button
+□ Form validates required fields
+□ Form submits successfully
+
+Focus State Testing:
+────────────────────────────────────────────────────────────
+□ Click/tab into First Name field
+□ Blue border appears ✓
+□ Focus ring visible (subtle blue glow) ✓
+□ Tab through all fields
+□ All focus states work correctly
+
+Responsive Testing:
+────────────────────────────────────────────────────────────
+□ Desktop (≥1024px): Two columns
+□ Tablet (768-1023px): Adjust as needed
+□ Mobile (<768px): Single column
+□ Form padding adjusts on mobile
+□ All fields full width
+□ No horizontal overflow
+
+Browser Testing:
+────────────────────────────────────────────────────────────
+□ Chrome: Styling correct
+□ Firefox: Styling correct
+□ Safari: Styling correct
+□ Edge: Styling correct
+□ Mobile browsers: Works correctly
+
+Accessibility Testing:
+────────────────────────────────────────────────────────────
+□ Labels have htmlFor attribute
+□ Inputs have id attribute
+□ Labels and inputs properly associated
+□ Tab order is logical
+□ Focus indicators visible
+□ Screen reader friendly
+
+═══════════════════════════════════════════════════════════════
+
+📊 BEFORE vs AFTER COMPARISON
+
+BEFORE (Current):
+────────────────────────────────────────────────────────────
+• In-field placeholder text ("First Name", "Last Name", etc.)
+• Input backgrounds: May be transparent or light gray
+• Form container: White background
+• Labels: Inside fields (placeholders)
+• Style: Inconsistent with Request a Pro form
+
+AFTER (Target):
+────────────────────────────────────────────────────────────
+• Labels above fields ("First Name *", "Last Name *", etc.)
+• Input backgrounds: WHITE (#ffffff)
+• Form container: Light gray (#f9fafb or #f3f4f6)
+• Labels: Above fields (external labels)
+• Style: Matches Request a Pro form exactly
+
+Improvements:
+────────────────────────────────────────────────────────────
+✅ Consistent user experience across forms
+✅ Professional, uniform appearance
+✅ Better accessibility (proper labels)
+✅ Cleaner visual hierarchy
+✅ Matches design system
+✅ More readable and user-friendly
+
+═══════════════════════════════════════════════════════════════
+
+⚠️ IMPORTANT NOTES
+
+1. Do NOT Change Right Column:
+────────────────────────────────────────────────────────────
+The statistics column (right side) should remain unchanged:
+• Same headline
+• Same statistics
+• Same styling
+ONLY update the left column (form)
+
+2. Maintain Functionality:
+────────────────────────────────────────────────────────────
+• Form submission must still work
+• Validation must still work
+• Demo Request pre-population must still work
+• All event handlers must remain functional
+
+3. Preserve Two-Column Layout:
+────────────────────────────────────────────────────────────
+• Desktop: Form left (50%), Stats right (50%)
+• Mobile: Stack vertically (form top, stats bottom)
+• Grid or Flex layout maintained
+
+4. Keep Consent Footer:
+────────────────────────────────────────────────────────────
+• Position: Below submit button
+• Text: Exact same wording
+• Links: /privacy and /terms
+• Styling: Small, gray text
+
+5. Required Field Indicators:
+────────────────────────────────────────────────────────────
+Add asterisks (*) to required field labels:
+• "First Name *"
+• "Last Name *"
+• "Work Email *"
+• "How can we help? *"
+• "Message *"
+
+6. Accessibility:
+────────────────────────────────────────────────────────────
+Ensure proper HTML structure:
+```html
+<label for="firstName">First Name *</label>
+<input id="firstName" name="firstName" />
+```
+
+7. Focus States:
+────────────────────────────────────────────────────────────
+Must have visible focus indicators:
+• Blue border on focus
+• Subtle blue glow/ring
+• No outline: none without replacement
+
+═══════════════════════════════════════════════════════════════
+
+✅ IMPLEMENTATION READY
+
+This specification is complete and ready for Replit Agent.
+
+Key Changes:
+────────────────────────────────────────────────────────────
+1. Form container → Light gray background
+2. Input fields → White background
+3. Labels → Above fields (not inside)
+4. Placeholders → Removed or minimal
+5. Styling → Match Request a Pro form exactly
+
+Goal: Uniform, professional appearance across all forms
+
+Deploy and test!
+
+═══════════════════════════════════════════════════════════════
+
+END OF SPECIFICATION
