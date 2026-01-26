@@ -91,30 +91,29 @@ export default function Contact() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12 md:py-20">
-      <div className="container px-4 md:px-6 mx-auto max-w-6xl">
+    <div className="min-h-screen bg-background pt-16 sm:pt-20">
+      <div className="container px-4 md:px-6 mx-auto max-w-6xl py-8">
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-start">
           
           {/* LEFT COLUMN - CONTACT FORM */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 md:p-10">
+          <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-8 md:p-10">
             <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-2" data-testid="text-contact-title">
               Let's Chat
             </h1>
-            <p className="text-gray-500 dark:text-gray-400 mb-8">
+            <p className="text-gray-600 dark:text-gray-400 mb-8">
               An UpKeepQR expert will reach out to discuss your needs.
             </p>
 
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="firstName" className="text-gray-700 dark:text-gray-300">
+                  <Label htmlFor="firstName" className="text-sm font-semibold text-gray-700 dark:text-gray-300">
                     First Name *
                   </Label>
                   <Input
                     id="firstName"
                     {...form.register("firstName")}
-                    placeholder="First Name"
-                    className="h-12"
+                    className="h-12 bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600"
                     data-testid="input-first-name"
                   />
                   {form.formState.errors.firstName && (
@@ -123,14 +122,13 @@ export default function Contact() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="lastName" className="text-gray-700 dark:text-gray-300">
+                  <Label htmlFor="lastName" className="text-sm font-semibold text-gray-700 dark:text-gray-300">
                     Last Name *
                   </Label>
                   <Input
                     id="lastName"
                     {...form.register("lastName")}
-                    placeholder="Last Name"
-                    className="h-12"
+                    className="h-12 bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600"
                     data-testid="input-last-name"
                   />
                   {form.formState.errors.lastName && (
@@ -140,15 +138,14 @@ export default function Contact() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-gray-700 dark:text-gray-300">
+                <Label htmlFor="email" className="text-sm font-semibold text-gray-700 dark:text-gray-300">
                   Work Email *
                 </Label>
                 <Input
                   id="email"
                   type="email"
                   {...form.register("email")}
-                  placeholder="your.email@company.com"
-                  className="h-12"
+                  className="h-12 bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600"
                   data-testid="input-email"
                 />
                 {form.formState.errors.email && (
@@ -157,15 +154,15 @@ export default function Contact() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="helpType" className="text-gray-700 dark:text-gray-300">
+                <Label htmlFor="helpType" className="text-sm font-semibold text-gray-700 dark:text-gray-300">
                   How can we help? *
                 </Label>
                 <Select
                   value={form.watch("helpType")}
                   onValueChange={(value) => form.setValue("helpType", value, { shouldValidate: true })}
                 >
-                  <SelectTrigger className="h-12" data-testid="select-help-type">
-                    <SelectValue placeholder="How can we help?" />
+                  <SelectTrigger className="h-12 bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600" data-testid="select-help-type">
+                    <SelectValue placeholder="Select an option" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="general">General question</SelectItem>
@@ -180,15 +177,14 @@ export default function Contact() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="message" className="text-gray-700 dark:text-gray-300">
+                <Label htmlFor="message" className="text-sm font-semibold text-gray-700 dark:text-gray-300">
                   Message *
                 </Label>
                 <Textarea
                   id="message"
                   {...form.register("message")}
                   rows={5}
-                  placeholder="Comment is required"
-                  className="resize-y min-h-[120px]"
+                  className="resize-y min-h-[120px] bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600"
                   data-testid="textarea-message"
                 />
                 {form.formState.errors.message && (
@@ -198,7 +194,7 @@ export default function Contact() {
 
               <Button
                 type="submit"
-                className="w-full h-12 text-base font-semibold"
+                className="w-full h-12 text-base font-semibold bg-blue-600 hover:bg-blue-700"
                 disabled={isSubmitting}
                 data-testid="button-submit-contact"
               >
