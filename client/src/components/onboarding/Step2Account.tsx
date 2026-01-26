@@ -165,10 +165,10 @@ export default function Step2Account({ data, onNext, onBack }: Step2Props) {
   }
 
   return (
-    <div className="w-full max-w-2xl mx-auto bg-white dark:bg-gray-900 rounded-lg shadow-lg p-8">
+    <div className="w-full max-w-2xl mx-auto bg-gray-50 dark:bg-gray-800 rounded-lg p-8 md:p-10">
       <div className="mb-8">
-        <h2 className="text-2xl font-bold mb-2">Create Your Account</h2>
-        <p className="text-muted-foreground">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Create Your Account</h2>
+        <p className="text-gray-600 dark:text-gray-400">
           We'll use this to send your personalized maintenance schedule
         </p>
       </div>
@@ -176,7 +176,7 @@ export default function Step2Account({ data, onNext, onBack }: Step2Props) {
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Email */}
         <div>
-          <Label htmlFor="email" className="flex items-center gap-2 mb-2">
+          <Label htmlFor="email" className="flex items-center gap-2 mb-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
             <Mail className="h-4 w-4" />
             Email Address <span className="text-red-500">*</span>
           </Label>
@@ -185,18 +185,18 @@ export default function Step2Account({ data, onNext, onBack }: Step2Props) {
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@example.com"
+            className="h-12 bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600"
             required
             data-testid="input-email"
           />
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
             We'll send your schedule and reminders here
           </p>
         </div>
 
         {/* Full Name */}
         <div>
-          <Label htmlFor="name" className="flex items-center gap-2 mb-2">
+          <Label htmlFor="name" className="flex items-center gap-2 mb-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
             <User className="h-4 w-4" />
             Full Name <span className="text-red-500">*</span>
           </Label>
@@ -205,7 +205,7 @@ export default function Step2Account({ data, onNext, onBack }: Step2Props) {
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="John Smith"
+            className="h-12 bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600"
             required
             data-testid="input-name"
           />
@@ -213,7 +213,7 @@ export default function Step2Account({ data, onNext, onBack }: Step2Props) {
 
         {/* Street Address with Autocomplete */}
         <div className="relative">
-          <Label htmlFor="address" className="flex items-center gap-2 mb-2">
+          <Label htmlFor="address" className="flex items-center gap-2 mb-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
             <HomeIcon className="h-4 w-4" />
             Street Address <span className="text-red-500">*</span>
           </Label>
@@ -224,7 +224,7 @@ export default function Step2Account({ data, onNext, onBack }: Step2Props) {
             onChange={(e) => handleAddressChange(e.target.value)}
             onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
             onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-            placeholder="Start typing your address..."
+            className="h-12 bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600"
             required
             data-testid="input-street-address"
           />
@@ -255,7 +255,7 @@ export default function Step2Account({ data, onNext, onBack }: Step2Props) {
             </div>
           )}
           
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
             Start typing for suggestions (US & Canada)
           </p>
         </div>
@@ -263,26 +263,26 @@ export default function Step2Account({ data, onNext, onBack }: Step2Props) {
         {/* City and State (auto-filled) */}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <Label htmlFor="city">City</Label>
+            <Label htmlFor="city" className="block mb-2 text-sm font-semibold text-gray-700 dark:text-gray-300">City</Label>
             <Input
               id="city"
               type="text"
               value={city}
               placeholder="Auto-fills from address"
               readOnly
-              className="bg-gray-50 dark:bg-gray-800"
+              className="h-12 bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600 text-gray-500 cursor-not-allowed"
               data-testid="input-city"
             />
           </div>
           <div>
-            <Label htmlFor="state">State / Province</Label>
+            <Label htmlFor="state" className="block mb-2 text-sm font-semibold text-gray-700 dark:text-gray-300">State / Province</Label>
             <Input
               id="state"
               type="text"
               value={state}
               placeholder="Auto-fills from address"
               readOnly
-              className="bg-gray-50 dark:bg-gray-800"
+              className="h-12 bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600 text-gray-500 cursor-not-allowed"
               data-testid="input-state"
             />
           </div>
@@ -290,7 +290,7 @@ export default function Step2Account({ data, onNext, onBack }: Step2Props) {
 
         {/* ZIP Code */}
         <div>
-          <Label htmlFor="zipCode" className="flex items-center gap-2 mb-2">
+          <Label htmlFor="zipCode" className="flex items-center gap-2 mb-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
             <MapPin className="h-4 w-4" />
             ZIP / Postal Code <span className="text-red-500">*</span>
           </Label>
@@ -299,12 +299,12 @@ export default function Step2Account({ data, onNext, onBack }: Step2Props) {
             type="text"
             value={zipCode}
             onChange={(e) => setZipCode(e.target.value)}
-            placeholder="12345 or A1B 2C3"
+            className="h-12 bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600"
             required
             maxLength={10}
             data-testid="input-zip-code"
           />
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
             For weather-based reminders and local service matching
           </p>
         </div>
@@ -315,14 +315,14 @@ export default function Step2Account({ data, onNext, onBack }: Step2Props) {
             type="button"
             variant="outline"
             onClick={onBack}
-            className="flex-1"
+            className="flex-1 h-12"
             data-testid="button-back"
           >
             Back
           </Button>
           <Button
             type="submit"
-            className="flex-1"
+            className="flex-1 h-12 bg-blue-600 hover:bg-blue-700"
             disabled={!email || !name || !streetAddress || !zipCode}
             data-testid="button-submit-step2"
           >
