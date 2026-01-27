@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Upload, AlertCircle, CheckCircle } from "lucide-react";
 import { API_BASE_URL } from "@/lib/api-config";
+import { useLoadScript } from "@react-google-maps/api";
 
 // Form validation schema
 const requestProSchema = z.object({
@@ -32,11 +33,37 @@ const requestProSchema = z.object({
 
 type RequestProForm = z.infer<typeof requestProSchema>;
 
+const libraries: ("places")[] = ["places"];
+
 export default function RequestPro() {
   const [photos, setPhotos] = useState<File[]>([]);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [trackingCode, setTrackingCode] = useState<string>("");
   const { toast } = useToast();
+  
+  // Google Places autocomplete - SEPARATE ref from Setup form
+  const requestProAddressRef = useRef<HTMLInputElement>(null);
+  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const sessionTokenRef = useRef<google.maps.places.AutocompleteSessionToken | null>(null);
+  
+  const apiKey = import.meta.env.VITE_GOOGLE_PLACES_API_KEY || "";
+  
+  const { isLoaded } = useLoadScript({
+    googleMapsApiKey: apiKey,
+    libraries,
+  });
+
+  // Initialize session token for Google Places
+  useEffect(() => {
+    if (isLoaded && apiKey) {
+      try {
+        sessionTokenRef.current = new google.maps.places.AutocompleteSessionToken();
+      } catch (error) {
+        console.error("Error initializing session token:", error);
+      }
+    }
+  }, [isLoaded, apiKey]);
 
   const form = useForm<RequestProForm>({
     resolver: zodResolver(requestProSchema),
@@ -103,6 +130,98 @@ export default function RequestPro() {
 
   const removePhoto = (index: number) => {
     setPhotos(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // Fetch Google Places predictions when user types - Using NEW API
+  const handleAddressChange = async (value: string) => {
+    form.setValue('addressLine1', value);
+    
+    if (value.length > 2 && isLoaded && sessionTokenRef.current) {
+      try {
+        const { AutocompleteSuggestion } = await google.maps.importLibrary("places") as any;
+        
+        const request = {
+          input: value,
+          includedPrimaryTypes: ['street_address'],
+          includedRegionCodes: ['US', 'CA'],
+          sessionToken: sessionTokenRef.current,
+        };
+
+        const { suggestions: results } = await AutocompleteSuggestion.fetchAutocompleteSuggestions(request);
+        
+        if (results && results.length > 0) {
+          setSuggestions(results);
+          setShowSuggestions(true);
+        } else {
+          setSuggestions([]);
+          setShowSuggestions(false);
+        }
+      } catch (error) {
+        console.error("Error fetching suggestions:", error);
+        setSuggestions([]);
+        setShowSuggestions(false);
+      }
+    } else {
+      setSuggestions([]);
+      setShowSuggestions(false);
+    }
+  };
+
+  // When user selects a suggestion from dropdown
+  const handleSelectSuggestion = async (suggestion: any) => {
+    try {
+      const { Place } = await google.maps.importLibrary("places") as any;
+      
+      const place = new Place({
+        id: suggestion.placePrediction.placeId,
+      });
+
+      await place.fetchFields({
+        fields: ['addressComponents', 'formattedAddress'],
+      });
+
+      // Parse address components
+      let streetNumber = "";
+      let route = "";
+      let locality = "";
+      let stateCode = "";
+      let postalCode = "";
+
+      place.addressComponents?.forEach((component: any) => {
+        const types = component.types;
+        if (types.includes("street_number")) {
+          streetNumber = component.longText;
+        }
+        if (types.includes("route")) {
+          route = component.longText;
+        }
+        if (types.includes("locality")) {
+          locality = component.longText;
+        }
+        if (types.includes("administrative_area_level_1")) {
+          stateCode = component.shortText;
+        }
+        if (types.includes("postal_code")) {
+          postalCode = component.longText;
+        }
+      });
+
+      const street = `${streetNumber} ${route}`.trim();
+      
+      // Update form fields with parsed address
+      form.setValue('addressLine1', street || suggestion.placePrediction.text.text);
+      form.setValue('city', locality);
+      form.setValue('state', stateCode);
+      if (postalCode) form.setValue('zip', postalCode);
+      
+      // Create new session token for next search
+      sessionTokenRef.current = new google.maps.places.AutocompleteSessionToken();
+    } catch (error) {
+      console.error("Error getting place details:", error);
+    }
+    
+    setSuggestions([]);
+    setShowSuggestions(false);
   };
 
   const onSubmit = async (data: RequestProForm) => {
@@ -235,11 +354,48 @@ export default function RequestPro() {
                     control={form.control}
                     name="addressLine1"
                     render={({ field }) => (
-                      <FormItem>
+                      <FormItem className="relative">
                         <FormLabel>Street Address</FormLabel>
                         <FormControl>
-                          <Input {...field} data-testid="input-address" />
+                          <Input
+                            {...field}
+                            ref={requestProAddressRef}
+                            onChange={(e) => handleAddressChange(e.target.value)}
+                            onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+                            onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                            data-testid="input-address"
+                          />
                         </FormControl>
+                        
+                        {/* Google Places Suggestions Dropdown */}
+                        {showSuggestions && suggestions.length > 0 && (
+                          <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg max-h-60 overflow-auto">
+                            {suggestions.map((suggestion, index) => (
+                              <div
+                                key={index}
+                                className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer border-b last:border-b-0"
+                                onMouseDown={() => handleSelectSuggestion(suggestion)}
+                                data-testid={`suggestion-${index}`}
+                              >
+                                <div className="text-sm font-medium">
+                                  {suggestion.placePrediction.text.text}
+                                </div>
+                                {suggestion.placePrediction.structuredFormat?.secondaryText && (
+                                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                                    {suggestion.placePrediction.structuredFormat.secondaryText.text}
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                            <div className="px-4 py-2 text-xs text-gray-400 border-t bg-gray-50 dark:bg-gray-900">
+                              Powered by Google
+                            </div>
+                          </div>
+                        )}
+                        
+                        <p className="text-sm text-gray-600 mt-1">
+                          Start typing for suggestions (US & Canada)
+                        </p>
                         <FormMessage />
                       </FormItem>
                     )}

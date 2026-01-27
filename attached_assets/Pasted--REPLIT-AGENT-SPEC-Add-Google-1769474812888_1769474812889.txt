@@ -1,0 +1,853 @@
+╔══════════════════════════════════════════════════════════════╗
+║  🤖 REPLIT AGENT SPEC: Add Google Address Autocomplete      ║
+║  Request a Professional Service Form                         ║
+╚══════════════════════════════════════════════════════════════╝
+
+TASK: Add Google Places address autocomplete to Request a Pro form
+PRIORITY: High
+TIME ESTIMATE: 45-60 minutes
+PURPOSE: Improve user experience with automatic address completion
+
+⚠️  CRITICAL WARNING - READ BEFORE STARTING ⚠️
+═══════════════════════════════════════════════════════════════
+🚨 DO NOT BREAK EXISTING SETUP FORM AUTOCOMPLETE 🚨
+
+The Setup form (/new-setup) ALREADY has working Google autocomplete.
+You are adding DUPLICATE functionality to Request a Pro form.
+DO NOT modify, remove, or interfere with Setup form autocomplete.
+
+IMPORTANT:
+• Use separate ref for Request a Pro form (e.g., requestProAddressRef)
+• Do NOT reuse Setup form's ref
+• Initialize autocomplete separately for each form
+• Keep both autocompletes independent
+• Test BOTH forms after implementation
+
+═══════════════════════════════════════════════════════════════
+
+🎯 OBJECTIVE
+
+Add Google Places address autocomplete to the "Request a Professional Service" form that:
+1. Auto-fills Street Address when user selects from dropdown
+2. Auto-fills City from selected address
+3. Auto-fills State from selected address
+4. Auto-fills ZIP Code from selected address
+5. Works identically to Setup form autocomplete
+6. Does NOT interfere with Setup form functionality
+
+═══════════════════════════════════════════════════════════════
+
+📐 CURRENT STATE: Request a Pro Form
+
+Location: /request-pro
+File: Likely client/src/pages/RequestPro.tsx or similar
+
+Current Form Fields:
+────────────────────────────────────────────────────────────
+Service Request Details:
+• Full Name (text input)
+• Phone Number (text input)
+• Email Address (text input)
+
+Service Address:
+• Street Address (text input) ← ADD AUTOCOMPLETE HERE
+• Apt, Suite, etc. (Optional) (text input)
+• City (text input) ← AUTO-FILL FROM ADDRESS
+• State (text input) ← AUTO-FILL FROM ADDRESS
+• ZIP Code (text input) ← AUTO-FILL FROM ADDRESS
+
+Service Details:
+• Service Type (dropdown)
+• Urgency (dropdown)
+
+Current Status:
+❌ No address autocomplete
+❌ User must manually type full address
+❌ User must manually enter City, State, ZIP
+
+═══════════════════════════════════════════════════════════════
+
+🎯 DESIRED STATE: Request a Pro Form
+
+After Implementation:
+────────────────────────────────────────────────────────────
+Service Address:
+• Street Address (text input with Google autocomplete) ✓
+  - User types address
+  - Google dropdown appears with suggestions
+  - User selects address
+• Apt, Suite, etc. (Optional) (text input) - No change
+• City (text input) - Auto-filled from selected address ✓
+• State (text input) - Auto-filled from selected address ✓
+• ZIP Code (text input) - Auto-filled from selected address ✓
+
+Benefits:
+✅ Faster form completion
+✅ Reduced user errors
+✅ Validated addresses
+✅ Consistent with Setup form UX
+
+═══════════════════════════════════════════════════════════════
+
+💻 IMPLEMENTATION GUIDE
+
+Step 1: Verify Google Maps Script is Available
+────────────────────────────────────────────────────────────
+
+The Setup form already loads Google Maps API. Verify it's available:
+
+Check for script tag in index.html or App.tsx:
+```html
+<script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&libraries=places"></script>
+```
+
+Or check for dynamic loading in a component:
+```tsx
+useEffect(() => {
+  const script = document.createElement('script');
+  script.src = 'https://maps.googleapis.com/maps/api/js?key=...&libraries=places';
+  document.head.appendChild(script);
+}, []);
+```
+
+IF Google Maps script is already loaded globally:
+✅ You can use it directly in Request a Pro form
+✅ No need to load it again
+
+IF Google Maps script is loaded only in Setup form:
+⚠️  Need to load it globally or in Request a Pro form
+⚠️  Recommend loading it globally in App.tsx or index.html
+
+Step 2: Locate Request a Pro Form Component
+────────────────────────────────────────────────────────────
+
+Find the file (likely one of these):
+• client/src/pages/RequestPro.tsx
+• client/src/pages/RequestAPro.tsx
+• client/src/pages/request-pro.tsx
+• client/src/components/RequestProForm.tsx
+
+Look for the Street Address input field:
+```tsx
+<input
+  type="text"
+  name="streetAddress"
+  // ... other props
+/>
+```
+
+Step 3: Add Separate Ref for Request a Pro Form
+────────────────────────────────────────────────────────────
+
+🚨 CRITICAL: Use a DIFFERENT ref name than Setup form
+
+```tsx
+import { useRef, useEffect, useState } from 'react';
+
+export default function RequestProForm() {
+  // Use SEPARATE ref - DO NOT reuse Setup form's ref
+  const requestProAddressRef = useRef(null);
+  
+  const [formData, setFormData] = useState({
+    fullName: '',
+    phoneNumber: '',
+    email: '',
+    streetAddress: '',
+    aptSuite: '',
+    city: '',
+    state: '',
+    zipCode: '',
+    serviceType: '',
+    urgency: ''
+  });
+
+  // ... rest of component
+}
+```
+
+Step 4: Initialize Google Places Autocomplete
+────────────────────────────────────────────────────────────
+
+Add useEffect to initialize autocomplete ONLY for Request a Pro form:
+
+```tsx
+useEffect(() => {
+  // Check if Google Maps is loaded
+  if (!requestProAddressRef.current || !window.google) {
+    console.log('Google Maps not loaded yet');
+    return;
+  }
+
+  console.log('Initializing autocomplete for Request a Pro form');
+
+  // Initialize autocomplete on Street Address field
+  const autocomplete = new google.maps.places.Autocomplete(
+    requestProAddressRef.current,
+    {
+      types: ['address'],
+      componentRestrictions: { country: ['us', 'ca'] } // US & Canada
+    }
+  );
+
+  // Listen for place selection
+  autocomplete.addListener('place_changed', () => {
+    const place = autocomplete.getPlace();
+    
+    console.log('Place selected:', place);
+
+    if (!place.address_components) {
+      console.log('No address components found');
+      return;
+    }
+
+    // Parse address components
+    let street = '';
+    let city = '';
+    let state = '';
+    let zip = '';
+
+    place.address_components.forEach((component) => {
+      const types = component.types;
+      
+      // Street number (e.g., "123")
+      if (types.includes('street_number')) {
+        street = component.long_name;
+      }
+      
+      // Street name (e.g., "Main St")
+      if (types.includes('route')) {
+        street += (street ? ' ' : '') + component.long_name;
+      }
+      
+      // City (e.g., "Atlanta")
+      if (types.includes('locality')) {
+        city = component.long_name;
+      }
+      
+      // State (e.g., "GA")
+      if (types.includes('administrative_area_level_1')) {
+        state = component.short_name; // Use short_name for "GA" not "Georgia"
+      }
+      
+      // ZIP Code (e.g., "30301")
+      if (types.includes('postal_code')) {
+        zip = component.long_name;
+      }
+    });
+
+    console.log('Parsed address:', { street, city, state, zip });
+
+    // Update form state with parsed address
+    setFormData(prev => ({
+      ...prev,
+      streetAddress: street.trim(),
+      city: city,
+      state: state,
+      zipCode: zip
+    }));
+  });
+
+  // Cleanup function (optional but good practice)
+  return () => {
+    google.maps.event.clearInstanceListeners(autocomplete);
+  };
+}, []); // Empty dependency array - run once on mount
+```
+
+Step 5: Update Street Address Input
+────────────────────────────────────────────────────────────
+
+Add ref to Street Address field:
+
+BEFORE:
+```tsx
+<input
+  type="text"
+  name="streetAddress"
+  value={formData.streetAddress}
+  onChange={handleChange}
+  className="w-full bg-white border border-gray-300 rounded-md px-4 py-3"
+/>
+```
+
+AFTER:
+```tsx
+<input
+  ref={requestProAddressRef}  // ← ADD THIS
+  type="text"
+  name="streetAddress"
+  value={formData.streetAddress}
+  onChange={handleChange}
+  className="w-full bg-white border border-gray-300 rounded-md px-4 py-3"
+/>
+```
+
+Step 6: Update City, State, ZIP Inputs
+────────────────────────────────────────────────────────────
+
+Make sure these fields are controlled by formData state:
+
+```tsx
+{/* City - Auto-filled */}
+<input
+  type="text"
+  name="city"
+  value={formData.city}  // ← Controlled by state
+  onChange={handleChange}
+  className="w-full bg-white border border-gray-300 rounded-md px-4 py-3"
+/>
+
+{/* State - Auto-filled */}
+<input
+  type="text"
+  name="state"
+  value={formData.state}  // ← Controlled by state
+  onChange={handleChange}
+  className="w-full bg-white border border-gray-300 rounded-md px-4 py-3"
+/>
+
+{/* ZIP Code - Auto-filled */}
+<input
+  type="text"
+  name="zipCode"
+  value={formData.zipCode}  // ← Controlled by state
+  onChange={handleChange}
+  className="w-full bg-white border border-gray-300 rounded-md px-4 py-3"
+/>
+```
+
+Step 7: Test Both Forms
+────────────────────────────────────────────────────────────
+
+🚨 MANDATORY: Test both forms to ensure no interference
+
+Test Request a Pro Form:
+□ Navigate to /request-pro
+□ Type in Street Address field
+□ Google dropdown appears ✓
+□ Select an address
+□ City auto-fills ✓
+□ State auto-fills ✓
+□ ZIP auto-fills ✓
+
+Test Setup Form (Ensure NOT Broken):
+□ Navigate to /new-setup
+□ Go to Step 2 (Account Setup)
+□ Type in Street Address field
+□ Google dropdown appears ✓
+□ Select an address
+□ City auto-fills ✓
+□ State auto-fills ✓
+□ ZIP auto-fills ✓
+
+IF either form breaks, you did something wrong - REVERT CHANGES.
+
+═══════════════════════════════════════════════════════════════
+
+🎨 COMPLETE CODE EXAMPLE
+
+Full Request a Pro Form Component:
+────────────────────────────────────────────────────────────
+
+```tsx
+import { useRef, useEffect, useState } from 'react';
+
+export default function RequestProForm() {
+  // SEPARATE ref for Request a Pro form
+  const requestProAddressRef = useRef(null);
+  
+  const [formData, setFormData] = useState({
+    fullName: '',
+    phoneNumber: '',
+    email: '',
+    streetAddress: '',
+    aptSuite: '',
+    city: '',
+    state: '',
+    zipCode: '',
+    serviceType: '',
+    urgency: ''
+  });
+
+  // Initialize Google Places Autocomplete
+  useEffect(() => {
+    if (!requestProAddressRef.current || !window.google) {
+      console.log('Google Maps not loaded yet');
+      return;
+    }
+
+    console.log('Initializing Request a Pro autocomplete');
+
+    const autocomplete = new google.maps.places.Autocomplete(
+      requestProAddressRef.current,
+      {
+        types: ['address'],
+        componentRestrictions: { country: ['us', 'ca'] }
+      }
+    );
+
+    autocomplete.addListener('place_changed', () => {
+      const place = autocomplete.getPlace();
+      
+      if (!place.address_components) return;
+
+      let street = '';
+      let city = '';
+      let state = '';
+      let zip = '';
+
+      place.address_components.forEach((component) => {
+        const types = component.types;
+        
+        if (types.includes('street_number')) {
+          street = component.long_name;
+        }
+        if (types.includes('route')) {
+          street += (street ? ' ' : '') + component.long_name;
+        }
+        if (types.includes('locality')) {
+          city = component.long_name;
+        }
+        if (types.includes('administrative_area_level_1')) {
+          state = component.short_name;
+        }
+        if (types.includes('postal_code')) {
+          zip = component.long_name;
+        }
+      });
+
+      setFormData(prev => ({
+        ...prev,
+        streetAddress: street.trim(),
+        city: city,
+        state: state,
+        zipCode: zip
+      }));
+    });
+
+    return () => {
+      google.maps.event.clearInstanceListeners(autocomplete);
+    };
+  }, []);
+
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    console.log('Form submitted:', formData);
+    // Handle form submission
+  };
+
+  return (
+    <div className="request-pro-form">
+      <h1>Request a Professional Service</h1>
+      <p>Connect with qualified local professionals...</p>
+
+      <form onSubmit={handleSubmit}>
+        {/* Service Request Details */}
+        <section>
+          <h2>Service Request Details</h2>
+          
+          {/* Full Name */}
+          <div className="mb-5">
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Full Name
+            </label>
+            <input
+              type="text"
+              name="fullName"
+              value={formData.fullName}
+              onChange={handleChange}
+              className="w-full bg-white border border-gray-300 rounded-md px-4 py-3"
+            />
+          </div>
+
+          {/* Phone Number */}
+          <div className="mb-5">
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Phone Number
+            </label>
+            <input
+              type="tel"
+              name="phoneNumber"
+              value={formData.phoneNumber}
+              onChange={handleChange}
+              className="w-full bg-white border border-gray-300 rounded-md px-4 py-3"
+            />
+          </div>
+
+          {/* Email Address */}
+          <div className="mb-5">
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Email Address
+            </label>
+            <input
+              type="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              className="w-full bg-white border border-gray-300 rounded-md px-4 py-3"
+            />
+          </div>
+        </section>
+
+        {/* Service Address */}
+        <section>
+          <h2>Service Address</h2>
+          
+          {/* Street Address - WITH AUTOCOMPLETE */}
+          <div className="mb-5">
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Street Address
+            </label>
+            <input
+              ref={requestProAddressRef}  // ← CRITICAL: Autocomplete attaches here
+              type="text"
+              name="streetAddress"
+              value={formData.streetAddress}
+              onChange={handleChange}
+              className="w-full bg-white border border-gray-300 rounded-md px-4 py-3"
+            />
+          </div>
+
+          {/* Apt, Suite, etc. */}
+          <div className="mb-5">
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Apt, Suite, etc. (Optional)
+            </label>
+            <input
+              type="text"
+              name="aptSuite"
+              value={formData.aptSuite}
+              onChange={handleChange}
+              className="w-full bg-white border border-gray-300 rounded-md px-4 py-3"
+            />
+          </div>
+
+          {/* City, State, ZIP - Side by side */}
+          <div className="grid grid-cols-3 gap-4 mb-5">
+            {/* City - AUTO-FILLED */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                City
+              </label>
+              <input
+                type="text"
+                name="city"
+                value={formData.city}
+                onChange={handleChange}
+                className="w-full bg-white border border-gray-300 rounded-md px-4 py-3"
+              />
+            </div>
+
+            {/* State - AUTO-FILLED */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                State
+              </label>
+              <input
+                type="text"
+                name="state"
+                value={formData.state}
+                onChange={handleChange}
+                className="w-full bg-white border border-gray-300 rounded-md px-4 py-3"
+              />
+            </div>
+
+            {/* ZIP Code - AUTO-FILLED */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                ZIP Code
+              </label>
+              <input
+                type="text"
+                name="zipCode"
+                value={formData.zipCode}
+                onChange={handleChange}
+                className="w-full bg-white border border-gray-300 rounded-md px-4 py-3"
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* Service Details */}
+        <section>
+          <h2>Service Details</h2>
+          
+          {/* Service Type */}
+          <div className="mb-5">
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Service Type
+            </label>
+            <select
+              name="serviceType"
+              value={formData.serviceType}
+              onChange={handleChange}
+              className="w-full bg-white border border-gray-300 rounded-md px-4 py-3"
+            >
+              <option value="">Select service type</option>
+              <option value="plumbing">Plumbing</option>
+              <option value="electrical">Electrical</option>
+              <option value="hvac">HVAC</option>
+              {/* ... more options */}
+            </select>
+          </div>
+
+          {/* Urgency */}
+          <div className="mb-5">
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Urgency
+            </label>
+            <select
+              name="urgency"
+              value={formData.urgency}
+              onChange={handleChange}
+              className="w-full bg-white border border-gray-300 rounded-md px-4 py-3"
+            >
+              <option value="">When do you need this done?</option>
+              <option value="emergency">Emergency (Today)</option>
+              <option value="urgent">Urgent (This Week)</option>
+              <option value="normal">Normal (Next 2 Weeks)</option>
+              <option value="flexible">Flexible</option>
+            </select>
+          </div>
+        </section>
+
+        {/* Submit Button */}
+        <button
+          type="submit"
+          className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 px-6 rounded-md"
+        >
+          Request Service
+        </button>
+      </form>
+    </div>
+  );
+}
+```
+
+═══════════════════════════════════════════════════════════════
+
+⚠️  CRITICAL WARNINGS
+
+1. DO NOT Break Setup Form Autocomplete
+────────────────────────────────────────────────────────────
+🚨 The Setup form ALREADY has working autocomplete
+🚨 DO NOT modify Setup form's code
+🚨 DO NOT remove or change Setup form's ref
+🚨 DO NOT interfere with Setup form's useEffect
+🚨 Use SEPARATE ref for Request a Pro form
+
+2. Use Separate Ref Name
+────────────────────────────────────────────────────────────
+✅ CORRECT:   requestProAddressRef
+✅ CORRECT:   requestProRef
+✅ CORRECT:   proServiceAddressRef
+❌ WRONG:     addressRef (might conflict)
+❌ WRONG:     autocompleteRef (might conflict)
+❌ WRONG:     Reusing Setup form's ref name
+
+3. Verify Google Maps Loaded
+────────────────────────────────────────────────────────────
+Check that window.google exists before initializing:
+```tsx
+if (!window.google) {
+  console.error('Google Maps not loaded');
+  return;
+}
+```
+
+4. Test Both Forms
+────────────────────────────────────────────────────────────
+MANDATORY: After implementation, test:
+✓ Request a Pro form autocomplete works
+✓ Setup form autocomplete STILL works
+✓ No conflicts between the two
+✓ Both can run simultaneously
+
+5. Don't Modify Global Google Maps Loading
+────────────────────────────────────────────────────────────
+⚠️  If Google Maps is loaded globally, leave it alone
+⚠️  If loaded in Setup form only, may need to move it global
+⚠️  Don't load Google Maps twice
+⚠️  Don't remove existing Google Maps loading
+
+═══════════════════════════════════════════════════════════════
+
+✅ ACCEPTANCE CRITERIA
+
+Request a Pro Form:
+────────────────────────────────────────────────────────────
+□ Navigate to /request-pro
+□ Type address in Street Address field
+□ Google autocomplete dropdown appears
+□ Dropdown shows address suggestions
+□ "Powered by Google" visible at bottom
+□ Can select address from dropdown
+□ After selection:
+  ✓ Street Address fills with full street address
+  ✓ City fills with city name
+  ✓ State fills with state abbreviation (e.g., "GA")
+  ✓ ZIP Code fills with postal code
+□ Can manually edit any field after auto-fill
+□ Form submission works correctly
+
+Setup Form (Must NOT Break):
+────────────────────────────────────────────────────────────
+□ Navigate to /new-setup
+□ Go to Step 2 (Account Setup)
+□ Type address in Street Address field
+□ Google autocomplete dropdown appears
+□ Can select address from dropdown
+□ After selection:
+  ✓ Street Address fills correctly
+  ✓ City fills correctly
+  ✓ State fills correctly
+  ✓ ZIP fills correctly
+□ Autocomplete STILL works (not broken)
+
+Technical:
+────────────────────────────────────────────────────────────
+□ Separate ref used (not conflicting with Setup form)
+□ Separate useEffect initialization
+□ No console errors
+□ Google Maps script loaded
+□ Both forms can work simultaneously
+□ No performance issues
+
+═══════════════════════════════════════════════════════════════
+
+🧪 TESTING PROTOCOL
+
+Test 1: Request a Pro Form Autocomplete
+────────────────────────────────────────────────────────────
+1. Go to https://upkeepqr.com/request-pro
+2. Scroll to "Service Address" section
+3. Click in "Street Address" field
+4. Type: "1600 Pennsylvania Ave"
+5. VERIFY: Google dropdown appears
+6. Select: "1600 Pennsylvania Avenue NW, Washington, DC"
+7. VERIFY:
+   ✓ Street Address: "1600 Pennsylvania Avenue NW"
+   ✓ City: "Washington"
+   ✓ State: "DC"
+   ✓ ZIP: "20500"
+
+Test 2: Setup Form Still Works
+────────────────────────────────────────────────────────────
+1. Go to https://upkeepqr.com/new-setup
+2. Navigate to Step 2
+3. Click in "Street Address" field
+4. Type: "678 Central Ave"
+5. VERIFY: Google dropdown appears
+6. Select an address
+7. VERIFY: City, State, ZIP auto-fill
+8. CONFIRM: Setup form NOT broken
+
+Test 3: Both Forms Simultaneously
+────────────────────────────────────────────────────────────
+1. Open Request a Pro in one tab
+2. Open Setup form in another tab
+3. Test autocomplete in Request a Pro ✓
+4. Switch to Setup form tab
+5. Test autocomplete in Setup form ✓
+6. VERIFY: Both work independently
+
+Test 4: Mobile Responsive
+────────────────────────────────────────────────────────────
+1. Open Request a Pro on mobile
+2. Test autocomplete on small screen
+3. VERIFY: Dropdown visible and functional
+4. VERIFY: Can select address
+5. VERIFY: Auto-fill works on mobile
+
+═══════════════════════════════════════════════════════════════
+
+📋 IMPLEMENTATION CHECKLIST
+
+Pre-Implementation:
+────────────────────────────────────────────────────────────
+□ Verify Google Maps script is loaded
+□ Locate Request a Pro form component file
+□ Backup current code (git commit)
+□ Test Setup form autocomplete (baseline)
+
+Implementation:
+────────────────────────────────────────────────────────────
+□ Import useRef, useEffect, useState
+□ Create separate ref (requestProAddressRef)
+□ Add formData state with address fields
+□ Add useEffect for autocomplete initialization
+□ Add ref to Street Address input
+□ Ensure City, State, ZIP are controlled inputs
+□ Add handleChange function if not present
+□ Test in development
+
+Testing:
+────────────────────────────────────────────────────────────
+□ Test Request a Pro autocomplete works
+□ Test Setup form autocomplete STILL works
+□ Test both forms simultaneously
+□ Test on mobile
+□ Check browser console for errors
+□ Verify no conflicts
+
+Deployment:
+────────────────────────────────────────────────────────────
+□ Commit changes
+□ Push to production
+□ Test on production site
+□ Verify both forms work in production
+
+═══════════════════════════════════════════════════════════════
+
+🎯 SUMMARY
+
+What You're Adding:
+────────────────────────────────────────────────────────────
+✅ Google Places autocomplete to Request a Pro form
+✅ Auto-fill for Street Address, City, State, ZIP
+✅ Same UX as Setup form
+✅ Independent implementation (no conflicts)
+
+What You're NOT Touching:
+────────────────────────────────────────────────────────────
+❌ Setup form autocomplete (leave alone)
+❌ Global Google Maps loading (leave alone)
+❌ Any other forms
+
+Key Points:
+────────────────────────────────────────────────────────────
+• Use separate ref name
+• Initialize autocomplete separately
+• Test both forms after implementation
+• Ensure no conflicts or interference
+
+Expected Result:
+────────────────────────────────────────────────────────────
+✅ Request a Pro form gets autocomplete
+✅ Setup form autocomplete still works
+✅ Both forms independent
+✅ Improved user experience on both forms
+
+═══════════════════════════════════════════════════════════════
+
+✅ IMPLEMENTATION READY
+
+This specification is complete and ready for Replit Agent.
+
+Follow the code examples carefully.
+Use a separate ref name.
+Test both forms after implementation.
+DO NOT break Setup form autocomplete.
+
+Deploy and test!
+
+═══════════════════════════════════════════════════════════════
+
+END OF SPECIFICATION
