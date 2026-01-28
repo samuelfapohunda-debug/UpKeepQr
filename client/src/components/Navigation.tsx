@@ -192,7 +192,7 @@ export default function Navigation() {
             ) : (
               <Link href="/login">
                 <Button variant="outline" size="sm" className="text-xs sm:text-sm ml-2" data-testid="button-admin-login">
-                  Admin Login
+                  Log in
                 </Button>
               </Link>
             )}
