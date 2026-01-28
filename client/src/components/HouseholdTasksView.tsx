@@ -18,7 +18,9 @@ import {
   ListTodo,
   ChevronLeft,
   Calendar,
-  Check
+  Check,
+  Download,
+  Loader2
 } from 'lucide-react';
 
 interface TaskData {
@@ -68,6 +70,7 @@ export function HouseholdTasksView({ householdId, onBack }: Props) {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [completeDialogOpen, setCompleteDialogOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<TaskData | null>(null);
+  const [isDownloadingCalendar, setIsDownloadingCalendar] = useState(false);
   const [formData, setFormData] = useState<CompleteTaskFormData>({
     completionDate: new Date().toISOString().split('T')[0],
     cost: '',
@@ -77,6 +80,46 @@ export function HouseholdTasksView({ householdId, onBack }: Props) {
   });
   
   const { toast } = useToast();
+  
+  const handleDownloadCalendar = async () => {
+    try {
+      setIsDownloadingCalendar(true);
+      const token = getAuthToken();
+      
+      const response = await fetch(`/api/calendar/household/${householdId}/tasks.ics`, {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ error: 'Failed to generate calendar' }));
+        throw new Error(error.error || 'Failed to generate calendar file');
+      }
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'UpKeepQR_Tasks.ics';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      toast({
+        title: "Calendar Downloaded!",
+        description: "Open the .ics file to import tasks into your calendar app.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Download Failed",
+        description: error.message || "Could not generate calendar file",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDownloadingCalendar(false);
+    }
+  };
   
   const { data, isLoading, error } = useQuery<HouseholdTasksResponse>({
     queryKey: ['/api/admin/households', householdId, 'tasks'],
@@ -264,6 +307,20 @@ export function HouseholdTasksView({ householdId, onBack }: Props) {
         <h2 className="text-2xl font-semibold" data-testid="text-household-name">
           Tasks for {householdName}
         </h2>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleDownloadCalendar}
+          disabled={isDownloadingCalendar || summary.pending === 0}
+          data-testid="button-sync-calendar"
+        >
+          {isDownloadingCalendar ? (
+            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+          ) : (
+            <Download className="h-4 w-4 mr-2" />
+          )}
+          {isDownloadingCalendar ? 'Downloading...' : 'Sync to Calendar'}
+        </Button>
       </div>
       
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
