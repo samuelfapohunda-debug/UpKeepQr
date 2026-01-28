@@ -21,7 +21,8 @@ import {
   LogOut,
   CheckCircle,
   Settings,
-  User
+  User,
+  Download
 } from "lucide-react";
 import HouseholdDetails from "@/components/HouseholdDetails";
 import ApplianceManager from "@/components/ApplianceManager";
@@ -67,6 +68,49 @@ export default function CustomerDashboard() {
   const [activeTab, setActiveTab] = useTabState<DashboardTab>("customerDashboardTab", "tasks");
   const [showCompleteDialog, setShowCompleteDialog] = useState(false);
   const [taskToComplete, setTaskToComplete] = useState<Task | null>(null);
+  const [isDownloadingCalendar, setIsDownloadingCalendar] = useState(false);
+
+  // Download .ics calendar file for tasks
+  const handleDownloadCalendar = useCallback(async (householdId: string) => {
+    try {
+      setIsDownloadingCalendar(true);
+      
+      const response = await fetch(`${API_BASE_URL}/api/calendar/household/${householdId}/tasks.ics`, {
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ error: 'Failed to generate calendar' }));
+        throw new Error(error.error || 'Failed to generate calendar file');
+      }
+      
+      // Get the file content
+      const blob = await response.blob();
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'UpKeepQR_Tasks.ics';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      toast({
+        title: "Calendar Downloaded!",
+        description: "Open the .ics file to import tasks into your calendar app (Google, Outlook, Apple, etc.)",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Download Failed",
+        description: error.message || "Could not generate calendar file",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDownloadingCalendar(false);
+    }
+  }, [toast]);
 
   useEffect(() => {
     const verifySession = async () => {
@@ -404,7 +448,23 @@ export default function CustomerDashboard() {
                       Track and complete your personalized home maintenance schedule
                     </CardDescription>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {household && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDownloadCalendar(household.id)}
+                        disabled={isDownloadingCalendar || stats.pending === 0}
+                        data-testid="button-sync-calendar"
+                      >
+                        {isDownloadingCalendar ? (
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <Download className="h-4 w-4 mr-2" />
+                        )}
+                        {isDownloadingCalendar ? 'Downloading...' : 'Sync to Calendar'}
+                      </Button>
+                    )}
                     <Filter className="h-4 w-4 text-muted-foreground" />
                     <span className="text-sm text-muted-foreground">Filter:</span>
                   </div>
