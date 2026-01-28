@@ -1,0 +1,567 @@
+╔══════════════════════════════════════════════════════════════╗
+║  🔧 DEBUG: Calendar Sync Download Failure                   ║
+║  "Failed to generate calendar file" Error Resolution        ║
+╚══════════════════════════════════════════════════════════════╝
+
+ERROR: "Download Failed - Failed to generate calendar file"
+LOCATION: Household Details Modal - Tasks Tab - "Sync to Calendar" button
+COMPONENT: HouseholdTasksView.tsx (lines 310-323)
+STATUS: Button implemented, API call failing
+
+═══════════════════════════════════════════════════════════════
+
+🔍 CODE ANALYSIS
+
+Current Implementation (Lines 310-323):
+────────────────────────────────────────────────────────────
+
+```tsx
+<Button
+  variant="outline"
+  size="sm"
+  onClick={handleDownloadCalendar}
+  disabled={isDownloadingCalendar || summary.pending === 0}
+  data-testid="button-sync-calendar"
+>
+  {isDownloadingCalendar ? (
+    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+  ) : (
+    <Download className="h-4 w-4 mr-2" />
+  )}
+  {isDownloadingCalendar ? 'Downloading...' : 'Sync to Calendar'}
+</Button>
+```
+
+Issue Analysis:
+────────────────────────────────────────────────────────────
+✅ Button exists and is visible
+✅ Click handler attached (handleDownloadCalendar)
+✅ Loading state works (shows "Downloading...")
+✅ Button disabled when no pending tasks
+❌ API endpoint failing to generate .ics file
+
+Error Message:
+"Download Failed - Failed to generate calendar file"
+
+This indicates:
+1. Frontend code is working ✓
+2. API call is being made ✓
+3. Backend endpoint is failing ✗
+
+═══════════════════════════════════════════════════════════════
+
+🐛 ROOT CAUSE ANALYSIS
+
+Most Likely Issues (in order of probability):
+────────────────────────────────────────────────────────────
+
+Issue 1: Backend Endpoint Not Implemented (70% likely)
+────────────────────────────────────────────────────────────
+
+Symptom:
+• Error: "Failed to generate calendar file"
+• Immediate failure (no delay)
+• Consistent failure every time
+
+Cause:
+The API endpoint /api/calendar/household/:id/tasks.ics either:
+• Doesn't exist at all (404)
+• Exists but returns 500 error
+• Exists but returns wrong content type
+• Exists but has incomplete implementation
+
+Check:
+```bash
+# Check if route exists
+grep -r "tasks.ics" server/routes/
+grep -r "calendar" server/routes/
+
+# Check server logs
+# Look for 404 or 500 errors when button clicked
+```
+
+Issue 2: Database Query Failing (20% likely)
+────────────────────────────────────────────────────────────
+
+Symptom:
+• Backend endpoint exists
+• Server logs show database error
+• Error like "Cannot query tasks"
+
+Cause:
+• SQL query syntax error
+• Missing table or columns
+• Wrong field names
+• Database connection issue
+
+Check server logs for:
+• "Error querying tasks"
+• "Table 'tasks' doesn't exist"
+• "Unknown column 'due_date'"
+• SQL syntax errors
+
+Issue 3: Missing Household ID (5% likely)
+────────────────────────────────────────────────────────────
+
+Symptom:
+• Error: "Household not found"
+• Only happens for certain users
+
+Cause:
+• Frontend passing wrong household ID
+• User doesn't own this household
+• Household ID null or undefined
+
+Check:
+```javascript
+console.log('Household ID:', householdId);
+```
+
+Issue 4: .ics Generation Logic Error (5% likely)
+────────────────────────────────────────────────────────────
+
+Symptom:
+• Endpoint runs but .ics format invalid
+• File downloads but won't import to calendar
+
+Cause:
+• Incorrect .ics formatting
+• Missing required fields
+• Invalid date format
+• Special characters not escaped
+
+═══════════════════════════════════════════════════════════════
+
+🔧 DEBUGGING STEPS
+
+Step 1: Check Browser Console
+────────────────────────────────────────────────────────────
+
+Open Browser DevTools (F12) and check Console tab:
+
+Look for:
+```
+Failed to fetch
+404 Not Found: /api/calendar/household/123/tasks.ics
+500 Internal Server Error
+CORS error
+Network error
+```
+
+Check Network tab:
+```
+1. Click "Sync to Calendar" button
+2. Watch Network tab
+3. Find request to /api/calendar/...
+4. Check:
+   - Status code (should be 200)
+   - Response headers
+   - Response body
+   - Any error messages
+```
+
+Step 2: Check Server Logs
+────────────────────────────────────────────────────────────
+
+On Replit or your server:
+
+```bash
+# Watch server logs
+# Look for errors when button clicked
+
+Common errors to look for:
+• "Cannot GET /api/calendar/household/123/tasks.ics"
+• "Route not found"
+• "Error generating calendar"
+• "Database query failed"
+• "tasks.generateICS is not a function"
+```
+
+Step 3: Check if Endpoint Exists
+────────────────────────────────────────────────────────────
+
+In your codebase:
+
+```bash
+# Search for calendar routes
+find . -name "*.ts" -o -name "*.js" | xargs grep -l "calendar"
+
+# Look for:
+server/routes/calendar.ts
+server/routes/calendar.js
+server/api/calendar.ts
+
+# Check if route is registered
+grep -r "app.use.*calendar" server/
+grep -r "router.get.*tasks.ics" server/
+```
+
+Expected files:
+```
+server/routes/calendar.ts  (route definitions)
+server/index.ts            (route registration)
+```
+
+Expected code:
+```typescript
+// In server/index.ts
+import calendarRoutes from './routes/calendar';
+app.use('/api/calendar', calendarRoutes);
+
+// In server/routes/calendar.ts
+router.get('/household/:householdId/tasks.ics', async (req, res) => {
+  // Implementation
+});
+```
+
+Step 4: Test Endpoint Directly
+────────────────────────────────────────────────────────────
+
+Use curl or Postman:
+
+```bash
+# Test the endpoint directly
+curl -X GET \
+  "https://upkeepqr.com/api/calendar/household/HOUSEHOLD_ID/tasks.ics" \
+  -H "Cookie: your-session-cookie" \
+  -v
+
+# Check response:
+# - Status code (should be 200)
+# - Content-Type (should be text/calendar)
+# - Body (should be .ics format)
+```
+
+Expected response:
+```
+HTTP/1.1 200 OK
+Content-Type: text/calendar; charset=utf-8
+Content-Disposition: attachment; filename="UpKeepQR_Tasks.ics"
+
+BEGIN:VCALENDAR
+VERSION:2.0
+...
+END:VCALENDAR
+```
+
+Step 5: Check Database
+────────────────────────────────────────────────────────────
+
+Connect to your database:
+
+```sql
+-- Check if tasks table exists
+SHOW TABLES;
+
+-- Check tasks for this household
+SELECT id, title, due_date, status, priority, category
+FROM tasks
+WHERE household_id = 'HOUSEHOLD_ID';
+
+-- Verify data exists
+SELECT COUNT(*) FROM tasks WHERE household_id = 'HOUSEHOLD_ID';
+```
+
+Expected:
+• tasks table exists ✓
+• 18 tasks for this household (as shown: Total: 18, Pending: 18)
+• Tasks have all required fields ✓
+
+═══════════════════════════════════════════════════════════════
+
+🛠️ FIX: Implement Backend Endpoint
+
+If endpoint doesn't exist, implement it:
+────────────────────────────────────────────────────────────
+
+File: server/routes/calendar.ts
+
+```typescript
+import { Router } from 'express';
+import type { Request, Response } from 'express';
+import { storage } from '../db';
+
+const router = Router();
+
+// Generate .ics calendar file for household tasks
+router.get('/household/:householdId/tasks.ics', async (req: Request, res: Response) => {
+  try {
+    console.log('=== Calendar Sync Request ===');
+    console.log('Household ID:', req.params.householdId);
+    console.log('User:', req.user);
+
+    const { householdId } = req.params;
+    const userId = req.user?.id;
+
+    if (!userId) {
+      console.error('ERROR: Not authenticated');
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    // Verify user owns this household
+    console.log('Verifying household ownership...');
+    const household = await storage.getHouseholdById(householdId);
+    
+    if (!household) {
+      console.error('ERROR: Household not found');
+      return res.status(404).json({ error: 'Household not found' });
+    }
+
+    if (household.userId !== userId) {
+      console.error('ERROR: Access denied');
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    console.log('Household verified:', household.name);
+
+    // Get all pending tasks for this household
+    console.log('Fetching tasks...');
+    const tasks = await storage.getTasksByHousehold(householdId);
+    const pendingTasks = tasks.filter(t => t.status !== 'completed');
+
+    console.log(`Found ${pendingTasks.length} pending tasks`);
+
+    if (pendingTasks.length === 0) {
+      console.log('No pending tasks to sync');
+      return res.status(400).json({ error: 'No pending tasks to sync' });
+    }
+
+    // Generate .ics content
+    console.log('Generating .ics file...');
+    const icsContent = generateICSFile(pendingTasks, household.name);
+
+    console.log('.ics file generated successfully');
+    console.log(`Content length: ${icsContent.length} bytes`);
+
+    // Set headers for .ics file download
+    res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="UpKeepQR_Tasks_${sanitizeFilename(household.name)}.ics"`);
+    res.setHeader('Content-Length', Buffer.byteLength(icsContent, 'utf8'));
+
+    console.log('Sending .ics file...');
+    return res.send(icsContent);
+
+  } catch (error) {
+    console.error('=== Calendar Sync Error ===');
+    console.error('Error:', error);
+    console.error('Stack:', error.stack);
+    
+    return res.status(500).json({ 
+      error: 'Failed to generate calendar file',
+      details: error.message 
+    });
+  }
+});
+
+// Helper: Generate .ics file content
+function generateICSFile(tasks: any[], householdName: string): string {
+  const now = new Date();
+  const timestamp = formatICSDateTime(now);
+  
+  let ics = `BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//UpKeepQR//Home Maintenance Tasks//EN
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+X-WR-CALNAME:UpKeepQR - ${escapeICS(householdName)}
+X-WR-TIMEZONE:America/New_York
+X-WR-CALDESC:Home maintenance tasks for ${escapeICS(householdName)}
+BEGIN:VTIMEZONE
+TZID:America/New_York
+TZOFFSETFROM:-0500
+TZOFFSETTO:-0400
+TZNAME:EDT
+DTSTART:19700308T020000
+RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=2SU
+END:VTIMEZONE\n`;
+
+  // Add each task as an event
+  tasks.forEach(task => {
+    const uid = `task-${task.id}@upkeepqr.com`;
+    const dueDate = formatICSDate(new Date(task.dueDate));
+    const priority = task.priority === 'High' ? '1' : task.priority === 'Medium' ? '5' : '9';
+    
+    ics += `BEGIN:VEVENT
+UID:${uid}
+DTSTAMP:${timestamp}
+DTSTART;VALUE=DATE:${dueDate}
+DTEND;VALUE=DATE:${dueDate}
+SUMMARY:${escapeICS(task.title)}
+DESCRIPTION:${escapeICS(task.description || '')}\\n\\nPriority: ${task.priority}\\n\\nCategory: ${task.category}\\n\\nFrom UpKeepQR
+PRIORITY:${priority}
+CATEGORIES:${escapeICS(task.category)},Home Maintenance
+STATUS:NEEDS-ACTION
+CLASS:PUBLIC
+TRANSP:TRANSPARENT
+LOCATION:${escapeICS(householdName)}
+BEGIN:VALARM
+TRIGGER:-P1D
+DESCRIPTION:Reminder: ${escapeICS(task.title)} is due tomorrow
+ACTION:DISPLAY
+END:VALARM
+BEGIN:VALARM
+TRIGGER:-P7D
+DESCRIPTION:Reminder: ${escapeICS(task.title)} is due in 1 week
+ACTION:DISPLAY
+END:VALARM
+END:VEVENT\n`;
+  });
+
+  ics += `END:VCALENDAR`;
+  return ics;
+}
+
+// Helper: Format date as YYYYMMDD
+function formatICSDate(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}${month}${day}`;
+}
+
+// Helper: Format datetime as YYYYMMDDTHHmmssZ
+function formatICSDateTime(date: Date): string {
+  const year = date.getUTCFullYear();
+  const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(date.getUTCDate()).padStart(2, '0');
+  const hours = String(date.getUTCHours()).padStart(2, '0');
+  const minutes = String(date.getUTCMinutes()).padStart(2, '0');
+  const seconds = String(date.getUTCSeconds()).padStart(2, '0');
+  return `${year}${month}${day}T${hours}${minutes}${seconds}Z`;
+}
+
+// Helper: Escape special characters for .ics
+function escapeICS(text: string): string {
+  if (!text) return '';
+  return text
+    .replace(/\\/g, '\\\\')
+    .replace(/;/g, '\\;')
+    .replace(/,/g, '\\,')
+    .replace(/\n/g, '\\n')
+    .replace(/\r/g, '');
+}
+
+// Helper: Sanitize filename
+function sanitizeFilename(filename: string): string {
+  return filename
+    .replace(/[^a-z0-9]/gi, '_')
+    .replace(/_+/g, '_')
+    .substring(0, 50);
+}
+
+export default router;
+```
+
+File: server/index.ts (Register route)
+
+```typescript
+import calendarRoutes from './routes/calendar';
+
+// Register calendar routes
+app.use('/api/calendar', calendarRoutes);
+```
+
+═══════════════════════════════════════════════════════════════
+
+🔍 QUICK FIX CHECKLIST
+
+□ 1. Check browser console for errors
+□ 2. Check network tab for API request details
+□ 3. Check server logs for endpoint errors
+□ 4. Verify endpoint exists in code
+□ 5. Verify route is registered in server
+□ 6. Test endpoint with curl/Postman
+□ 7. Check database for tasks
+□ 8. If endpoint missing, implement it
+□ 9. Test button again
+□ 10. Verify .ics file downloads
+□ 11. Test importing to calendar app
+
+═══════════════════════════════════════════════════════════════
+
+🎯 IMMEDIATE ACTION
+
+Based on the error "Failed to generate calendar file":
+
+Most Likely Solution:
+────────────────────────────────────────────────────────────
+The backend endpoint /api/calendar/household/:id/tasks.ics
+is either missing or not properly implemented.
+
+Immediate Steps:
+1. Check if server/routes/calendar.ts exists
+2. If not, create it with the code above
+3. Register route in server/index.ts
+4. Restart server
+5. Test button again
+
+Expected Result:
+✅ Button click triggers API call
+✅ Server generates .ics file
+✅ File downloads to browser
+✅ Success message shows
+✅ File can be imported to calendar
+
+═══════════════════════════════════════════════════════════════
+
+📋 TESTING AFTER FIX
+
+1. Click "Sync to Calendar" button
+2. Check browser console (no errors)
+3. Check network tab:
+   - Request URL: /api/calendar/household/XXX/tasks.ics
+   - Status: 200 OK
+   - Content-Type: text/calendar
+   - Response: .ics file content
+4. Verify file downloads
+5. Open file in calendar app
+6. Verify all 18 tasks imported
+7. Check reminders work
+
+═══════════════════════════════════════════════════════════════
+
+💡 ADDITIONAL DEBUGGING
+
+If still failing after implementing endpoint:
+
+Check 1: Household ID
+```javascript
+// In frontend
+console.log('Syncing for household:', household.id);
+```
+
+Check 2: Authentication
+```javascript
+// In backend
+console.log('User authenticated:', !!req.user);
+console.log('User ID:', req.user?.id);
+```
+
+Check 3: Database Query
+```javascript
+// In backend
+console.log('Fetched tasks:', tasks.length);
+console.log('First task:', tasks[0]);
+```
+
+Check 4: .ics Generation
+```javascript
+// In backend
+console.log('Generated .ics content (first 200 chars):');
+console.log(icsContent.substring(0, 200));
+```
+
+═══════════════════════════════════════════════════════════════
+
+🚀 NEXT STEPS
+
+1. Implement backend endpoint (code provided above)
+2. Test in Replit development environment
+3. Verify .ics file generates correctly
+4. Deploy to production
+5. Test on production site
+6. Verify works for all users
+
+═══════════════════════════════════════════════════════════════
+
+END OF DEBUG GUIDE

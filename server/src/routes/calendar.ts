@@ -124,8 +124,8 @@ router.get('/household/:householdId/tasks.ics', async (req, res) => {
       dueDate: householdTaskAssignmentsTable.dueDate,
       priority: householdTaskAssignmentsTable.priority,
       status: householdTaskAssignmentsTable.status,
-      taskTitle: homeMaintenanceTasksTable.title,
-      taskDescription: homeMaintenanceTasksTable.description,
+      taskTitle: homeMaintenanceTasksTable.taskName,
+      taskDescription: homeMaintenanceTasksTable.howTo,
       taskCategory: homeMaintenanceTasksTable.category,
     })
     .from(householdTaskAssignmentsTable)
