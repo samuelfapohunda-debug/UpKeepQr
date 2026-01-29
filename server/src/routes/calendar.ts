@@ -42,6 +42,22 @@ function escapeICS(text: string | null): string {
     .replace(/\r/g, '');     // Remove carriage return
 }
 
+// Fold lines longer than 75 characters per RFC 5545
+function foldLine(line: string): string {
+  if (line.length <= 75) return line;
+  
+  const result: string[] = [];
+  let current = line;
+  
+  while (current.length > 75) {
+    result.push(current.substring(0, 75));
+    current = ' ' + current.substring(75);
+  }
+  result.push(current);
+  
+  return result.join('\r\n');
+}
+
 // Generate .ics file content for household tasks with PROPER LINE ENDINGS
 function generateICSFile(tasks: any[], householdName: string): string {
   const timestamp = formatICSDateTime(new Date());
@@ -86,16 +102,20 @@ function generateICSFile(tasks: any[], householdName: string): string {
     
     validEventCount++;
     
+    // Build description with details
+    const fullDescription = `${escapeICS(taskDescription)}\\nPriority: ${task.priority || 'medium'}\\nCategory: ${taskCategory}\\nFrom UpKeepQR`;
+    
     // Add event with proper structure (ACTION before DESCRIPTION in VALARM)
+    // Use foldLine for potentially long lines per RFC 5545
     lines.push('BEGIN:VEVENT');
     lines.push(`UID:${uid}`);
     lines.push(`DTSTAMP:${timestamp}`);
     lines.push(`DTSTART;VALUE=DATE:${dueDate}`);
     lines.push(`DTEND;VALUE=DATE:${dueDate}`);
-    lines.push(`SUMMARY:${escapeICS(taskTitle)}`);
-    lines.push(`DESCRIPTION:${escapeICS(taskDescription)}\\nPriority: ${task.priority || 'medium'}\\nCategory: ${taskCategory}\\nFrom UpKeepQR`);
+    lines.push(foldLine(`SUMMARY:${escapeICS(taskTitle)}`));
+    lines.push(foldLine(`DESCRIPTION:${fullDescription}`));
     lines.push(`PRIORITY:${priorityNum}`);
-    lines.push(`CATEGORIES:${escapeICS(taskCategory)}`);
+    lines.push(foldLine(`CATEGORIES:${escapeICS(taskCategory)}`));
     lines.push(task.status === 'completed' ? 'STATUS:COMPLETED' : 'STATUS:NEEDS-ACTION');
     lines.push('CLASS:PUBLIC');
     lines.push('TRANSP:TRANSPARENT');
@@ -104,7 +124,7 @@ function generateICSFile(tasks: any[], householdName: string): string {
     lines.push('BEGIN:VALARM');
     lines.push('TRIGGER:-P1D');
     lines.push('ACTION:DISPLAY');
-    lines.push(`DESCRIPTION:${escapeICS(taskTitle)} is due tomorrow`);
+    lines.push(foldLine(`DESCRIPTION:${escapeICS(taskTitle)} is due tomorrow`));
     lines.push('END:VALARM');
     
     lines.push('END:VEVENT');
