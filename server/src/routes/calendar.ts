@@ -43,19 +43,28 @@ function escapeICS(text: string | null): string {
 }
 
 // Fold lines longer than 75 characters per RFC 5545
+// Lines are split at 75 chars, then continued with CRLF + single SPACE (no backslashes)
 function foldLine(line: string): string {
   if (line.length <= 75) return line;
   
-  const result: string[] = [];
-  let current = line;
+  let result = '';
+  let remaining = line;
+  let isFirstLine = true;
   
-  while (current.length > 75) {
-    result.push(current.substring(0, 75));
-    current = ' ' + current.substring(75);
+  while (remaining.length > 0) {
+    if (isFirstLine) {
+      // First line: take up to 75 characters
+      result += remaining.slice(0, 75);
+      remaining = remaining.slice(75);
+      isFirstLine = false;
+    } else {
+      // Continuation lines: CRLF + SPACE + up to 74 more characters (75 total with space)
+      result += '\r\n ' + remaining.slice(0, 74);
+      remaining = remaining.slice(74);
+    }
   }
-  result.push(current);
   
-  return result.join('\r\n');
+  return result;
 }
 
 // Generate .ics file content for household tasks with PROPER LINE ENDINGS
