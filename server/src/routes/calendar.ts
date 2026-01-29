@@ -42,19 +42,22 @@ function escapeICS(text: string | null): string {
     .replace(/\r/g, '');     // Remove carriage return
 }
 
-// Generate .ics file content for household tasks
+// Generate .ics file content for household tasks with PROPER LINE ENDINGS
 function generateICSFile(tasks: any[], householdName: string): string {
   const timestamp = formatICSDateTime(new Date());
   
-  let ics = `BEGIN:VCALENDAR
-VERSION:2.0
-PRODID:-//UpKeepQR//Home Maintenance Tasks//EN
-CALSCALE:GREGORIAN
-METHOD:PUBLISH
-X-WR-CALNAME:UpKeepQR - ${escapeICS(householdName)}
-X-WR-CALDESC:Home maintenance tasks for ${escapeICS(householdName)}
-`;
-
+  // Build as array of lines, then join with \r\n (CRLF) - REQUIRED by iCalendar spec
+  const lines: string[] = [];
+  
+  // Calendar header
+  lines.push('BEGIN:VCALENDAR');
+  lines.push('VERSION:2.0');
+  lines.push('PRODID:-//UpKeepQR//NONSGML Home Tasks//EN');
+  lines.push('CALSCALE:GREGORIAN');
+  lines.push('METHOD:PUBLISH');
+  lines.push(`X-WR-CALNAME:UpKeepQR - ${escapeICS(householdName)}`);
+  lines.push('X-WR-TIMEZONE:America/New_York');
+  
   // Add each task as an event
   let validEventCount = 0;
   
@@ -82,37 +85,38 @@ X-WR-CALDESC:Home maintenance tasks for ${escapeICS(householdName)}
     const taskCategory = task.taskCategory || task.category || 'Home Maintenance';
     
     validEventCount++;
-    ics += `BEGIN:VEVENT
-UID:${uid}
-DTSTAMP:${timestamp}
-DTSTART;VALUE=DATE:${dueDate}
-DTEND;VALUE=DATE:${dueDate}
-SUMMARY:${escapeICS(taskTitle)}
-DESCRIPTION:${escapeICS(taskDescription)}\\n\\nPriority: ${task.priority || 'medium'}\\nCategory: ${taskCategory}\\n\\nFrom UpKeepQR
-PRIORITY:${priorityNum}
-CATEGORIES:${escapeICS(taskCategory)},Home Maintenance
-STATUS:${task.status === 'completed' ? 'COMPLETED' : 'NEEDS-ACTION'}
-CLASS:PUBLIC
-TRANSP:TRANSPARENT
-LOCATION:${escapeICS(householdName)}
-BEGIN:VALARM
-TRIGGER:-P1D
-DESCRIPTION:Reminder: ${escapeICS(taskTitle)} is due tomorrow
-ACTION:DISPLAY
-END:VALARM
-BEGIN:VALARM
-TRIGGER:-P7D
-DESCRIPTION:Reminder: ${escapeICS(taskTitle)} is due in 1 week
-ACTION:DISPLAY
-END:VALARM
-END:VEVENT
-`;
+    
+    // Add event with proper structure (ACTION before DESCRIPTION in VALARM)
+    lines.push('BEGIN:VEVENT');
+    lines.push(`UID:${uid}`);
+    lines.push(`DTSTAMP:${timestamp}`);
+    lines.push(`DTSTART;VALUE=DATE:${dueDate}`);
+    lines.push(`DTEND;VALUE=DATE:${dueDate}`);
+    lines.push(`SUMMARY:${escapeICS(taskTitle)}`);
+    lines.push(`DESCRIPTION:${escapeICS(taskDescription)}\\nPriority: ${task.priority || 'medium'}\\nCategory: ${taskCategory}\\nFrom UpKeepQR`);
+    lines.push(`PRIORITY:${priorityNum}`);
+    lines.push(`CATEGORIES:${escapeICS(taskCategory)}`);
+    lines.push(task.status === 'completed' ? 'STATUS:COMPLETED' : 'STATUS:NEEDS-ACTION');
+    lines.push('CLASS:PUBLIC');
+    lines.push('TRANSP:TRANSPARENT');
+    
+    // Add reminder alarm - 1 day before (ACTION before DESCRIPTION per spec)
+    lines.push('BEGIN:VALARM');
+    lines.push('TRIGGER:-P1D');
+    lines.push('ACTION:DISPLAY');
+    lines.push(`DESCRIPTION:${escapeICS(taskTitle)} is due tomorrow`);
+    lines.push('END:VALARM');
+    
+    lines.push('END:VEVENT');
   });
+  
+  // Calendar footer
+  lines.push('END:VCALENDAR');
 
   console.log(`Generated ${validEventCount} valid events out of ${tasks.length} tasks`);
   
-  ics += `END:VCALENDAR`;
-  return ics;
+  // CRITICAL: Join with \r\n (CRLF) and add final \r\n - REQUIRED by iCalendar spec
+  return lines.join('\r\n') + '\r\n';
 }
 
 // GET /api/calendar/household/:householdId/tasks.ics - Download .ics file
