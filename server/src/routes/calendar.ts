@@ -56,7 +56,21 @@ X-WR-CALDESC:Home maintenance tasks for ${escapeICS(householdName)}
 `;
 
   // Add each task as an event
-  tasks.forEach(task => {
+  let validEventCount = 0;
+  
+  tasks.forEach((task, index) => {
+    // Validate required fields
+    if (!task.id) {
+      console.warn(`Task ${index}: Missing ID, skipping`);
+      return;
+    }
+    
+    const taskTitle = task.taskTitle || task.title || 'Maintenance Task';
+    if (!taskTitle || taskTitle.trim() === '') {
+      console.warn(`Task ${index}: Empty title, skipping`);
+      return;
+    }
+    
     const uid = `task-${task.id}@upkeepqr.com`;
     const dueDate = task.dueDate ? formatICSDate(new Date(task.dueDate)) : formatICSDate(new Date());
     
@@ -64,10 +78,10 @@ X-WR-CALDESC:Home maintenance tasks for ${escapeICS(householdName)}
     const priorityNum = task.priority === 'high' ? '1' : 
                         task.priority === 'medium' ? '5' : '9';
     
-    const taskTitle = task.taskTitle || task.title || 'Maintenance Task';
     const taskDescription = task.taskDescription || task.description || '';
     const taskCategory = task.taskCategory || task.category || 'Home Maintenance';
     
+    validEventCount++;
     ics += `BEGIN:VEVENT
 UID:${uid}
 DTSTAMP:${timestamp}
@@ -95,6 +109,8 @@ END:VEVENT
 `;
   });
 
+  console.log(`Generated ${validEventCount} valid events out of ${tasks.length} tasks`);
+  
   ics += `END:VCALENDAR`;
   return ics;
 }
