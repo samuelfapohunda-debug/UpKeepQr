@@ -826,13 +826,22 @@ export default function SetupFormsDashboard() {
 
       {/* Appliance Manager Dialog */}
       {showApplianceManager && selectedHouseholdForAppliances && (
-        <ApplianceManager
-          householdId={selectedHouseholdForAppliances}
-          onClose={() => {
+        <Dialog open={showApplianceManager} onOpenChange={(open) => {
+          if (!open) {
             setShowApplianceManager(false);
             setSelectedHouseholdForAppliances(null);
-          }}
-        />
+          }
+        }}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <ApplianceManager
+              householdId={selectedHouseholdForAppliances}
+              onClose={() => {
+                setShowApplianceManager(false);
+                setSelectedHouseholdForAppliances(null);
+              }}
+            />
+          </DialogContent>
+        </Dialog>
       )}
 
       {/* Tasks View Dialog */}
