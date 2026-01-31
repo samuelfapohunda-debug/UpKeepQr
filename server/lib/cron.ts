@@ -5,11 +5,34 @@ import { householdTaskAssignmentsTable, type ReminderQueue, type Household } fro
 import { eq, and, lt } from 'drizzle-orm';
 import { sendReminderEmail } from './mail.js';
 import { createMaintenanceReminderEvent } from './ics.js';
+import { processWarrantyExpirationNotifications } from './warrantyNotifications.js';
 
 let isReminderJobRunning = false;
 let isOverdueJobRunning = false;
+let isWarrantyJobRunning = false;
 
 export function startCronJobs(): void {
+  cron.schedule('0 8 * * *', async () => {
+    console.log('Running warranty expiration check at 08:00 EST');
+    
+    if (isWarrantyJobRunning) {
+      console.log('Warranty job already running, skipping');
+      return;
+    }
+    
+    isWarrantyJobRunning = true;
+    
+    try {
+      await processWarrantyExpirationNotifications();
+    } catch (error) {
+      console.error('Warranty notification job failed:', error);
+    } finally {
+      isWarrantyJobRunning = false;
+    }
+  }, {
+    timezone: 'America/New_York'
+  });
+
   cron.schedule('0 9 * * *', async () => {
     console.log('Running daily maintenance job at 09:00 EST');
     
@@ -23,7 +46,7 @@ export function startCronJobs(): void {
     timezone: 'America/New_York'
   });
 
-  console.log('Cron jobs started successfully');
+  console.log('Cron jobs started successfully (8:00 AM warranty alerts, 9:00 AM maintenance reminders)');
 }
 
 async function updateOverdueTasks(): Promise<void> {

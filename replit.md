@@ -37,6 +37,14 @@ The backend is a RESTful API built with Express.js and TypeScript. It uses Drizz
 - **Stripe Webhook Integration**: Processes `checkout.session.completed` events to create orders with a sequential ID format.
 - **Modular Architecture & Audit Logging**: Routes are modularized for maintainability. All household CRUD operations are tracked via an audit event system, recording actor type, ID, email, timestamp, and metadata for compliance.
 - **Appliance Tracking & Warranty Management**: Comprehensive appliance management with CRUD operations, warranty tracking with expiration alerts (14-day threshold), and maintenance history logging. Features include: common appliances catalog (seeded with 15 typical home appliances), household-specific appliance registration with serial number uniqueness, warranty status reports, and automatic cost tracking. All endpoints require authentication.
+- **Warranty Expiration Notification System** (Jan 2026):
+  - **Automated Alerts**: Daily cron job at 8:00 AM EST sends email and SMS notifications for warranties expiring in 7 days (medium urgency) and 3 days (high urgency)
+  - **Database Table**: `warranty_notifications` tracks sent notifications with unique constraint on (appliance_id, notification_type) for deduplication
+  - **Preference-Based Routing**: Respects `householdsTable.notificationPreference` ('email_only', 'sms_only', 'both') and `smsOptIn` for TCPA compliance
+  - **Email Templates**: Professional HTML emails with appliance details, warranty provider info, expiration date, and CTA to dashboard
+  - **SMS Templates**: Concise messages with urgency indicator and link to dashboard
+  - **API Endpoint**: `GET /api/households/:householdId/warranty-notifications` returns notification history with appliance details
+  - **Service**: `server/lib/warrantyNotifications.ts` handles query logic, deduplication, and notification dispatch
 - **Maintenance History & Reporting**: Detailed maintenance logs linked to appliances and scheduled tasks. Supports manual, scheduled, and emergency log types with cost tracking, service provider recording, and on-time completion metrics. Reports include maintenance history with cost trends and warranty status summaries.
 - **Customer Success Pages** (Dec 2024):
   - **Registration Success Page** (`/registration/success`): Customer-facing welcome page after completing home registration with personalized next steps, email check reminder, and dashboard access link.
