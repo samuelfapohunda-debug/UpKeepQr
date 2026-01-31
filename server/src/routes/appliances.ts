@@ -3,6 +3,7 @@ import { db } from '../../db';
 import { 
   householdAppliancesTable, 
   commonAppliancesTable,
+  warrantyNotificationsTable,
   insertHouseholdApplianceSchema,
   updateHouseholdApplianceSchema,
   HouseholdAppliance
@@ -267,6 +268,36 @@ router.delete('/households/:householdId/appliances/:applianceId', requireSession
   } catch (error) {
     console.error('Error deleting appliance:', error);
     res.status(500).json({ error: 'Failed to delete appliance' });
+  }
+});
+
+router.get('/households/:householdId/warranty-notifications', requireSessionOrAdminAuth, validateHouseholdAccess, async (req: SessionAuthRequest, res: Response) => {
+  try {
+    const { householdId } = req.params;
+    
+    const notifications = await db
+      .select({
+        notification: warrantyNotificationsTable,
+        appliance: {
+          id: householdAppliancesTable.id,
+          applianceType: householdAppliancesTable.applianceType,
+          brand: householdAppliancesTable.brand,
+          modelNumber: householdAppliancesTable.modelNumber,
+          warrantyExpiration: householdAppliancesTable.warrantyExpiration
+        }
+      })
+      .from(warrantyNotificationsTable)
+      .leftJoin(
+        householdAppliancesTable,
+        eq(warrantyNotificationsTable.householdApplianceId, householdAppliancesTable.id)
+      )
+      .where(eq(warrantyNotificationsTable.householdId, householdId))
+      .orderBy(desc(warrantyNotificationsTable.createdAt));
+    
+    res.json({ notifications });
+  } catch (error) {
+    console.error('Error fetching warranty notifications:', error);
+    res.status(500).json({ error: 'Failed to fetch warranty notifications' });
   }
 });
 

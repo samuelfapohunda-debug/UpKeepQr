@@ -1378,5 +1378,31 @@ export const sessionsTable = pgTable("sessions", {
 export type Session = typeof sessionsTable.$inferSelect;
 export type InsertSession = typeof sessionsTable.$inferInsert;
 
+// Warranty Notifications Table - Track sent warranty expiration alerts
+export const warrantyNotificationsTable = pgTable("warranty_notifications", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  householdApplianceId: varchar("household_appliance_id", { length: 255 }).notNull().references(() => householdAppliancesTable.id, { onDelete: 'cascade' }),
+  householdId: varchar("household_id", { length: 255 }).notNull().references(() => householdsTable.id, { onDelete: 'cascade' }),
+  notificationType: varchar("notification_type", { length: 20 }).notNull(), // '7_day', '3_day'
+  notificationMethod: varchar("notification_method", { length: 20 }).notNull(), // 'email_only', 'sms_only', 'both'
+  emailSent: boolean("email_sent").default(false),
+  smsSent: boolean("sms_sent").default(false),
+  emailSentAt: timestamp("email_sent_at"),
+  smsSentAt: timestamp("sms_sent_at"),
+  status: varchar("status", { length: 20 }).notNull().default('pending'), // 'pending', 'sent', 'partial', 'failed'
+  errorMessage: text("error_message"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+}, (table) => ({
+  applianceIdx: index("idx_warranty_notif_appliance").on(table.householdApplianceId),
+  householdIdx: index("idx_warranty_notif_household").on(table.householdId),
+  typeIdx: index("idx_warranty_notif_type").on(table.notificationType),
+  statusIdx: index("idx_warranty_notif_status").on(table.status),
+  uniqueNotification: uniqueIndex("idx_warranty_notif_unique").on(table.householdApplianceId, table.notificationType)
+}));
+
+export type WarrantyNotification = typeof warrantyNotificationsTable.$inferSelect;
+export type InsertWarrantyNotification = typeof warrantyNotificationsTable.$inferInsert;
+
 // Lead Capture
 export * from "./lead-schema";
