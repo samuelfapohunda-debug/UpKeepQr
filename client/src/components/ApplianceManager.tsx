@@ -493,144 +493,190 @@ export default function ApplianceManager({ householdId, onClose }: ApplianceMana
       )}
 
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-0">
+          <DialogHeader className="px-8 pt-8 pb-4">
+            <DialogTitle className="text-2xl">
               {editingAppliance ? 'Edit Appliance' : 'Add New Appliance'}
             </DialogTitle>
             <DialogDescription>
-              {editingAppliance ? 'Update the appliance details' : 'Enter the appliance details'}
+              {editingAppliance ? 'Update the appliance details below' : 'Enter the appliance details below'}
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="applianceType">
-                Appliance Type <span className="text-destructive">*</span>
-              </Label>
-              <Select
-                value={formData.applianceType}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, applianceType: value })
-                }
-              >
-                <SelectTrigger data-testid="select-appliance-type">
-                  <SelectValue placeholder="Select appliance type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {APPLIANCE_TYPES.map((type) => (
-                    <SelectItem key={type} value={type}>
-                      {type}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          <form onSubmit={handleSubmit} className="px-8 pb-8">
+            {/* Section 1: Appliance Information */}
+            <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-6 mb-6">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
+                Appliance Information
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+                Enter the basic details of your appliance
+              </p>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <Label htmlFor="applianceType" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                    Appliance Type <span className="text-red-500">*</span>
+                  </Label>
+                  <Select
+                    value={formData.applianceType}
+                    onValueChange={(value) =>
+                      setFormData({ ...formData, applianceType: value })
+                    }
+                  >
+                    <SelectTrigger className="bg-white dark:bg-gray-800 h-12" data-testid="select-appliance-type">
+                      <SelectValue placeholder="Select appliance type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {APPLIANCE_TYPES.map((type) => (
+                        <SelectItem key={type} value={type}>
+                          {type}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="brand">Brand <span className="text-destructive">*</span></Label>
-                <Input
-                  id="brand"
-                  value={formData.brand}
-                  onChange={(e) =>
-                    setFormData({ ...formData, brand: e.target.value })
-                  }
-                  placeholder="e.g., Samsung, LG, Whirlpool"
-                  data-testid="input-appliance-brand"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="modelNumber">Model Number <span className="text-destructive">*</span></Label>
-                <Input
-                  id="modelNumber"
-                  value={formData.modelNumber}
-                  onChange={(e) =>
-                    setFormData({ ...formData, modelNumber: e.target.value })
-                  }
-                  placeholder="e.g., RF28R7351SR"
-                  data-testid="input-appliance-model"
-                />
-              </div>
-            </div>
+                <div>
+                  <Label htmlFor="brand" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                    Brand <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="brand"
+                    value={formData.brand}
+                    onChange={(e) =>
+                      setFormData({ ...formData, brand: e.target.value })
+                    }
+                    className="bg-white dark:bg-gray-800 h-12"
+                    data-testid="input-appliance-brand"
+                  />
+                </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="serialNumber">Serial Number <span className="text-destructive">*</span></Label>
-                <Input
-                  id="serialNumber"
-                  value={formData.serialNumber}
-                  onChange={(e) =>
-                    setFormData({ ...formData, serialNumber: e.target.value })
-                  }
-                  placeholder="e.g., 123456789"
-                  data-testid="input-appliance-serial"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="location">Location in Home</Label>
-                <Input
-                  id="location"
-                  value={formData.location}
-                  onChange={(e) =>
-                    setFormData({ ...formData, location: e.target.value })
-                  }
-                  placeholder="e.g., Kitchen, Basement"
-                  data-testid="input-appliance-location"
-                />
-              </div>
-            </div>
+                <div>
+                  <Label htmlFor="modelNumber" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                    Model Number <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="modelNumber"
+                    value={formData.modelNumber}
+                    onChange={(e) =>
+                      setFormData({ ...formData, modelNumber: e.target.value })
+                    }
+                    className="bg-white dark:bg-gray-800 h-12"
+                    data-testid="input-appliance-model"
+                  />
+                </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="purchaseDate">Purchase Date <span className="text-destructive">*</span></Label>
-                <Input
-                  id="purchaseDate"
-                  type="date"
-                  value={formData.purchaseDate}
-                  onChange={(e) =>
-                    setFormData({ ...formData, purchaseDate: e.target.value })
-                  }
-                  data-testid="input-appliance-purchase-date"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="installationDate">Installation Date</Label>
-                <Input
-                  id="installationDate"
-                  type="date"
-                  value={formData.installationDate}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      installationDate: e.target.value,
-                    })
-                  }
-                  data-testid="input-appliance-install-date"
-                />
+                <div>
+                  <Label htmlFor="serialNumber" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                    Serial Number <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="serialNumber"
+                    value={formData.serialNumber}
+                    onChange={(e) =>
+                      setFormData({ ...formData, serialNumber: e.target.value })
+                    }
+                    className="bg-white dark:bg-gray-800 h-12"
+                    data-testid="input-appliance-serial"
+                  />
+                </div>
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="purchasePrice">Purchase Price ($)</Label>
-              <Input
-                id="purchasePrice"
-                type="number"
-                step="0.01"
-                value={formData.purchasePrice}
-                onChange={(e) =>
-                  setFormData({ ...formData, purchasePrice: e.target.value })
-                }
-                placeholder="e.g., 1299.99"
-                data-testid="input-appliance-price"
-              />
+            {/* Section 2: Purchase & Installation */}
+            <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-6 mb-6">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
+                Purchase & Installation
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+                Record when and where you got this appliance
+              </p>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <Label htmlFor="purchaseDate" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                    Purchase Date <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="purchaseDate"
+                    type="date"
+                    value={formData.purchaseDate}
+                    onChange={(e) =>
+                      setFormData({ ...formData, purchaseDate: e.target.value })
+                    }
+                    className="bg-white dark:bg-gray-800 h-12"
+                    data-testid="input-appliance-purchase-date"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="installationDate" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                    Installation Date
+                  </Label>
+                  <Input
+                    id="installationDate"
+                    type="date"
+                    value={formData.installationDate}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        installationDate: e.target.value,
+                      })
+                    }
+                    className="bg-white dark:bg-gray-800 h-12"
+                    data-testid="input-appliance-install-date"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="purchasePrice" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                    Purchase Price ($)
+                  </Label>
+                  <Input
+                    id="purchasePrice"
+                    type="number"
+                    step="0.01"
+                    value={formData.purchasePrice}
+                    onChange={(e) =>
+                      setFormData({ ...formData, purchasePrice: e.target.value })
+                    }
+                    className="bg-white dark:bg-gray-800 h-12"
+                    data-testid="input-appliance-price"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="location" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                    Location in Home
+                  </Label>
+                  <Input
+                    id="location"
+                    value={formData.location}
+                    onChange={(e) =>
+                      setFormData({ ...formData, location: e.target.value })
+                    }
+                    className="bg-white dark:bg-gray-800 h-12"
+                    data-testid="input-appliance-location"
+                  />
+                </div>
+              </div>
             </div>
 
-            <div className="border-t pt-4">
-              <h4 className="font-medium mb-3">Warranty Information</h4>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="warrantyExpiration">Warranty Expiration</Label>
+            {/* Section 3: Warranty Information */}
+            <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-6 mb-6">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
+                Warranty Information
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+                Track your appliance warranty details
+              </p>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <Label htmlFor="warrantyExpiration" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                    Warranty Expiration
+                  </Label>
                   <Input
                     id="warrantyExpiration"
                     type="date"
@@ -641,96 +687,127 @@ export default function ApplianceManager({ householdId, onClose }: ApplianceMana
                         warrantyExpiration: e.target.value,
                       })
                     }
+                    className="bg-white dark:bg-gray-800 h-12"
                     data-testid="input-appliance-warranty-exp"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="warrantyType">Warranty Type</Label>
+
+                <div>
+                  <Label htmlFor="warrantyType" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                    Warranty Type
+                  </Label>
                   <Select
                     value={formData.warrantyType}
                     onValueChange={(value) =>
                       setFormData({ ...formData, warrantyType: value })
                     }
                   >
-                    <SelectTrigger data-testid="select-warranty-type">
+                    <SelectTrigger className="bg-white dark:bg-gray-800 h-12" data-testid="select-warranty-type">
                       <SelectValue placeholder="Select type" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Manufacturer">Manufacturer</SelectItem>
-                      <SelectItem value="Extended">Extended</SelectItem>
-                      <SelectItem value="Labor">Labor</SelectItem>
+                      <SelectItem value="Manufacturer">Manufacturer Warranty</SelectItem>
+                      <SelectItem value="Extended">Extended Warranty</SelectItem>
+                      <SelectItem value="Store">Store Warranty</SelectItem>
+                      <SelectItem value="Insurance">Appliance Insurance</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4 mt-4">
-                <div className="space-y-2">
-                  <Label htmlFor="warrantyProvider">Warranty Provider</Label>
+
+                <div>
+                  <Label htmlFor="warrantyProvider" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                    Warranty Provider
+                  </Label>
                   <Input
                     id="warrantyProvider"
                     value={formData.warrantyProvider}
                     onChange={(e) =>
                       setFormData({ ...formData, warrantyProvider: e.target.value })
                     }
-                    placeholder="e.g., Samsung, Asurion"
+                    className="bg-white dark:bg-gray-800 h-12"
                     data-testid="input-warranty-provider"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="warrantyPolicyNumber">Policy Number</Label>
+
+                <div>
+                  <Label htmlFor="warrantyPolicyNumber" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                    Policy Number
+                  </Label>
                   <Input
                     id="warrantyPolicyNumber"
                     value={formData.warrantyPolicyNumber}
                     onChange={(e) =>
                       setFormData({ ...formData, warrantyPolicyNumber: e.target.value })
                     }
-                    placeholder="e.g., WP-12345678"
+                    className="bg-white dark:bg-gray-800 h-12"
                     data-testid="input-warranty-policy"
                   />
                 </div>
               </div>
-              <div className="space-y-2 mt-4">
-                <Label htmlFor="warrantyCoverageDetails">Coverage Details</Label>
+            </div>
+
+            {/* Section 4: Coverage Details */}
+            <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-6 mb-6">
+              <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
+                Coverage Details
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+                Describe what your warranty covers
+              </p>
+
+              <div>
+                <Label htmlFor="warrantyCoverageDetails" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                  What does the warranty cover?
+                </Label>
                 <Textarea
                   id="warrantyCoverageDetails"
                   value={formData.warrantyCoverageDetails}
                   onChange={(e) =>
                     setFormData({ ...formData, warrantyCoverageDetails: e.target.value })
                   }
-                  placeholder="What does the warranty cover?"
-                  rows={2}
+                  rows={4}
+                  className="bg-white dark:bg-gray-800 resize-none"
                   data-testid="textarea-warranty-coverage"
+                />
+              </div>
+
+              <div className="mt-6">
+                <Label htmlFor="notes" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                  Additional Notes
+                </Label>
+                <Textarea
+                  id="notes"
+                  value={formData.notes}
+                  onChange={(e) =>
+                    setFormData({ ...formData, notes: e.target.value })
+                  }
+                  rows={3}
+                  className="bg-white dark:bg-gray-800 resize-none"
+                  data-testid="textarea-appliance-notes"
                 />
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="notes">Notes</Label>
-              <Textarea
-                id="notes"
-                value={formData.notes}
-                onChange={(e) =>
-                  setFormData({ ...formData, notes: e.target.value })
-                }
-                placeholder="Any additional notes about this appliance"
-                rows={2}
-                data-testid="textarea-appliance-notes"
-              />
-            </div>
-
-            <DialogFooter>
+            {/* Action Buttons */}
+            <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => setIsFormOpen(false)}
+                className="px-6"
                 data-testid="button-cancel-appliance"
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={submitting} data-testid="button-save-appliance">
+              <Button 
+                type="submit" 
+                disabled={submitting} 
+                className="px-6"
+                data-testid="button-save-appliance"
+              >
                 {submitting ? 'Saving...' : editingAppliance ? 'Update Appliance' : 'Add Appliance'}
               </Button>
-            </DialogFooter>
+            </div>
           </form>
         </DialogContent>
       </Dialog>
