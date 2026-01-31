@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import CompleteTaskModal from "@/components/CompleteTaskModal";
 import { API_BASE_URL } from "@/lib/api-config";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -206,13 +206,28 @@ export default function CustomerDashboard() {
     return tasks.filter(t => t.category.toLowerCase() === selectedCategory.toLowerCase());
   }, [tasks, selectedCategory]);
 
+  interface CompleteTaskData {
+    completionDate: string;
+    cost?: string;
+    serviceProvider?: string;
+    partsReplaced?: string;
+    notes?: string;
+  }
+
   const completeTaskMutation = useMutation({
-    mutationFn: async (taskId: number) => {
+    mutationFn: async ({ taskId, data }: { taskId: number; data: CompleteTaskData }) => {
       const response = await fetch(`${API_BASE_URL}/api/customer/tasks/${taskId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ status: 'completed' as const })
+        body: JSON.stringify({ 
+          status: 'completed' as const,
+          completedAt: data.completionDate,
+          cost: data.cost ? parseFloat(data.cost) : undefined,
+          serviceProvider: data.serviceProvider || undefined,
+          partsReplaced: data.partsReplaced || undefined,
+          notes: data.notes || undefined,
+        })
       });
       
       if (!response.ok) {
@@ -255,10 +270,8 @@ export default function CustomerDashboard() {
     setShowCompleteDialog(true);
   };
 
-  const confirmCompleteTask = () => {
-    if (taskToComplete) {
-      completeTaskMutation.mutate(taskToComplete.id);
-    }
+  const handleConfirmComplete = (taskId: number, data: CompleteTaskData) => {
+    completeTaskMutation.mutate({ taskId, data });
   };
 
   if (isVerifying) {
@@ -582,33 +595,16 @@ export default function CustomerDashboard() {
         </Tabs>
       </div>
 
-      <AlertDialog open={showCompleteDialog} onOpenChange={setShowCompleteDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Complete Task</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to mark "{taskToComplete?.taskName}" as complete?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel data-testid="button-cancel-complete">Cancel</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={confirmCompleteTask}
-              disabled={completeTaskMutation.isPending}
-              data-testid="button-confirm-complete"
-            >
-              {completeTaskMutation.isPending ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Completing...
-                </>
-              ) : (
-                'Complete Task'
-              )}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <CompleteTaskModal
+        task={taskToComplete}
+        isOpen={showCompleteDialog}
+        onClose={() => {
+          setShowCompleteDialog(false);
+          setTaskToComplete(null);
+        }}
+        onComplete={handleConfirmComplete}
+        isSubmitting={completeTaskMutation.isPending}
+      />
     </div>
   );
 }
