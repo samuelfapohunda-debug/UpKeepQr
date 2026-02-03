@@ -708,8 +708,7 @@ export default function ApplianceManager({ householdId, onClose }: ApplianceMana
                     <SelectContent>
                       <SelectItem value="Manufacturer">Manufacturer Warranty</SelectItem>
                       <SelectItem value="Extended">Extended Warranty</SelectItem>
-                      <SelectItem value="Store">Store Warranty</SelectItem>
-                      <SelectItem value="Insurance">Appliance Insurance</SelectItem>
+                      <SelectItem value="Labor">Labor Warranty</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
