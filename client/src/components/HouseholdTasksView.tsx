@@ -7,7 +7,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { getAuthToken } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { queryClient } from '@/lib/queryClient';
@@ -444,78 +444,159 @@ export function HouseholdTasksView({ householdId, onBack }: Props) {
       </Card>
       
       <Dialog open={completeDialogOpen} onOpenChange={setCompleteDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Complete Task</DialogTitle>
+            <DialogTitle className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
+              Complete Task
+            </DialogTitle>
+            <DialogDescription className="text-gray-600 dark:text-gray-400">
+              Record the details of your completed maintenance task
+            </DialogDescription>
           </DialogHeader>
           
           {selectedTask && (
-            <div className="space-y-4 py-4">
-              <div className="bg-muted p-3 rounded-md">
-                <p className="font-medium">{selectedTask.taskName}</p>
-                <p className="text-sm text-muted-foreground">Due: {formatDate(selectedTask.dueDate)}</p>
+            <div className="space-y-8 mt-4">
+              {/* Section 1: Task Information (Read-Only) */}
+              <div>
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
+                  Task Information
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                  Details about the maintenance task
+                </p>
+                <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                  <div className="space-y-3">
+                    <div>
+                      <div className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
+                        Task Name
+                      </div>
+                      <div className="text-base font-semibold text-gray-900 dark:text-gray-100" data-testid="text-task-name-display">
+                        {selectedTask.taskName}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-gray-500" />
+                      <div>
+                        <span className="text-sm font-medium text-gray-600 dark:text-gray-400 mr-2">
+                          Due Date:
+                        </span>
+                        <span className="text-base font-semibold text-gray-900 dark:text-gray-100" data-testid="text-due-date-display">
+                          {formatDate(selectedTask.dueDate)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="completionDate">Completion Date</Label>
-                <Input
-                  id="completionDate"
-                  type="date"
-                  value={formData.completionDate}
-                  onChange={e => setFormData(prev => ({ ...prev, completionDate: e.target.value }))}
-                  data-testid="input-completion-date"
-                />
+
+              {/* Section 2: Completion Details */}
+              <div>
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
+                  Completion Details
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                  Record when and how the task was completed
+                </p>
+                <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+                  <div>
+                    <Label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                      Completion Date <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      type="date"
+                      value={formData.completionDate}
+                      onChange={e => setFormData(prev => ({ ...prev, completionDate: e.target.value }))}
+                      className="w-full h-12 bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600 text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      data-testid="input-completion-date"
+                    />
+                  </div>
+                </div>
               </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="cost">Cost ($)</Label>
-                <Input
-                  id="cost"
-                  type="number"
-                  step="0.01"
-                  placeholder="0.00"
-                  value={formData.cost}
-                  onChange={e => setFormData(prev => ({ ...prev, cost: e.target.value }))}
-                  data-testid="input-cost"
-                />
+
+              {/* Section 3: Service Information */}
+              <div>
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
+                  Service Information
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                  Track costs and service provider details
+                </p>
+                <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <Label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                        Cost ($)
+                      </Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        placeholder="0.00"
+                        value={formData.cost}
+                        onChange={e => setFormData(prev => ({ ...prev, cost: e.target.value }))}
+                        className="w-full h-12 bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600 text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        data-testid="input-cost"
+                      />
+                    </div>
+                    <div>
+                      <Label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                        Service Provider (if any)
+                      </Label>
+                      <Input
+                        type="text"
+                        placeholder="e.g., ABC Plumbing"
+                        value={formData.serviceProvider}
+                        onChange={e => setFormData(prev => ({ ...prev, serviceProvider: e.target.value }))}
+                        className="w-full h-12 bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600 text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        data-testid="input-service-provider"
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="serviceProvider">Service Provider (if any)</Label>
-                <Input
-                  id="serviceProvider"
-                  placeholder="e.g., ABC Plumbing"
-                  value={formData.serviceProvider}
-                  onChange={e => setFormData(prev => ({ ...prev, serviceProvider: e.target.value }))}
-                  data-testid="input-service-provider"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="partsReplaced">Parts Replaced</Label>
-                <Input
-                  id="partsReplaced"
-                  placeholder="e.g., HVAC filter 20x25x1"
-                  value={formData.partsReplaced}
-                  onChange={e => setFormData(prev => ({ ...prev, partsReplaced: e.target.value }))}
-                  data-testid="input-parts-replaced"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="notes">Notes</Label>
-                <Textarea
-                  id="notes"
-                  placeholder="Any additional notes..."
-                  value={formData.notes}
-                  onChange={e => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-                  data-testid="input-notes"
-                />
+
+              {/* Section 4: Maintenance Details */}
+              <div>
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
+                  Maintenance Details
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                  Record parts replaced and additional notes
+                </p>
+                <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 space-y-6">
+                  <div>
+                    <Label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                      Parts Replaced
+                    </Label>
+                    <Input
+                      type="text"
+                      placeholder="e.g., HVAC filter 20x25x1"
+                      value={formData.partsReplaced}
+                      onChange={e => setFormData(prev => ({ ...prev, partsReplaced: e.target.value }))}
+                      className="w-full h-12 bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600 text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      data-testid="input-parts-replaced"
+                    />
+                  </div>
+                  <div>
+                    <Label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                      Notes
+                    </Label>
+                    <Textarea
+                      rows={4}
+                      placeholder="Any additional notes about the maintenance performed..."
+                      value={formData.notes}
+                      onChange={e => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+                      className="w-full bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600 text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                      data-testid="input-notes"
+                    />
+                  </div>
+                </div>
               </div>
             </div>
           )}
           
-          <DialogFooter>
+          {/* Action Buttons */}
+          <div className="flex justify-end gap-3 pt-6 border-t border-gray-200 dark:border-gray-700">
             <Button
               variant="outline"
               onClick={() => setCompleteDialogOpen(false)}
@@ -528,9 +609,16 @@ export function HouseholdTasksView({ householdId, onBack }: Props) {
               disabled={completeTaskMutation.isPending}
               data-testid="button-submit-complete"
             >
-              {completeTaskMutation.isPending ? 'Saving...' : 'Mark Complete'}
+              {completeTaskMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Completing...
+                </>
+              ) : (
+                'Mark Complete'
+              )}
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
