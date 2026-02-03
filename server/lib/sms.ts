@@ -229,7 +229,7 @@ export async function sendReminderSMS(
     day: 'numeric'
   });
   
-  const message = `🏠 UpKeepQR Reminder: ${taskName} is due ${dueDateFormatted}. Complete this task to keep your home in great condition.`;
+  const message = `UpKeepQR Reminder: ${taskName} is due ${dueDateFormatted}. Complete this task to keep your home in great condition.`;
   
   // Use the new generic sendSMS function
   await sendSMS(phone, message);
