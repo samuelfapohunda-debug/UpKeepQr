@@ -154,7 +154,7 @@ The UpKeepQR Team`,
             html: `
               <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f9f9;">
                 <div style="background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                  <h1 style="color: #2563eb; margin-bottom: 20px;">✅ Order Confirmed!</h1>
+                  <h1 style="color: #10b981; margin-bottom: 20px;">Order Confirmed!</h1>
                   
                   <p style="font-size: 16px; color: #333;">Hi ${customerName},</p>
                   
@@ -172,13 +172,13 @@ The UpKeepQR Team`,
                   
                   <div style="text-align: center; margin: 30px 0;">
                     <a href="${qrUrl}" 
-                       style="display: inline-block; background-color: #2563eb; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">
+                       style="display: inline-block; background-color: #10b981; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">
                       Activate Your QR Code Now
                     </a>
                   </div>
                   
                   <p style="font-size: 14px; color: #6b7280; margin-top: 30px;">
-                    Or copy this link: <a href="${qrUrl}" style="color: #2563eb; word-break: break-all;">${qrUrl}</a>
+                    Or copy this link: <a href="${qrUrl}" style="color: #10b981; word-break: break-all;">${qrUrl}</a>
                   </p>
                   
                   <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
@@ -268,7 +268,7 @@ Setup Link: ${qrUrl}`,
                   </tr>
                   <tr>
                     <td style="padding: 12px; font-weight: bold;">Setup Link:</td>
-                    <td style="padding: 12px;"><a href="${qrUrl}" style="color: #2563eb; word-break: break-all;">${qrUrl}</a></td>
+                    <td style="padding: 12px;"><a href="${qrUrl}" style="color: #10b981; word-break: break-all;">${qrUrl}</a></td>
                   </tr>
                 </table>
                 <p style="margin-top: 20px; padding: 15px; background: #fef3c7; border-left: 4px solid #f59e0b; border-radius: 4px; font-size: 14px;">

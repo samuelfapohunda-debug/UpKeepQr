@@ -234,7 +234,7 @@ async function sendWarrantyEmail(
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-  <div style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); padding: 30px 20px; text-align: center; border-radius: 12px 12px 0 0;">
+  <div style="background: #10b981; padding: 30px 20px; text-align: center; border-radius: 12px 12px 0 0;">
     <h1 style="color: white; margin: 0; font-size: 24px;">UpKeepQR</h1>
     <p style="color: rgba(255,255,255,0.9); margin: 8px 0 0 0;">Warranty Expiration Alert</p>
   </div>
@@ -293,18 +293,18 @@ async function sendWarrantyEmail(
     </ul>
 
     <div style="text-align: center; margin: 32px 0;">
-      <a href="${APP_URL}/my-home" style="display: inline-block; background: #1e40af; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600;">View Your Dashboard</a>
+      <a href="${APP_URL}/my-home" style="display: inline-block; background: #10b981; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600;">View Your Dashboard</a>
     </div>
 
     <p style="margin: 24px 0 0 0; color: #6b7280; font-size: 14px;">
-      Need help finding a professional for repairs? <a href="${APP_URL}/request-pro" style="color: #1e40af;">Request a Pro</a>
+      Need help finding a professional for repairs? <a href="${APP_URL}/request-pro" style="color: #10b981;">Request a Pro</a>
     </p>
   </div>
   
   <div style="background: #f9fafb; padding: 20px; text-align: center; border-radius: 0 0 12px 12px; border: 1px solid #e5e7eb; border-top: none;">
     <p style="margin: 0; color: #6b7280; font-size: 12px;">
       © ${new Date().getFullYear()} UpKeepQR. All rights reserved.<br>
-      <a href="${APP_URL}" style="color: #1e40af;">upkeepqr.com</a>
+      <a href="${APP_URL}" style="color: #10b981;">upkeepqr.com</a>
     </p>
   </div>
 </body>
