@@ -80,8 +80,8 @@ export async function generateQRCodesPDF(
           color: #333333;
         }
         h1 {
-          color: #A6E22E;
-          border-bottom: 3px solid #A6E22E;
+          color: #10b981;
+          border-bottom: 3px solid #10b981;
           padding-bottom: 10px;
         }
         .qr-code {

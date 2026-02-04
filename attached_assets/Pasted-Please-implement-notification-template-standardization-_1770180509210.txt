@@ -1,0 +1,96 @@
+Please implement notification template standardization - Phase 1:
+
+OBJECTIVE: Unify all email templates to use consistent branding with green (#10b981) as the primary color and ensure all templates have proper headers/footers.
+
+TASK 1: UNIFIED COLOR PALETTE
+══════════════════════════════════════════════════════════════
+Search ALL server files for email templates and replace color codes:
+
+Files to check and update:
+- server/services/warrantyNotificationService.ts
+- server/lib/email.ts
+- server/services/contactService.ts (if exists)
+- server/routes/contact.ts (if has email templates)
+- Any other files with email sending logic
+
+Color replacements needed:
+1. Replace #3b82f6 (blue) → #10b981 (green)
+2. Replace #2563eb (dark blue) → #059669 (dark green)
+3. Replace #0ea5e9 (cyan) → #10b981 (green)
+4. Replace #0284c7 (dark cyan) → #059669 (dark green)
+5. Replace #8b5cf6 (purple) → #10b981 (green)
+6. Replace any other non-green primary colors → #10b981
+
+Update button colors:
+- Background: #10b981
+- Hover: #059669
+- Text: white
+
+Update accent boxes:
+- Border-left: #10b981
+- Keep gray backgrounds (#f3f4f6)
+
+TASK 2: FIX CONTACT ACKNOWLEDGMENT EMAIL
+══════════════════════════════════════════════════════════════
+Add professional header and footer to contact form acknowledgment email.
+
+Header to add:
+```html
+<div style="background: #10b981; padding: 30px; text-align: center;">
+  <div style="font-size: 28px; font-weight: 700; color: white;">
+    UpKeepQR
+  </div>
+</div>
+```
+
+Footer to add:
+```html
+<div style="background: #f9fafb; padding: 20px 30px; text-align: center; font-size: 12px; color: #6b7280; border-top: 1px solid #e5e7eb;">
+  <p style="margin: 0 0 5px 0;">© 2026 UpKeepQR. All rights reserved.</p>
+  <p style="margin: 0;">You're receiving this because you contacted us through our website.</p>
+</div>
+```
+
+TASK 3: STANDARDIZE HEADER STYLE
+══════════════════════════════════════════════════════════════
+Ensure all email headers use solid green (not gradient for simplicity):
+
+Standard header:
+- Background: #10b981 (solid, no gradient)
+- Color: white
+- Padding: 30px
+- Font-size: 28px
+- Font-weight: 700
+- Text-align: center
+
+TASK 4: VERIFICATION
+══════════════════════════════════════════════════════════════
+After making changes:
+
+1. Show summary of files modified
+2. Show color replacements made (before/after)
+3. Confirm contact email now has header/footer
+4. Verify no blue/cyan colors remain in email templates
+5. Test that server compiles without errors
+
+TASK 5: CREATE SUMMARY DOCUMENT
+══════════════════════════════════════════════════════════════
+Create file: docs/TEMPLATE_STANDARDIZATION_COMPLETE.md
+
+Include:
+- List of files modified
+- Color changes made
+- Before/after snippets
+- Testing checklist
+- Date of implementation
+
+IMPORTANT NOTES:
+- Keep all existing text content unchanged
+- Only modify colors and add missing headers/footers
+- Preserve all functionality and links
+- Maintain responsive design
+- Keep dark mode support if present
+- Do NOT change SMS templates (already compliant)
+- Keep existing footer content, just ensure consistency
+
+Execute all tasks and provide a summary when complete.

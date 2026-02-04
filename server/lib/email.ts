@@ -152,10 +152,10 @@ export async function sendPaymentConfirmationEmail(
       <style>
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #333333; }
         .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background: #A6E22E; color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+        .header { background: #10b981; color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
         .content { background: #f5f5f5; padding: 30px; }
-        .footer { background: #272822; color: white; padding: 20px; text-align: center; border-radius: 0 0 8px 8px; font-size: 14px; }
-        .detail { margin: 15px 0; padding: 15px; background: white; border-left: 4px solid #A6E22E; }
+        .footer { background: #f9fafb; color: #6b7280; padding: 20px; text-align: center; border-radius: 0 0 8px 8px; font-size: 14px; border-top: 1px solid #e5e7eb; }
+        .detail { margin: 15px 0; padding: 15px; background: white; border-left: 4px solid #10b981; }
       </style>
     </head>
     <body>
@@ -264,7 +264,7 @@ export async function sendWelcomeEmailWithQR(params: {
               height: 250px; 
               margin: 15px auto; 
               display: block; 
-              border: 3px solid #A6E22E; 
+              border: 3px solid #10b981; 
               border-radius: 8px;
               box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             " 
@@ -292,17 +292,17 @@ export async function sendWelcomeEmailWithQR(params: {
             style="
               display: inline-block; 
               padding: 12px 24px; 
-              background: #A6E22E; 
+              background: #10b981; 
               color: white; 
               text-decoration: none; 
               border-radius: 6px; 
               margin-top: 15px; 
               font-weight: bold; 
               font-size: 14px;
-              box-shadow: 0 2px 4px rgba(166, 226, 46, 0.3);
+              box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
             "
           >
-            📱 Activate This Magnet
+            Activate This Magnet
           </a>
         </td>
       </tr>
@@ -335,7 +335,7 @@ export async function sendWelcomeEmailWithQR(params: {
               height: 250px; 
               margin: 15px auto; 
               display: block; 
-              border: 3px solid #A6E22E; 
+              border: 3px solid #10b981; 
               border-radius: 8px;
               box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             " 
@@ -363,17 +363,17 @@ export async function sendWelcomeEmailWithQR(params: {
             style="
               display: inline-block; 
               padding: 12px 24px; 
-              background: #A6E22E; 
+              background: #10b981; 
               color: white; 
               text-decoration: none; 
               border-radius: 6px; 
               margin-top: 15px; 
               font-weight: bold; 
               font-size: 14px;
-              box-shadow: 0 2px 4px rgba(166, 226, 46, 0.3);
+              box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
             "
           >
-            📱 Activate This Magnet
+            Activate This Magnet
           </a>
         </td>
       </tr>
@@ -387,15 +387,15 @@ export async function sendWelcomeEmailWithQR(params: {
       <style>
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #333333; }
         .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background: #A6E22E; color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+        .header { background: #10b981; color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
         .content { background: #f5f5f5; padding: 30px; }
-        .footer { background: #272822; color: white; padding: 20px; text-align: center; border-radius: 0 0 8px 8px; font-size: 14px; }
+        .footer { background: #f9fafb; color: #6b7280; padding: 20px; text-align: center; border-radius: 0 0 8px 8px; font-size: 14px; border-top: 1px solid #e5e7eb; }
         .instructions { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; }
         .qr-table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; }
         .download-button {
           display: inline-block;
           padding: 15px 30px;
-          background: #272822;
+          background: #059669;
           color: white;
           text-decoration: none;
           border-radius: 6px;
@@ -473,7 +473,7 @@ export async function sendAdminOrderNotification(
     <head>
       <style>
         body { font-family: monospace; color: #333333; }
-        .container { max-width: 600px; margin: 20px auto; padding: 20px; background: #f5f5f5; border: 2px solid #A6E22E; }
+        .container { max-width: 600px; margin: 20px auto; padding: 20px; background: #f5f5f5; border: 2px solid #10b981; }
         .detail { margin: 10px 0; padding: 10px; background: white; }
       </style>
     </head>
@@ -623,7 +623,7 @@ The UpKeepQR Team
           
           <!-- Header -->
           <tr>
-            <td style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 30px; text-align: center; border-radius: 8px 8px 0 0;">
+            <td style="background: #10b981; padding: 40px 30px; text-align: center; border-radius: 8px 8px 0 0;">
               <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 600;">
                 Your Home Profile is Ready!
               </h1>
@@ -646,7 +646,7 @@ The UpKeepQR Team
               <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f8f9fa; border-radius: 6px; margin-bottom: 30px;">
                 <tr>
                   <td style="padding: 25px;">
-                    <h2 style="color: #667eea; margin: 0 0 15px; font-size: 18px; font-weight: 600;">
+                    <h2 style="color: #10b981; margin: 0 0 15px; font-size: 18px; font-weight: 600;">
                       Your Home Details
                     </h2>
                     <table width="100%" cellpadding="0" cellspacing="0" border="0">
@@ -690,7 +690,7 @@ The UpKeepQR Team
               <table width="100%" cellpadding="0" cellspacing="0" border="0">
                 <tr>
                   <td align="center" style="padding: 20px 0;">
-                    <a href="https://upkeepqr.com" style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 6px; font-size: 16px; font-weight: 600;">
+                    <a href="https://upkeepqr.com" style="display: inline-block; background: #10b981; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 6px; font-size: 16px; font-weight: 600;">
                       Learn More About UpKeepQR
                     </a>
                   </td>
@@ -707,7 +707,7 @@ The UpKeepQR Team
                 Questions? We're here to help!
               </p>
               <p style="color: #666666; font-size: 14px; margin: 0;">
-                Email us at <a href="mailto:support@upkeepqr.com" style="color: #667eea; text-decoration: none;">support@upkeepqr.com</a>
+                Email us at <a href="mailto:support@upkeepqr.com" style="color: #10b981; text-decoration: none;">support@upkeepqr.com</a>
               </p>
               <p style="color: #999999; font-size: 12px; margin: 15px 0 0;">
                 © ${new Date().getFullYear()} UpKeepQR. All rights reserved.
@@ -1082,9 +1082,9 @@ export async function sendSubscriptionWelcomeEmail(
           </div>
         ` : ''}
         
-        <div style="margin-top: 20px; padding: 15px; background: #e0f2fe; border-left: 4px solid #0284c7; border-radius: 4px;">
-          <strong style="color: #075985;">Quick Setup:</strong>
-          <ol style="margin: 10px 0 0 0; padding-left: 20px; color: #0c4a6e;">
+        <div style="margin-top: 20px; padding: 15px; background: #ecfdf5; border-left: 4px solid #10b981; border-radius: 4px;">
+          <strong style="color: #065f46;">Quick Setup:</strong>
+          <ol style="margin: 10px 0 0 0; padding-left: 20px; color: #064e3b;">
             <li>Scan each QR code with your phone camera</li>
             <li>Follow the setup wizard to register your home</li>
             <li>Attach QR magnets to your appliances</li>

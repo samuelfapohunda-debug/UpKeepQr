@@ -81,7 +81,7 @@ ${message}
           </div>
           <div style="margin-top: 20px;">
             <h3 style="color: #333;">Message:</h3>
-            <p style="white-space: pre-wrap; background: #ffffff; padding: 15px; border-left: 4px solid #A6E22E; border-radius: 4px;">${message}</p>
+            <p style="white-space: pre-wrap; background: #ffffff; padding: 15px; border-left: 4px solid #10b981; border-radius: 4px;">${message}</p>
           </div>
           <hr style="margin: 30px 0; border: none; border-top: 1px solid #ddd;">
           <p style="font-size: 12px; color: #666;">

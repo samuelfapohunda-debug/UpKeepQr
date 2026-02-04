@@ -63,19 +63,30 @@ Warmly,
 UpKeepQR Support
 support@upkeepqr.com`;
 
-  // HTML version with exact styling from spec
+  // HTML version with header/footer for consistent branding
   const htmlContent = `<!doctype html>
 <html>
-  <body style="font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;line-height:1.5;margin:0;padding:24px;">
-    <h2 style="margin:0 0 8px;">Thanks, ${firstName} — we've got your message.</h2>
-    <p style="margin:0 0 16px;color:#444;">Ticket <strong>${ticketId}</strong> • Subject: <strong>${subject}</strong></p>
-    <p style="margin:0 0 12px;">Our team typically replies within <strong>one business day</strong> (usually much faster). If you have more details or photos, just reply to this email—your reply will attach to the same ticket.</p>
-    <p style="margin:0 0 16px;">In the meantime, these may help:</p>
-    <ul style="margin:0 0 16px;">
-      <li><a href="https://upkeepqr.com/updates">Product updates</a></li>
-      <li><a href="https://upkeepqr.com/help">FAQs & guides</a></li>
-    </ul>
-    <p style="margin:24px 0 0;">Warmly,<br/>The UpKeepQR Support Team<br/><a href="mailto:support@upkeepqr.com">support@upkeepqr.com</a></p>
+  <body style="font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;line-height:1.5;margin:0;padding:0;background:#f4f4f4;">
+    <div style="max-width:600px;margin:0 auto;padding:20px;">
+      <div style="background:#10b981;padding:30px;text-align:center;border-radius:8px 8px 0 0;">
+        <div style="font-size:28px;font-weight:700;color:white;">UpKeepQR</div>
+      </div>
+      <div style="background:#ffffff;padding:30px;border:1px solid #e5e7eb;border-top:none;">
+        <h2 style="margin:0 0 8px;color:#333;">Thanks, ${firstName} — we've got your message.</h2>
+        <p style="margin:0 0 16px;color:#444;">Ticket <strong>${ticketId}</strong> - Subject: <strong>${subject}</strong></p>
+        <p style="margin:0 0 12px;color:#333;">Our team typically replies within <strong>one business day</strong> (usually much faster). If you have more details or photos, just reply to this email—your reply will attach to the same ticket.</p>
+        <p style="margin:0 0 16px;color:#333;">In the meantime, these may help:</p>
+        <ul style="margin:0 0 16px;color:#333;">
+          <li><a href="https://upkeepqr.com/updates" style="color:#10b981;">Product updates</a></li>
+          <li><a href="https://upkeepqr.com/help" style="color:#10b981;">FAQs & guides</a></li>
+        </ul>
+        <p style="margin:24px 0 0;color:#333;">Warmly,<br/>The UpKeepQR Support Team<br/><a href="mailto:support@upkeepqr.com" style="color:#10b981;">support@upkeepqr.com</a></p>
+      </div>
+      <div style="background:#f9fafb;padding:20px 30px;text-align:center;font-size:12px;color:#6b7280;border-top:1px solid #e5e7eb;border-radius:0 0 8px 8px;">
+        <p style="margin:0 0 5px 0;">&copy; ${new Date().getFullYear()} UpKeepQR. All rights reserved.</p>
+        <p style="margin:0;">You're receiving this because you contacted us through our website.</p>
+      </div>
+    </div>
   </body>
 </html>`;
 
