@@ -51,7 +51,7 @@ export default function AuthError() {
           </CardHeader>
           <CardContent className="text-center space-y-4">
             <p className="text-sm text-muted-foreground">
-              Need help? Contact support at support@upkeepqr.com
+              Need help? Contact support at support@maintcue.com
             </p>
             <Button
               variant="outline"

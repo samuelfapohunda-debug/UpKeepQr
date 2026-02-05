@@ -208,7 +208,7 @@ export class NotificationDispatcher {
     text?: string
   ): Promise<boolean> {
     try {
-      const from = process.env.FROM_EMAIL || 'noreply@upkeepqr.com';
+      const from = process.env.FROM_EMAIL || 'noreply@maintcue.com';
       const result = await sendEmail({ to, from, subject, html, text });
       
       if (result) {

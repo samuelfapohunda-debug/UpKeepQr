@@ -13,7 +13,7 @@ import { eq } from 'drizzle-orm';
 // Test configuration
 const TEST_HOUSEHOLD = {
   name: 'Test User',
-  email: 'test@upkeepqr.com',
+  email: 'test@maintcue.com',
   phone: '+14044886739', // Valid E.164 format - User's verified Twilio number
   notificationPreference: 'both' as const,
   smsOptIn: true,
@@ -25,7 +25,7 @@ const TEST_NOTIFICATION: Omit<NotificationPayload, 'householdId'> = {
   emailSubject: 'Test Notification - Email Channel',
   emailHtml: '<h1>Test Email</h1><p>This is a test notification sent via email.</p>',
   emailText: 'Test Email\n\nThis is a test notification sent via email.',
-  smsMessage: '🏠 Test SMS: This is a test notification from UpKeepQR.'
+  smsMessage: '🏠 Test SMS: This is a test notification from MaintCue.'
 };
 
 async function runTests() {

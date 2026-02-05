@@ -12,9 +12,9 @@ export function getFirstName(fullName: string): string {
 }
 
 // Environment variables
-const FROM_EMAIL = process.env.FROM_EMAIL || 'Support@UpKeepQr.Com';
-const FROM_NAME = process.env.FROM_NAME || 'UpKeepQR Support';
-const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || 'ops@upkeepqr.com,admin@upkeepqr.com').split(',').map(email => email.trim());
+const FROM_EMAIL = process.env.FROM_EMAIL || 'Support@MaintCue.Com';
+const FROM_NAME = process.env.FROM_NAME || 'MaintCue Support';
+const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || 'ops@maintcue.com,admin@maintcue.com').split(',').map(email => email.trim());
 const SENDGRID_TEMPLATE_CONTACT_ACK = process.env.SENDGRID_TEMPLATE_CONTACT_ACK;
 const _SENDGRID_SANDBOX_MODE = process.env.SENDGRID_SANDBOX_MODE === 'true';
 const _SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || FROM_EMAIL;
@@ -41,12 +41,12 @@ export async function sendContactAckEmail(params: ContactAckEmailParams): Promis
   const { name, email, subject, _message, ticketId } = params;
   const firstName = getFirstName(name);
 
-  const emailSubject = `Thanks for reaching out to UpKeepQR (Ticket ${ticketId})`;
+  const emailSubject = `Thanks for reaching out to MaintCue (Ticket ${ticketId})`;
   
   // Plain text version
   const textContent = `Hi ${firstName},
 
-Thanks for contacting UpKeepQR! We received your message:
+Thanks for contacting MaintCue! We received your message:
 
 Subject: ${subject}
 Ticket: ${ticketId}
@@ -56,12 +56,12 @@ If you have more details or photos to add, simply reply to this email
 and they'll attach to your ticket.
 
 Helpful links:
-• Track product updates: https://upkeepqr.com/updates
-• FAQs: https://upkeepqr.com/help
+• Track product updates: https://maintcue.com/updates
+• FAQs: https://maintcue.com/help
 
 Warmly,
-UpKeepQR Support
-support@upkeepqr.com`;
+MaintCue Support
+support@maintcue.com`;
 
   // HTML version with header/footer for consistent branding
   const htmlContent = `<!doctype html>
@@ -69,7 +69,7 @@ support@upkeepqr.com`;
   <body style="font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;line-height:1.5;margin:0;padding:0;background:#f4f4f4;">
     <div style="max-width:600px;margin:0 auto;padding:20px;">
       <div style="background:#10b981;padding:30px;text-align:center;border-radius:8px 8px 0 0;">
-        <div style="font-size:28px;font-weight:700;color:white;">UpKeepQR</div>
+        <div style="font-size:28px;font-weight:700;color:white;">MaintCue</div>
       </div>
       <div style="background:#ffffff;padding:30px;border:1px solid #e5e7eb;border-top:none;">
         <h2 style="margin:0 0 8px;color:#333;">Thanks, ${firstName} — we've got your message.</h2>
@@ -77,13 +77,13 @@ support@upkeepqr.com`;
         <p style="margin:0 0 12px;color:#333;">Our team typically replies within <strong>one business day</strong> (usually much faster). If you have more details or photos, just reply to this email—your reply will attach to the same ticket.</p>
         <p style="margin:0 0 16px;color:#333;">In the meantime, these may help:</p>
         <ul style="margin:0 0 16px;color:#333;">
-          <li><a href="https://upkeepqr.com/updates" style="color:#10b981;">Product updates</a></li>
-          <li><a href="https://upkeepqr.com/help" style="color:#10b981;">FAQs & guides</a></li>
+          <li><a href="https://maintcue.com/updates" style="color:#10b981;">Product updates</a></li>
+          <li><a href="https://maintcue.com/help" style="color:#10b981;">FAQs & guides</a></li>
         </ul>
-        <p style="margin:24px 0 0;color:#333;">Warmly,<br/>The UpKeepQR Support Team<br/><a href="mailto:support@upkeepqr.com" style="color:#10b981;">support@upkeepqr.com</a></p>
+        <p style="margin:24px 0 0;color:#333;">Warmly,<br/>The MaintCue Support Team<br/><a href="mailto:support@maintcue.com" style="color:#10b981;">support@maintcue.com</a></p>
       </div>
       <div style="background:#f9fafb;padding:20px 30px;text-align:center;font-size:12px;color:#6b7280;border-top:1px solid #e5e7eb;border-radius:0 0 8px 8px;">
-        <p style="margin:0 0 5px 0;">&copy; ${new Date().getFullYear()} UpKeepQR. All rights reserved.</p>
+        <p style="margin:0 0 5px 0;">&copy; ${new Date().getFullYear()} MaintCue. All rights reserved.</p>
         <p style="margin:0;">You're receiving this because you contacted us through our website.</p>
       </div>
     </div>

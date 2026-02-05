@@ -68,10 +68,10 @@ router.post('/stripe', async (req: Request, res: Response) => {
       
       const customerEmail = session.customer_details?.email || '';
       const customerName = session.customer_details?.name || '';
-      const planName = session.metadata?.plan || 'UpKeepQR Subscription';
+      const planName = session.metadata?.plan || 'MaintCue Subscription';
       const amountPaid = String((session.amount_total || 0) / 100);
       const subscriptionId = session.subscription || '';
-      const baseUrl = process.env.PUBLIC_BASE_URL || 'https://upkeepqr.com';
+      const baseUrl = process.env.PUBLIC_BASE_URL || 'https://maintcue.com';
       
       // Determine QR code quantity based on plan tier
       // Supports both display names (e.g., "Homeowner Basic") and internal IDs (e.g., "homeowner_basic_yearly")
@@ -263,7 +263,7 @@ router.post('/stripe', async (req: Request, res: Response) => {
       const customerName = session.customer_details?.name || '';
       const customerEmail = session.customer_details?.email || '';
       const amountPaid = String((session.amount_total || 0) / 100);
-      const baseUrl = process.env.PUBLIC_BASE_URL || 'https://upkeepqr.com';
+      const baseUrl = process.env.PUBLIC_BASE_URL || 'https://maintcue.com';
       
       // Generate activation codes and QR codes before transaction
       const activationCodes = Array.from({ length: magnetCount }, () => nanoid(12));
@@ -484,7 +484,7 @@ if (process.env.NODE_ENV === 'development') {
           success: true, 
           message: 'Email sent successfully',
           to: testEmail,
-          from: process.env.FROM_EMAIL || 'noreply@upkeepqr.com'
+          from: process.env.FROM_EMAIL || 'noreply@maintcue.com'
         });
       } else {
         res.status(500).json({ 

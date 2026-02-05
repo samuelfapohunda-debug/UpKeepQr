@@ -218,7 +218,7 @@ router.post('/magic/complete', async (req, res) => {
     console.log("✅ Session created for household:", pending.householdId);
     
     const isProduction = process.env.NODE_ENV === 'production';
-    res.cookie('upkeepqr_session', sessionToken, {
+    res.cookie('maintcue_session', sessionToken, {
       httpOnly: true,
       secure: isProduction,
       sameSite: 'strict',
@@ -234,7 +234,7 @@ router.post('/magic/complete', async (req, res) => {
 });
 
 router.get('/session/verify', async (req, res) => {
-  const sessionToken = req.cookies?.upkeepqr_session;
+  const sessionToken = req.cookies?.maintcue_session;
   
   if (!sessionToken) {
     return res.status(401).json({ valid: false, error: 'No session found' });
@@ -245,8 +245,8 @@ router.get('/session/verify', async (req, res) => {
     const session = await verifySession(sessionToken);
     
     if (!session) {
-      res.clearCookie('upkeepqr_session');
-      res.clearCookie('upkeepqr_household');
+      res.clearCookie('maintcue_session');
+      res.clearCookie('maintcue_household');
       return res.status(401).json({ valid: false, error: 'Invalid or expired session' });
     }
     
@@ -262,7 +262,7 @@ router.get('/session/verify', async (req, res) => {
 });
 
 router.post('/session/logout', async (req, res) => {
-  res.clearCookie('upkeepqr_session');
+  res.clearCookie('maintcue_session');
   return res.json({ success: true });
 });
 

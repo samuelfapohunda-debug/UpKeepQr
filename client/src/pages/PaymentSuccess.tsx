@@ -44,22 +44,22 @@ export default function PaymentSuccess() {
                 Check Your Email to Activate Your Magnet
               </h2>
               <p className="text-slate-700 mb-4">
-                We've sent a welcome email with instructions on how to activate your UpKeepQR magnet. 
+                We've sent a welcome email with instructions on how to activate your MaintCue magnet. 
                 Please check your inbox (and spam folder) for the email titled:
               </p>
               <div className="bg-white border border-emerald-300 rounded-lg p-3 mb-4">
                 <p className="font-semibold text-emerald-800" data-testid="text-email-subject">
-                  "Welcome to UpKeepQR - Activate Your Magnet"
+                  "Welcome to MaintCue - Activate Your Magnet"
                 </p>
               </div>
               <p className="text-sm text-slate-600">
                 Can't find it? Check your spam folder or contact us at{" "}
                 <a 
-                  href="mailto:support@upkeepqr.com" 
+                  href="mailto:support@maintcue.com" 
                   className="text-emerald-600 hover:text-emerald-700 font-medium"
                   data-testid="link-support-email"
                 >
-                  support@upkeepqr.com
+                  support@maintcue.com
                 </a>
               </p>
             </div>

@@ -123,7 +123,7 @@ export async function syncTasksToCalendar(householdId: string) {
 
     const event = {
       summary: `Home Maintenance Task - ${task.frequency || 'One-time'}`,
-      description: `Task ID: ${task.id}\nPriority: ${task.priority}\nFrequency: ${task.frequency}\n\nView in UpKeepQR: ${process.env.FRONTEND_URL}/dashboard`,
+      description: `Task ID: ${task.id}\nPriority: ${task.priority}\nFrequency: ${task.frequency}\n\nView in MaintCue: ${process.env.FRONTEND_URL}/dashboard`,
       start: {
         dateTime: eventStart.toISOString(),
         timeZone: connection.calendar_timezone,

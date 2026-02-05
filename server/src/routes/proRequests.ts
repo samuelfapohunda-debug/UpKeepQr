@@ -13,8 +13,8 @@ if (SENDGRID_API_KEY) {
   sgMail.setApiKey(SENDGRID_API_KEY);
 }
 
-const FROM_EMAIL = process.env.FROM_EMAIL || 'noreply@upkeepqr.com';
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'support@upkeepqr.com';
+const FROM_EMAIL = process.env.FROM_EMAIL || 'noreply@maintcue.com';
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'support@maintcue.com';
 
 // Rate limiting: 10 requests per 10 minutes per IP
 const proRequestLimiter = rateLimit({
@@ -66,7 +66,7 @@ async function sendUserConfirmationEmail(
       <p>A professional will review your request and contact you within 24 hours.</p>
       <p>If you have any questions, please reply to this email.</p>
       
-      <p>Best regards,<br/>UpKeepQR Team</p>
+      <p>Best regards,<br/>MaintCue Team</p>
     `,
     text: `
 Thank You for Your Request!
@@ -82,7 +82,7 @@ Request Details:
 A professional will review your request and contact you within 24 hours.
 
 Best regards,
-UpKeepQR Team
+MaintCue Team
     `
   };
 
@@ -153,7 +153,7 @@ async function sendAdminAlertEmail(
       <p>${description}</p>
       
       <hr/>
-      <p><em>This is an automated notification from UpKeepQR.</em></p>
+      <p><em>This is an automated notification from MaintCue.</em></p>
     `,
     text: `
 New Professional Service Request
@@ -175,7 +175,7 @@ Description:
 ${description}
 
 ---
-This is an automated notification from UpKeepQR.
+This is an automated notification from MaintCue.
     `
   };
 

@@ -46,8 +46,8 @@ app.use((req, res, next) => {
   const allowedOrigins = process.env.ALLOWED_ORIGINS 
     ? process.env.ALLOWED_ORIGINS.split(",")
     : [
-      "https://upkeepqr.com",
-      "https://www.upkeepqr.com",
+      "https://maintcue.com",
+      "https://www.maintcue.com",
       "https://georgia-top-roofer.web.app",
       "https://georgia-top-roofer.firebaseapp.com",
       "http://localhost:5173",
@@ -91,8 +91,8 @@ app.use((req, res, next) => {
         console.log('🔧 Creating system agent for order-based QR codes...');
         await storage.createAgent({
           id: SYSTEM_AGENT_ID,
-          name: 'UpKeepQR System',
-          email: 'system@upkeepqr.com',
+          name: 'MaintCue System',
+          email: 'system@maintcue.com',
           password: 'N/A', // System agent cannot log in
         });
         console.log('✅ System agent created successfully');

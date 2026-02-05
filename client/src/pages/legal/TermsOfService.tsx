@@ -3,7 +3,7 @@ export default function TermsOfService() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8">
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-6" data-testid="text-terms-title">UpKeepQR Terms of Service</h1>
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-6" data-testid="text-terms-title">MaintCue Terms of Service</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-8">Last Updated: January 25, 2026</p>
           
           <div className="prose dark:prose-invert max-w-none space-y-6">
@@ -11,7 +11,7 @@ export default function TermsOfService() {
             <section>
               <h2 className="text-2xl font-semibold mt-8 mb-4 text-gray-900 dark:text-white">Acceptance of the Terms of Service</h2>
               <p className="mb-4 text-gray-700 dark:text-gray-300">
-                These Terms of Service ("Terms") govern your access to and use of the home maintenance management services ("Services") provided by UpKeepQR, LLC ("UpKeepQR," "Company," "we," "us," or "our"). The following terms and conditions, together with any documents they expressly incorporate by reference, including the UpKeepQR Privacy Policy (collectively, "Terms of Service"), govern your access to and use of https://upkeepqr.com, including any content, functionality, and services offered on or through https://upkeepqr.com (the "Website"), whether as a guest or a registered user.
+                These Terms of Service ("Terms") govern your access to and use of the home maintenance management services ("Services") provided by MaintCue, LLC ("MaintCue," "Company," "we," "us," or "our"). The following terms and conditions, together with any documents they expressly incorporate by reference, including the MaintCue Privacy Policy (collectively, "Terms of Service"), govern your access to and use of https://maintcue.com, including any content, functionality, and services offered on or through https://maintcue.com (the "Website"), whether as a guest or a registered user.
               </p>
               <p className="mb-4 text-gray-700 dark:text-gray-300">
                 Please read the Terms of Service carefully before you start to use the Website. By using the Website, creating an account, purchasing QR code magnets, or by clicking to accept or agree to the Terms of Service when this option is made available to you, you accept and agree to be bound and abide by these Terms of Service and our Privacy Policy, incorporated herein by reference. If you do not want to agree to these Terms of Service or the Privacy Policy, you must not access or use the Website or Services.
@@ -45,7 +45,7 @@ export default function TermsOfService() {
                 To access the Website or some of the resources it offers, you may be asked to provide certain registration details or other information. It is a condition of your use of the Website that all the information you provide on the Website is correct, current, and complete. You agree that all information you provide to register with this Website or otherwise, including through the use of any interactive features on the Website, is governed by our Privacy Policy, and you consent to all actions we take with respect to your information consistent with our Privacy Policy.
               </p>
               <p className="mb-4 text-gray-700 dark:text-gray-300">
-                If you choose, or are provided with, a username, password, or any other piece of information as part of our security procedures, you must treat such information as confidential, and you must not disclose it to any other person or entity. You also acknowledge that your account is personal to you and agree not to provide any other person with access to this Website or portions of it using your username, password, or other security information. You agree to notify us immediately of any unauthorized access to or use of your username or password or any other breach of security at support@upkeepqr.com.
+                If you choose, or are provided with, a username, password, or any other piece of information as part of our security procedures, you must treat such information as confidential, and you must not disclose it to any other person or entity. You also acknowledge that your account is personal to you and agree not to provide any other person with access to this Website or portions of it using your username, password, or other security information. You agree to notify us immediately of any unauthorized access to or use of your username or password or any other breach of security at support@maintcue.com.
               </p>
               <p className="mb-4 text-gray-700 dark:text-gray-300">
                 You also agree to ensure that you exit from your account at the end of each session. You should use particular caution when accessing your account from a public or shared computer so that others are not able to view or record your password or other personal information.
@@ -58,7 +58,7 @@ export default function TermsOfService() {
             <section>
               <h2 className="text-2xl font-semibold mt-8 mb-4 text-gray-900 dark:text-white">Services Description</h2>
               <p className="mb-4 text-gray-700 dark:text-gray-300">
-                UpKeepQR provides a home maintenance management software-as-a-service platform that helps homeowners:
+                MaintCue provides a home maintenance management software-as-a-service platform that helps homeowners:
               </p>
               <ol className="list-decimal pl-6 mb-4 text-gray-700 dark:text-gray-300 space-y-2">
                 <li><strong>QR Code-Based Access:</strong> Scan QR code magnets to instantly access your home maintenance dashboard</li>
@@ -75,7 +75,7 @@ export default function TermsOfService() {
 
             <section>
               <h2 className="text-2xl font-semibold mt-8 mb-4 text-gray-900 dark:text-white">Account Types and Subscriptions</h2>
-              <p className="mb-4 text-gray-700 dark:text-gray-300">UpKeepQR offers different service tiers:</p>
+              <p className="mb-4 text-gray-700 dark:text-gray-300">MaintCue offers different service tiers:</p>
               
               <h3 className="text-xl font-semibold mt-4 mb-2 text-gray-800 dark:text-gray-200">Free Tier:</h3>
               <ul className="list-disc pl-6 mb-4 text-gray-700 dark:text-gray-300">
@@ -135,13 +135,13 @@ export default function TermsOfService() {
 
               <h3 className="text-xl font-semibold mt-4 mb-2 text-gray-800 dark:text-gray-200">QR Code Technology:</h3>
               <ul className="list-disc pl-6 mb-4 text-gray-700 dark:text-gray-300">
-                <li>The QR codes provided by UpKeepQR are licensed to you for personal, non-commercial use only</li>
+                <li>The QR codes provided by MaintCue are licensed to you for personal, non-commercial use only</li>
                 <li>You may not reproduce, sell, or distribute the QR codes</li>
                 <li>You may not create derivative QR codes based on our technology</li>
                 <li>Each QR code is uniquely linked to your household account and cannot be transferred</li>
               </ul>
               <p className="mb-4 text-gray-700 dark:text-gray-300">
-                If you wish to make any use of material on the Website other than that set out in this section, please address your request to: support@upkeepqr.com
+                If you wish to make any use of material on the Website other than that set out in this section, please address your request to: support@maintcue.com
               </p>
               <p className="mb-4 text-gray-700 dark:text-gray-300">
                 If you print, copy, modify, download, or otherwise use or provide any other person with access to any part of the Website in breach of the Terms of Service, your right to use the Website will stop immediately and you must, at our option, return or destroy any copies of the materials you have made. No right, title, or interest in or to the Website or any content on the Website is transferred to you, and all rights not expressly granted are reserved by the Company.
@@ -151,7 +151,7 @@ export default function TermsOfService() {
             <section>
               <h2 className="text-2xl font-semibold mt-8 mb-4 text-gray-900 dark:text-white">Trademarks</h2>
               <p className="mb-4 text-gray-700 dark:text-gray-300">
-                The UpKeepQR name, the UpKeepQR logo, and all related names, logos, product and service names, designs, and slogans are trademarks of the Company, its affiliates, licensors, or licensors. You must not use such marks without the prior written permission of the Company. All other names, logos, product and service names, designs, and slogans on this Website are the trademarks of their respective owners.
+                The MaintCue name, the MaintCue logo, and all related names, logos, product and service names, designs, and slogans are trademarks of the Company, its affiliates, licensors, or licensors. You must not use such marks without the prior written permission of the Company. All other names, logos, product and service names, designs, and slogans on this Website are the trademarks of their respective owners.
               </p>
             </section>
 
@@ -174,11 +174,11 @@ export default function TermsOfService() {
               </ol>
               <p className="mb-4 text-gray-700 dark:text-gray-300">Please send your DMCA notice to:</p>
               <address className="mb-4 text-gray-700 dark:text-gray-300 not-italic">
-                UpKeepQR, LLC<br />
+                MaintCue, LLC<br />
                 Attn: Copyright Agent<br />
                 Stockbridge, GA 30281<br />
                 United States<br />
-                Email: support@upkeepqr.com
+                Email: support@maintcue.com
               </address>
               <p className="mb-4 text-gray-700 dark:text-gray-300">
                 If you fail to comply with all of the requirements of Section 512(c)(3) of the DMCA, your DMCA Notice may not be effective. Please be aware that if you knowingly materially misrepresent that material or activity on the Website is infringing your copyright, you may be held liable for damages (including costs and attorneys' fees) under Section 512(f) of the DMCA.
@@ -344,7 +344,7 @@ export default function TermsOfService() {
               <ul className="list-disc pl-6 mb-4 text-gray-700 dark:text-gray-300">
                 <li>QR Code Magnets: Refundable within 30 days if unopened and unused</li>
                 <li>Subscriptions: No refunds for partial subscription periods</li>
-                <li>If you believe you have been incorrectly charged, contact support@upkeepqr.com within 30 days</li>
+                <li>If you believe you have been incorrectly charged, contact support@maintcue.com within 30 days</li>
               </ul>
 
               <h3 className="text-xl font-semibold mt-4 mb-2 text-gray-800 dark:text-gray-200">Price Changes:</h3>
@@ -377,7 +377,7 @@ export default function TermsOfService() {
                 <li>We will not sell your phone number to third parties</li>
               </ul>
               <p className="mb-4 text-gray-700 dark:text-gray-300">
-                For help, reply "HELP" or contact support@upkeepqr.com
+                For help, reply "HELP" or contact support@maintcue.com
               </p>
             </section>
 
@@ -496,7 +496,7 @@ export default function TermsOfService() {
             <section>
               <h2 className="text-2xl font-semibold mt-8 mb-4 text-gray-900 dark:text-white">Initial Dispute Resolution</h2>
               <p className="mb-4 text-gray-700 dark:text-gray-300">
-                Most disputes can be resolved without resort to litigation. You can reach us at support@upkeepqr.com. The parties agree to use their best efforts to settle any dispute, claim, question, or disagreement directly through consultation with our support department, and good faith negotiations shall be a condition to either party initiating a lawsuit or arbitration.
+                Most disputes can be resolved without resort to litigation. You can reach us at support@maintcue.com. The parties agree to use their best efforts to settle any dispute, claim, question, or disagreement directly through consultation with our support department, and good faith negotiations shall be a condition to either party initiating a lawsuit or arbitration.
               </p>
             </section>
 
@@ -557,7 +557,7 @@ export default function TermsOfService() {
                 You agree that we may provide you with notices, including those regarding changes to the Terms of Service, by email, regular mail, postings on the Website, or SMS text message (if you have opted in).
               </p>
               <p className="mb-4 text-gray-700 dark:text-gray-300">
-                If you have agreed to receive text messages from us, you also consent to the use of an electronic record to document your agreement. You may withdraw your consent to the use of the electronic record by sending an email to support@upkeepqr.com with "Revoke Electronic Consent" in the subject line.
+                If you have agreed to receive text messages from us, you also consent to the use of an electronic record to document your agreement. You may withdraw your consent to the use of the electronic record by sending an email to support@maintcue.com with "Revoke Electronic Consent" in the subject line.
               </p>
               <p className="mb-4 text-gray-700 dark:text-gray-300">
                 To view and retain a copy of this disclosure or any information regarding your enrollment in our SMS program, you will need:
@@ -567,7 +567,7 @@ export default function TermsOfService() {
                 <li>(b) Either a printer or storage space on such device</li>
               </ul>
               <p className="mb-4 text-gray-700 dark:text-gray-300">
-                For a free paper copy, or to update our records of your contact information, send an email to support@upkeepqr.com with your contact information and the address for delivery.
+                For a free paper copy, or to update our records of your contact information, send an email to support@maintcue.com with your contact information and the address for delivery.
               </p>
             </section>
 
@@ -604,25 +604,25 @@ export default function TermsOfService() {
                 If you have any questions about these Terms of Service, please contact us:
               </p>
               <address className="mb-4 text-gray-700 dark:text-gray-300 not-italic">
-                UpKeepQR, LLC<br />
-                Email: support@upkeepqr.com<br />
+                MaintCue, LLC<br />
+                Email: support@maintcue.com<br />
                 Address: Stockbridge, GA 30281, United States
               </address>
               <p className="mb-4 text-gray-700 dark:text-gray-300">
-                For account issues: support@upkeepqr.com<br />
-                For billing questions: support@upkeepqr.com<br />
-                For technical support: support@upkeepqr.com<br />
-                For general inquiries: support@upkeepqr.com
+                For account issues: support@maintcue.com<br />
+                For billing questions: support@maintcue.com<br />
+                For technical support: support@maintcue.com<br />
+                For general inquiries: support@maintcue.com
               </p>
               <p className="mb-4 text-gray-700 dark:text-gray-300">
-                Website: <a href="https://upkeepqr.com/contact" className="text-blue-600 dark:text-blue-400 hover:underline">https://upkeepqr.com/contact</a>
+                Website: <a href="https://maintcue.com/contact" className="text-blue-600 dark:text-blue-400 hover:underline">https://maintcue.com/contact</a>
               </p>
             </section>
 
             <hr className="my-8 border-gray-300 dark:border-gray-600" />
 
             <p className="text-center text-gray-600 dark:text-gray-400">
-              &copy; 2026 UpKeepQR, LLC. All rights reserved.
+              &copy; 2026 MaintCue, LLC. All rights reserved.
             </p>
             <p className="text-center text-gray-600 dark:text-gray-400">
               These Terms of Service are effective as of January 25, 2026.

@@ -3,7 +3,7 @@ export default function PrivacyPolicy() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8">
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-6" data-testid="text-privacy-title">UpKeepQR Privacy Policy</h1>
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-6" data-testid="text-privacy-title">MaintCue Privacy Policy</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-8">Last Updated: January 25, 2026</p>
           
           <div className="prose dark:prose-invert max-w-none space-y-6">
@@ -11,23 +11,23 @@ export default function PrivacyPolicy() {
             <section>
               <h2 className="text-2xl font-semibold mt-8 mb-4 text-gray-900 dark:text-white">1. Introduction</h2>
               <p className="mb-4 text-gray-700 dark:text-gray-300">
-                This Privacy Policy ("Policy") describes how UpKeepQR, LLC ("UpKeepQR", "we", "us", "our") collects, uses, and discloses your personal information in the course of our business operations.
+                This Privacy Policy ("Policy") describes how MaintCue, LLC ("MaintCue", "we", "us", "our") collects, uses, and discloses your personal information in the course of our business operations.
               </p>
               <p className="mb-4 text-gray-700 dark:text-gray-300">
-                <strong>"Personal Data"</strong> means any data relating to an identified or identifiable natural person that is processed by UpKeepQR as described in this Policy when such information is protected as "personal data" or "personal information" under applicable data protection laws.
+                <strong>"Personal Data"</strong> means any data relating to an identified or identifiable natural person that is processed by MaintCue as described in this Policy when such information is protected as "personal data" or "personal information" under applicable data protection laws.
               </p>
               <p className="mb-4 text-gray-700 dark:text-gray-300">
-                <strong>"Services"</strong> means all of UpKeepQR's websites, applications (including mobile and web applications), QR code-based home maintenance management tools, platforms, and services offered by UpKeepQR.
+                <strong>"Services"</strong> means all of MaintCue's websites, applications (including mobile and web applications), QR code-based home maintenance management tools, platforms, and services offered by MaintCue.
               </p>
               <p className="mb-4 text-gray-700 dark:text-gray-300">
-                <strong>"Website"</strong> means the UpKeepQR.com website or any other proprietary website owned by UpKeepQR or that UpKeepQR has the authority to manage and control and which link to this Policy.
+                <strong>"Website"</strong> means the MaintCue.com website or any other proprietary website owned by MaintCue or that MaintCue has the authority to manage and control and which link to this Policy.
               </p>
             </section>
 
             <section>
               <h2 className="text-2xl font-semibold mt-8 mb-4 text-gray-900 dark:text-white">2. Applicability</h2>
               <p className="mb-4 text-gray-700 dark:text-gray-300">
-                This Privacy Policy applies to Personal Data for which UpKeepQR acts as a controller, such as when you:
+                This Privacy Policy applies to Personal Data for which MaintCue acts as a controller, such as when you:
               </p>
               <ul className="list-disc pl-6 mb-4 text-gray-700 dark:text-gray-300">
                 <li>Visit our Website</li>
@@ -38,7 +38,7 @@ export default function PrivacyPolicy() {
                 <li>Contact us for support</li>
               </ul>
               <p className="mb-4 text-gray-700 dark:text-gray-300">
-                When our customers (homeowners) use our Services to manage their home maintenance data, UpKeepQR acts as a controller of that data and processes it in accordance with this Policy and our Terms of Service.
+                When our customers (homeowners) use our Services to manage their home maintenance data, MaintCue acts as a controller of that data and processes it in accordance with this Policy and our Terms of Service.
               </p>
             </section>
 
@@ -46,7 +46,7 @@ export default function PrivacyPolicy() {
               <h2 className="text-2xl font-semibold mt-8 mb-4 text-gray-900 dark:text-white">3. Information We Collect</h2>
               
               <h3 className="text-xl font-semibold mt-6 mb-3 text-gray-800 dark:text-gray-200">3.1 Account Information</h3>
-              <p className="mb-2 text-gray-700 dark:text-gray-300">When you create an account with UpKeepQR, we collect:</p>
+              <p className="mb-2 text-gray-700 dark:text-gray-300">When you create an account with MaintCue, we collect:</p>
               <ul className="list-disc pl-6 mb-4 text-gray-700 dark:text-gray-300">
                 <li>Full name</li>
                 <li>Email address</li>
@@ -217,7 +217,7 @@ export default function PrivacyPolicy() {
               <ul className="list-disc pl-6 mb-4 text-gray-700 dark:text-gray-300">
                 <li>Comply with legal obligations, subpoenas, or court orders</li>
                 <li>Enforce our Terms of Service</li>
-                <li>Protect the rights, property, or safety of UpKeepQR, our customers, or others</li>
+                <li>Protect the rights, property, or safety of MaintCue, our customers, or others</li>
                 <li>Investigate fraud, security issues, or violations of our policies</li>
                 <li>Respond to government or law enforcement requests</li>
               </ul>
@@ -315,7 +315,7 @@ export default function PrivacyPolicy() {
               <h3 className="text-xl font-semibold mt-6 mb-3 text-gray-800 dark:text-gray-200">8.6 How to Exercise Your Rights</h3>
               <p className="mb-2 text-gray-700 dark:text-gray-300">To exercise any of these rights:</p>
               <ul className="list-disc pl-6 mb-4 text-gray-700 dark:text-gray-300">
-                <li>Email us at: support@upkeepqr.com</li>
+                <li>Email us at: support@maintcue.com</li>
                 <li>Log into your account and update your settings</li>
                 <li>Use the unsubscribe link in emails</li>
                 <li>Contact us via our website contact form</li>
@@ -326,17 +326,17 @@ export default function PrivacyPolicy() {
             <section>
               <h2 className="text-2xl font-semibold mt-8 mb-4 text-gray-900 dark:text-white">9. Children's Privacy</h2>
               <p className="mb-4 text-gray-700 dark:text-gray-300">
-                UpKeepQR's Services are not directed to children under 18 years of age. We do not knowingly collect Personal Data from children under 18. If we discover that we have collected Personal Data from a child under 18, we will promptly delete such information from our systems.
+                MaintCue's Services are not directed to children under 18 years of age. We do not knowingly collect Personal Data from children under 18. If we discover that we have collected Personal Data from a child under 18, we will promptly delete such information from our systems.
               </p>
               <p className="mb-4 text-gray-700 dark:text-gray-300">
-                If you are a parent or guardian and believe your child has provided us with Personal Data, please contact us at support@upkeepqr.com.
+                If you are a parent or guardian and believe your child has provided us with Personal Data, please contact us at support@maintcue.com.
               </p>
             </section>
 
             <section>
               <h2 className="text-2xl font-semibold mt-8 mb-4 text-gray-900 dark:text-white">10. International Data Transfers</h2>
               <p className="mb-4 text-gray-700 dark:text-gray-300">
-                UpKeepQR is based in the United States. If you access our Services from outside the United States, your Personal Data may be transferred to, processed, and stored in the United States or other countries where we or our service providers operate.
+                MaintCue is based in the United States. If you access our Services from outside the United States, your Personal Data may be transferred to, processed, and stored in the United States or other countries where we or our service providers operate.
               </p>
               <p className="mb-4 text-gray-700 dark:text-gray-300">
                 These countries may have data protection laws that differ from those in your country. By using our Services, you consent to the transfer of your Personal Data to the United States and other countries.
@@ -383,10 +383,10 @@ export default function PrivacyPolicy() {
               <ul className="list-disc pl-6 mb-4 text-gray-700 dark:text-gray-300">
                 <li>Click "Your Privacy Choices" in the website footer</li>
                 <li>Use the Global Privacy Control (GPC) signal</li>
-                <li>Contact us at support@upkeepqr.com</li>
+                <li>Contact us at support@maintcue.com</li>
               </ul>
               <p className="mb-4 text-gray-700 dark:text-gray-300">
-                To exercise your CCPA rights, email support@upkeepqr.com or visit our Privacy Center.
+                To exercise your CCPA rights, email support@maintcue.com or visit our Privacy Center.
               </p>
 
               <h3 className="text-xl font-semibold mt-6 mb-3 text-gray-800 dark:text-gray-200">11.2 Virginia, Colorado, Connecticut, Utah Residents</h3>
@@ -535,7 +535,7 @@ export default function PrivacyPolicy() {
               <ul className="list-disc pl-6 mb-4 text-gray-700 dark:text-gray-300">
                 <li>Click "Unsubscribe" in any marketing email</li>
                 <li>Update preferences in your account settings</li>
-                <li>Email support@upkeepqr.com</li>
+                <li>Email support@maintcue.com</li>
               </ul>
             </section>
 
@@ -566,21 +566,21 @@ export default function PrivacyPolicy() {
                 If you have questions or concerns about this Privacy Policy or our data practices, please contact us:
               </p>
               <address className="mb-4 text-gray-700 dark:text-gray-300 not-italic">
-                <strong>UpKeepQR Privacy Team</strong><br />
-                Email: support@upkeepqr.com<br /><br />
-                UpKeepQR, LLC<br />
+                <strong>MaintCue Privacy Team</strong><br />
+                Email: support@maintcue.com<br /><br />
+                MaintCue, LLC<br />
                 Attn: Privacy Department<br />
                 Stockbridge, GA 30281<br />
                 United States
               </address>
               <p className="mb-4 text-gray-700 dark:text-gray-300">
-                For data protection inquiries: support@upkeepqr.com<br />
-                For European Economic Area (EEA) residents - EU Representative: support@upkeepqr.com<br />
-                For United Kingdom (UK) residents - UK Representative: support@upkeepqr.com<br />
-                For general inquiries: support@upkeepqr.com
+                For data protection inquiries: support@maintcue.com<br />
+                For European Economic Area (EEA) residents - EU Representative: support@maintcue.com<br />
+                For United Kingdom (UK) residents - UK Representative: support@maintcue.com<br />
+                For general inquiries: support@maintcue.com
               </p>
               <p className="mb-4 text-gray-700 dark:text-gray-300">
-                Website: <a href="https://upkeepqr.com/contact" className="text-blue-600 dark:text-blue-400 hover:underline">https://upkeepqr.com/contact</a>
+                Website: <a href="https://maintcue.com/contact" className="text-blue-600 dark:text-blue-400 hover:underline">https://maintcue.com/contact</a>
               </p>
               <p className="mb-4 text-gray-700 dark:text-gray-300">
                 We aim to respond to all privacy inquiries within 30 days.
@@ -665,8 +665,8 @@ export default function PrivacyPolicy() {
               <h2 className="text-2xl font-semibold mt-8 mb-4 text-gray-900 dark:text-white">21. Data Protection Officer</h2>
               <p className="mb-4 text-gray-700 dark:text-gray-300">For privacy-related inquiries, our Data Protection Officer can be reached at:</p>
               <address className="mb-4 text-gray-700 dark:text-gray-300 not-italic">
-                Email: support@upkeepqr.com<br />
-                Address: UpKeepQR, LLC, Attn: Data Protection Officer, Stockbridge, GA 30281
+                Email: support@maintcue.com<br />
+                Address: MaintCue, LLC, Attn: Data Protection Officer, Stockbridge, GA 30281
               </address>
             </section>
 
@@ -695,14 +695,14 @@ export default function PrivacyPolicy() {
             <section>
               <h2 className="text-2xl font-semibold mt-8 mb-4 text-gray-900 dark:text-white">24. Accessibility</h2>
               <p className="mb-4 text-gray-700 dark:text-gray-300">
-                We are committed to making this Privacy Policy accessible to all users. If you need this Policy in an alternative format or have trouble accessing it, please contact us at support@upkeepqr.com.
+                We are committed to making this Privacy Policy accessible to all users. If you need this Policy in an alternative format or have trouble accessing it, please contact us at support@maintcue.com.
               </p>
             </section>
 
             <hr className="my-8 border-gray-300 dark:border-gray-600" />
 
             <p className="text-center text-gray-600 dark:text-gray-400">
-              &copy; 2026 UpKeepQR, LLC. All rights reserved.
+              &copy; 2026 MaintCue, LLC. All rights reserved.
             </p>
             <p className="text-center text-gray-600 dark:text-gray-400">
               This Privacy Policy is effective as of January 25, 2026.

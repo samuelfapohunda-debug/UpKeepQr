@@ -107,7 +107,7 @@ export default function Login() {
                 name="email"
                 value={formData.email}
                 onChange={handleInputChange}
-                placeholder="admin@upkeepqr.com"
+                placeholder="admin@maintcue.com"
                 required
                 autoComplete="email"
                 disabled={loading}

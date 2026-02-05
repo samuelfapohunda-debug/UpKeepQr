@@ -69,8 +69,8 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
 }
 
 // Email templates for Request a Pro feature
-const FROM_EMAIL: string = process.env.FROM_EMAIL || 'noreply@upkeepqr.com';
-const ADMIN_EMAIL: string = process.env.ADMIN_EMAIL || 'admin@upkeepqr.com';
+const FROM_EMAIL: string = process.env.FROM_EMAIL || 'noreply@maintcue.com';
+const ADMIN_EMAIL: string = process.env.ADMIN_EMAIL || 'admin@maintcue.com';
 
 // Log email configuration at startup
 console.log('📧 Email configuration loaded:', {
@@ -165,7 +165,7 @@ export async function sendPaymentConfirmationEmail(
         </div>
         <div class="content">
           <p>Hi ${customerName},</p>
-          <p>Thank you for your UpKeepQR purchase! Your payment has been successfully processed.</p>
+          <p>Thank you for your MaintCue purchase! Your payment has been successfully processed.</p>
           
           <div class="detail">
             <strong>Order ID:</strong> ${orderId}<br>
@@ -175,10 +175,10 @@ export async function sendPaymentConfirmationEmail(
           
           <p>You'll receive a separate email with your QR codes and activation instructions shortly.</p>
           
-          <p>If you have any questions, please contact us at support@upkeepqr.com</p>
+          <p>If you have any questions, please contact us at support@maintcue.com</p>
         </div>
         <div class="footer">
-          © ${new Date().getFullYear()} UpKeepQR. All rights reserved.
+          © ${new Date().getFullYear()} MaintCue. All rights reserved.
         </div>
       </div>
     </body>
@@ -211,10 +211,10 @@ export async function sendWelcomeEmailWithQR(params: {
 }): Promise<boolean> {
   const { email, customerName, orderId, items, quantity, sku } = params;
   
-  const baseUrl = process.env.PUBLIC_BASE_URL || 'https://upkeepqr.com';
+  const baseUrl = process.env.PUBLIC_BASE_URL || 'https://maintcue.com';
   const downloadUrl = `${baseUrl}/api/orders/${orderId}/qr-codes`;
   
-  const subject = `Welcome to UpKeepQR! Your QR Magnet${quantity > 1 ? 's Are' : ' Is'} Ready`;
+  const subject = `Welcome to MaintCue! Your QR Magnet${quantity > 1 ? 's Are' : ' Is'} Ready`;
   
   // Prepare CID attachments for inline QR code images
   // This ensures compatibility with Gmail/Outlook which block data URIs
@@ -409,7 +409,7 @@ export async function sendWelcomeEmailWithQR(params: {
     <body>
       <div class="container">
         <div class="header">
-          <h1>🎉 Welcome to UpKeepQR!</h1>
+          <h1>🎉 Welcome to MaintCue!</h1>
         </div>
         <div class="content">
           <p>Hi ${customerName},</p>
@@ -435,10 +435,10 @@ export async function sendWelcomeEmailWithQR(params: {
           </p>
           
           <p style="margin-top: 30px;"><strong>Order ID:</strong> ${orderId}</p>
-          <p>Need help? Contact us at support@upkeepqr.com</p>
+          <p>Need help? Contact us at support@maintcue.com</p>
         </div>
         <div class="footer">
-          © ${new Date().getFullYear()} UpKeepQR. All rights reserved.
+          © ${new Date().getFullYear()} MaintCue. All rights reserved.
         </div>
       </div>
     </body>
@@ -479,7 +479,7 @@ export async function sendAdminOrderNotification(
     </head>
     <body>
       <div class="container">
-        <h2>🎉 New UpKeepQR Order</h2>
+        <h2>🎉 New MaintCue Order</h2>
         
         <div class="detail">
           <strong>Order ID:</strong> ${orderId}<br>
@@ -498,7 +498,7 @@ export async function sendAdminOrderNotification(
   `;
   
   return sendEmail({
-    to: 'support@upkeepqr.com',
+    to: 'support@maintcue.com',
     from: FROM_EMAIL,
     subject,
     html
@@ -513,7 +513,7 @@ export async function sendAdminErrorAlert(
   errorMessage: string,
   context: Record<string, any>
 ): Promise<boolean> {
-  const subject = `UpKeepQR Error: ${errorType}`;
+  const subject = `MaintCue Error: ${errorType}`;
   
   const contextHtml = Object.entries(context)
     .map(([key, value]) => `<strong>${key}:</strong> ${JSON.stringify(value)}<br>`)
@@ -547,7 +547,7 @@ export async function sendAdminErrorAlert(
   `;
   
   return sendEmail({
-    to: 'support@upkeepqr.com',
+    to: 'support@maintcue.com',
     from: FROM_EMAIL,
     subject,
     html
@@ -585,9 +585,9 @@ export async function sendSetupConfirmationEmail(
   try {
     const msg = {
       to: customerEmail,
-      from: process.env.FROM_EMAIL || 'noreply@upkeepqr.com',
-      replyTo: process.env.SUPPORT_EMAIL || 'support@upkeepqr.com',
-      subject: 'Your Home Profile is Ready! - UpKeepQR',
+      from: process.env.FROM_EMAIL || 'noreply@maintcue.com',
+      replyTo: process.env.SUPPORT_EMAIL || 'support@maintcue.com',
+      subject: 'Your Home Profile is Ready! - MaintCue',
       categories: ['customer_setup_confirmation'],
       text: `
 Hi ${customerName},
@@ -602,10 +602,10 @@ ${homeDetails.sqft ? `- Square Footage: ${Number(homeDetails.sqft).toLocaleStrin
 What's Next:
 You'll start receiving personalized maintenance reminders to help keep your home in top condition. These timely reminders will help you stay on top of important tasks like HVAC filter changes, seasonal maintenance, and more.
 
-Questions or need help? Reply to this email or contact us at support@upkeepqr.com.
+Questions or need help? Reply to this email or contact us at support@maintcue.com.
 
 Best regards,
-The UpKeepQR Team
+The MaintCue Team
 `.trim(),
       html: `
 <!DOCTYPE html>
@@ -690,8 +690,8 @@ The UpKeepQR Team
               <table width="100%" cellpadding="0" cellspacing="0" border="0">
                 <tr>
                   <td align="center" style="padding: 20px 0;">
-                    <a href="https://upkeepqr.com" style="display: inline-block; background: #10b981; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 6px; font-size: 16px; font-weight: 600;">
-                      Learn More About UpKeepQR
+                    <a href="https://maintcue.com" style="display: inline-block; background: #10b981; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 6px; font-size: 16px; font-weight: 600;">
+                      Learn More About MaintCue
                     </a>
                   </td>
                 </tr>
@@ -707,10 +707,10 @@ The UpKeepQR Team
                 Questions? We're here to help!
               </p>
               <p style="color: #666666; font-size: 14px; margin: 0;">
-                Email us at <a href="mailto:support@upkeepqr.com" style="color: #10b981; text-decoration: none;">support@upkeepqr.com</a>
+                Email us at <a href="mailto:support@maintcue.com" style="color: #10b981; text-decoration: none;">support@maintcue.com</a>
               </p>
               <p style="color: #999999; font-size: 12px; margin: 15px 0 0;">
-                © ${new Date().getFullYear()} UpKeepQR. All rights reserved.
+                © ${new Date().getFullYear()} MaintCue. All rights reserved.
               </p>
             </td>
           </tr>
@@ -754,12 +754,12 @@ export async function sendAdminSetupNotification(
   }
 ): Promise<void> {
   try {
-    const adminEmail = process.env.ADMIN_EMAIL || 'support@upkeepqr.com';
-    const baseUrl = process.env.BASE_URL || 'https://upkeepqr.com';
+    const adminEmail = process.env.ADMIN_EMAIL || 'support@maintcue.com';
+    const baseUrl = process.env.BASE_URL || 'https://maintcue.com';
     
     const msg = {
       to: adminEmail,
-      from: process.env.FROM_EMAIL || 'noreply@upkeepqr.com',
+      from: process.env.FROM_EMAIL || 'noreply@maintcue.com',
       subject: `New Home Setup Completed - ${householdName}`,
       categories: ['admin_setup_notification'],
       text: `
@@ -961,7 +961,7 @@ Setup completed at: ${new Date().toLocaleString()}
           <tr>
             <td style="background-color: #f9fafb; padding: 20px; text-align: center; border-radius: 0 0 8px 8px; border-top: 1px solid #e5e7eb;">
               <p style="color: #999999; font-size: 12px; margin: 0;">
-                UpKeepQR Admin Notification System
+                MaintCue Admin Notification System
               </p>
             </td>
           </tr>
@@ -995,8 +995,8 @@ export async function sendSubscriptionWelcomeEmail(
   orderId?: string,
   qrCodes?: Array<{ code: string; qrUrl: string; setupUrl: string }>
 ): Promise<boolean> {
-  const subject = `Welcome to UpKeepQR - ${planName} Subscription Activated`;
-  const baseUrl = process.env.PUBLIC_BASE_URL || 'https://upkeepqr.com';
+  const subject = `Welcome to MaintCue - ${planName} Subscription Activated`;
+  const baseUrl = process.env.PUBLIC_BASE_URL || 'https://maintcue.com';
   
   // Build QR codes section if provided
   let qrCodesHtml = '';
@@ -1137,13 +1137,13 @@ Quick Setup:
     <body>
       <div class="container">
         <div class="header">
-          <h1 style="margin: 0 0 10px 0; font-size: 28px;">Welcome to UpKeepQR!</h1>
+          <h1 style="margin: 0 0 10px 0; font-size: 28px;">Welcome to MaintCue!</h1>
           <p style="margin: 0; opacity: 0.9;">Your home maintenance journey starts now</p>
         </div>
         <div class="content">
           <p>Hi ${customerName || 'there'},</p>
           
-          <p>Thank you for subscribing to UpKeepQR! Your <span class="plan-badge">${planName}</span> subscription is now active.</p>
+          <p>Thank you for subscribing to MaintCue! Your <span class="plan-badge">${planName}</span> subscription is now active.</p>
           
           <div class="feature-list">
             <h3 style="margin-top: 0; color: #166534;">What's included:</h3>
@@ -1167,7 +1167,7 @@ Quick Setup:
             </ol>
             
             <p style="text-align: center;">
-              <a href="https://upkeepqr.com/order" class="button">Order Your QR Magnet</a>
+              <a href="https://maintcue.com/order" class="button">Order Your QR Magnet</a>
             </p>
           ` : ''}
           
@@ -1177,22 +1177,22 @@ Quick Setup:
             Amount: $${amountPaid}/year${qrCodes && qrCodes.length > 0 ? `<br>QR Codes: ${qrCodes.length}` : ''}
           </p>
           
-          <p>Questions? Reply to this email or contact us at support@upkeepqr.com</p>
+          <p>Questions? Reply to this email or contact us at support@maintcue.com</p>
         </div>
         <div class="footer">
-          © ${new Date().getFullYear()} UpKeepQR. All rights reserved.<br>
-          <a href="https://upkeepqr.com" style="color: #10b981;">upkeepqr.com</a>
+          © ${new Date().getFullYear()} MaintCue. All rights reserved.<br>
+          <a href="https://maintcue.com" style="color: #10b981;">maintcue.com</a>
         </div>
       </div>
     </body>
     </html>
   `;
   
-  const text = `Welcome to UpKeepQR - ${planName} Subscription Activated
+  const text = `Welcome to MaintCue - ${planName} Subscription Activated
 
 Hi ${customerName || 'there'},
 
-Thank you for subscribing to UpKeepQR! Your ${planName} subscription is now active.
+Thank you for subscribing to MaintCue! Your ${planName} subscription is now active.
 
 What's included:
 - Personalized maintenance task scheduling
@@ -1205,9 +1205,9 @@ Subscription Details:
 Plan: ${planName}
 Amount: $${amountPaid}/year${qrCodes && qrCodes.length > 0 ? `\nQR Codes: ${qrCodes.length}` : ''}
 
-Questions? Contact us at support@upkeepqr.com
+Questions? Contact us at support@maintcue.com
 
-© ${new Date().getFullYear()} UpKeepQR. All rights reserved.
+© ${new Date().getFullYear()} MaintCue. All rights reserved.
 `;
 
   return sendEmail({
@@ -1245,7 +1245,7 @@ export async function sendAdminSubscriptionNotification(
     </head>
     <body>
       <div class="container">
-        <h2>New UpKeepQR Subscription</h2>
+        <h2>New MaintCue Subscription</h2>
         
         <div class="detail">
           <strong>Plan:</strong> ${planName}<br>
@@ -1278,11 +1278,11 @@ export async function sendMagicLinkEmail(
   isFirstTime: boolean = true
 ): Promise<boolean> {
   const subject = isFirstTime 
-    ? 'Welcome to UpKeepQR! Access Your Dashboard'
-    : 'Access Your UpKeepQR Dashboard';
+    ? 'Welcome to MaintCue! Access Your Dashboard'
+    : 'Access Your MaintCue Dashboard';
   
   const greeting = isFirstTime
-    ? `Welcome to UpKeepQR, ${name}!`
+    ? `Welcome to MaintCue, ${name}!`
     : `Hi ${name},`;
   
   const message = isFirstTime
@@ -1314,7 +1314,7 @@ export async function sendMagicLinkEmail(
     <body>
       <div class="container">
         <div class="header">
-          <div class="logo">UpKeepQR</div>
+          <div class="logo">MaintCue</div>
         </div>
         
         <div class="content">
@@ -1331,8 +1331,8 @@ export async function sendMagicLinkEmail(
         </div>
         
         <div class="footer">
-          <p>UpKeepQR - Your Home's Maintenance, Automated<br>
-          Questions? Reply to this email or visit upkeepqr.com/support</p>
+          <p>MaintCue - Your Home's Maintenance, Automated<br>
+          Questions? Reply to this email or visit maintcue.com/support</p>
         </div>
       </div>
     </body>
@@ -1349,8 +1349,8 @@ This link will expire in 24 hours and can only be used once.
 If you didn't request this, you can safely ignore this email.
 
 ---
-UpKeepQR - Your Home's Maintenance, Automated
-Questions? Reply to this email or visit upkeepqr.com/support`;
+MaintCue - Your Home's Maintenance, Automated
+Questions? Reply to this email or visit maintcue.com/support`;
   
   return sendEmail({
     to: email,

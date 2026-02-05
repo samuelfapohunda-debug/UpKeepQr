@@ -181,7 +181,7 @@ export default function Home() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-red-700">
                     <X className="w-6 h-6" />
-                    Without UpKeepQR
+                    Without MaintCue
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -211,7 +211,7 @@ export default function Home() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-emerald-700">
                     <CheckCircle className="w-6 h-6" />
-                    With UpKeepQR
+                    With MaintCue
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -245,7 +245,7 @@ export default function Home() {
             
             <div className="text-center mb-16">
               <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">
-                How UpKeepQR Works
+                How MaintCue Works
               </h2>
               <p className="text-lg sm:text-xl text-slate-600 max-w-2xl mx-auto">
                 Three simple steps to never miss home maintenance again
@@ -452,7 +452,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Who UpKeepQR Is For */}
+        {/* Who MaintCue Is For */}
         <section className="py-20 bg-slate-50">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">
@@ -461,7 +461,7 @@ export default function Home() {
               </h2>
               <p className="text-lg text-slate-600 max-w-2xl mx-auto">
                 Whether you're protecting your own home or managing properties for clients, 
-                UpKeepQR scales with your needs.
+                MaintCue scales with your needs.
               </p>
             </div>
 
@@ -894,7 +894,7 @@ export default function Home() {
                 </CardHeader>
                 <CardContent>
                   <CardDescription className="text-slate-600">
-                    No. UpKeepQR works directly through your phone's camera. Just scan the magnet and set reminders instantly — no extra app required.
+                    No. MaintCue works directly through your phone's camera. Just scan the magnet and set reminders instantly — no extra app required.
                   </CardDescription>
                 </CardContent>
               </Card>
@@ -905,7 +905,7 @@ export default function Home() {
                 </CardHeader>
                 <CardContent>
                   <CardDescription className="text-slate-600">
-                    Yes. UpKeepQR only collects the information needed to send you reminders. Your data is never sold or shared with third parties, and you have full control over your settings.
+                    Yes. MaintCue only collects the information needed to send you reminders. Your data is never sold or shared with third parties, and you have full control over your settings.
                   </CardDescription>
                 </CardContent>
               </Card>

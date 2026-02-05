@@ -14,7 +14,7 @@ export async function apiRequest(
   data?: unknown | undefined,
 ): Promise<Response> {
   // Get JWT token from localStorage OR sessionStorage (must match AuthContext TOKEN_KEY)
-  const token = localStorage.getItem('upkeepqr_admin_token') || sessionStorage.getItem('upkeepqr_admin_token');
+  const token = localStorage.getItem('maintcue_admin_token') || sessionStorage.getItem('maintcue_admin_token');
   
   // Build headers with Content-Type and Authorization
   const headers: Record<string, string> = {};

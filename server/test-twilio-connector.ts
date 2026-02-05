@@ -60,7 +60,7 @@ async function testTwilioConnector() {
       
       try {
         const message = await clientAuth.messages.create({
-          body: 'Test SMS from UpKeepQR - Auth Token Method\n\nReply STOP to opt-out',
+          body: 'Test SMS from MaintCue - Auth Token Method\n\nReply STOP to opt-out',
           from: settings.phone_number,
           to: '+14155552671'
         });
@@ -84,7 +84,7 @@ async function testTwilioConnector() {
 
     try {
       const message = await clientApiKey.messages.create({
-        body: 'Test SMS from UpKeepQR - API Key Method\n\nReply STOP to opt-out',
+        body: 'Test SMS from MaintCue - API Key Method\n\nReply STOP to opt-out',
         from: settings.phone_number,
         to: '+14155552671'
       });

@@ -38,7 +38,7 @@ export default function Navigation() {
                   <path d="M16 6L8 12H10V20H14V16H18V20H22V12H24L16 6Z" fill="white"/>
                   <path d="M12 18L14 20L20 14" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
-                <span className="font-semibold text-sm sm:text-base lg:text-lg truncate text-white" data-testid="logo-text">UpKeepQR Admin</span>
+                <span className="font-semibold text-sm sm:text-base lg:text-lg truncate text-white" data-testid="logo-text">MaintCue Admin</span>
               </Link>
             </div>
             
@@ -118,7 +118,7 @@ export default function Navigation() {
                 <path d="M16 6L8 12H10V20H14V16H18V20H22V12H24L16 6Z" fill="white"/>
                 <path d="M12 18L14 20L20 14" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
-              <span className="font-semibold text-sm sm:text-base lg:text-lg truncate" data-testid="logo-text">UpKeepQR</span>
+              <span className="font-semibold text-sm sm:text-base lg:text-lg truncate" data-testid="logo-text">MaintCue</span>
             </Link>
           </div>
           

@@ -432,8 +432,8 @@ const Onboarding: React.FC<OnboardingProps> = ({ adminMode = false }) => {
                   <p className="text-sm text-muted-foreground">
                     Each QR code can only be activated once for security reasons. 
                     If you need assistance, please contact support at{' '}
-                    <a href="mailto:support@upkeepqr.com" className="text-primary underline">
-                      support@upkeepqr.com
+                    <a href="mailto:support@maintcue.com" className="text-primary underline">
+                      support@maintcue.com
                     </a>
                   </p>
                 </div>

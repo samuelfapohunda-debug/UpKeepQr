@@ -91,7 +91,7 @@ export default function CustomerDashboard() {
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = 'UpKeepQR_Tasks.ics';
+      link.download = 'MaintCue_Tasks.ics';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
