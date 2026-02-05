@@ -100,7 +100,7 @@ npm install wouter
 ### "Database table doesn't exist"
 Make sure you ran the migration:
 ```bash
-psql -U postgres -d upkeepqr -f server/migrations/*_add_home_profile_extra.sql
+psql -U postgres -d maintcue -f server/migrations/*_add_home_profile_extra.sql
 ```
 
 ### "Route not found"
@@ -123,7 +123,7 @@ app.use(homeExtraRouter);
 Make sure you have:
 ```env
 NODE_ENV=development  # or production
-DATABASE_URL=postgresql://user:pass@localhost:5432/upkeepqr
+DATABASE_URL=postgresql://user:pass@localhost:5432/maintcue
 ```
 
 ## 🎨 Customization

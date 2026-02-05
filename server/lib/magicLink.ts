@@ -22,7 +22,7 @@ export async function generateMagicLink(
   
   const baseUrl = process.env.PUBLIC_BASE_URL || process.env.REPLIT_DEV_DOMAIN 
     ? `https://${process.env.REPLIT_DEV_DOMAIN}` 
-    : 'https://upkeepqr.com';
+    : 'https://maintcue.com';
   
   return `${baseUrl}/auth/magic?token=${token}`;
 }

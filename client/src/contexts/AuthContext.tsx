@@ -23,9 +23,9 @@ interface AuthContextType extends AuthState {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const TOKEN_KEY = 'upkeepqr_admin_token';
-const EMAIL_KEY = 'upkeepqr_admin_email';
-const REMEMBER_ME_KEY = 'upkeepqr_remember_me';
+const TOKEN_KEY = 'maintcue_admin_token';
+const EMAIL_KEY = 'maintcue_admin_email';
+const REMEMBER_ME_KEY = 'maintcue_remember_me';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [authState, setAuthState] = useState<AuthState>({

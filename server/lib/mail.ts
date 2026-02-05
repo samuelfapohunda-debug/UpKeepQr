@@ -1,5 +1,5 @@
 // server/lib/mail.ts
-// Email sending functions for UpKeepQR
+// Email sending functions for MaintCue
 
 export const sendWelcomeEmail = async (params: { email: string; name: string; [key: string]: unknown }) => {
   // Implementation here

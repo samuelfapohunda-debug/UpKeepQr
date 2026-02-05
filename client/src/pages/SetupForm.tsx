@@ -240,7 +240,7 @@ export default function SetupForm() {
 
       console.log("Submitting activation data with token:", token, activationData);
 
-      const jwtToken = localStorage.getItem('upkeepqr_admin_token') || sessionStorage.getItem('upkeepqr_admin_token');
+      const jwtToken = localStorage.getItem('maintcue_admin_token') || sessionStorage.getItem('maintcue_admin_token');
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
       };

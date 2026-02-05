@@ -95,7 +95,7 @@ router.get('/orders/:orderId/qr-codes', async (req: Request, res: Response) => {
     // Format QR codes for PDF generation
     // qrUrl contains the QR image data URL
     // We also need the setup URL for display
-    const baseUrl = process.env.PUBLIC_BASE_URL || 'https://upkeepqr.com';
+    const baseUrl = process.env.PUBLIC_BASE_URL || 'https://maintcue.com';
     const qrCodes = items.map(item => ({
       code: item.activationCode,
       qrUrl: item.qrUrl || '',  // QR image data URL
@@ -107,7 +107,7 @@ router.get('/orders/:orderId/qr-codes', async (req: Request, res: Response) => {
 
     // Return as HTML (can be converted to PDF by browser or PDF service)
     res.setHeader('Content-Type', 'text/html');
-    res.setHeader('Content-Disposition', `inline; filename="upkeepqr-codes-${order.orderId}.html"`);
+    res.setHeader('Content-Disposition', `inline; filename="maintcue-codes-${order.orderId}.html"`);
     res.send(pdfHtml);
 
   } catch (error: any) {

@@ -63,7 +63,7 @@ export default function Footer() {
             <h3 className="text-white font-semibold text-lg mb-4">Follow Us</h3>
             <div className="flex space-x-4">
               <a 
-                href="https://twitter.com/upkeepqr" 
+                href="https://twitter.com/maintcue" 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="hover:text-white transition-colors"
@@ -73,7 +73,7 @@ export default function Footer() {
                 <Twitter className="h-6 w-6" />
               </a>
               <a 
-                href="https://instagram.com/upkeepqr" 
+                href="https://instagram.com/maintcue" 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="hover:text-white transition-colors"
@@ -83,7 +83,7 @@ export default function Footer() {
                 <Instagram className="h-6 w-6" />
               </a>
               <a 
-                href="https://facebook.com/upkeepqr" 
+                href="https://facebook.com/maintcue" 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="hover:text-white transition-colors"
@@ -93,7 +93,7 @@ export default function Footer() {
                 <Facebook className="h-6 w-6" />
               </a>
               <a 
-                href="https://linkedin.com/company/upkeepqr" 
+                href="https://linkedin.com/company/maintcue" 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="hover:text-white transition-colors"
@@ -103,7 +103,7 @@ export default function Footer() {
                 <Linkedin className="h-6 w-6" />
               </a>
               <a 
-                href="https://tiktok.com/@upkeepqr" 
+                href="https://tiktok.com/@maintcue" 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="hover:text-white transition-colors"
@@ -121,7 +121,7 @@ export default function Footer() {
         {/* Copyright */}
         <div className="border-t border-gray-800 mt-8 pt-8 text-center">
           <p className="text-sm" data-testid="text-copyright">
-            © 2026 UpKeepQR.com. All rights reserved.
+            © 2026 MaintCue.com. All rights reserved.
           </p>
         </div>
       </div>

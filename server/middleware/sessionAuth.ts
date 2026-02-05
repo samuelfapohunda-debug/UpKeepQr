@@ -15,7 +15,7 @@ export async function requireSessionAuth(
   res: Response, 
   next: NextFunction
 ) {
-  const sessionToken = req.cookies?.upkeepqr_session;
+  const sessionToken = req.cookies?.maintcue_session;
   
   if (!sessionToken) {
     return res.status(401).json({ error: 'Authentication required' });
@@ -25,8 +25,8 @@ export async function requireSessionAuth(
     const session = await verifySession(sessionToken);
     
     if (!session) {
-      res.clearCookie('upkeepqr_session');
-      res.clearCookie('upkeepqr_household');
+      res.clearCookie('maintcue_session');
+      res.clearCookie('maintcue_household');
       return res.status(401).json({ error: 'Invalid or expired session' });
     }
     
@@ -95,7 +95,7 @@ export async function requireSessionOrAdminAuth(
     }
   }
   
-  const sessionToken = req.cookies?.upkeepqr_session;
+  const sessionToken = req.cookies?.maintcue_session;
   
   if (!sessionToken) {
     return res.status(401).json({ error: 'Authentication required' });
@@ -105,8 +105,8 @@ export async function requireSessionOrAdminAuth(
     const session = await verifySession(sessionToken);
     
     if (!session) {
-      res.clearCookie('upkeepqr_session');
-      res.clearCookie('upkeepqr_household');
+      res.clearCookie('maintcue_session');
+      res.clearCookie('maintcue_household');
       return res.status(401).json({ error: 'Invalid or expired session' });
     }
     

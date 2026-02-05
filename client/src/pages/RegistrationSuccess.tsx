@@ -16,7 +16,7 @@ export default function RegistrationSuccess() {
           <div className="mx-auto mb-4 w-16 h-16 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center">
             <CheckCircle2 className="w-10 h-10 text-green-600 dark:text-green-400" />
           </div>
-          <CardTitle className="text-3xl" data-testid="text-welcome-title">Welcome to UpKeepQR!</CardTitle>
+          <CardTitle className="text-3xl" data-testid="text-welcome-title">Welcome to MaintCue!</CardTitle>
           <CardDescription className="text-lg">
             Your home has been successfully registered
           </CardDescription>
@@ -151,8 +151,8 @@ export default function RegistrationSuccess() {
           <div className="text-center pt-4 border-t">
             <p className="text-sm text-muted-foreground">
               Need help? Contact us at{" "}
-              <a href="mailto:support@upkeepqr.com" className="text-blue-600 hover:underline">
-                support@upkeepqr.com
+              <a href="mailto:support@maintcue.com" className="text-blue-600 hover:underline">
+                support@maintcue.com
               </a>
             </p>
           </div>

@@ -101,7 +101,7 @@ export default function Contact() {
               Let's Chat
             </h1>
             <p className="text-gray-600 dark:text-gray-400 mb-8">
-              An UpKeepQR expert will reach out to discuss your needs.
+              An MaintCue expert will reach out to discuss your needs.
             </p>
 
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
@@ -203,7 +203,7 @@ export default function Contact() {
 
               {/* Consent Footer */}
               <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed mt-5">
-                By clicking submit you consent to receive email communications about UpKeepQR 
+                By clicking submit you consent to receive email communications about MaintCue 
                 products and services and agree to our{" "}
                 <Link href="/privacy-policy" className="text-blue-600 dark:text-blue-400 hover:underline">
                   Privacy Policy
@@ -224,7 +224,7 @@ export default function Contact() {
             </h2>
             <p className="text-lg text-gray-600 dark:text-gray-400 mb-12 leading-relaxed">
               Whether you're protecting your own home or managing properties for clients, 
-              UpKeepQR scales with your needs.
+              MaintCue scales with your needs.
             </p>
 
             <div className="space-y-10">

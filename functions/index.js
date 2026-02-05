@@ -36,12 +36,12 @@ const SENDGRID_KEY=
 const SUPPORT_EMAIL=
   process.env.SUPPORT_EMAIL||
   (legacyConfig.support&&legacyConfig.support.email)||
-  'support@upkeepqr.com';
+  'support@maintcue.com';
 
 const SUPPORT_NAME=
   process.env.SUPPORT_NAME||
   (legacyConfig.support&&legacyConfig.support.name)||
-  'UpkeepQR';
+  'MaintCue';
 
 // optional SMS
 const TWILIO_SID=

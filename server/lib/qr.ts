@@ -2,7 +2,7 @@ import QRCode from 'qrcode';
 
 /**
  * Generates a QR code as a data URL
- * @param setupUrl - The URL to encode in the QR code (e.g., https://upkeepqr.com/setup/ABC123)
+ * @param setupUrl - The URL to encode in the QR code (e.g., https://maintcue.com/setup/ABC123)
  * @returns Promise<string> - Data URL of the QR code image
  */
 export async function generateQRCode(setupUrl: string): Promise<string> {
@@ -25,7 +25,7 @@ export async function generateQRCode(setupUrl: string): Promise<string> {
 /**
  * Generates QR codes for multiple activation codes
  * @param activationCodes - Array of activation codes
- * @param baseUrl - Base URL for setup (e.g., https://upkeepqr.com)
+ * @param baseUrl - Base URL for setup (e.g., https://maintcue.com)
  * @returns Promise<Array<{code: string, qrUrl: string, setupUrl: string}>>
  */
 export async function generateQRCodes(
@@ -70,7 +70,7 @@ export async function generateQRCodesPDF(
     <html>
     <head>
       <meta charset="UTF-8">
-      <title>UpKeepQR Activation Codes - ${customerName}</title>
+      <title>MaintCue Activation Codes - ${customerName}</title>
       <style>
         body {
           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -119,7 +119,7 @@ export async function generateQRCodesPDF(
       </style>
     </head>
     <body>
-      <h1>🏡 UpKeepQR Activation Codes</h1>
+      <h1>🏡 MaintCue Activation Codes</h1>
       <p><strong>Customer:</strong> ${customerName}</p>
       
       <div class="instructions">
@@ -141,7 +141,7 @@ export async function generateQRCodesPDF(
       `).join('')}
       
       <div class="instructions">
-        <p><strong>Need Help?</strong> Contact support@upkeepqr.com</p>
+        <p><strong>Need Help?</strong> Contact support@maintcue.com</p>
       </div>
     </body>
     </html>

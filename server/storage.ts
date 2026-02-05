@@ -47,7 +47,7 @@ import { eq, and, like, sql, desc, asc, or, inArray } from "drizzle-orm";
 import { generateOrderId } from "./utils/orderIdGenerator";
 
 // System Agent ID for QR codes from Stripe orders (not tied to specific agent)
-export const SYSTEM_AGENT_ID = 'system-upkeepqr-agent';
+export const SYSTEM_AGENT_ID = 'system-maintcue-agent';
 
 export interface IStorage {
   // Agent methods

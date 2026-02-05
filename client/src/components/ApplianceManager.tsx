@@ -133,7 +133,7 @@ export default function ApplianceManager({ householdId, onClose }: ApplianceMana
   const fetchAppliances = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('upkeepqr_admin_token') || sessionStorage.getItem('upkeepqr_admin_token');
+      const token = localStorage.getItem('maintcue_admin_token') || sessionStorage.getItem('maintcue_admin_token');
       const response = await fetch(`${API_BASE_URL}/api/households/${householdId}/appliances`, {
         headers: {
           'Authorization': token ? `Bearer ${token}` : '',
@@ -254,7 +254,7 @@ export default function ApplianceManager({ householdId, onClose }: ApplianceMana
       if (formData.warrantyPolicyNumber.trim()) normalizedPayload.warrantyPolicyNumber = formData.warrantyPolicyNumber.trim();
       if (formData.warrantyCoverageDetails.trim()) normalizedPayload.warrantyCoverageDetails = formData.warrantyCoverageDetails.trim();
 
-      const token = localStorage.getItem('upkeepqr_admin_token') || sessionStorage.getItem('upkeepqr_admin_token');
+      const token = localStorage.getItem('maintcue_admin_token') || sessionStorage.getItem('maintcue_admin_token');
       const response = await fetch(url, {
         method,
         headers: {
@@ -313,7 +313,7 @@ export default function ApplianceManager({ householdId, onClose }: ApplianceMana
     if (!confirm('Are you sure you want to delete this appliance?')) return;
 
     try {
-      const token = localStorage.getItem('upkeepqr_admin_token') || sessionStorage.getItem('upkeepqr_admin_token');
+      const token = localStorage.getItem('maintcue_admin_token') || sessionStorage.getItem('maintcue_admin_token');
       const response = await fetch(
         `${API_BASE_URL}/api/households/${householdId}/appliances/${applianceId}`,
         {

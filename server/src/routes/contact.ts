@@ -4,8 +4,8 @@ import rateLimit from 'express-rate-limit';
 
 const router = Router();
 
-const FROM_EMAIL = process.env.FROM_EMAIL || 'noreply@upkeepqr.com';
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'support@upkeepqr.com';
+const FROM_EMAIL = process.env.FROM_EMAIL || 'noreply@maintcue.com';
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'support@maintcue.com';
 
 // Rate limiting for contact form to prevent spam
 const contactLimiter = rateLimit({
@@ -95,7 +95,7 @@ ${message}
     if (!emailSent) {
       console.error('❌ Failed to send contact form email');
       return res.status(500).json({ 
-        error: 'Failed to send message. Please try again or email us directly at support@upkeepqr.com' 
+        error: 'Failed to send message. Please try again or email us directly at support@maintcue.com' 
       });
     }
     
@@ -114,7 +114,7 @@ ${message}
     
     // Return user-friendly error
     res.status(500).json({ 
-      error: 'Failed to send message. Please try again or email us directly at support@upkeepqr.com' 
+      error: 'Failed to send message. Please try again or email us directly at support@maintcue.com' 
     });
   }
 });

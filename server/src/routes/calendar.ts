@@ -77,10 +77,10 @@ function generateICSFile(tasks: any[], householdName: string): string {
   // Calendar header
   lines.push('BEGIN:VCALENDAR');
   lines.push('VERSION:2.0');
-  lines.push('PRODID:-//UpKeepQR//NONSGML Home Tasks//EN');
+  lines.push('PRODID:-//MaintCue//NONSGML Home Tasks//EN');
   lines.push('CALSCALE:GREGORIAN');
   lines.push('METHOD:PUBLISH');
-  lines.push(`X-WR-CALNAME:UpKeepQR - ${escapeICS(householdName)}`);
+  lines.push(`X-WR-CALNAME:MaintCue - ${escapeICS(householdName)}`);
   lines.push('X-WR-TIMEZONE:America/New_York');
   
   // Add each task as an event
@@ -99,7 +99,7 @@ function generateICSFile(tasks: any[], householdName: string): string {
       return;
     }
     
-    const uid = `task-${task.id}@upkeepqr.com`;
+    const uid = `task-${task.id}@maintcue.com`;
     const dueDate = task.dueDate ? formatICSDate(new Date(task.dueDate)) : formatICSDate(new Date());
     
     // Priority mapping: High=1, Medium=5, Low=9
@@ -112,7 +112,7 @@ function generateICSFile(tasks: any[], householdName: string): string {
     validEventCount++;
     
     // Build description with details
-    const fullDescription = `${escapeICS(taskDescription)}\\nPriority: ${task.priority || 'medium'}\\nCategory: ${taskCategory}\\nFrom UpKeepQR`;
+    const fullDescription = `${escapeICS(taskDescription)}\\nPriority: ${task.priority || 'medium'}\\nCategory: ${taskCategory}\\nFrom MaintCue`;
     
     // Add event with proper structure (ACTION before DESCRIPTION in VALARM)
     // Use foldLine for potentially long lines per RFC 5545
@@ -201,7 +201,7 @@ router.get('/household/:householdId/tasks.ics', async (req, res) => {
     // Set headers for .ics file download
     const safeFilename = householdName.replace(/[^a-zA-Z0-9]/g, '_');
     res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
-    res.setHeader('Content-Disposition', `attachment; filename="UpKeepQR_Tasks_${safeFilename}.ics"`);
+    res.setHeader('Content-Disposition', `attachment; filename="MaintCue_Tasks_${safeFilename}.ics"`);
     
     return res.send(icsContent);
 
@@ -217,7 +217,7 @@ router.get('/household/:householdId/tasks.ics', async (req, res) => {
 // POST /api/calendar/google/auth-url
 router.post('/google/auth-url', async (req, res) => {
   try {
-    const redirectUri = `${process.env.BACKEND_URL || 'https://upkeepqr-backend.onrender.com'}/api/calendar/google/callback`;
+    const redirectUri = `${process.env.BACKEND_URL || 'https://maintcue-backend.onrender.com'}/api/calendar/google/callback`;
     console.log('OAuth redirect_uri:', redirectUri);
     
     const oauth2Client = new google.auth.OAuth2(
@@ -251,15 +251,15 @@ router.get('/google/callback', async (req, res) => {
     // Handle OAuth errors
     if (error) {
       console.error('Google OAuth error:', error);
-      return res.redirect(`${process.env.FRONTEND_URL || 'https://upkeepqr.com'}/admin?calendar_sync=error&message=${error}`);
+      return res.redirect(`${process.env.FRONTEND_URL || 'https://maintcue.com'}/admin?calendar_sync=error&message=${error}`);
     }
 
     if (!code || typeof code !== 'string') {
-      return res.redirect(`${process.env.FRONTEND_URL || 'https://upkeepqr.com'}/admin?calendar_sync=error&message=no_code`);
+      return res.redirect(`${process.env.FRONTEND_URL || 'https://maintcue.com'}/admin?calendar_sync=error&message=no_code`);
     }
 
     // Exchange code for tokens
-    const redirectUri = `${process.env.BACKEND_URL || 'https://upkeepqr-backend.onrender.com'}/api/calendar/google/callback`;
+    const redirectUri = `${process.env.BACKEND_URL || 'https://maintcue-backend.onrender.com'}/api/calendar/google/callback`;
     console.log('Callback OAuth redirect_uri:', redirectUri);
     
     const oauth2Client = new google.auth.OAuth2(
@@ -314,11 +314,11 @@ router.get('/google/callback', async (req, res) => {
 
     console.log('✅ Calendar connection saved to database');
 
-    res.redirect(`${process.env.FRONTEND_URL || 'https://upkeepqr.com'}/admin?calendar_sync=success&connection_saved=true`);
+    res.redirect(`${process.env.FRONTEND_URL || 'https://maintcue.com'}/admin?calendar_sync=success&connection_saved=true`);
     
   } catch (error: any) {
     console.error('Callback error:', error);
-    res.redirect(`${process.env.FRONTEND_URL || 'https://upkeepqr.com'}/admin?calendar_sync=error&message=server_error`);
+    res.redirect(`${process.env.FRONTEND_URL || 'https://maintcue.com'}/admin?calendar_sync=error&message=server_error`);
   }
 });
 

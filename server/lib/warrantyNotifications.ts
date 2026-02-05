@@ -11,8 +11,8 @@ import { eq, and, gte, lte, sql, isNull } from 'drizzle-orm';
 import { sendEmail } from './email.js';
 import { sendSMS } from './sms.js';
 
-const FROM_EMAIL = process.env.FROM_EMAIL || 'noreply@upkeepqr.com';
-const APP_URL = process.env.FRONTEND_URL || 'https://upkeepqr.com';
+const FROM_EMAIL = process.env.FROM_EMAIL || 'noreply@maintcue.com';
+const APP_URL = process.env.FRONTEND_URL || 'https://maintcue.com';
 
 interface ExpiringAppliance {
   appliance: HouseholdAppliance;
@@ -235,7 +235,7 @@ async function sendWarrantyEmail(
 </head>
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
   <div style="background: #10b981; padding: 30px 20px; text-align: center; border-radius: 12px 12px 0 0;">
-    <h1 style="color: white; margin: 0; font-size: 24px;">UpKeepQR</h1>
+    <h1 style="color: white; margin: 0; font-size: 24px;">MaintCue</h1>
     <p style="color: rgba(255,255,255,0.9); margin: 8px 0 0 0;">Warranty Expiration Alert</p>
   </div>
   
@@ -303,8 +303,8 @@ async function sendWarrantyEmail(
   
   <div style="background: #f9fafb; padding: 20px; text-align: center; border-radius: 0 0 12px 12px; border: 1px solid #e5e7eb; border-top: none;">
     <p style="margin: 0; color: #6b7280; font-size: 12px;">
-      © ${new Date().getFullYear()} UpKeepQR. All rights reserved.<br>
-      <a href="${APP_URL}" style="color: #10b981;">upkeepqr.com</a>
+      © ${new Date().getFullYear()} MaintCue. All rights reserved.<br>
+      <a href="${APP_URL}" style="color: #10b981;">maintcue.com</a>
     </p>
   </div>
 </body>
@@ -336,7 +336,7 @@ View your dashboard: ${APP_URL}/my-home
 
 Need help? Request a Pro: ${APP_URL}/request-pro
 
-- The UpKeepQR Team
+- The MaintCue Team
   `;
 
   return await sendEmail({
@@ -356,7 +356,7 @@ async function sendWarrantySMS(
 ): Promise<boolean> {
   const urgencyPrefix = notificationType === '3_day' ? 'URGENT: ' : '';
   
-  const message = `${urgencyPrefix}UpKeepQR: Your ${appliance.applianceType} warranty expires in ${daysUntilExpiration} days. Review details & schedule repairs at ${APP_URL}/my-home`;
+  const message = `${urgencyPrefix}MaintCue: Your ${appliance.applianceType} warranty expires in ${daysUntilExpiration} days. Review details & schedule repairs at ${APP_URL}/my-home`;
 
   try {
     const result = await sendSMS(household.phone!, message);

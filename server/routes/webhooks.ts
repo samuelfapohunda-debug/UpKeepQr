@@ -134,8 +134,8 @@ router.post('/stripe/webhook', express.raw({ type: 'application/json' }), async 
         try {
           const customerEmailSent = await sendEmail({
             to: customerEmail,
-            from: process.env.FROM_EMAIL || 'noreply@upkeepqr.com',
-            subject: '✅ Your UpKeepQR Order Confirmation',
+            from: process.env.FROM_EMAIL || 'noreply@maintcue.com',
+            subject: '✅ Your MaintCue Order Confirmation',
             text: `Hi ${customerName},
 
 Thank you for your order! Your payment of $${amountPaid} has been processed successfully.
@@ -150,7 +150,7 @@ To activate your QR code magnet, visit: ${qrUrl}
 If you have any questions, please contact us.
 
 Best regards,
-The UpKeepQR Team`,
+The MaintCue Team`,
             html: `
               <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f9f9;">
                 <div style="background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
@@ -184,12 +184,12 @@ The UpKeepQR Team`,
                   <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;">
                   
                   <p style="font-size: 14px; color: #6b7280;">
-                    Questions? Contact us at support@upkeepqr.com
+                    Questions? Contact us at support@maintcue.com
                   </p>
                   
                   <p style="font-size: 14px; color: #6b7280;">
                     Best regards,<br>
-                    <strong>The UpKeepQR Team</strong>
+                    <strong>The MaintCue Team</strong>
                   </p>
                 </div>
               </div>
@@ -226,8 +226,8 @@ The UpKeepQR Team`,
         try {
           const adminEmailSent = await sendEmail({
             to: adminEmail,
-            from: process.env.FROM_EMAIL || 'noreply@upkeepqr.com',
-            subject: `🔔 New UpKeepQR Order - ${orderId}`,
+            from: process.env.FROM_EMAIL || 'noreply@maintcue.com',
+            subject: `🔔 New MaintCue Order - ${orderId}`,
             text: `New order received!
 
 Order ID: ${orderId}
@@ -352,8 +352,8 @@ if (process.env.NODE_ENV === 'development') {
           try {
             const emailSent = await sendEmail({
               to: customerEmail,
-              from: process.env.FROM_EMAIL || 'noreply@upkeepqr.com',
-              subject: '✅ [TEST] Your UpKeepQR Order',
+              from: process.env.FROM_EMAIL || 'noreply@maintcue.com',
+              subject: '✅ [TEST] Your MaintCue Order',
               text: `Hi ${customerName}, Order ID: ${orderId}, Code: ${activationCode}`,
               html: `<h1>✅ TEST Order</h1><p>Hi ${customerName}</p><p>Order: ${orderId}</p><p>Code: ${activationCode}</p>`
             });

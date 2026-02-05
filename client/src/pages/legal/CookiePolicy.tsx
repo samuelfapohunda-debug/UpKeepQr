@@ -31,7 +31,7 @@ export default function CookiePolicy() {
 
             <h2 className="text-2xl font-semibold mt-6 mb-4">5. Contact Us</h2>
             <p className="mb-4 text-gray-700 dark:text-gray-300">
-              Questions about our cookie policy? Email us at support@upkeepqr.com
+              Questions about our cookie policy? Email us at support@maintcue.com
             </p>
           </div>
         </div>

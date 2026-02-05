@@ -124,7 +124,7 @@ export async function sendVerificationCode(phone: string, token: string): Promis
     
     verificationCodes.set(token, { code, expires });
     
-    const message = `Your UpKeepQR verification code is: ${code}. This code expires in 10 minutes.`;
+    const message = `Your MaintCue verification code is: ${code}. This code expires in 10 minutes.`;
     
     await client.messages.create({
       body: message,
@@ -229,7 +229,7 @@ export async function sendReminderSMS(
     day: 'numeric'
   });
   
-  const message = `UpKeepQR Reminder: ${taskName} is due ${dueDateFormatted}. Complete this task to keep your home in great condition.`;
+  const message = `MaintCue Reminder: ${taskName} is due ${dueDateFormatted}. Complete this task to keep your home in great condition.`;
   
   // Use the new generic sendSMS function
   await sendSMS(phone, message);
