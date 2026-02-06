@@ -90,9 +90,37 @@ export async function sendUserConfirmationEmail(
   const subject = `Service Request Confirmed - ${trade} Service`;
   
   const html = `
-    <h2>Your Service Request Has Been Submitted</h2>
-    <p>Hi ${userName},</p>
-    <p>Thank you for submitting your ${trade} service request.</p>
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #333333; margin: 0; padding: 0; }
+        .container { max-width: 600px; margin: 0 auto; }
+        .header { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+        .content { background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; }
+        .footer { background: #f9fafb; color: #6b7280; padding: 20px; text-align: center; border-radius: 0 0 8px 8px; font-size: 13px; border-top: 1px solid #e5e7eb; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <div style="margin-bottom: 8px;">
+            <span style="font-size: 32px; font-weight: 700; letter-spacing: -0.5px; color: #ffffff;">Maint</span><span style="font-size: 32px; font-weight: 700; letter-spacing: -0.5px; color: #1E3A5F;">Cue</span>
+          </div>
+          <p style="margin: 0; opacity: 0.9;">Service Request Confirmed</p>
+        </div>
+        <div class="content">
+          <p>Hi ${userName},</p>
+          <p>Thank you for submitting your ${trade} service request. Our team will review it and connect you with a qualified professional.</p>
+        </div>
+        <div class="footer">
+          <p style="margin: 0 0 8px 0;"><span style="font-size: 18px; font-weight: 700; letter-spacing: -0.5px;"><span style="color: #10B981;">Maint</span><span style="color: #1E3A5F;">Cue</span></span></p>
+          <p style="margin: 0;">&copy; ${new Date().getFullYear()} MaintCue. All rights reserved.</p>
+          <p style="margin: 8px 0 0 0;"><a href="https://maintcue.com" style="color: #10B981; text-decoration: none;">maintcue.com</a> | <a href="mailto:support@maintcue.com" style="color: #10B981; text-decoration: none;">support@maintcue.com</a></p>
+        </div>
+      </div>
+    </body>
+    </html>
   `;
 
   const text = `Your Service Request Has Been Submitted
@@ -119,11 +147,41 @@ export async function sendAdminNotificationEmail(
   const subject = `New Service Request - ${trade}`;
   
   const html = `
-    <h2>New Service Request</h2>
-    <p>Customer: ${userName}</p>
-    <p>Email: ${userEmail}</p>
-    <p>Request ID: ${requestId}</p>
-    <p>Service: ${trade}</p>
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #333333; margin: 0; padding: 0; }
+        .container { max-width: 600px; margin: 0 auto; }
+        .header { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+        .content { background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; }
+        .detail { margin: 15px 0; padding: 15px; background: #f9fafb; border-left: 4px solid #10b981; border-radius: 0 4px 4px 0; }
+        .footer { background: #f9fafb; color: #6b7280; padding: 20px; text-align: center; border-radius: 0 0 8px 8px; font-size: 13px; border-top: 1px solid #e5e7eb; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <div style="margin-bottom: 8px;">
+            <span style="font-size: 32px; font-weight: 700; letter-spacing: -0.5px; color: #ffffff;">Maint</span><span style="font-size: 32px; font-weight: 700; letter-spacing: -0.5px; color: #1E3A5F;">Cue</span>
+          </div>
+          <p style="margin: 0; opacity: 0.9;">New Service Request</p>
+        </div>
+        <div class="content">
+          <div class="detail">
+            <strong>Customer:</strong> ${userName}<br>
+            <strong>Email:</strong> ${userEmail}<br>
+            <strong>Request ID:</strong> ${requestId}<br>
+            <strong>Service:</strong> ${trade}
+          </div>
+        </div>
+        <div class="footer">
+          <p style="margin: 0 0 8px 0;"><span style="font-size: 18px; font-weight: 700; letter-spacing: -0.5px;"><span style="color: #10B981;">Maint</span><span style="color: #1E3A5F;">Cue</span></span></p>
+          <p style="margin: 0;">&copy; ${new Date().getFullYear()} MaintCue. All rights reserved.</p>
+        </div>
+      </div>
+    </body>
+    </html>
   `;
 
   return sendEmail({
