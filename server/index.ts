@@ -108,6 +108,9 @@ app.use((req, res, next) => {
   
   registerRoutes(app);
   
+  // Start scheduled jobs (warranty alerts at 8 AM, maintenance reminders at 9 AM)
+  startCronJobs();
+  
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     console.error("Error:", err);
     const status = err?.status || err?.statusCode || 500;
