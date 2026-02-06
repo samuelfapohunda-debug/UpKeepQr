@@ -1,12 +1,27 @@
 import { Link } from "wouter";
 import { Facebook, Instagram, Linkedin, Twitter } from "lucide-react";
+const maintcueLogo = '/images/maintcue-logo.png';
 
 export default function Footer() {
   return (
     <footer className="bg-gray-900 text-gray-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-8">
           
+          <div>
+            <Link href="/" className="inline-block mb-4" data-testid="footer-logo-link">
+              <img 
+                src={maintcueLogo} 
+                alt="MaintCue" 
+                className="h-8 w-auto brightness-110"
+                data-testid="footer-logo"
+              />
+            </Link>
+            <p className="text-sm text-gray-400">
+              Smart home maintenance management powered by QR technology.
+            </p>
+          </div>
+
           {/* Legal Section */}
           <div>
             <h3 className="text-white font-semibold text-lg mb-4">Legal</h3>

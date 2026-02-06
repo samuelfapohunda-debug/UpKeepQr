@@ -1,5 +1,6 @@
 import { MailService, MailDataRequired } from '@sendgrid/mail';
 import type { AttachmentData } from '@sendgrid/helpers/classes/attachment';
+import { getEmailLogoHtml } from './emailBranding.js';
 
 const mailService = new MailService();
 
@@ -152,7 +153,7 @@ export async function sendPaymentConfirmationEmail(
       <style>
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #333333; }
         .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background: #10b981; color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+        .header { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
         .content { background: #f5f5f5; padding: 30px; }
         .footer { background: #f9fafb; color: #6b7280; padding: 20px; text-align: center; border-radius: 0 0 8px 8px; font-size: 14px; border-top: 1px solid #e5e7eb; }
         .detail { margin: 15px 0; padding: 15px; background: white; border-left: 4px solid #10b981; }
@@ -161,7 +162,10 @@ export async function sendPaymentConfirmationEmail(
     <body>
       <div class="container">
         <div class="header">
-          <h1>🎉 Payment Confirmed!</h1>
+          <div style="margin-bottom: 8px;">
+            <span style="font-size: 32px; font-weight: 700; letter-spacing: -0.5px; color: #ffffff;">Maint</span><span style="font-size: 32px; font-weight: 700; letter-spacing: -0.5px; color: #1E3A5F;">Cue</span>
+          </div>
+          <p style="margin: 0; opacity: 0.9;">Payment Confirmed!</p>
         </div>
         <div class="content">
           <p>Hi ${customerName},</p>
@@ -178,7 +182,9 @@ export async function sendPaymentConfirmationEmail(
           <p>If you have any questions, please contact us at support@maintcue.com</p>
         </div>
         <div class="footer">
-          © ${new Date().getFullYear()} MaintCue. All rights reserved.
+          <p style="margin: 0 0 8px 0;"><span style="font-size: 18px; font-weight: 700; letter-spacing: -0.5px;"><span style="color: #10B981;">Maint</span><span style="color: #1E3A5F;">Cue</span></span></p>
+          <p style="margin: 0;">© ${new Date().getFullYear()} MaintCue. All rights reserved.</p>
+          <p style="margin: 8px 0 0 0;"><a href="https://maintcue.com" style="color: #10B981; text-decoration: none;">maintcue.com</a> | <a href="mailto:support@maintcue.com" style="color: #10B981; text-decoration: none;">support@maintcue.com</a></p>
         </div>
       </div>
     </body>
@@ -387,7 +393,7 @@ export async function sendWelcomeEmailWithQR(params: {
       <style>
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #333333; }
         .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background: #10b981; color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+        .header { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
         .content { background: #f5f5f5; padding: 30px; }
         .footer { background: #f9fafb; color: #6b7280; padding: 20px; text-align: center; border-radius: 0 0 8px 8px; font-size: 14px; border-top: 1px solid #e5e7eb; }
         .instructions { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; }
@@ -409,14 +415,17 @@ export async function sendWelcomeEmailWithQR(params: {
     <body>
       <div class="container">
         <div class="header">
-          <h1>🎉 Welcome to MaintCue!</h1>
+          <div style="margin-bottom: 8px;">
+            <span style="font-size: 32px; font-weight: 700; letter-spacing: -0.5px; color: #ffffff;">Maint</span><span style="font-size: 32px; font-weight: 700; letter-spacing: -0.5px; color: #1E3A5F;">Cue</span>
+          </div>
+          <p style="margin: 0; opacity: 0.9;">Welcome to MaintCue!</p>
         </div>
         <div class="content">
           <p>Hi ${customerName},</p>
           <p>Your QR magnet${quantity > 1 ? 's are' : ' is'} ready! Below ${quantity > 1 ? 'are' : 'is'} your unique QR code${quantity > 1 ? 's' : ''} and activation link${quantity > 1 ? 's' : ''}.</p>
           
           <div class="instructions">
-            <h3>📱 How to Activate Your Magnet${quantity > 1 ? 's' : ''}:</h3>
+            <h3>How to Activate Your Magnet${quantity > 1 ? 's' : ''}:</h3>
             <ol>
               <li><strong>Scan the QR code below</strong> with your phone camera (QR code${quantity > 1 ? 's are' : ' is'} displayed in this email)</li>
               <li><strong>Or click the "Activate" button</strong> under each QR code</li>
@@ -431,14 +440,16 @@ export async function sendWelcomeEmailWithQR(params: {
           </table>
           
           <p style="text-align: center; margin-top: 30px;">
-            <a href="${downloadUrl}" class="download-button">📥 Download All QR Codes (PDF)</a>
+            <a href="${downloadUrl}" class="download-button">Download All QR Codes (PDF)</a>
           </p>
           
           <p style="margin-top: 30px;"><strong>Order ID:</strong> ${orderId}</p>
           <p>Need help? Contact us at support@maintcue.com</p>
         </div>
         <div class="footer">
-          © ${new Date().getFullYear()} MaintCue. All rights reserved.
+          <p style="margin: 0 0 8px 0;"><span style="font-size: 18px; font-weight: 700; letter-spacing: -0.5px;"><span style="color: #10B981;">Maint</span><span style="color: #1E3A5F;">Cue</span></span></p>
+          <p style="margin: 0;">© ${new Date().getFullYear()} MaintCue. All rights reserved.</p>
+          <p style="margin: 8px 0 0 0;"><a href="https://maintcue.com" style="color: #10B981; text-decoration: none;">maintcue.com</a> | <a href="mailto:support@maintcue.com" style="color: #10B981; text-decoration: none;">support@maintcue.com</a></p>
         </div>
       </div>
     </body>
@@ -479,7 +490,12 @@ export async function sendAdminOrderNotification(
     </head>
     <body>
       <div class="container">
-        <h2>🎉 New MaintCue Order</h2>
+        <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
+          <div style="margin-bottom: 8px;">
+            <span style="font-size: 32px; font-weight: 700; letter-spacing: -0.5px; color: #ffffff;">Maint</span><span style="font-size: 32px; font-weight: 700; letter-spacing: -0.5px; color: #1E3A5F;">Cue</span>
+          </div>
+          <p style="margin: 0; opacity: 0.9;">New MaintCue Order</p>
+        </div>
         
         <div class="detail">
           <strong>Order ID:</strong> ${orderId}<br>
@@ -492,6 +508,12 @@ export async function sendAdminOrderNotification(
         </div>
         
         <p>Confirmation and welcome emails have been sent to the customer.</p>
+        
+        <div style="background: #f9fafb; color: #6b7280; padding: 20px; text-align: center; border-radius: 0 0 8px 8px; font-size: 13px; border-top: 1px solid #e5e7eb;">
+          <p style="margin: 0 0 8px 0;"><span style="font-size: 18px; font-weight: 700; letter-spacing: -0.5px;"><span style="color: #10B981;">Maint</span><span style="color: #1E3A5F;">Cue</span></span></p>
+          <p style="margin: 0;">© ${new Date().getFullYear()} MaintCue. All rights reserved.</p>
+          <p style="margin: 8px 0 0 0;"><a href="https://maintcue.com" style="color: #10B981; text-decoration: none;">maintcue.com</a> | <a href="mailto:support@maintcue.com" style="color: #10B981; text-decoration: none;">support@maintcue.com</a></p>
+        </div>
       </div>
     </body>
     </html>
@@ -531,7 +553,12 @@ export async function sendAdminErrorAlert(
     </head>
     <body>
       <div class="container">
-        <h2>❌ Error Alert</h2>
+        <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
+          <div style="margin-bottom: 8px;">
+            <span style="font-size: 32px; font-weight: 700; letter-spacing: -0.5px; color: #ffffff;">Maint</span><span style="font-size: 32px; font-weight: 700; letter-spacing: -0.5px; color: #1E3A5F;">Cue</span>
+          </div>
+          <p style="margin: 0; opacity: 0.9;">Error Alert</p>
+        </div>
         
         <div class="error">
           <strong>Error Type:</strong> ${errorType}<br>
@@ -541,6 +568,12 @@ export async function sendAdminErrorAlert(
         </div>
         
         <p>Please investigate this error in the system logs.</p>
+        
+        <div style="background: #f9fafb; color: #6b7280; padding: 20px; text-align: center; border-radius: 0 0 8px 8px; font-size: 13px; border-top: 1px solid #e5e7eb;">
+          <p style="margin: 0 0 8px 0;"><span style="font-size: 18px; font-weight: 700; letter-spacing: -0.5px;"><span style="color: #10B981;">Maint</span><span style="color: #1E3A5F;">Cue</span></span></p>
+          <p style="margin: 0;">© ${new Date().getFullYear()} MaintCue. All rights reserved.</p>
+          <p style="margin: 8px 0 0 0;"><a href="https://maintcue.com" style="color: #10B981; text-decoration: none;">maintcue.com</a> | <a href="mailto:support@maintcue.com" style="color: #10B981; text-decoration: none;">support@maintcue.com</a></p>
+        </div>
       </div>
     </body>
     </html>
@@ -623,10 +656,11 @@ The MaintCue Team
           
           <!-- Header -->
           <tr>
-            <td style="background: #10b981; padding: 40px 30px; text-align: center; border-radius: 8px 8px 0 0;">
-              <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 600;">
-                Your Home Profile is Ready!
-              </h1>
+            <td style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 40px 30px; text-align: center; border-radius: 8px 8px 0 0;">
+              <div style="margin-bottom: 8px;">
+                <span style="font-size: 32px; font-weight: 700; letter-spacing: -0.5px; color: #ffffff;">Maint</span><span style="font-size: 32px; font-weight: 700; letter-spacing: -0.5px; color: #1E3A5F;">Cue</span>
+              </div>
+              <p style="color: rgba(255,255,255,0.9); margin: 0; font-size: 16px;">Your Home Profile is Ready!</p>
             </td>
           </tr>
           
@@ -702,16 +736,10 @@ The MaintCue Team
           
           <!-- Footer -->
           <tr>
-            <td style="background-color: #f8f9fa; padding: 30px; text-align: center; border-radius: 0 0 8px 8px; border-top: 1px solid #e9ecef;">
-              <p style="color: #999999; font-size: 14px; margin: 0 0 10px;">
-                Questions? We're here to help!
-              </p>
-              <p style="color: #666666; font-size: 14px; margin: 0;">
-                Email us at <a href="mailto:support@maintcue.com" style="color: #10b981; text-decoration: none;">support@maintcue.com</a>
-              </p>
-              <p style="color: #999999; font-size: 12px; margin: 15px 0 0;">
-                © ${new Date().getFullYear()} MaintCue. All rights reserved.
-              </p>
+            <td style="background-color: #f9fafb; padding: 20px; text-align: center; border-radius: 0 0 8px 8px; border-top: 1px solid #e5e7eb; font-size: 13px; color: #6b7280;">
+              <p style="margin: 0 0 8px 0;"><span style="font-size: 18px; font-weight: 700; letter-spacing: -0.5px;"><span style="color: #10B981;">Maint</span><span style="color: #1E3A5F;">Cue</span></span></p>
+              <p style="margin: 0;">© ${new Date().getFullYear()} MaintCue. All rights reserved.</p>
+              <p style="margin: 8px 0 0 0;"><a href="https://maintcue.com" style="color: #10B981; text-decoration: none;">maintcue.com</a> | <a href="mailto:support@maintcue.com" style="color: #10B981; text-decoration: none;">support@maintcue.com</a></p>
             </td>
           </tr>
           
@@ -802,10 +830,11 @@ Setup completed at: ${new Date().toLocaleString()}
           
           <!-- Header -->
           <tr>
-            <td style="background-color: #10b981; padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
-              <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 600;">
-                New Home Setup Completed
-              </h1>
+            <td style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
+              <div style="margin-bottom: 8px;">
+                <span style="font-size: 32px; font-weight: 700; letter-spacing: -0.5px; color: #ffffff;">Maint</span><span style="font-size: 32px; font-weight: 700; letter-spacing: -0.5px; color: #1E3A5F;">Cue</span>
+              </div>
+              <p style="color: rgba(255,255,255,0.9); margin: 0; font-size: 16px;">New Home Setup Completed</p>
             </td>
           </tr>
           
@@ -959,10 +988,10 @@ Setup completed at: ${new Date().toLocaleString()}
           
           <!-- Footer -->
           <tr>
-            <td style="background-color: #f9fafb; padding: 20px; text-align: center; border-radius: 0 0 8px 8px; border-top: 1px solid #e5e7eb;">
-              <p style="color: #999999; font-size: 12px; margin: 0;">
-                MaintCue Admin Notification System
-              </p>
+            <td style="background-color: #f9fafb; padding: 20px; text-align: center; border-radius: 0 0 8px 8px; border-top: 1px solid #e5e7eb; font-size: 13px; color: #6b7280;">
+              <p style="margin: 0 0 8px 0;"><span style="font-size: 18px; font-weight: 700; letter-spacing: -0.5px;"><span style="color: #10B981;">Maint</span><span style="color: #1E3A5F;">Cue</span></span></p>
+              <p style="margin: 0;">© ${new Date().getFullYear()} MaintCue. All rights reserved.</p>
+              <p style="margin: 8px 0 0 0;"><a href="https://maintcue.com" style="color: #10B981; text-decoration: none;">maintcue.com</a> | <a href="mailto:support@maintcue.com" style="color: #10B981; text-decoration: none;">support@maintcue.com</a></p>
             </td>
           </tr>
           
@@ -1137,8 +1166,10 @@ Quick Setup:
     <body>
       <div class="container">
         <div class="header">
-          <h1 style="margin: 0 0 10px 0; font-size: 28px;">Welcome to MaintCue!</h1>
-          <p style="margin: 0; opacity: 0.9;">Your home maintenance journey starts now</p>
+          <div style="margin-bottom: 8px;">
+            <span style="font-size: 32px; font-weight: 700; letter-spacing: -0.5px; color: #ffffff;">Maint</span><span style="font-size: 32px; font-weight: 700; letter-spacing: -0.5px; color: #1E3A5F;">Cue</span>
+          </div>
+          <p style="margin: 0; opacity: 0.9;">Welcome to MaintCue!</p>
         </div>
         <div class="content">
           <p>Hi ${customerName || 'there'},</p>
@@ -1180,8 +1211,9 @@ Quick Setup:
           <p>Questions? Reply to this email or contact us at support@maintcue.com</p>
         </div>
         <div class="footer">
-          © ${new Date().getFullYear()} MaintCue. All rights reserved.<br>
-          <a href="https://maintcue.com" style="color: #10b981;">maintcue.com</a>
+          <p style="margin: 0 0 8px 0;"><span style="font-size: 18px; font-weight: 700; letter-spacing: -0.5px;"><span style="color: #10B981;">Maint</span><span style="color: #1E3A5F;">Cue</span></span></p>
+          <p style="margin: 0;">© ${new Date().getFullYear()} MaintCue. All rights reserved.</p>
+          <p style="margin: 8px 0 0 0;"><a href="https://maintcue.com" style="color: #10B981; text-decoration: none;">maintcue.com</a> | <a href="mailto:support@maintcue.com" style="color: #10B981; text-decoration: none;">support@maintcue.com</a></p>
         </div>
       </div>
     </body>
@@ -1245,7 +1277,12 @@ export async function sendAdminSubscriptionNotification(
     </head>
     <body>
       <div class="container">
-        <h2>New MaintCue Subscription</h2>
+        <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0;">
+          <div style="margin-bottom: 8px;">
+            <span style="font-size: 32px; font-weight: 700; letter-spacing: -0.5px; color: #ffffff;">Maint</span><span style="font-size: 32px; font-weight: 700; letter-spacing: -0.5px; color: #1E3A5F;">Cue</span>
+          </div>
+          <p style="margin: 0; opacity: 0.9;">New MaintCue Subscription</p>
+        </div>
         
         <div class="detail">
           <strong>Plan:</strong> ${planName}<br>
@@ -1258,6 +1295,12 @@ export async function sendAdminSubscriptionNotification(
         </div>
         
         <p>Welcome email with ${qrCodeCount || 0} QR code${qrCodeCount !== 1 ? 's' : ''} has been sent to the customer.</p>
+        
+        <div style="background: #f9fafb; color: #6b7280; padding: 20px; text-align: center; border-radius: 0 0 8px 8px; font-size: 13px; border-top: 1px solid #e5e7eb;">
+          <p style="margin: 0 0 8px 0;"><span style="font-size: 18px; font-weight: 700; letter-spacing: -0.5px;"><span style="color: #10B981;">Maint</span><span style="color: #1E3A5F;">Cue</span></span></p>
+          <p style="margin: 0;">© ${new Date().getFullYear()} MaintCue. All rights reserved.</p>
+          <p style="margin: 8px 0 0 0;"><a href="https://maintcue.com" style="color: #10B981; text-decoration: none;">maintcue.com</a> | <a href="mailto:support@maintcue.com" style="color: #10B981; text-decoration: none;">support@maintcue.com</a></p>
+        </div>
       </div>
     </body>
     </html>
@@ -1298,7 +1341,7 @@ export async function sendMagicLinkEmail(
       <style>
         body { font-family: Arial, sans-serif; line-height: 1.6; color: #333333; margin: 0; padding: 0; }
         .container { max-width: 600px; margin: 0 auto; padding: 40px 20px; }
-        .header { text-align: center; margin-bottom: 30px; }
+        .header { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
         .logo { font-size: 28px; font-weight: bold; color: #10b981; }
         .content { background: #ffffff; border-radius: 12px; padding: 30px; border: 1px solid #e5e7eb; }
         h1 { color: #111827; font-size: 24px; margin: 0 0 16px 0; }
@@ -1314,7 +1357,10 @@ export async function sendMagicLinkEmail(
     <body>
       <div class="container">
         <div class="header">
-          <div class="logo">MaintCue</div>
+          <div style="margin-bottom: 8px;">
+            <span style="font-size: 32px; font-weight: 700; letter-spacing: -0.5px; color: #ffffff;">Maint</span><span style="font-size: 32px; font-weight: 700; letter-spacing: -0.5px; color: #1E3A5F;">Cue</span>
+          </div>
+          <p style="margin: 0; opacity: 0.9;">Access Your Dashboard</p>
         </div>
         
         <div class="content">
@@ -1331,8 +1377,9 @@ export async function sendMagicLinkEmail(
         </div>
         
         <div class="footer">
-          <p>MaintCue - Your Home's Maintenance, Automated<br>
-          Questions? Reply to this email or visit maintcue.com/support</p>
+          <p style="margin: 0 0 8px 0;"><span style="font-size: 18px; font-weight: 700; letter-spacing: -0.5px;"><span style="color: #10B981;">Maint</span><span style="color: #1E3A5F;">Cue</span></span></p>
+          <p style="margin: 0;">© ${new Date().getFullYear()} MaintCue. All rights reserved.</p>
+          <p style="margin: 8px 0 0 0;"><a href="https://maintcue.com" style="color: #10B981; text-decoration: none;">maintcue.com</a> | <a href="mailto:support@maintcue.com" style="color: #10B981; text-decoration: none;">support@maintcue.com</a></p>
         </div>
       </div>
     </body>

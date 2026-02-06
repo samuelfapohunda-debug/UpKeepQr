@@ -1,0 +1,99 @@
+TASK: Complete MaintCue Logo Rebrand
+
+Replace ALL instances of the UpKeepQR logo with the new MaintCue logo throughout the entire codebase.
+
+PRIORITY AREAS:
+
+1. EMAIL NOTIFICATIONS - ALL Templates
+   - Welcome emails
+   - Warranty expiration alerts (7-day and 3-day notices)
+   - Dashboard access emails
+   - QR code activation emails
+   - Task reminder emails
+   - Contact form confirmations
+   - Any other notification emails
+   
+   ACTION: Add the MaintCue logo to the HEADER of every email template
+   - Use the attached logo image
+   - Center it at the top of each email
+   - Recommended size: 200-250px width
+   - Add proper alt text: "MaintCue - Your Maintenance Intelligence Platform"
+
+2. WEBSITE/APP HEADER
+   - Navigation component
+   - All page headers
+   - Replace favicon
+   - Update meta tags with new logo
+
+3. PUBLIC PAGES
+   - Homepage
+   - Landing pages
+   - Login/signup pages
+   - Contact page
+   - Footer
+   - Error pages (404, 500, etc.)
+
+4. CUSTOMER DASHBOARD
+   - Dashboard header
+   - Profile sections
+   - Any branded elements
+
+5. ADMIN PANEL
+   - Admin dashboard header
+   - Setup forms
+   - Magnet orders dashboard
+
+6. PDF/PRINT MATERIALS
+   - QR code PDFs
+   - Any generated documents
+   - Print stylesheets
+
+IMPLEMENTATION DETAILS:
+
+For Email Templates (Priority):
+- Location: server/lib/email.ts, server/lib/notificationDispatcher.ts
+- Add logo to email header HTML
+- Use inline CSS for email compatibility
+- Logo should be hosted or embedded as base64
+- Ensure it displays in all major email clients
+
+For Web Components:
+- Location: client/src/components/Navigation.tsx, client/src/components/Header.tsx
+- Update logo image source
+- Maintain responsive sizing
+- Update alt text and aria-labels
+
+For Public Assets:
+- Update: client/public/logo.png (or equivalent)
+- Update: client/public/favicon.ico
+- Update: client/index.html (meta tags, title tags)
+
+FILES TO CHECK AND UPDATE:
+- server/lib/email.ts
+- server/lib/notificationDispatcher.ts
+- server/lib/warrantyNotifications.ts
+- client/src/components/Navigation.tsx
+- client/src/components/Header.tsx
+- client/src/components/Footer.tsx
+- client/src/pages/Home.tsx
+- client/index.html
+- Any PDF generation files
+- All email template strings
+
+BRAND CONSISTENCY:
+- Logo colors: Green (#10B981) for "Maint", Navy (#1E40AF) for "Cue"
+- Tagline (if needed): "Your Maintenance Intelligence Platform"
+- Replace all "UpKeepQR" text references with "MaintCue" where appropriate
+
+VERIFICATION:
+After completion, verify logo appears in:
+✓ All email notification headers
+✓ Website navigation
+✓ Homepage
+✓ Customer dashboard
+✓ Admin panel
+✓ Favicon/browser tab
+✓ Footer
+✓ PDF exports
+
+Show me the list of files modified when complete.

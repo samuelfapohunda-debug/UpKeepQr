@@ -234,9 +234,11 @@ async function sendWarrantyEmail(
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-  <div style="background: #10b981; padding: 30px 20px; text-align: center; border-radius: 12px 12px 0 0;">
-    <h1 style="color: white; margin: 0; font-size: 24px;">MaintCue</h1>
-    <p style="color: rgba(255,255,255,0.9); margin: 8px 0 0 0;">Warranty Expiration Alert</p>
+  <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 30px 20px; text-align: center; border-radius: 12px 12px 0 0;">
+    <div style="margin-bottom: 8px;">
+      <span style="font-size: 32px; font-weight: 700; letter-spacing: -0.5px; color: #ffffff;">Maint</span><span style="font-size: 32px; font-weight: 700; letter-spacing: -0.5px; color: #1E3A5F;">Cue</span>
+    </div>
+    <p style="color: rgba(255,255,255,0.9); margin: 0; font-size: 16px;">Warranty Expiration Alert</p>
   </div>
   
   <div style="background: #ffffff; padding: 30px 20px; border: 1px solid #e5e7eb; border-top: none;">
@@ -302,9 +304,12 @@ async function sendWarrantyEmail(
   </div>
   
   <div style="background: #f9fafb; padding: 20px; text-align: center; border-radius: 0 0 12px 12px; border: 1px solid #e5e7eb; border-top: none;">
+    <p style="margin: 0 0 8px 0;"><span style="font-size: 18px; font-weight: 700; letter-spacing: -0.5px;"><span style="color: #10B981;">Maint</span><span style="color: #1E3A5F;">Cue</span></span></p>
     <p style="margin: 0; color: #6b7280; font-size: 12px;">
-      © ${new Date().getFullYear()} MaintCue. All rights reserved.<br>
-      <a href="${APP_URL}" style="color: #10b981;">maintcue.com</a>
+      © ${new Date().getFullYear()} MaintCue. All rights reserved.</p>
+    <p style="margin: 8px 0 0 0; color: #6b7280; font-size: 12px;">
+      <a href="${APP_URL}" style="color: #10b981; text-decoration: none;">maintcue.com</a> |
+      <a href="mailto:support@maintcue.com" style="color: #10b981; text-decoration: none;">support@maintcue.com</a>
     </p>
   </div>
 </body>
