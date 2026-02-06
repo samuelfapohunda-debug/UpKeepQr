@@ -2,6 +2,7 @@ import { Router, Request, Response } from "express";
 import express from "express";
 import { nanoid } from "nanoid";
 import { db } from "../../db.js";
+import { authenticateAgent } from "../../middleware/auth.js";
 import {
   orderMagnetOrdersTable,
   orderMagnetItemsTable,
@@ -455,7 +456,7 @@ router.post('/stripe', async (req: Request, res: Response) => {
   }
 });
 
-if (process.env.NODE_ENV === 'development') {
+if (process.env.NODE_ENV !== 'production') {
   router.post('/stripe-test', express.json(), async (req: Request, res: Response) => {
     console.log("🧪 Test webhook endpoint hit!");
     const event = req.body;
@@ -465,8 +466,48 @@ if (process.env.NODE_ENV === 'development') {
     res.json({ received: true, test: true });
   });
   
-  // Email test endpoint for troubleshooting SendGrid configuration
-  router.get('/test-email', async (req: Request, res: Response) => {
+  // Warranty notification test endpoint (admin-only)
+  router.get('/test-warranty-check', authenticateAgent, async (req: Request, res: Response) => {
+    try {
+      console.log('[TEST] Manually triggering warranty expiration check...');
+      const { processWarrantyExpirationNotifications } = await import('../../lib/warrantyNotifications.js');
+      const result = await processWarrantyExpirationNotifications();
+      res.json({ 
+        success: true,
+        message: 'Warranty check completed',
+        result
+      });
+    } catch (error: any) {
+      console.error('[TEST] Warranty check failed:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: error.message
+      });
+    }
+  });
+
+  // Reminder processing test endpoint (admin-only)
+  router.get('/test-reminders', authenticateAgent, async (req: Request, res: Response) => {
+    try {
+      console.log('[TEST] Manually triggering reminder processing...');
+      const { triggerReminderProcessing, triggerOverdueUpdate } = await import('../../lib/cron.js');
+      await triggerOverdueUpdate();
+      await triggerReminderProcessing();
+      res.json({ 
+        success: true, 
+        message: 'Reminder processing and overdue update completed'
+      });
+    } catch (error: any) {
+      console.error('[TEST] Reminder processing failed:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: error.message
+      });
+    }
+  });
+
+  // Email test endpoint for troubleshooting SendGrid configuration (admin-only)
+  router.get('/test-email', authenticateAgent, async (req: Request, res: Response) => {
     try {
       const testEmail = req.query.email as string || 'samuel.fapohunda@gmail.com';
       console.log('🧪 Testing email configuration...');

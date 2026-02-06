@@ -1,0 +1,151 @@
+TASK: Debug and Fix Email Notification System
+
+The email notifications are not being triggered. We need to systematically debug and fix the issue.
+
+STEP 1: CHECK EMAIL CONFIGURATION
+
+First, verify environment variables are set correctly:
+
+1. Check .env file has these variables:
+   - SENDGRID_API_KEY (must be valid)
+   - FROM_EMAIL (sender email)
+   - SMTP settings if not using SendGrid
+
+2. Verify in server startup logs:
+   - Look for "SendGrid configured" or similar message
+   - Check for any email service initialization errors
+
+STEP 2: TEST EMAIL SERVICE DIRECTLY
+
+Create a test endpoint to verify email service works:
+
+File: server/src/routes/test.ts (or add to existing routes)
+```typescript
+// Add test email endpoint
+app.post('/api/test/email', async (req, res) => {
+  try {
+    const testEmail = {
+      to: 'your-test-email@example.com', // Use your actual email
+      subject: 'MaintCue Test Email',
+      html: '<h1>Test Email</h1><p>If you receive this, email service is working!</p>'
+    };
+    
+    await sendEmail(testEmail);
+    
+    res.json({ success: true, message: 'Test email sent' });
+  } catch (error) {
+    console.error('Test email failed:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message,
+      stack: error.stack 
+    });
+  }
+});
+```
+
+STEP 3: CHECK EMAIL TRIGGER POINTS
+
+Verify emails are being triggered at these events:
+
+1. New user registration/subscription
+   - File: server/routes/webhooks.ts (Stripe webhook)
+   - Look for: sendWelcomeEmail() or similar
+
+2. Warranty expiration notifications
+   - File: server/lib/warrantyNotifications.ts
+   - Check if cron job is running
+   - Verify: checkWarrantyExpirations() is being called
+
+3. Task reminders
+   - Check scheduled task system
+   - Verify cron jobs are active
+
+STEP 4: ADD COMPREHENSIVE LOGGING
+
+Add logging to track email flow:
+
+In server/lib/email.ts or notificationDispatcher.ts:
+```typescript
+export async function sendEmail(params) {
+  console.log('📧 [EMAIL] Attempting to send email:', {
+    to: params.to,
+    subject: params.subject,
+    timestamp: new Date().toISOString()
+  });
+  
+  try {
+    const result = await actualSendFunction(params);
+    console.log('✅ [EMAIL] Email sent successfully:', {
+      to: params.to,
+      messageId: result.messageId
+    });
+    return result;
+  } catch (error) {
+    console.error('❌ [EMAIL] Failed to send email:', {
+      to: params.to,
+      error: error.message,
+      stack: error.stack
+    });
+    throw error;
+  }
+}
+```
+
+STEP 5: CHECK SPECIFIC NOTIFICATION TRIGGERS
+
+For warranty notifications:
+```typescript
+// In server/lib/warrantyNotifications.ts
+// Add logging to see if function is running
+
+console.log('🔔 [CRON] Warranty notification check started');
+console.log('📊 [CRON] Found X appliances with expiring warranties');
+```
+
+STEP 6: VERIFY CRON JOBS ARE RUNNING
+
+Check if scheduled tasks are active:
+- Look for cron job initialization in server/index.ts
+- Verify node-cron or similar scheduler is running
+- Check for: `cron.schedule('0 9 * * *', ...)` or similar
+
+STEP 7: CHECK DATABASE QUERIES
+
+Verify warranty expiration query is finding records:
+```typescript
+// In warrantyNotifications.ts
+const expiringWarranties = await db.query...
+console.log('Found expiring warranties:', expiringWarranties.length);
+```
+
+FILES TO CHECK AND UPDATE:
+
+Priority files:
+1. server/lib/email.ts (or server/lib/mail.ts)
+2. server/lib/notificationDispatcher.ts
+3. server/lib/warrantyNotifications.ts
+4. server/routes/webhooks.ts
+5. server/index.ts (cron job initialization)
+6. .env (configuration)
+
+VERIFICATION STEPS:
+
+After making changes:
+1. Restart the server
+2. Check server logs for email initialization
+3. Trigger a test email via the test endpoint
+4. Manually trigger a warranty check (if possible)
+5. Check for any error messages in logs
+
+OUTPUT REQUIRED:
+
+Please provide:
+1. Current .env configuration (redact API keys, just show TRUE/FALSE if set)
+2. Server startup logs related to email
+3. Any error messages in logs
+4. Results from test email endpoint
+5. List of all email trigger points found in code
+6. Confirmation of which cron jobs are running
+
+Execute this debug process and show me the findings.
