@@ -1,6 +1,6 @@
 import { Link } from "wouter";
 import { Facebook, Instagram, Linkedin, Twitter } from "lucide-react";
-const maintcueLogo = '/images/maintcue-logo.png';
+const maintcueLogo = '/images/maintcue-logo.svg';
 
 export default function Footer() {
   return (
@@ -13,7 +13,8 @@ export default function Footer() {
               <img 
                 src={maintcueLogo} 
                 alt="MaintCue" 
-                className="h-8 w-auto brightness-110"
+                className="h-10 w-auto"
+                style={{ filter: 'brightness(0) invert(1)' }}
                 data-testid="footer-logo"
               />
             </Link>

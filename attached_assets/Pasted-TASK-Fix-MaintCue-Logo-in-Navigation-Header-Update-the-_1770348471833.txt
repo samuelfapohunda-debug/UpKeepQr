@@ -1,0 +1,65 @@
+TASK: Fix MaintCue Logo in Navigation Header
+
+Update the logo in the navigation header to resolve two issues:
+
+ISSUE 1 - Logo Too Small:
+- Current logo is too small and hard to see
+- Increase logo size to make it more prominent
+- Recommended dimensions: 140-160px width (or height: 40-45px)
+- Ensure it maintains aspect ratio
+
+ISSUE 2 - Logo Background Color:
+- Logo currently has white/light background
+- Header background appears to be white/light gray
+- Make logo background TRANSPARENT or match header exactly
+- Remove any white box/container around the logo
+
+IMPLEMENTATION:
+
+File to update: client/src/components/Navigation.tsx (or Header component)
+
+Changes needed:
+1. Increase logo image size:
+```tsx
+   // Change from something like:
+   <img src="/logo.png" className="h-8" />
+   
+   // To:
+   <img src="/logo.png" className="h-10" /> // or h-12 for even larger
+   // OR use custom width:
+   <img src="/logo.png" style={{ width: '150px' }} />
+```
+
+2. Ensure transparent background:
+   - If using PNG, verify it has transparent background
+   - Remove any wrapper div with background color
+   - Remove any padding/background styles on logo container
+
+3. Verify responsive sizing:
+   - Logo should scale appropriately on mobile
+   - Consider: `className="h-10 md:h-12"` for responsive sizing
+
+SPECIFIC FIXES:
+
+Check these potential issues:
+- Remove any `bg-white`, `bg-gray-100`, or similar background classes
+- Remove any `rounded` or border styles that create a box
+- Ensure logo PNG file itself has transparent background
+- If logo has padding, reduce or remove it
+- Verify logo aligns vertically with navigation items
+
+VISUAL GOAL:
+- Logo should be 2.5-3x current size
+- Logo should blend seamlessly with header (no white box)
+- Logo should be the primary branding element in header
+- Should look professional and prominent
+
+FILES TO CHECK:
+- client/src/components/Navigation.tsx
+- client/src/components/Header.tsx
+- Any global CSS affecting header/logo
+
+After completion, show me:
+1. The updated component code
+2. Confirm the new logo dimensions
+3. Screenshot or description of the visual result

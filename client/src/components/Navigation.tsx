@@ -2,7 +2,7 @@ import { Link, useLocation } from 'wouter';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Home, Loader2 } from 'lucide-react';
-const maintcueLogo = '/images/maintcue-logo.png';
+const maintcueLogo = '/images/maintcue-logo.svg';
 
 export default function Navigation() {
   const [location] = useLocation();
@@ -37,7 +37,8 @@ export default function Navigation() {
                 <img 
                   src={maintcueLogo} 
                   alt="MaintCue - Your Maintenance Intelligence Platform" 
-                  className="h-6 sm:h-8 w-auto"
+                  className="h-9 sm:h-11 w-auto"
+                  style={{ filter: 'brightness(0) invert(1)' }}
                   data-testid="logo-icon"
                 />
                 <span className="font-semibold text-sm sm:text-base lg:text-lg truncate text-white" data-testid="logo-text">Admin</span>
@@ -117,7 +118,7 @@ export default function Navigation() {
               <img 
                 src={maintcueLogo} 
                 alt="MaintCue - Your Maintenance Intelligence Platform" 
-                className="h-7 sm:h-9 w-auto"
+                className="h-10 sm:h-12 w-auto"
                 data-testid="logo-icon"
               />
             </Link>

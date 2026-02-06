@@ -3,7 +3,7 @@ import { useLocation } from 'wouter';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-const maintcueLogo = '/images/maintcue-logo.png';
+const maintcueLogo = '/images/maintcue-logo.svg';
 
 export default function Login() {
   const [, setLocation] = useLocation();
