@@ -2,6 +2,15 @@
 
 MaintCue is an Agent Management Platform designed to streamline business agent operations within a monorepo TypeScript application. It offers features for scheduling, QR code generation, comprehensive onboarding workflows, and dashboard management. The platform aims to automate tasks and provide a robust system for efficient agent management, utilizing a React frontend and an Express backend.
 
+## Branding
+- **Logo**: MaintCue logo image at `client/public/images/maintcue-logo.png` (referenced as `/images/maintcue-logo.png` in frontend code)
+- **Brand Colors**: Green (#10B981), Navy (#1E3A5F), Dark Green (#059669)
+- **Logo Text Style**: "Maint" (green/white) + "Cue" (navy)
+- **Email Logo**: Text-based logo for email client compatibility, using `server/lib/emailBranding.ts` utilities
+- **Favicon**: SVG at `client/public/favicon.svg` with brand colors
+- **Policy**: NO EMOJI in notifications or email templates. Use text indicators ([!], [i]) instead.
+- **Email Templates**: All use gradient header (#10B981 to #059669), text-based logo, and standardized footer with copyright + links
+
 # User Preferences
 
 Preferred communication style: Simple, everyday language.
