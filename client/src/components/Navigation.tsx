@@ -2,6 +2,7 @@ import { Link, useLocation } from 'wouter';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Home, Loader2 } from 'lucide-react';
+const maintcueLogo = '/images/maintcue-logo.png';
 
 export default function Navigation() {
   const [location] = useLocation();
@@ -33,12 +34,13 @@ export default function Navigation() {
                 className="flex items-center space-x-1 sm:space-x-2 hover:opacity-80 transition-opacity"
                 data-testid="logo-link"
               >
-                <svg width="20" height="20" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" data-testid="logo-icon" className="sm:w-6 sm:h-6">
-                  <rect width="32" height="32" rx="6" fill="#A6E22E"/>
-                  <path d="M16 6L8 12H10V20H14V16H18V20H22V12H24L16 6Z" fill="white"/>
-                  <path d="M12 18L14 20L20 14" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                <span className="font-semibold text-sm sm:text-base lg:text-lg truncate text-white" data-testid="logo-text">MaintCue Admin</span>
+                <img 
+                  src={maintcueLogo} 
+                  alt="MaintCue - Your Maintenance Intelligence Platform" 
+                  className="h-6 sm:h-8 w-auto"
+                  data-testid="logo-icon"
+                />
+                <span className="font-semibold text-sm sm:text-base lg:text-lg truncate text-white" data-testid="logo-text">Admin</span>
               </Link>
             </div>
             
@@ -106,25 +108,22 @@ export default function Navigation() {
     <nav className="fixed top-0 left-0 right-0 bg-card border-b border-border z-50 backdrop-blur-sm">
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
         <div className="flex justify-between items-center h-14 sm:h-16">
-          {/* Logo Section */}
           <div className="flex items-center space-x-2 min-w-0 flex-shrink-0">
             <Link 
               href="/" 
-              className="flex items-center space-x-1 sm:space-x-2 hover:opacity-80 transition-opacity"
+              className="flex items-center hover:opacity-80 transition-opacity"
               data-testid="logo-link"
             >
-              <svg width="20" height="20" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" data-testid="logo-icon" className="sm:w-6 sm:h-6">
-                <rect width="32" height="32" rx="6" fill="#A6E22E"/>
-                <path d="M16 6L8 12H10V20H14V16H18V20H22V12H24L16 6Z" fill="white"/>
-                <path d="M12 18L14 20L20 14" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-              <span className="font-semibold text-sm sm:text-base lg:text-lg truncate" data-testid="logo-text">MaintCue</span>
+              <img 
+                src={maintcueLogo} 
+                alt="MaintCue - Your Maintenance Intelligence Platform" 
+                className="h-7 sm:h-9 w-auto"
+                data-testid="logo-icon"
+              />
             </Link>
           </div>
           
-          {/* Navigation Links */}
           <div className="flex items-center space-x-1 sm:space-x-2 lg:space-x-4 flex-shrink-0">
-            {/* My Home - Only for authenticated customers */}
             {!showLoading && isCustomer && (
               <Link 
                 href="/my-home" 

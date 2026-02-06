@@ -68,8 +68,8 @@ support@maintcue.com`;
 <html>
   <body style="font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;line-height:1.5;margin:0;padding:0;background:#f4f4f4;">
     <div style="max-width:600px;margin:0 auto;padding:20px;">
-      <div style="background:#10b981;padding:30px;text-align:center;border-radius:8px 8px 0 0;">
-        <div style="font-size:28px;font-weight:700;color:white;">MaintCue</div>
+      <div style="background:linear-gradient(135deg, #10b981 0%, #059669 100%);padding:30px;text-align:center;border-radius:8px 8px 0 0;">
+        <div style="margin-bottom: 4px;"><span style="font-size:32px;font-weight:700;letter-spacing:-0.5px;color:#ffffff;">Maint</span><span style="font-size:32px;font-weight:700;letter-spacing:-0.5px;color:#1E3A5F;">Cue</span></div>
       </div>
       <div style="background:#ffffff;padding:30px;border:1px solid #e5e7eb;border-top:none;">
         <h2 style="margin:0 0 8px;color:#333;">Thanks, ${firstName} — we've got your message.</h2>
@@ -83,6 +83,7 @@ support@maintcue.com`;
         <p style="margin:24px 0 0;color:#333;">Warmly,<br/>The MaintCue Support Team<br/><a href="mailto:support@maintcue.com" style="color:#10b981;">support@maintcue.com</a></p>
       </div>
       <div style="background:#f9fafb;padding:20px 30px;text-align:center;font-size:12px;color:#6b7280;border-top:1px solid #e5e7eb;border-radius:0 0 8px 8px;">
+        <p style="margin:0 0 8px 0;"><span style="font-size:18px;font-weight:700;letter-spacing:-0.5px;"><span style="color:#10B981;">Maint</span><span style="color:#1E3A5F;">Cue</span></span></p>
         <p style="margin:0 0 5px 0;">&copy; ${new Date().getFullYear()} MaintCue. All rights reserved.</p>
         <p style="margin:0;">You're receiving this because you contacted us through our website.</p>
       </div>

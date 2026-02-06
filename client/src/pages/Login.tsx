@@ -3,6 +3,7 @@ import { useLocation } from 'wouter';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+const maintcueLogo = '/images/maintcue-logo.png';
 
 export default function Login() {
   const [, setLocation] = useLocation();
@@ -75,12 +76,12 @@ export default function Login() {
       <div className="max-w-md w-full">
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
-            <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center shadow-lg">
-              <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M16 6L8 12H10V20H14V16H18V20H22V12H24L16 6Z" fill="white"/>
-                <path d="M12 18L14 20L20 14" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </div>
+            <img 
+              src={maintcueLogo} 
+              alt="MaintCue" 
+              className="h-12 w-auto"
+              data-testid="login-logo"
+            />
           </div>
           <h1 className="text-3xl font-bold text-foreground mb-2">Admin Login</h1>
           <p className="text-muted-foreground">Sign in to access the admin dashboard</p>
