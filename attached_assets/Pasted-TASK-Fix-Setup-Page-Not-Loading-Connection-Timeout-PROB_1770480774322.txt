@@ -1,0 +1,59 @@
+TASK: Fix Setup Page Not Loading - Connection Timeout
+
+PROBLEM: When customers click "Activate This QR Code" button in the welcome email, they get ERR_CONNECTION_TIMED_OUT at maintcue.com/setup/{activationCode}
+
+INVESTIGATION NEEDED:
+
+1. CHECK SETUP FORM ROUTE
+   - File: client/src/App.tsx or router configuration
+   - Verify route exists: /setup/:activationCode
+   - Check component: SetupForm.tsx or similar
+   - Ensure route is properly registered
+
+2. CHECK EMAIL TEMPLATE URL
+   - File: server/lib/email.ts
+   - Find: sendWelcomeEmail() function
+   - Check what URL is being used in "Activate This QR Code" button
+   - Current URL: maintcue.com/setup/{code}
+   - Problem: maintcue.com is not yet configured as primary domain
+
+3. FIX THE DOMAIN IN EMAIL
+   - TEMPORARY FIX: Change URL in email from maintcue.com to upkeepqr.com
+   - Find in email template: maintcue.com/setup/
+   - Replace with: upkeepqr.com/setup/
+   - This will work immediately since upkeepqr.com is live
+
+4. VERIFY SETUP PAGE EXISTS
+   - Check: client/src/pages/SetupForm.tsx (or similar)
+   - Verify it handles the activation code parameter
+   - Test locally: http://localhost:5000/setup/TEST123
+
+5. CHECK DEPLOYMENT
+   - Verify setup route is deployed to Render
+   - Check Render logs for any route registration messages
+   - Confirm frontend build includes setup page
+
+SPECIFIC FIXES:
+
+In email template (server/lib/email.ts):
+```typescript
+// CHANGE FROM:
+const setupUrl = `https://maintcue.com/setup/${activationCode}`;
+
+// CHANGE TO (temporary until maintcue.com DNS is configured):
+const setupUrl = `https://upkeepqr.com/setup/${activationCode}`;
+```
+
+In router (client/src/App.tsx):
+```typescript
+// Verify this route exists:
+<Route path="/setup/:activationCode" element={<SetupForm />} />
+```
+
+SHOW ME:
+1. The welcome email template code (where "Activate This QR Code" URL is generated)
+2. The current URL being used in the email
+3. The router configuration showing /setup route
+4. Confirmation that SetupForm component exists
+
+DEPLOY after fixing so the next test order will have working links.
