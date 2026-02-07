@@ -1,0 +1,389 @@
+# 📋 REPLIT AGENT SPEC (FINAL v3 – PRODUCTION READY)
+
+## 🏷 TASK
+Replace hero feature card with YouTube demo video component
+
+## 🎯 OBJECTIVE
+Remove the existing feature card component in the hero right column and replace it with a responsive video demo section that improves product clarity and conversion.
+
+**Strategic shift:** Feature explanation → Product demonstration
+
+---
+
+## 📁 FILES TO MODIFY
+
+### Primary Files
+- `src/components/Hero.jsx`
+- `src/styles/Hero.module.css`
+
+### Cleanup (if feature card is separated)
+- Remove `src/components/FeatureCard.jsx`
+- Remove associated imports from Hero.jsx
+
+---
+
+## 🧩 CURRENT STATE
+
+**Hero section layout:**
+```
+| Left: Headline + CTA | Right: Feature Card |
+```
+
+**Right side contains:**
+- Icon
+- "Smart QR Magnet" heading  
+- Feature checklist
+
+---
+
+## 🚫 COMPONENTS TO REMOVE
+
+**In Hero.jsx:**
+- Entire feature card component/div
+- All children elements inside it
+- Related icon imports used only in that card
+
+**In Hero.module.css:**
+- All CSS rules for the feature card
+- Any related utility classes
+
+---
+
+## ✅ NEW COMPONENT: Video Demo Section
+
+### 🎨 STYLING STRATEGY
+**Use CSS Modules exclusively** — no BEM, no inline styles.
+
+### 📦 REQUIRED IMPORTS
+Add to top of `Hero.jsx`:
+
+```jsx
+import styles from './Hero.module.css';
+import { CheckCircleIcon } from '@heroicons/react/24/solid';
+// OR if no icon library exists, use inline SVG (see fallback below)
+```
+
+**Icon Fallback (if no Heroicons):**
+```jsx
+const CheckIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+    <circle cx="10" cy="10" r="10" fill="#10b981"/>
+    <path d="M6 10l3 3 5-6" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+```
+
+---
+
+### 📍 IMPLEMENTATION LOCATION
+
+**In `Hero.jsx`, replace:**
+```jsx
+<div className="hero__feature-card">
+  {/* existing feature content */}
+</div>
+```
+
+**With:**
+```jsx
+<div className={styles.videoDemo}>
+  <h3 className={styles.videoTitle}>🎬 See MaintCue in Action</h3>
+  <p className={styles.videoSubtitle}>
+    See how MaintCue tracks your home's maintenance automatically.
+  </p>
+
+  <div className={styles.videoWrapper}>
+    {/* TODO: Replace placeholder YouTube link with official MaintCue demo */}
+    <iframe
+      src="https://www.youtube.com/embed/dQw4w9WgXcQ"
+      title="MaintCue Demo - Automated Home Maintenance Tracking"
+      frameBorder="0"
+      loading="lazy"
+      allow="encrypted-media; picture-in-picture"
+      allowFullScreen
+    />
+  </div>
+
+  <ul className={styles.trustList}>
+    <li>
+      <CheckCircleIcon className={styles.checkIcon} aria-hidden="true" />
+      Setup in under 2 minutes
+    </li>
+    <li>
+      <CheckCircleIcon className={styles.checkIcon} aria-hidden="true" />
+      No credit card required
+    </li>
+    <li>
+      <CheckCircleIcon className={styles.checkIcon} aria-hidden="true" />
+      Works anywhere in the U.S. & Canada
+    </li>
+  </ul>
+</div>
+```
+
+---
+
+### 🎨 CSS MODULE STYLES
+
+**Add to `Hero.module.css`:**
+
+```css
+/* Video Demo Section */
+.videoDemo {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+  padding: 24px;
+}
+
+.videoTitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #111827;
+}
+
+.videoSubtitle {
+  font-size: 0.95rem;
+  color: #6B7280;
+  margin-bottom: 16px;
+  line-height: 1.5;
+}
+
+/* Video Wrapper - Maintains 16:9 aspect ratio and prevents CLS */
+.videoWrapper {
+  position: relative;
+  padding-bottom: 56.25%; /* 16:9 ratio */
+  height: 0;
+  overflow: hidden;
+  border-radius: 12px;
+  background: #f3f4f6;
+}
+
+.videoWrapper iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 12px;
+}
+
+/* Trust List */
+.trustList {
+  margin-top: 16px;
+  font-size: 14px;
+  color: #374151;
+  list-style: none;
+  padding: 0;
+}
+
+.trustList li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.checkIcon {
+  width: 20px;
+  height: 20px;
+  color: #10b981; /* Emerald green from MaintCue brand */
+  flex-shrink: 0;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .videoDemo {
+    padding: 16px;
+  }
+
+  .videoTitle {
+    font-size: 1.125rem;
+  }
+
+  .trustList {
+    font-size: 13px;
+  }
+}
+```
+
+---
+
+## 📱 RESPONSIVE BEHAVIOR
+
+| Breakpoint | Layout Behavior |
+|------------|-----------------|
+| ≥1024px    | Side-by-side with hero text (grid layout) |
+| 768–1023px | Full width, centered below hero text |
+| <768px     | Stacks below hero text, 16px horizontal padding |
+
+**Video container:** 
+- Max-width: 600px on all screens
+- Centered with `margin: 0 auto`
+
+**Video wrapper must reserve vertical space using padding-bottom ratio before iframe loads to prevent CLS (Cumulative Layout Shift).**
+
+---
+
+## ♿ ACCESSIBILITY REQUIREMENTS
+
+- ✅ Meaningful iframe `title` attribute describing video content
+- ✅ Semantic `<ul>` list structure
+- ✅ Icons marked with `aria-hidden="true"` (decorative only)
+- ✅ Maintain WCAG AA contrast ratio (4.5:1 minimum)
+- ✅ Ensure keyboard focus states are visible
+- ✅ Test with screen reader (NVDA/VoiceOver)
+
+---
+
+## 🎥 VIDEO EMBED REQUIREMENTS
+
+**Security & Privacy:**
+- ❌ Do not enable autoplay
+- ❌ Do not pass user tracking parameters in embed URL
+- ✅ Use `loading="lazy"` for performance
+- ✅ Minimal `allow` permissions (only encrypted-media and picture-in-picture)
+
+**Performance Optimization (Optional):**
+Add to `<head>` in main HTML file for faster video loading:
+```html
+<link rel="preconnect" href="https://www.youtube.com">
+<link rel="preconnect" href="https://i.ytimg.com">
+```
+
+---
+
+## 🧪 TESTING CHECKLIST
+
+**Functionality:**
+- [ ] Video plays on click
+- [ ] No autoplay occurs
+- [ ] Fullscreen mode works
+
+**Layout & Performance:**
+- [ ] No CLS (Cumulative Layout Shift) on page load
+- [ ] Video maintains 16:9 aspect ratio on all screens
+- [ ] Responsive on breakpoints: 375px, 768px, 1024px, 1440px
+- [ ] No horizontal scroll on iPhone SE (375px width)
+
+**Visual Alignment:**
+- [ ] Shadow matches hero card shadow (compare computed styles)
+- [ ] Padding matches hero section spacing
+- [ ] Trust bullets use emerald green (#10b981) icons
+- [ ] Icons and text align properly
+
+**Cross-Browser:**
+- [ ] Works in Chrome, Safari, Firefox, Edge
+- [ ] Video playable with ad blockers enabled
+- [ ] No console errors/warnings
+
+**Code Quality:**
+- [ ] No dead CSS from removed feature card
+- [ ] ESLint passes with no warnings
+- [ ] CSS Modules imported correctly
+
+---
+
+## ✅ ACCEPTANCE CRITERIA (Definition of Done)
+
+- [ ] Feature card component fully removed (including CSS)
+- [ ] Video section uses CSS Modules exclusively (no BEM classes)
+- [ ] Aspect ratio is exactly 16:9 (measure in DevTools)
+- [ ] CheckCircleIcon imports correctly from Heroicons
+- [ ] Trust bullets display with emerald green icons
+- [ ] Mobile layout stacks correctly below 768px
+- [ ] Video embed uses minimal permissions (no autoplay)
+- [ ] TODO comment exists for placeholder video replacement
+- [ ] No layout shift occurs when video loads (CLS < 0.1)
+
+---
+
+## 🔀 VERSION CONTROL
+
+**Branch Strategy:**
+```bash
+git checkout -b feature/hero-video-demo
+git add src/components/Hero.jsx src/styles/Hero.module.css
+git commit -m "feat: replace feature card with video demo section"
+```
+
+**PR Checklist:**
+- [ ] Screenshot: Desktop layout (1440px)
+- [ ] Screenshot: Mobile layout (375px)  
+- [ ] GIF/video: Video playing in both layouts
+- [ ] Confirmed feature card component deleted
+- [ ] No merge conflicts with main branch
+
+---
+
+## 🎬 VIDEO REPLACEMENT WORKFLOW
+
+**Current (Development):**
+- Placeholder ID: `dQw4w9WgXcQ`
+- URL: `https://www.youtube.com/embed/dQw4w9WgXcQ`
+
+**When Production Video Ready:**
+1. Upload demo video to MaintCue YouTube channel
+2. Copy video ID from URL (e.g., `youtube.com/watch?v=ABC123`)
+3. Replace in Hero.jsx:
+   ```jsx
+   src="https://www.youtube.com/embed/ABC123"
+   ```
+4. Update `title` attribute to match actual video content
+5. Remove TODO comment
+
+---
+
+## 📊 VISUAL PREVIEW
+
+**Desktop (≥1024px):**
+```
+┌──────────────────────────────────────────────────┐
+│ [Hero Text + CTA]  │  [Video Demo Card]          │
+└──────────────────────────────────────────────────┘
+```
+
+**Mobile (<768px):**
+```
+┌─────────────────┐
+│  [Hero Text]    │
+├─────────────────┤
+│ [Video Demo]    │
+└─────────────────┘
+```
+
+---
+
+## 🛡 ERROR HANDLING (Optional Enhancement)
+
+If you want to handle edge cases where YouTube is blocked:
+
+```jsx
+<div className={styles.videoWrapper}>
+  <iframe
+    src={embedUrl}
+    onError={() => console.warn('Video failed to load')}
+    // ... other props
+  />
+</div>
+```
+
+**Not required for initial implementation.**
+
+---
+
+## 🎯 FINAL NOTES
+
+- This spec covers the full software delivery lifecycle
+- CSS Modules ensure scoped styling and prevent conflicts
+- CLS prevention ensures smooth loading experience
+- Security-first approach (no autoplay, minimal permissions)
+- Accessibility-compliant for WCAG AA standards
+
+**Estimated implementation time:** 10-15 minutes  
+**Estimated review time:** 5 minutes
+
+---
+
+**Agent: Execute this spec exactly as written. Use CSS Modules for all styling. Test on mobile and desktop before marking complete.**

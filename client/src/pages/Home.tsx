@@ -105,34 +105,42 @@ export default function Home() {
                 </p>
               </div>
               
-              {/* Right: Product Visual */}
-              <div className="relative hidden lg:block">
-                <div className="bg-gradient-to-br from-emerald-50 to-slate-100 rounded-2xl p-8 shadow-lg">
-                  <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
-                    <div className="flex items-center gap-4 mb-4">
-                      <div className="w-16 h-16 bg-emerald-500 rounded-lg flex items-center justify-center">
-                        <HomeIcon className="w-8 h-8 text-white" />
-                      </div>
-                      <div>
-                        <h3 className="font-semibold text-slate-900">Smart QR Magnet</h3>
-                        <p className="text-sm text-slate-500">Scan. Track. Maintain.</p>
-                      </div>
-                    </div>
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-3 text-sm text-slate-600">
-                        <CheckCircle className="w-5 h-5 text-emerald-500" />
-                        <span>37+ maintenance tasks covered</span>
-                      </div>
-                      <div className="flex items-center gap-3 text-sm text-slate-600">
-                        <CheckCircle className="w-5 h-5 text-emerald-500" />
-                        <span>Automated SMS & email reminders</span>
-                      </div>
-                      <div className="flex items-center gap-3 text-sm text-slate-600">
-                        <CheckCircle className="w-5 h-5 text-emerald-500" />
-                        <span>Climate-based scheduling</span>
-                      </div>
-                    </div>
+              {/* Right: Video Demo */}
+              <div className="relative" data-testid="section-video-demo">
+                <div className="bg-white rounded-xl p-6 shadow-lg max-w-[600px] mx-auto">
+                  <h3 className="text-lg font-semibold text-slate-900 mb-1">See MaintCue in Action</h3>
+                  <p className="text-sm text-slate-500 mb-4 leading-relaxed">
+                    See how MaintCue tracks your home's maintenance automatically.
+                  </p>
+
+                  <div className="relative pb-[56.25%] h-0 overflow-hidden rounded-lg bg-slate-100">
+                    {/* TODO: Replace placeholder YouTube ID with official MaintCue demo video */}
+                    <iframe
+                      className="absolute top-0 left-0 w-full h-full rounded-lg"
+                      src="https://www.youtube.com/embed/dQw4w9WgXcQ"
+                      title="MaintCue Demo - Automated Home Maintenance Tracking"
+                      frameBorder="0"
+                      loading="lazy"
+                      allow="encrypted-media; picture-in-picture"
+                      allowFullScreen
+                      data-testid="video-demo-iframe"
+                    />
                   </div>
+
+                  <ul className="mt-4 space-y-1.5 text-sm text-slate-600">
+                    <li className="flex items-center gap-2">
+                      <CheckCircle className="w-5 h-5 text-emerald-500 flex-shrink-0" aria-hidden="true" />
+                      Setup in under 2 minutes
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle className="w-5 h-5 text-emerald-500 flex-shrink-0" aria-hidden="true" />
+                      No credit card required
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle className="w-5 h-5 text-emerald-500 flex-shrink-0" aria-hidden="true" />
+                      Works anywhere in the U.S. & Canada
+                    </li>
+                  </ul>
                 </div>
               </div>
               
