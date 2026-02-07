@@ -352,87 +352,82 @@ router.post('/stripe', async (req: Request, res: Response) => {
       
       const { orderId: resultOrderId, qrCodes: resultQrCodes, magnetCount: resultMagnetCount } = result;
 
-      // Send emails (non-blocking - don't fail webhook if emails fail)
-      Promise.all([
-        // Email 1: Payment confirmation
-        sendPaymentConfirmationEmail(
-          customerEmail,
-          customerName,
-          resultOrderId,
-          amountPaid,
-          resultMagnetCount
-        ).catch(error => {
-          console.error('❌ Failed to send payment confirmation:', error);
-          sendAdminErrorAlert(
-            'Payment Confirmation Email Failed',
-            error.message,
-            { orderId: resultOrderId, customerEmail, sku, magnetCount: resultMagnetCount }
-          ).catch(e => console.error('Failed to send error alert:', e));
-        }),
-        
-        // Email 2: Welcome email with QR codes
-        (async () => {
-          console.log('📧 Attempting to send welcome email with QR codes:', {
-            email: customerEmail,
-            orderId: resultOrderId,
-            qrCodesCount: resultQrCodes.length,
-            quantity: resultMagnetCount,
-            sku
-          });
-          
-          try {
-            const welcomeEmailResult = await sendWelcomeEmailWithQR({
-              email: customerEmail,
-              customerName,
-              orderId: resultOrderId,
-              items: resultQrCodes.map(qr => ({
-                activationCode: qr.code,
-                qrCodeImage: qr.qrUrl,
-                setupUrl: qr.setupUrl
-              })),
-              quantity: resultMagnetCount,
-              sku
-            });
-            
-            if (welcomeEmailResult) {
-              console.log('✅ Welcome email with QR codes sent successfully to:', customerEmail);
-            } else {
-              console.error('❌ Welcome email returned false - check SendGrid logs');
-              await sendAdminErrorAlert(
-                'Welcome Email Failed (returned false)',
-                'sendWelcomeEmailWithQR returned false',
-                { orderId: resultOrderId, customerEmail, qrCodesCount: resultQrCodes.length }
-              );
-            }
-          } catch (error: any) {
-            console.error('❌ Failed to send welcome email:', error?.message, error);
-            await sendAdminErrorAlert(
-              'Welcome Email Failed',
-              error?.message || 'Unknown error',
-              { orderId: resultOrderId, customerEmail, qrCodesCount: resultQrCodes.length }
-            ).catch(e => console.error('Failed to send error alert:', e));
-          }
-        })(),
-        
-        // Email 3: Admin notification
-        sendAdminOrderNotification(
-          resultOrderId,
-          customerName,
-          customerEmail,
-          amountPaid,
-          resultMagnetCount,
-          sku
-        ).catch(error => {
-          console.error('❌ Failed to send admin notification:', error);
-        })
-      ]).then(() => {
-        console.log('✅ All emails sent successfully');
+      // Respond to Stripe immediately so it doesn't retry
+      res.json({ received: true, orderId: resultOrderId });
+
+      // Send emails in the background (fire-and-forget, never blocks webhook)
+      console.log('[WEBHOOK] Starting background email dispatch for order:', resultOrderId, 'to:', customerEmail);
+
+      // Email 1: Payment confirmation
+      sendPaymentConfirmationEmail(
+        customerEmail,
+        customerName,
+        resultOrderId,
+        amountPaid,
+        resultMagnetCount
+      ).then(result => {
+        console.log(`[WEBHOOK] Payment confirmation email ${result ? 'SENT' : 'FAILED'} to: ${customerEmail}`);
       }).catch(error => {
-        console.error('❌ Some emails failed:', error);
+        console.error('[WEBHOOK] Payment confirmation email ERROR:', error?.message);
+        sendAdminErrorAlert(
+          'Payment Confirmation Email Failed',
+          error?.message || 'Unknown error',
+          { orderId: resultOrderId, customerEmail, sku, magnetCount: resultMagnetCount }
+        ).catch(e => console.error('Failed to send error alert:', e));
       });
 
-      // Return success immediately (don't wait for emails)
-      res.json({ received: true, orderId: resultOrderId });
+      // Email 2: Welcome email with QR codes
+      console.log('[WEBHOOK] Dispatching welcome email with QR codes:', {
+        email: customerEmail,
+        orderId: resultOrderId,
+        qrCodesCount: resultQrCodes.length,
+        quantity: resultMagnetCount,
+        sku
+      });
+      sendWelcomeEmailWithQR({
+        email: customerEmail,
+        customerName,
+        orderId: resultOrderId,
+        items: resultQrCodes.map(qr => ({
+          activationCode: qr.code,
+          qrCodeImage: qr.qrUrl,
+          setupUrl: qr.setupUrl
+        })),
+        quantity: resultMagnetCount,
+        sku
+      }).then(result => {
+        if (result) {
+          console.log('[WEBHOOK] Welcome email with QR codes SENT to:', customerEmail);
+        } else {
+          console.error('[WEBHOOK] Welcome email returned false - check SendGrid sender verification');
+          sendAdminErrorAlert(
+            'Welcome Email Failed (returned false)',
+            'sendWelcomeEmailWithQR returned false - likely SendGrid sender verification issue',
+            { orderId: resultOrderId, customerEmail, qrCodesCount: resultQrCodes.length }
+          ).catch(e => console.error('Failed to send error alert:', e));
+        }
+      }).catch(error => {
+        console.error('[WEBHOOK] Welcome email ERROR:', error?.message);
+        sendAdminErrorAlert(
+          'Welcome Email Failed',
+          error?.message || 'Unknown error',
+          { orderId: resultOrderId, customerEmail, qrCodesCount: resultQrCodes.length }
+        ).catch(e => console.error('Failed to send error alert:', e));
+      });
+
+      // Email 3: Admin notification
+      sendAdminOrderNotification(
+        resultOrderId,
+        customerName,
+        customerEmail,
+        amountPaid,
+        resultMagnetCount,
+        sku
+      ).then(result => {
+        console.log(`[WEBHOOK] Admin notification ${result ? 'SENT' : 'FAILED'}`);
+      }).catch(error => {
+        console.error('[WEBHOOK] Admin notification ERROR:', error?.message);
+      });
       
     } catch (error: any) {
       console.error('❌ Error processing order:', error?.message);
