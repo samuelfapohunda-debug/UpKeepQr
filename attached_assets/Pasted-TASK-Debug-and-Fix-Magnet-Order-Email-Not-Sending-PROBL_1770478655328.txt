@@ -1,0 +1,56 @@
+TASK: Debug and Fix Magnet Order Email Not Sending
+
+PROBLEM: After a successful magnet order is processed, the welcome/confirmation email is not being triggered.
+
+INVESTIGATION STEPS:
+
+1. CHECK STRIPE WEBHOOK HANDLER
+   - File: server/src/routes/webhook.ts or server/routes/webhooks.ts
+   - Look for: Stripe checkout.session.completed event handler
+   - Verify: Email function is being called after successful payment
+   - Add logging: console.log('📧 Attempting to send order confirmation email')
+
+2. VERIFY EMAIL FUNCTION IS CALLED
+   - Search for: sendWelcomeEmail() or sendOrderConfirmation()
+   - Check if it's actually being invoked in webhook handler
+   - Look for conditions that might prevent email from sending
+
+3. CHECK FOR ERRORS IN LOGS
+   - Search Render logs for:
+     * "checkout.session.completed"
+     * "email" or "sendgrid"
+     * Any error messages during webhook processing
+   - Show me any relevant error logs
+
+4. VERIFY WEBHOOK IS RECEIVING DATA
+   - Add logging to webhook handler:
+```typescript
+     console.log('🎯 Webhook received:', event.type);
+     console.log('📦 Customer email:', session.customer_details.email);
+```
+
+5. CHECK EMAIL TRIGGER LOGIC
+   - Verify customer email is being extracted correctly
+   - Check if there are any conditional checks preventing email send
+   - Look for: if (customerEmail) { sendEmail() }
+
+SPECIFIC AREAS TO CHECK:
+
+In webhook.ts:
+- Is sendWelcomeEmail() being called after checkout.session.completed?
+- Is the customer email being passed correctly?
+- Are there any try-catch blocks silently failing?
+- Is the email function awaited properly?
+
+In email service:
+- Is SENDGRID_FROM_EMAIL set correctly? (should be support@maintcue.com)
+- Is the email template correct?
+- Any validation that might reject the email?
+
+SHOW ME:
+1. The webhook handler code (specifically checkout.session.completed)
+2. Where/how the email function is called
+3. Any error logs from recent magnet orders
+4. The email sending function implementation
+
+Then FIX the issue so emails send after every successful magnet order.

@@ -1,0 +1,62 @@
+TASK: Fix Missing Email Trigger in Stripe Webhook for Magnet Orders
+
+SPECIFIC PROBLEM: 
+When a customer successfully completes a magnet order payment through Stripe, 
+NO email is being sent to the customer. The payment processes, but the 
+welcome/confirmation email never arrives.
+
+REQUIRED FIX:
+
+1. LOCATE STRIPE WEBHOOK HANDLER
+   File: server/src/routes/webhook.ts (or similar)
+   Find the: checkout.session.completed event handler
+
+2. ADD EMAIL TRIGGER AFTER SUCCESSFUL PAYMENT
+   After order is created/processed, add:
+```typescript
+   // Extract customer email from Stripe session
+   const customerEmail = session.customer_details?.email;
+   const customerName = session.customer_details?.name;
+   
+   if (customerEmail) {
+     try {
+       // Send welcome email with QR code setup instructions
+       await sendWelcomeEmail({
+         to: customerEmail,
+         customerName: customerName,
+         subscriptionId: subscription.id,
+         activationCode: subscription.activationCode
+       });
+       
+       console.log('✅ [EMAIL] Welcome email sent to:', customerEmail);
+     } catch (error) {
+       console.error('❌ [EMAIL] Failed to send welcome email:', error);
+       // Don't fail the webhook if email fails
+     }
+   }
+```
+
+3. ENSURE PROPER ERROR HANDLING
+   - Email failure should NOT cause webhook to fail
+   - Log all email attempts and failures
+   - Use try-catch around email sending
+
+4. VERIFY EMAIL FUNCTION EXISTS
+   - Check if sendWelcomeEmail() is imported
+   - If not, import from: server/lib/email.ts or notificationDispatcher.ts
+   - Ensure function accepts correct parameters
+
+5. ADD COMPREHENSIVE LOGGING
+```typescript
+   console.log('🎯 [WEBHOOK] Processing checkout.session.completed');
+   console.log('📧 [WEBHOOK] Customer email:', customerEmail);
+   console.log('🎫 [WEBHOOK] Activation code:', activationCode);
+```
+
+SHOW ME:
+1. The current webhook handler code for checkout.session.completed
+2. Confirm email trigger has been added
+3. Show the import statement for email function
+4. Confirm logging has been added
+
+DEPLOY after making changes so I can test with a real order.
