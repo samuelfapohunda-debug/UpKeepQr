@@ -73,7 +73,11 @@ async function sendSMS({to,body}){
 
 // --- express app ---
 const app=express();
-app.use(cors({origin:true}));
+const corsOptions = {
+  origin: ['https://maintcue.com', 'https://www.maintcue.com', 'http://localhost:3000', 'http://localhost:5173'],
+  credentials: true
+};
+app.use(cors(corsOptions));
 app.use(express.urlencoded({extended:true}));
 app.use(express.json());
 
