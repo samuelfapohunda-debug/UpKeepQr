@@ -1,0 +1,459 @@
+# REPLIT AGENT SPEC: Update "Request a Pro" Links to MaintCue Domain
+
+## 🎯 OBJECTIVE
+Update all email template "Request a Pro" links from the old `upkeepqr.com` domain to the new `maintcue.com` domain to ensure maintenance reminder emails contain the correct URL.
+
+---
+
+## 📋 CONTEXT
+MaintCue recently completed a rebrand from "UpKeepQR" to "MaintCue" and migrated to the `maintcue.com` domain. Email notifications (maintenance reminders, warranty alerts) currently contain links pointing to the old domain, which causes SSL errors and broken links for users.
+
+**Current Issue:**
+- Maintenance reminder emails contain: `https://upkeepqr.com/request-pro`
+- This URL shows SSL certificate error
+- Users cannot access the professional service request form
+
+**Expected Result:**
+- All email links should use: `https://maintcue.com/request-pro`
+- Links should work properly with valid SSL certificate
+- Consistent branding across all email communications
+
+---
+
+## 📁 FILES TO UPDATE
+
+Based on the grep search results, the following files contain "Request a Pro" references that need verification and potential updates:
+
+### 1. **server/lib/mail.ts** (PRIMARY - EMAIL TEMPLATE)
+**Priority:** HIGH - This is the main maintenance reminder template
+
+**Current code (approximate line location):**
+```typescript
+Need help? <a href="${APP_URL}/request-pro" style="color: #10b981;">Request a Pro</a> to handle this for you.
+```
+
+**Action Required:**
+- Verify that `APP_URL` environment variable is set to `https://maintcue.com`
+- If `APP_URL` is hardcoded as `upkeepqr.com`, update it to `maintcue.com`
+- Ensure no other hardcoded old domain references exist in this file
+
+### 2. **server/lib/warrantyNotifications.ts** (EMAIL TEMPLATE)
+**Priority:** HIGH - Warranty alert emails
+
+**Current code (two instances):**
+```typescript
+// HTML version:
+Need help finding a professional for repairs? <a href="${APP_URL}/request-pro" style="color: #10b981;">Request a Pro</a>
+
+// Plain text version:
+Need help? Request a Pro: ${APP_URL}/request-pro
+```
+
+**Action Required:**
+- Verify `APP_URL` variable is correctly set
+- Ensure both HTML and plain text versions use the correct URL
+- No hardcoded old domain references
+
+### 3. **server/lib/email.ts** (EMAIL UTILITIES)
+**Priority:** MEDIUM - Contains email template definitions
+
+**Current code:**
+```typescript
+// Email templates for Request a Pro feature
+```
+
+**Action Required:**
+- Review the entire file for any `APP_URL` definitions or hardcoded URLs
+- Verify any "Request a Pro" email templates use the correct domain
+- Check for environment variable initialization
+
+### 4. **functions/index.js** (FIREBASE FUNCTIONS)
+**Priority:** MEDIUM - Contains route comments
+
+**Current code:**
+```javascript
+// Request a Pro
+```
+
+**Action Required:**
+- This appears to be a comment, but verify no hardcoded URLs exist nearby
+- Check any email sending logic in this file
+
+### 5. **server/routes.ts** (ROUTE DEFINITIONS)
+**Priority:** LOW - Route configuration
+
+**Current code:**
+```typescript
+// Pro Request Routes for "Request a Pro" feature
+```
+
+**Action Required:**
+- This is likely just a comment for route organization
+- Verify but no changes expected
+
+### 6. **shared/schema.ts** (DATA SCHEMAS)
+**Priority:** LOW - Schema definitions
+
+**Current code:**
+```typescript
+// Pro Request schema for "Request a Pro" feature
+```
+
+**Action Required:**
+- This is likely just a comment
+- Verify but no changes expected
+
+---
+
+## 🔧 SPECIFIC TASKS
+
+### Task 1: Verify Environment Variable Configuration
+**Location:** Root directory or `.env` files
+
+**Check these files:**
+- `.env`
+- `.env.production`
+- `server/.env`
+
+**What to verify:**
+```bash
+# Should be set to:
+APP_URL=https://maintcue.com
+# or
+FRONTEND_URL=https://maintcue.com
+# or
+BASE_URL=https://maintcue.com
+```
+
+**If found as:**
+```bash
+APP_URL=https://upkeepqr.com
+# or
+APP_URL=https://upkeepqr-backend.onrender.com
+```
+
+**Change to:**
+```bash
+APP_URL=https://maintcue.com
+```
+
+---
+
+### Task 2: Update server/lib/mail.ts
+**File:** `server/lib/mail.ts`
+
+**Search for:**
+```typescript
+const APP_URL = 'https://upkeepqr.com';
+// or
+const APP_URL = 'https://upkeepqr-backend.onrender.com';
+```
+
+**Replace with:**
+```typescript
+const APP_URL = process.env.APP_URL || 'https://maintcue.com';
+```
+
+**Verify email template uses:**
+```typescript
+<a href="${APP_URL}/request-pro" style="color: #10b981;">Request a Pro</a>
+```
+
+**NOT:**
+```typescript
+<a href="https://upkeepqr.com/request-pro">Request a Pro</a>
+```
+
+---
+
+### Task 3: Update server/lib/warrantyNotifications.ts
+**File:** `server/lib/warrantyNotifications.ts`
+
+**Check for:**
+```typescript
+const APP_URL = process.env.FRONTEND_URL || process.env.APP_URL || 'https://maintcue.com';
+```
+
+**Verify both email versions use the variable correctly:**
+
+**HTML version:**
+```typescript
+Need help finding a professional for repairs? <a href="${APP_URL}/request-pro" style="color: #10b981;">Request a Pro</a>
+```
+
+**Plain text version:**
+```typescript
+Need help? Request a Pro: ${APP_URL}/request-pro
+```
+
+---
+
+### Task 4: Update server/lib/email.ts
+**File:** `server/lib/email.ts`
+
+**Search for any hardcoded URLs:**
+```typescript
+// Bad examples (to replace):
+const url = 'https://upkeepqr.com/request-pro';
+const proRequestUrl = 'https://upkeepqr-backend.onrender.com/request-pro';
+
+// Good example (keep or add):
+const APP_URL = process.env.APP_URL || 'https://maintcue.com';
+const proRequestUrl = `${APP_URL}/request-pro`;
+```
+
+---
+
+### Task 5: Verify functions/index.js
+**File:** `functions/index.js`
+
+**Look around the "Request a Pro" comment for:**
+```javascript
+// Check if there are any URLs like:
+const requestProUrl = 'https://upkeepqr.com/request-pro';
+
+// Should be:
+const requestProUrl = process.env.APP_URL ? `${process.env.APP_URL}/request-pro` : 'https://maintcue.com/request-pro';
+```
+
+---
+
+## ✅ VALIDATION CHECKLIST
+
+After making changes, verify:
+
+### Code Validation
+- [ ] No hardcoded `upkeepqr.com` URLs in any of the 6 files
+- [ ] No hardcoded `upkeepqr-backend.onrender.com` URLs
+- [ ] All email templates use `${APP_URL}` or similar variable
+- [ ] Environment variable fallback is set to `maintcue.com`
+- [ ] Both HTML and plain text email versions updated
+
+### Environment Variable Validation
+```bash
+# Run this command to check:
+grep -E "APP_URL|FRONTEND_URL|BASE_URL" .env* server/.env* 2>/dev/null
+
+# Expected output should include:
+APP_URL=https://maintcue.com
+```
+
+### Testing (Post-Deployment)
+- [ ] Send a test maintenance reminder email
+- [ ] Verify "Request a Pro" link in email points to `https://maintcue.com/request-pro`
+- [ ] Click the link and verify it loads without SSL errors
+- [ ] Verify email shows MaintCue branding (not UpKeepQR)
+
+---
+
+## 🚀 DEPLOYMENT STEPS
+
+### 1. Make Code Changes
+```bash
+# Agent will update the files as specified above
+```
+
+### 2. Verify Changes
+```bash
+# Search for any remaining old domain references
+grep -r "upkeepqr" server/lib/ --include="*.ts" --include="*.js"
+
+# Should return NO results, or only comments
+```
+
+### 3. Check Environment Variables
+```bash
+cat .env | grep -E "APP_URL|FRONTEND_URL"
+```
+
+### 4. Commit Changes
+```bash
+git add server/lib/mail.ts server/lib/warrantyNotifications.ts server/lib/email.ts functions/index.js
+git commit -m "fix: update Request a Pro links to use maintcue.com domain
+
+- Updated email templates to use maintcue.com instead of upkeepqr.com
+- Verified environment variables point to correct domain
+- Fixed maintenance reminder and warranty notification links"
+```
+
+### 5. Deploy to Production
+```bash
+git push origin main
+# Render will auto-deploy
+```
+
+---
+
+## 🧪 POST-DEPLOYMENT TESTING
+
+### Test 1: Send Test Maintenance Reminder
+```bash
+# In your app, trigger a maintenance reminder email
+# Or use your admin panel to send a test email
+```
+
+**Verify:**
+- Email arrives successfully
+- "Request a Pro" link reads: `https://maintcue.com/request-pro`
+- Link is clickable and works
+- No SSL errors when clicking
+
+### Test 2: Send Test Warranty Alert
+```bash
+# Trigger a warranty alert email
+```
+
+**Verify:**
+- Email arrives from `support@maintcue.com`
+- "Request a Pro" link points to `maintcue.com`
+- Both HTML and plain text versions work
+
+### Test 3: Check Link Formatting
+**Open the email and verify:**
+- Link color is emerald green (#10b981) ✓
+- Link is underlined on hover ✓
+- Link opens in same/new tab as intended ✓
+
+---
+
+## ⚠️ IMPORTANT NOTES
+
+### Environment Variables
+- **Development:** Make sure local `.env` has `APP_URL=https://maintcue.com`
+- **Production:** Verify Render environment variables are set correctly
+  - Go to Render Dashboard → UpKeepQr-backend → Environment
+  - Check `APP_URL` or `FRONTEND_URL` is set to `https://maintcue.com`
+
+### Backwards Compatibility
+- Old emails already sent will still have the old links
+- This is expected - we're only fixing future emails
+- Consider: Keep `upkeepqr.com` as a redirect domain (optional)
+
+### Testing Locally
+```bash
+# If testing in development:
+npm run dev
+
+# Environment should use:
+APP_URL=http://localhost:3000
+# or
+APP_URL=https://maintcue.com
+```
+
+---
+
+## 🎯 SUCCESS CRITERIA
+
+**This task is complete when:**
+1. All 6 files verified and updated (no hardcoded old domain)
+2. Environment variables set correctly
+3. Code committed and deployed to production
+4. Test email sent with working `maintcue.com/request-pro` link
+5. No SSL errors when users click the link
+6. Email arrives from `support@maintcue.com` (not old domain)
+
+---
+
+## 🔍 EDGE CASES TO CONSIDER
+
+### Edge Case 1: Multiple Environment Variables
+If the code uses different variable names:
+```typescript
+// Check for variations:
+process.env.APP_URL
+process.env.FRONTEND_URL  
+process.env.BASE_URL
+process.env.CLIENT_URL
+process.env.DOMAIN_URL
+```
+
+**Solution:** Use whichever variable is already defined, but ensure it points to `maintcue.com`
+
+### Edge Case 2: Conditional URL Logic
+```typescript
+// If you see something like:
+const APP_URL = process.env.NODE_ENV === 'production' 
+  ? 'https://upkeepqr.com' 
+  : 'http://localhost:3000';
+
+// Update to:
+const APP_URL = process.env.NODE_ENV === 'production'
+  ? process.env.APP_URL || 'https://maintcue.com'
+  : 'http://localhost:3000';
+```
+
+### Edge Case 3: Render Environment Variables
+If changes don't take effect after deployment:
+1. Check Render Dashboard → Environment tab
+2. Add/update: `APP_URL=https://maintcue.com`
+3. Manually trigger a redeploy
+
+---
+
+## 📊 ACCEPTANCE CRITERIA
+
+**Before submitting this task as complete, confirm:**
+
+- [x] All files searched and verified
+- [x] No hardcoded `upkeepqr.com` or `upkeepqr-backend.onrender.com` URLs remain
+- [x] Environment variables checked and set correctly
+- [x] Code changes committed with descriptive commit message
+- [x] Changes deployed to production (Render)
+- [x] Test email sent successfully
+- [x] "Request a Pro" link verified to point to `https://maintcue.com/request-pro`
+- [x] Link opens without errors
+- [x] Email branding shows "MaintCue" (not "UpKeepQR")
+
+---
+
+## 🛠️ TROUBLESHOOTING
+
+### Issue: Link still points to old domain after deployment
+**Solution:**
+1. Check Render environment variables
+2. Verify `.env` file is not in `.gitignore` (or add vars to Render manually)
+3. Hard-refresh browser cache
+4. Check email template cache (some email services cache templates)
+
+### Issue: Environment variable not found
+**Solution:**
+```typescript
+// Add fallback in code:
+const APP_URL = process.env.APP_URL || 
+                process.env.FRONTEND_URL || 
+                'https://maintcue.com';
+```
+
+### Issue: SSL error persists
+**Solution:**
+- Verify `maintcue.com` DNS is properly configured
+- Check SSL certificate in Render is issued and valid
+- Test the URL directly in browser: `https://maintcue.com/request-pro`
+
+---
+
+## 📝 ADDITIONAL CONTEXT
+
+**Related Files That May Need Future Updates:**
+- `client/src/config.ts` - Frontend API URL configuration
+- `client/src/constants.ts` - Frontend constants
+- Any other email templates not found in this search
+
+**Documentation to Update:**
+- `README.md` - Update any URLs in setup instructions
+- `ARCHITECTURE.md` - Update domain references
+- Any API documentation
+
+---
+
+**ESTIMATED TIME TO COMPLETE:** 10-15 minutes
+
+**PRIORITY:** HIGH (Affects user experience - broken links in production emails)
+
+**ASSIGNED TO:** Replit Agent
+
+---
+
+_Last Updated: February 8, 2026_
+_Spec Version: 1.0_
+_Related Issue: Email links pointing to old upkeepqr.com domain causing SSL errors_

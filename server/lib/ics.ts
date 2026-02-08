@@ -25,7 +25,7 @@ export function makeIcsEvent(data: IcsEventData): Buffer {
   };
   
   // Generate unique identifier
-  const uid = `maintenance-${Date.now()}-${Math.random().toString(36).substr(2, 9)}@agenthub.com`;
+  const uid = `maintenance-${Date.now()}-${Math.random().toString(36).substr(2, 9)}@maintcue.com`;
   
   // Current timestamp for DTSTAMP
   const now = new Date();

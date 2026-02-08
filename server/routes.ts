@@ -1009,7 +1009,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Send to partner (example partner email)
         await sendLeadNotificationEmail(
-          'partner@agenthub.com',
+          'partner@maintcue.com',
           'New Service Lead',
           {
             service,
@@ -1023,7 +1023,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Send to tracking email
         await sendLeadNotificationEmail(
-          'leads@agenthub.com',
+          'leads@maintcue.com',
           'Lead Tracking - New Service Request',
           {
             service,
