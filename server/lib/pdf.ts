@@ -25,7 +25,7 @@ export async function generateBatchProofSheet(batchId: string): Promise<Buffer> 
         id: `magnet-${i}`,
         batchId: batchId,
         token: `demo-token-${i.toString().padStart(3, '0')}`,
-        url: `https://agenthub.com/setup/demo-token-${i.toString().padStart(3, '0')}`,
+        url: `https://maintcue.com/setup/demo-token-${i.toString().padStart(3, '0')}`,
         createdAt: new Date()
       });
     }
@@ -96,7 +96,7 @@ async function generatePdfFromData(batch: Record<string, unknown>, magnets: Arra
 
     try {
       // Generate QR code for this magnet
-      const qrUrl = `${process.env.BASE_URL || 'https://agenthub.com'}/setup/${magnet.token}`;
+      const qrUrl = `${process.env.PUBLIC_BASE_URL || 'https://maintcue.com'}/setup/${magnet.token}`;
       const qrCodeDataUrl = await QRCode.toDataURL(qrUrl, {
         width: 120,
         margin: 1,
