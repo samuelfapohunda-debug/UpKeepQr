@@ -81,6 +81,6 @@ expertMode = true
 ALLOW_ADMIN_SETUP_CREATION = "true"
 
 [userenv.shared]
-BACKEND_URL = "https://upkeepqr-backend.onrender.com"
-FRONTEND_URL = "https://upkeepqr.com"
-PUBLIC_BASE_URL = "https://upkeepqr.com"
+BACKEND_URL = "https://maintcue.com"
+FRONTEND_URL = "https://maintcue.com"
+PUBLIC_BASE_URL = "https://maintcue.com"
