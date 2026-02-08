@@ -216,97 +216,151 @@ html.disable-animated-bg .animated-bg-container {
 /* ---- HERO PATTERN ---- */
 
 .ab-hero-shield {
-  top: -8%;
-  right: -6%;
-  width: 340px;
-  height: 340px;
+  top: -10%;
+  right: -8%;
+  width: 850px;
+  height: 850px;
   color: #10b981;
   animation: ab-float-rotate 120s ease-in-out infinite;
 }
 
 .ab-hero-wrench1 {
-  top: 22%;
-  left: 8%;
-  width: 70px;
-  height: 70px;
+  top: 18%;
+  left: 5%;
+  width: 190px;
+  height: 190px;
   color: #059669;
   animation: ab-float-drift 50s ease-in-out infinite;
 }
 
 .ab-hero-bell {
-  top: 55%;
-  left: 4%;
-  width: 60px;
-  height: 60px;
+  top: 50%;
+  left: 2%;
+  width: 170px;
+  height: 170px;
   color: #3b82f6;
   animation: ab-bell-swing 55s ease-in-out infinite;
   transform-origin: top center;
 }
 
 .ab-hero-check1 {
-  top: 72%;
-  left: 18%;
-  width: 80px;
-  height: 80px;
+  top: 68%;
+  left: 22%;
+  width: 210px;
+  height: 210px;
   color: #10b981;
   animation: ab-check-fade 50s ease-in-out infinite;
 }
 
 .ab-hero-gear {
-  top: 15%;
-  right: 22%;
-  width: 65px;
-  height: 65px;
+  top: 10%;
+  right: 18%;
+  width: 180px;
+  height: 180px;
   color: #059669;
   animation: ab-gear-spin 90s linear infinite;
+}
+
+.ab-hero-wrench2 {
+  bottom: 5%;
+  right: 10%;
+  width: 160px;
+  height: 160px;
+  color: #10b981;
+  animation: ab-float-drift 65s ease-in-out infinite reverse;
+}
+
+.ab-hero-calendar {
+  top: 35%;
+  left: 40%;
+  width: 150px;
+  height: 150px;
+  color: #059669;
+  animation: ab-float-drift 70s ease-in-out infinite;
+}
+
+.ab-hero-check2 {
+  bottom: 15%;
+  left: 55%;
+  width: 140px;
+  height: 140px;
+  color: #3b82f6;
+  animation: ab-check-fade 60s ease-in-out infinite 10s;
 }
 
 /* ---- FEATURES PATTERN ---- */
 
 .ab-feat-check1 {
-  top: 8%;
-  left: 5%;
-  width: 70px;
-  height: 70px;
+  top: 5%;
+  left: 3%;
+  width: 190px;
+  height: 190px;
   color: #10b981;
   animation: ab-check-fade 50s ease-in-out infinite;
 }
 
 .ab-feat-calendar {
-  top: 15%;
-  right: 8%;
-  width: 65px;
-  height: 65px;
+  top: 10%;
+  right: 5%;
+  width: 180px;
+  height: 180px;
   color: #3b82f6;
   animation: ab-float-drift 55s ease-in-out infinite reverse;
 }
 
 .ab-feat-bell {
-  bottom: 12%;
-  left: 10%;
-  width: 55px;
-  height: 55px;
+  bottom: 8%;
+  left: 8%;
+  width: 160px;
+  height: 160px;
   color: #059669;
   animation: ab-bell-swing 50s ease-in-out infinite;
   transform-origin: top center;
 }
 
 .ab-feat-gear {
-  bottom: 15%;
-  right: 6%;
-  width: 60px;
-  height: 60px;
+  bottom: 10%;
+  right: 4%;
+  width: 170px;
+  height: 170px;
   color: #10b981;
   animation: ab-gear-spin 100s linear infinite;
 }
 
 .ab-feat-wrench {
-  top: 50%;
-  right: 3%;
-  width: 50px;
-  height: 50px;
+  top: 45%;
+  right: 2%;
+  width: 140px;
+  height: 140px;
   color: #059669;
   animation: ab-float-drift 65s ease-in-out infinite;
+}
+
+.ab-feat-shield {
+  top: 30%;
+  left: 35%;
+  width: 220px;
+  height: 220px;
+  color: #10b981;
+  animation: ab-float-rotate 80s ease-in-out infinite;
+}
+
+.ab-feat-check2 {
+  bottom: 20%;
+  left: 50%;
+  width: 150px;
+  height: 150px;
+  color: #059669;
+  animation: ab-check-fade 55s ease-in-out infinite 8s;
+}
+
+.ab-feat-wrench2 {
+  top: 8%;
+  left: 45%;
+  width: 130px;
+  height: 130px;
+  color: #3b82f6;
+  animation: ab-float-drift 60s ease-in-out infinite;
 }
 
 /* ---- KEYFRAMES ---- */
@@ -316,26 +370,26 @@ html.disable-animated-bg .animated-bg-container {
     transform: translateY(0) rotate(0deg);
   }
   50% {
-    transform: translateY(-25px) rotate(12deg);
+    transform: translateY(-45px) rotate(15deg);
   }
 }
 
 @keyframes ab-float-drift {
   0%, 100% {
     transform: translate(0, 0);
-    opacity: 0.5;
-  }
-  25% {
-    transform: translate(15px, -12px);
-    opacity: 0.8;
-  }
-  50% {
-    transform: translate(-8px, -25px);
     opacity: 0.6;
   }
-  75% {
-    transform: translate(-18px, -8px);
+  25% {
+    transform: translate(35px, -28px);
+    opacity: 0.9;
+  }
+  50% {
+    transform: translate(-20px, -50px);
     opacity: 0.7;
+  }
+  75% {
+    transform: translate(-40px, -18px);
+    opacity: 0.85;
   }
 }
 
@@ -344,24 +398,24 @@ html.disable-animated-bg .animated-bg-container {
     transform: rotate(0deg);
   }
   25% {
-    transform: rotate(4deg);
+    transform: rotate(8deg);
   }
   50% {
     transform: rotate(0deg);
   }
   75% {
-    transform: rotate(-4deg);
+    transform: rotate(-8deg);
   }
 }
 
 @keyframes ab-check-fade {
   0%, 100% {
-    opacity: 0.3;
-    transform: scale(0.92);
+    opacity: 0.35;
+    transform: scale(0.88);
   }
   50% {
-    opacity: 0.9;
-    transform: scale(1.08);
+    opacity: 1;
+    transform: scale(1.12);
   }
 }
 
@@ -378,25 +432,33 @@ html.disable-animated-bg .animated-bg-container {
 
 @media (max-width: 768px) {
   .ab-hero-shield {
-    width: 200px;
-    height: 200px;
+    width: 400px;
+    height: 400px;
     top: -5%;
-    right: -10%;
+    right: -12%;
   }
   .ab-hero-wrench1 {
-    width: 45px;
-    height: 45px;
+    width: 100px;
+    height: 100px;
+  }
+  .ab-hero-bell {
+    width: 90px;
+    height: 90px;
   }
   .ab-feat-check1,
   .ab-feat-calendar,
   .ab-feat-bell {
-    width: 40px;
-    height: 40px;
+    width: 100px;
+    height: 100px;
   }
 }
 
 @media (max-width: 480px) {
   .animated-bg-container {
-    opacity: 0.5;
+    opacity: 0.7;
+  }
+  .ab-hero-shield {
+    width: 300px;
+    height: 300px;
   }
 }
