@@ -88,15 +88,6 @@ export default function Home() {
                   >
                     Start Free (No Credit Card Required)
                   </Button>
-                  <Button 
-                    variant="outline" 
-                    size="lg"
-                    className="border-slate-300 text-slate-700 hover:bg-slate-50"
-                    onClick={() => document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' })}
-                    data-testid="button-how-it-works"
-                  >
-                    See How It Works
-                  </Button>
                 </div>
                 
                 {/* Trust Badge */}
