@@ -173,3 +173,230 @@
     color: hsl(var(--upkeep-primary-dark));
   }
 }
+
+/* ============================================
+   ANIMATED BACKGROUND SYSTEM
+   ============================================ */
+
+.animated-bg-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.ab-shape {
+  position: absolute;
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  contain: layout style paint;
+}
+
+/* Kill switch */
+html.disable-animated-bg .animated-bg-container {
+  display: none !important;
+}
+
+/* Pause all when not in view or reduced motion */
+.animated-bg-container[data-animate="false"] .ab-shape {
+  animation-play-state: paused !important;
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .ab-shape {
+    animation: none !important;
+  }
+}
+
+/* ---- HERO PATTERN ---- */
+
+.ab-hero-shield {
+  top: -8%;
+  right: -6%;
+  width: 340px;
+  height: 340px;
+  color: #10b981;
+  animation: ab-float-rotate 120s ease-in-out infinite;
+}
+
+.ab-hero-wrench1 {
+  top: 22%;
+  left: 8%;
+  width: 70px;
+  height: 70px;
+  color: #059669;
+  animation: ab-float-drift 50s ease-in-out infinite;
+}
+
+.ab-hero-bell {
+  top: 55%;
+  left: 4%;
+  width: 60px;
+  height: 60px;
+  color: #3b82f6;
+  animation: ab-bell-swing 55s ease-in-out infinite;
+  transform-origin: top center;
+}
+
+.ab-hero-check1 {
+  top: 72%;
+  left: 18%;
+  width: 80px;
+  height: 80px;
+  color: #10b981;
+  animation: ab-check-fade 50s ease-in-out infinite;
+}
+
+.ab-hero-gear {
+  top: 15%;
+  right: 22%;
+  width: 65px;
+  height: 65px;
+  color: #059669;
+  animation: ab-gear-spin 90s linear infinite;
+}
+
+/* ---- FEATURES PATTERN ---- */
+
+.ab-feat-check1 {
+  top: 8%;
+  left: 5%;
+  width: 70px;
+  height: 70px;
+  color: #10b981;
+  animation: ab-check-fade 50s ease-in-out infinite;
+}
+
+.ab-feat-calendar {
+  top: 15%;
+  right: 8%;
+  width: 65px;
+  height: 65px;
+  color: #3b82f6;
+  animation: ab-float-drift 55s ease-in-out infinite reverse;
+}
+
+.ab-feat-bell {
+  bottom: 12%;
+  left: 10%;
+  width: 55px;
+  height: 55px;
+  color: #059669;
+  animation: ab-bell-swing 50s ease-in-out infinite;
+  transform-origin: top center;
+}
+
+.ab-feat-gear {
+  bottom: 15%;
+  right: 6%;
+  width: 60px;
+  height: 60px;
+  color: #10b981;
+  animation: ab-gear-spin 100s linear infinite;
+}
+
+.ab-feat-wrench {
+  top: 50%;
+  right: 3%;
+  width: 50px;
+  height: 50px;
+  color: #059669;
+  animation: ab-float-drift 65s ease-in-out infinite;
+}
+
+/* ---- KEYFRAMES ---- */
+
+@keyframes ab-float-rotate {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-25px) rotate(12deg);
+  }
+}
+
+@keyframes ab-float-drift {
+  0%, 100% {
+    transform: translate(0, 0);
+    opacity: 0.5;
+  }
+  25% {
+    transform: translate(15px, -12px);
+    opacity: 0.8;
+  }
+  50% {
+    transform: translate(-8px, -25px);
+    opacity: 0.6;
+  }
+  75% {
+    transform: translate(-18px, -8px);
+    opacity: 0.7;
+  }
+}
+
+@keyframes ab-bell-swing {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(4deg);
+  }
+  50% {
+    transform: rotate(0deg);
+  }
+  75% {
+    transform: rotate(-4deg);
+  }
+}
+
+@keyframes ab-check-fade {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(0.92);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(1.08);
+  }
+}
+
+@keyframes ab-gear-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---- RESPONSIVE ---- */
+
+@media (max-width: 768px) {
+  .ab-hero-shield {
+    width: 200px;
+    height: 200px;
+    top: -5%;
+    right: -10%;
+  }
+  .ab-hero-wrench1 {
+    width: 45px;
+    height: 45px;
+  }
+  .ab-feat-check1,
+  .ab-feat-calendar,
+  .ab-feat-bell {
+    width: 40px;
+    height: 40px;
+  }
+}
+
+@media (max-width: 480px) {
+  .animated-bg-container {
+    opacity: 0.5;
+  }
+}

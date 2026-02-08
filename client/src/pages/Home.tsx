@@ -7,6 +7,7 @@ import { CheckCircle, Users, Package, Bell, Shield, Calendar, MapPin, Wrench, Ho
 import { useToast } from "@/hooks/use-toast";
 
 import ScrollingAnnouncement from "@/components/ScrollingAnnouncement";
+import AnimatedBackground from "@/components/AnimatedBackground";
 
 export default function Home() {
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
@@ -44,8 +45,9 @@ export default function Home() {
       <main className="flex-1">
         
         {/* Hero Section - Updated Copy */}
-        <section className="relative bg-white overflow-hidden">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-28">
+        <section className="relative bg-white overflow-hidden" style={{ isolation: "isolate" }}>
+          <AnimatedBackground pattern="hero" intensity="normal" />
+          <div className="relative z-[1] max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-28">
             <div className="grid lg:grid-cols-2 gap-12 items-center">
               
               {/* Left: Content */}
@@ -198,8 +200,9 @@ export default function Home() {
         </section>
 
         {/* How It Works - Updated Copy */}
-        <section id="how-it-works" className="py-20 bg-slate-50">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <section id="how-it-works" className="relative py-20 bg-slate-50 overflow-hidden" style={{ isolation: "isolate" }}>
+          <AnimatedBackground pattern="features" intensity="subtle" />
+          <div className="relative z-[1] max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             
             <div className="text-center mb-16">
               <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">
