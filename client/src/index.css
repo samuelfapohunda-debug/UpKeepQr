@@ -445,11 +445,27 @@ html.disable-animated-bg .animated-bg-container {
     width: 90px;
     height: 90px;
   }
+  .ab-hero-check1,
+  .ab-hero-gear,
+  .ab-hero-wrench2,
+  .ab-hero-calendar,
+  .ab-hero-check2 {
+    width: 90px;
+    height: 90px;
+  }
   .ab-feat-check1,
   .ab-feat-calendar,
   .ab-feat-bell {
     width: 100px;
     height: 100px;
+  }
+  .ab-feat-gear,
+  .ab-feat-wrench,
+  .ab-feat-shield,
+  .ab-feat-check2,
+  .ab-feat-wrench2 {
+    width: 90px;
+    height: 90px;
   }
 }
 

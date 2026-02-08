@@ -39,7 +39,7 @@ The backend is a RESTful API developed with Express.js and TypeScript. It uses D
 - **Customer Success Pages**: Welcome pages for customers post-registration.
 - **Customer Dashboard**: A three-tab dashboard (`Tasks`, `Appliances`, `Details`) at `/my-home` for managing maintenance tasks, appliances, and viewing household information with session-based authentication.
 - **New Multi-Step Onboarding Form**: A progressive 4-step onboarding flow with visual home type selection, a maintenance schedule preview, and auto-save functionality.
-- **Animated Background System**: CSS+SVG animated shapes on homepage hero and How It Works sections. Uses IntersectionObserver viewport pausing, prefers-reduced-motion support, mobile optimization (fewer shapes), and GPU acceleration. Kill switch: add `disable-animated-bg` class to `<html>`. Component at `client/src/components/AnimatedBackground.tsx`, CSS in `client/src/index.css`.
+- **Animated Background System**: CSS+SVG animated shapes on homepage hero and How It Works sections. Large shapes (130-850px) at 0.28-0.45 opacity with 35-50px movement amplitude. 8 shapes per section on desktop, 3 on mobile. Uses IntersectionObserver viewport pausing, prefers-reduced-motion support, mobile optimization, and GPU acceleration. Kill switch: add `disable-animated-bg` class to `<html>`. Component at `client/src/components/AnimatedBackground.tsx`, CSS in `client/src/index.css`.
 - **Address Autocomplete**: Uses Google Places API (New) `AutocompleteSuggestion` API (not deprecated `AutocompleteService`). Required for Google accounts created after March 2025. Components: `Step2Account.tsx`, `RequestPro.tsx`.
 
 ## System Design Choices
