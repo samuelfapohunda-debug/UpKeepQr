@@ -33,6 +33,14 @@ const requestProSchema = z.object({
 
 type RequestProForm = z.infer<typeof requestProSchema>;
 
+interface SuggestionItem {
+  placeId: string;
+  mainText: string;
+  secondaryText: string;
+  fullText: string;
+  placePrediction: any;
+}
+
 const libraries: ("places")[] = ["places"];
 
 export default function RequestPro() {
@@ -41,13 +49,12 @@ export default function RequestPro() {
   const [trackingCode, setTrackingCode] = useState<string>("");
   const { toast } = useToast();
   
-  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [suggestions, setSuggestions] = useState<SuggestionItem[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [placesReady, setPlacesReady] = useState(false);
   
-  const autocompleteServiceRef = useRef<any>(null);
-  const placesServiceRef = useRef<any>(null);
   const sessionTokenRef = useRef<any>(null);
-  const placesContainerRef = useRef<HTMLDivElement | null>(null);
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   
   const apiKey = import.meta.env.VITE_GOOGLE_PLACES_API_KEY || "";
   
@@ -58,21 +65,18 @@ export default function RequestPro() {
 
   useEffect(() => {
     if (isLoaded && apiKey) {
-      try {
-        autocompleteServiceRef.current = new google.maps.places.AutocompleteService();
-        sessionTokenRef.current = new google.maps.places.AutocompleteSessionToken();
-      } catch (error) {
-        console.error("Error initializing Google Places services:", error);
-      }
+      google.maps.importLibrary('places').then(() => {
+        if ((google.maps.places as any).AutocompleteSuggestion) {
+          sessionTokenRef.current = new google.maps.places.AutocompleteSessionToken();
+          setPlacesReady(true);
+        } else {
+          console.error("AutocompleteSuggestion API not available - check Places API (New) is enabled");
+        }
+      }).catch((error: any) => {
+        console.error("Error loading Places library:", error);
+      });
     }
   }, [isLoaded, apiKey]);
-
-  const getPlacesService = () => {
-    if (!placesServiceRef.current && placesContainerRef.current) {
-      placesServiceRef.current = new google.maps.places.PlacesService(placesContainerRef.current);
-    }
-    return placesServiceRef.current;
-  };
 
   const form = useForm<RequestProForm>({
     resolver: zodResolver(requestProSchema),
@@ -144,85 +148,99 @@ export default function RequestPro() {
   const handleAddressChange = (value: string) => {
     form.setValue('addressLine1', value);
     
-    if (value.length > 2 && isLoaded && autocompleteServiceRef.current && sessionTokenRef.current) {
-      autocompleteServiceRef.current.getPlacePredictions(
-        {
-          input: value,
-          types: ['address'],
-          componentRestrictions: { country: ['us', 'ca'] },
-          sessionToken: sessionTokenRef.current,
-        },
-        (predictions: any, status: any) => {
-          if (status === google.maps.places.PlacesServiceStatus.OK && predictions && predictions.length > 0) {
-            setSuggestions(predictions);
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    
+    if (value.length > 2 && placesReady) {
+      debounceTimerRef.current = setTimeout(async () => {
+        try {
+          const request: any = {
+            input: value,
+            includedRegionCodes: ['us', 'ca'],
+            includedPrimaryTypes: ['street_address', 'subpremise', 'premise', 'route'],
+            sessionToken: sessionTokenRef.current,
+          };
+          
+          const { suggestions: results } = await (google.maps.places as any).AutocompleteSuggestion.fetchAutocompleteSuggestions(request);
+          
+          if (results && results.length > 0) {
+            const mapped: SuggestionItem[] = results.map((s: any) => ({
+              placeId: s.placePrediction.placeId,
+              mainText: s.placePrediction.mainText?.text || '',
+              secondaryText: s.placePrediction.secondaryText?.text || '',
+              fullText: s.placePrediction.text?.text || '',
+              placePrediction: s.placePrediction,
+            }));
+            setSuggestions(mapped);
             setShowSuggestions(true);
           } else {
             setSuggestions([]);
             setShowSuggestions(false);
           }
+        } catch (error) {
+          console.error("Autocomplete error:", error);
+          setSuggestions([]);
+          setShowSuggestions(false);
         }
-      );
+      }, 300);
     } else {
       setSuggestions([]);
       setShowSuggestions(false);
     }
   };
 
-  const handleSelectSuggestion = (prediction: any) => {
-    const service = getPlacesService();
-    if (!service || !sessionTokenRef.current) return;
-
-    service.getDetails(
-      {
-        placeId: prediction.place_id,
-        fields: ['address_components', 'formatted_address'],
-        sessionToken: sessionTokenRef.current,
-      },
-      (place: any, status: any) => {
-        if (status === google.maps.places.PlacesServiceStatus.OK && place?.address_components) {
-          let streetNumber = "";
-          let route = "";
-          let locality = "";
-          let stateCode = "";
-          let postalCode = "";
-
-          place.address_components.forEach((component: any) => {
-            const types = component.types;
-            if (types.includes("street_number")) {
-              streetNumber = component.long_name;
-            }
-            if (types.includes("route")) {
-              route = component.long_name;
-            }
-            if (types.includes("locality")) {
-              locality = component.long_name;
-            }
-            if (types.includes("sublocality_level_1") && !locality) {
-              locality = component.long_name;
-            }
-            if (types.includes("administrative_area_level_1")) {
-              stateCode = component.short_name;
-            }
-            if (types.includes("postal_code")) {
-              postalCode = component.long_name;
-            }
-          });
-
-          const street = `${streetNumber} ${route}`.trim();
-          form.setValue('addressLine1', street || prediction.description);
-          form.setValue('city', locality);
-          form.setValue('state', stateCode);
-          if (postalCode) form.setValue('zip', postalCode);
-
-          sessionTokenRef.current = new google.maps.places.AutocompleteSessionToken();
-        } else {
-          form.setValue('addressLine1', prediction.description);
-        }
-      }
-    );
-
+  const handleSelectSuggestion = async (suggestion: SuggestionItem) => {
     setSuggestions([]);
     setShowSuggestions(false);
+    
+    try {
+      const place = suggestion.placePrediction.toPlace();
+      await place.fetchFields({
+        fields: ['addressComponents', 'formattedAddress'],
+      });
+      
+      let streetNumber = "";
+      let route = "";
+      let locality = "";
+      let stateCode = "";
+      let postalCode = "";
+
+      if (place.addressComponents) {
+        for (const component of place.addressComponents) {
+          const types = component.types;
+          if (types.includes("street_number")) {
+            streetNumber = component.longText || "";
+          }
+          if (types.includes("route")) {
+            route = component.longText || "";
+          }
+          if (types.includes("locality")) {
+            locality = component.longText || "";
+          }
+          if (types.includes("sublocality_level_1") && !locality) {
+            locality = component.longText || "";
+          }
+          if (types.includes("administrative_area_level_1")) {
+            stateCode = component.shortText || "";
+          }
+          if (types.includes("postal_code")) {
+            postalCode = component.longText || "";
+          }
+        }
+      }
+
+      const street = `${streetNumber} ${route}`.trim();
+      form.setValue('addressLine1', street || suggestion.fullText);
+      form.setValue('city', locality);
+      form.setValue('state', stateCode);
+      if (postalCode) form.setValue('zip', postalCode);
+
+      sessionTokenRef.current = new google.maps.places.AutocompleteSessionToken();
+    } catch (error) {
+      console.error("Place details error:", error);
+      form.setValue('addressLine1', suggestion.fullText);
+    }
   };
 
   const onSubmit = async (data: RequestProForm) => {
@@ -283,7 +301,7 @@ export default function RequestPro() {
 
   return (
     <div className="min-h-screen bg-background pt-16 sm:pt-20">
-      <div ref={placesContainerRef} style={{ display: 'none' }} />
+      
       <div className="max-w-4xl mx-auto px-4 py-8">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-4">Request a Professional Service</h1>
@@ -371,18 +389,18 @@ export default function RequestPro() {
                         {/* Google Places Suggestions Dropdown */}
                         {showSuggestions && suggestions.length > 0 && (
                           <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg max-h-60 overflow-auto">
-                            {suggestions.map((prediction, index) => (
+                            {suggestions.map((suggestion, index) => (
                               <div
-                                key={prediction.place_id}
+                                key={suggestion.placeId}
                                 className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer border-b last:border-b-0"
-                                onMouseDown={() => handleSelectSuggestion(prediction)}
+                                onMouseDown={() => handleSelectSuggestion(suggestion)}
                                 data-testid={`suggestion-${index}`}
                               >
                                 <div className="text-sm font-medium">
-                                  {prediction.structured_formatting.main_text}
+                                  {suggestion.mainText}
                                 </div>
                                 <div className="text-xs text-gray-500 dark:text-gray-400">
-                                  {prediction.structured_formatting.secondary_text}
+                                  {suggestion.secondaryText}
                                 </div>
                               </div>
                             ))}
