@@ -162,11 +162,14 @@ export default function AnimatedBackground({ pattern = "hero", intensity = "norm
         <>
           <HouseShield className="ab-shape ab-hero-shield" />
           <WrenchShape className="ab-shape ab-hero-wrench1" />
+          <BellShape className="ab-shape ab-hero-bell" />
           {!isMobile && (
             <>
-              <BellShape className="ab-shape ab-hero-bell" />
               <CheckmarkShape className="ab-shape ab-hero-check1" />
               <GearShape className="ab-shape ab-hero-gear" />
+              <WrenchShape className="ab-shape ab-hero-wrench2" />
+              <CalendarShape className="ab-shape ab-hero-calendar" />
+              <CheckmarkShape className="ab-shape ab-hero-check2" />
             </>
           )}
         </>
@@ -181,6 +184,9 @@ export default function AnimatedBackground({ pattern = "hero", intensity = "norm
             <>
               <GearShape className="ab-shape ab-feat-gear" />
               <WrenchShape className="ab-shape ab-feat-wrench" />
+              <HouseShield className="ab-shape ab-feat-shield" />
+              <CheckmarkShape className="ab-shape ab-feat-check2" />
+              <WrenchShape className="ab-shape ab-feat-wrench2" />
             </>
           )}
         </>
