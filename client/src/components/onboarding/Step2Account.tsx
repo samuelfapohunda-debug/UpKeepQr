@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -35,10 +35,13 @@ export default function Step2Account({ data, onNext, onBack }: Step2Props) {
   const [city, setCity] = useState(data.city || "");
   const [state, setState] = useState(data.state || "");
   
-  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [suggestions, setSuggestions] = useState<google.maps.places.AutocompletePrediction[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   
+  const autocompleteServiceRef = useRef<google.maps.places.AutocompleteService | null>(null);
+  const placesServiceRef = useRef<google.maps.places.PlacesService | null>(null);
   const sessionTokenRef = useRef<google.maps.places.AutocompleteSessionToken | null>(null);
+  const placesContainerRef = useRef<HTMLDivElement | null>(null);
 
   const apiKey = import.meta.env.VITE_GOOGLE_PLACES_API_KEY || "";
   
@@ -47,107 +50,107 @@ export default function Step2Account({ data, onNext, onBack }: Step2Props) {
     libraries,
   });
 
-  // Initialize session token
   useEffect(() => {
     if (isLoaded && apiKey) {
       try {
+        autocompleteServiceRef.current = new google.maps.places.AutocompleteService();
         sessionTokenRef.current = new google.maps.places.AutocompleteSessionToken();
       } catch (error) {
-        console.error("Error initializing session token:", error);
+        console.error("Error initializing Google Places services:", error);
       }
     }
   }, [isLoaded, apiKey]);
 
-  // Fetch predictions when user types - Using NEW API
-  const handleAddressChange = async (value: string) => {
+  const getPlacesService = useCallback(() => {
+    if (!placesServiceRef.current && placesContainerRef.current) {
+      placesServiceRef.current = new google.maps.places.PlacesService(placesContainerRef.current);
+    }
+    return placesServiceRef.current;
+  }, []);
+
+  const handleAddressChange = useCallback((value: string) => {
     setStreetAddress(value);
     
-    if (value.length > 2 && isLoaded && sessionTokenRef.current) {
-      try {
-        // Use the NEW AutocompleteSuggestion API
-        const { AutocompleteSuggestion } = await google.maps.importLibrary("places") as any;
-        
-        const request = {
+    if (value.length > 2 && isLoaded && autocompleteServiceRef.current && sessionTokenRef.current) {
+      autocompleteServiceRef.current.getPlacePredictions(
+        {
           input: value,
-          includedPrimaryTypes: ['street_address'],
-          includedRegionCodes: ['US', 'CA'],
+          types: ['address'],
+          componentRestrictions: { country: ['us', 'ca'] },
           sessionToken: sessionTokenRef.current,
-        };
-
-        const { suggestions: results } = await AutocompleteSuggestion.fetchAutocompleteSuggestions(request);
-        
-        if (results && results.length > 0) {
-          setSuggestions(results);
-          setShowSuggestions(true);
-        } else {
-          setSuggestions([]);
-          setShowSuggestions(false);
+        },
+        (predictions, status) => {
+          if (status === google.maps.places.PlacesServiceStatus.OK && predictions && predictions.length > 0) {
+            setSuggestions(predictions);
+            setShowSuggestions(true);
+          } else {
+            setSuggestions([]);
+            setShowSuggestions(false);
+          }
         }
-      } catch (error) {
-        console.error("Error fetching suggestions:", error);
-        setSuggestions([]);
-        setShowSuggestions(false);
-      }
+      );
     } else {
       setSuggestions([]);
       setShowSuggestions(false);
     }
-  };
+  }, [isLoaded]);
 
-  // When user selects a suggestion
-  const handleSelectSuggestion = async (suggestion: any) => {
-    try {
-      const { Place } = await google.maps.importLibrary("places") as any;
-      
-      const place = new Place({
-        id: suggestion.placePrediction.placeId,
-      });
+  const handleSelectSuggestion = useCallback((prediction: google.maps.places.AutocompletePrediction) => {
+    const service = getPlacesService();
+    if (!service || !sessionTokenRef.current) return;
 
-      await place.fetchFields({
-        fields: ['addressComponents', 'formattedAddress'],
-      });
+    service.getDetails(
+      {
+        placeId: prediction.place_id,
+        fields: ['address_components', 'formatted_address'],
+        sessionToken: sessionTokenRef.current,
+      },
+      (place, status) => {
+        if (status === google.maps.places.PlacesServiceStatus.OK && place?.address_components) {
+          let streetNumber = "";
+          let route = "";
+          let locality = "";
+          let stateCode = "";
+          let postalCode = "";
 
-      // Parse address components
-      let streetNumber = "";
-      let route = "";
-      let locality = "";
-      let stateCode = "";
-      let postalCode = "";
+          place.address_components.forEach((component) => {
+            const types = component.types;
+            if (types.includes("street_number")) {
+              streetNumber = component.long_name;
+            }
+            if (types.includes("route")) {
+              route = component.long_name;
+            }
+            if (types.includes("locality")) {
+              locality = component.long_name;
+            }
+            if (types.includes("sublocality_level_1") && !locality) {
+              locality = component.long_name;
+            }
+            if (types.includes("administrative_area_level_1")) {
+              stateCode = component.short_name;
+            }
+            if (types.includes("postal_code")) {
+              postalCode = component.long_name;
+            }
+          });
 
-      place.addressComponents?.forEach((component: any) => {
-        const types = component.types;
-        if (types.includes("street_number")) {
-          streetNumber = component.longText;
-        }
-        if (types.includes("route")) {
-          route = component.longText;
-        }
-        if (types.includes("locality")) {
-          locality = component.longText;
-        }
-        if (types.includes("administrative_area_level_1")) {
-          stateCode = component.shortText;
-        }
-        if (types.includes("postal_code")) {
-          postalCode = component.longText;
-        }
-      });
+          const street = `${streetNumber} ${route}`.trim();
+          setStreetAddress(street || prediction.description);
+          setCity(locality);
+          setState(stateCode);
+          if (postalCode) setZipCode(postalCode);
 
-      const street = `${streetNumber} ${route}`.trim();
-      setStreetAddress(street || suggestion.placePrediction.text.text);
-      setCity(locality);
-      setState(stateCode);
-      if (postalCode) setZipCode(postalCode);
-      
-      // Create new session token for next search
-      sessionTokenRef.current = new google.maps.places.AutocompleteSessionToken();
-    } catch (error) {
-      console.error("Error getting place details:", error);
-    }
-    
+          sessionTokenRef.current = new google.maps.places.AutocompleteSessionToken();
+        } else {
+          setStreetAddress(prediction.description);
+        }
+      }
+    );
+
     setSuggestions([]);
     setShowSuggestions(false);
-  };
+  }, [getPlacesService]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -166,6 +169,7 @@ export default function Step2Account({ data, onNext, onBack }: Step2Props) {
 
   return (
     <div className="w-full max-w-2xl mx-auto bg-gray-50 dark:bg-gray-800 rounded-lg p-8 md:p-10">
+      <div ref={placesContainerRef} style={{ display: 'none' }} />
       <div className="mb-8">
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Create Your Account</h2>
         <p className="text-gray-600 dark:text-gray-400">
@@ -232,21 +236,19 @@ export default function Step2Account({ data, onNext, onBack }: Step2Props) {
           {/* Suggestions Dropdown */}
           {showSuggestions && suggestions.length > 0 && (
             <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg max-h-60 overflow-auto">
-              {suggestions.map((suggestion, index) => (
+              {suggestions.map((prediction, index) => (
                 <div
-                  key={index}
+                  key={prediction.place_id}
                   className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer border-b last:border-b-0"
-                  onMouseDown={() => handleSelectSuggestion(suggestion)}
+                  onMouseDown={() => handleSelectSuggestion(prediction)}
                   data-testid={`suggestion-${index}`}
                 >
                   <div className="text-sm font-medium">
-                    {suggestion.placePrediction.text.text}
+                    {prediction.structured_formatting.main_text}
                   </div>
-                  {suggestion.placePrediction.structuredFormat?.secondaryText && (
-                    <div className="text-xs text-gray-500 dark:text-gray-400">
-                      {suggestion.placePrediction.structuredFormat.secondaryText.text}
-                    </div>
-                  )}
+                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                    {prediction.structured_formatting.secondary_text}
+                  </div>
                 </div>
               ))}
               <div className="px-4 py-2 text-xs text-gray-400 border-t bg-gray-50 dark:bg-gray-900">

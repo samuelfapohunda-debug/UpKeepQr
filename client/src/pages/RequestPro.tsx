@@ -41,11 +41,13 @@ export default function RequestPro() {
   const [trackingCode, setTrackingCode] = useState<string>("");
   const { toast } = useToast();
   
-  // Google Places autocomplete - SEPARATE ref from Setup form
-  const requestProAddressRef = useRef<HTMLInputElement>(null);
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const sessionTokenRef = useRef<google.maps.places.AutocompleteSessionToken | null>(null);
+  
+  const autocompleteServiceRef = useRef<any>(null);
+  const placesServiceRef = useRef<any>(null);
+  const sessionTokenRef = useRef<any>(null);
+  const placesContainerRef = useRef<HTMLDivElement | null>(null);
   
   const apiKey = import.meta.env.VITE_GOOGLE_PLACES_API_KEY || "";
   
@@ -54,16 +56,23 @@ export default function RequestPro() {
     libraries,
   });
 
-  // Initialize session token for Google Places
   useEffect(() => {
     if (isLoaded && apiKey) {
       try {
+        autocompleteServiceRef.current = new google.maps.places.AutocompleteService();
         sessionTokenRef.current = new google.maps.places.AutocompleteSessionToken();
       } catch (error) {
-        console.error("Error initializing session token:", error);
+        console.error("Error initializing Google Places services:", error);
       }
     }
   }, [isLoaded, apiKey]);
+
+  const getPlacesService = () => {
+    if (!placesServiceRef.current && placesContainerRef.current) {
+      placesServiceRef.current = new google.maps.places.PlacesService(placesContainerRef.current);
+    }
+    return placesServiceRef.current;
+  };
 
   const form = useForm<RequestProForm>({
     resolver: zodResolver(requestProSchema),
@@ -132,94 +141,86 @@ export default function RequestPro() {
     setPhotos(prev => prev.filter((_, i) => i !== index));
   };
 
-  // Fetch Google Places predictions when user types - Using NEW API
-  const handleAddressChange = async (value: string) => {
+  const handleAddressChange = (value: string) => {
     form.setValue('addressLine1', value);
     
-    if (value.length > 2 && isLoaded && sessionTokenRef.current) {
-      try {
-        const { AutocompleteSuggestion } = await google.maps.importLibrary("places") as any;
-        
-        const request = {
+    if (value.length > 2 && isLoaded && autocompleteServiceRef.current && sessionTokenRef.current) {
+      autocompleteServiceRef.current.getPlacePredictions(
+        {
           input: value,
-          includedPrimaryTypes: ['street_address'],
-          includedRegionCodes: ['US', 'CA'],
+          types: ['address'],
+          componentRestrictions: { country: ['us', 'ca'] },
           sessionToken: sessionTokenRef.current,
-        };
-
-        const { suggestions: results } = await AutocompleteSuggestion.fetchAutocompleteSuggestions(request);
-        
-        if (results && results.length > 0) {
-          setSuggestions(results);
-          setShowSuggestions(true);
-        } else {
-          setSuggestions([]);
-          setShowSuggestions(false);
+        },
+        (predictions: any, status: any) => {
+          if (status === google.maps.places.PlacesServiceStatus.OK && predictions && predictions.length > 0) {
+            setSuggestions(predictions);
+            setShowSuggestions(true);
+          } else {
+            setSuggestions([]);
+            setShowSuggestions(false);
+          }
         }
-      } catch (error) {
-        console.error("Error fetching suggestions:", error);
-        setSuggestions([]);
-        setShowSuggestions(false);
-      }
+      );
     } else {
       setSuggestions([]);
       setShowSuggestions(false);
     }
   };
 
-  // When user selects a suggestion from dropdown
-  const handleSelectSuggestion = async (suggestion: any) => {
-    try {
-      const { Place } = await google.maps.importLibrary("places") as any;
-      
-      const place = new Place({
-        id: suggestion.placePrediction.placeId,
-      });
+  const handleSelectSuggestion = (prediction: any) => {
+    const service = getPlacesService();
+    if (!service || !sessionTokenRef.current) return;
 
-      await place.fetchFields({
-        fields: ['addressComponents', 'formattedAddress'],
-      });
+    service.getDetails(
+      {
+        placeId: prediction.place_id,
+        fields: ['address_components', 'formatted_address'],
+        sessionToken: sessionTokenRef.current,
+      },
+      (place: any, status: any) => {
+        if (status === google.maps.places.PlacesServiceStatus.OK && place?.address_components) {
+          let streetNumber = "";
+          let route = "";
+          let locality = "";
+          let stateCode = "";
+          let postalCode = "";
 
-      // Parse address components
-      let streetNumber = "";
-      let route = "";
-      let locality = "";
-      let stateCode = "";
-      let postalCode = "";
+          place.address_components.forEach((component: any) => {
+            const types = component.types;
+            if (types.includes("street_number")) {
+              streetNumber = component.long_name;
+            }
+            if (types.includes("route")) {
+              route = component.long_name;
+            }
+            if (types.includes("locality")) {
+              locality = component.long_name;
+            }
+            if (types.includes("sublocality_level_1") && !locality) {
+              locality = component.long_name;
+            }
+            if (types.includes("administrative_area_level_1")) {
+              stateCode = component.short_name;
+            }
+            if (types.includes("postal_code")) {
+              postalCode = component.long_name;
+            }
+          });
 
-      place.addressComponents?.forEach((component: any) => {
-        const types = component.types;
-        if (types.includes("street_number")) {
-          streetNumber = component.longText;
-        }
-        if (types.includes("route")) {
-          route = component.longText;
-        }
-        if (types.includes("locality")) {
-          locality = component.longText;
-        }
-        if (types.includes("administrative_area_level_1")) {
-          stateCode = component.shortText;
-        }
-        if (types.includes("postal_code")) {
-          postalCode = component.longText;
-        }
-      });
+          const street = `${streetNumber} ${route}`.trim();
+          form.setValue('addressLine1', street || prediction.description);
+          form.setValue('city', locality);
+          form.setValue('state', stateCode);
+          if (postalCode) form.setValue('zip', postalCode);
 
-      const street = `${streetNumber} ${route}`.trim();
-      
-      // Update form fields with parsed address
-      form.setValue('addressLine1', street || suggestion.placePrediction.text.text);
-      form.setValue('city', locality);
-      form.setValue('state', stateCode);
-      if (postalCode) form.setValue('zip', postalCode);
-      
-      // Create new session token for next search
-      sessionTokenRef.current = new google.maps.places.AutocompleteSessionToken();
-    } catch (error) {
-      console.error("Error getting place details:", error);
-    }
-    
+          sessionTokenRef.current = new google.maps.places.AutocompleteSessionToken();
+        } else {
+          form.setValue('addressLine1', prediction.description);
+        }
+      }
+    );
+
     setSuggestions([]);
     setShowSuggestions(false);
   };
@@ -282,6 +283,7 @@ export default function RequestPro() {
 
   return (
     <div className="min-h-screen bg-background pt-16 sm:pt-20">
+      <div ref={placesContainerRef} style={{ display: 'none' }} />
       <div className="max-w-4xl mx-auto px-4 py-8">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-4">Request a Professional Service</h1>
@@ -359,7 +361,6 @@ export default function RequestPro() {
                         <FormControl>
                           <Input
                             {...field}
-                            ref={requestProAddressRef}
                             onChange={(e) => handleAddressChange(e.target.value)}
                             onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
                             onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
@@ -370,21 +371,19 @@ export default function RequestPro() {
                         {/* Google Places Suggestions Dropdown */}
                         {showSuggestions && suggestions.length > 0 && (
                           <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg max-h-60 overflow-auto">
-                            {suggestions.map((suggestion, index) => (
+                            {suggestions.map((prediction, index) => (
                               <div
-                                key={index}
+                                key={prediction.place_id}
                                 className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer border-b last:border-b-0"
-                                onMouseDown={() => handleSelectSuggestion(suggestion)}
+                                onMouseDown={() => handleSelectSuggestion(prediction)}
                                 data-testid={`suggestion-${index}`}
                               >
                                 <div className="text-sm font-medium">
-                                  {suggestion.placePrediction.text.text}
+                                  {prediction.structured_formatting.main_text}
                                 </div>
-                                {suggestion.placePrediction.structuredFormat?.secondaryText && (
-                                  <div className="text-xs text-gray-500 dark:text-gray-400">
-                                    {suggestion.placePrediction.structuredFormat.secondaryText.text}
-                                  </div>
-                                )}
+                                <div className="text-xs text-gray-500 dark:text-gray-400">
+                                  {prediction.structured_formatting.secondary_text}
+                                </div>
                               </div>
                             ))}
                             <div className="px-4 py-2 text-xs text-gray-400 border-t bg-gray-50 dark:bg-gray-900">
@@ -471,12 +470,10 @@ export default function RequestPro() {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Service Type</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                              <SelectTrigger data-testid="select-trade">
-                                <SelectValue placeholder="Select service type" />
-                              </SelectTrigger>
-                            </FormControl>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <SelectTrigger data-testid="select-trade">
+                              <SelectValue placeholder="Select service type" />
+                            </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="roofing">Roofing</SelectItem>
                               <SelectItem value="plumbing">Plumbing</SelectItem>
@@ -496,12 +493,10 @@ export default function RequestPro() {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Urgency</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                              <SelectTrigger data-testid="select-urgency">
-                                <SelectValue placeholder="When do you need this done?" />
-                              </SelectTrigger>
-                            </FormControl>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <SelectTrigger data-testid="select-urgency">
+                              <SelectValue placeholder="When do you need this done?" />
+                            </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="emergency">Emergency (ASAP)</SelectItem>
                               <SelectItem value="24h">Within 24 hours</SelectItem>
