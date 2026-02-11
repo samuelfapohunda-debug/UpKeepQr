@@ -6,10 +6,12 @@ import { eq, and, lt } from 'drizzle-orm';
 import { sendReminderEmail } from './mail.js';
 import { createMaintenanceReminderEvent } from './ics.js';
 import { processWarrantyExpirationNotifications } from './warrantyNotifications.js';
+import { processGracePeriodExpirations, processTrialReminders } from '../routes/subscription.js';
 
 let isReminderJobRunning = false;
 let isOverdueJobRunning = false;
 let isWarrantyJobRunning = false;
+let isSubscriptionJobRunning = false;
 
 export function startCronJobs(): void {
   cron.schedule('0 8 * * *', async () => {
@@ -28,6 +30,26 @@ export function startCronJobs(): void {
       console.error('Warranty notification job failed:', error);
     } finally {
       isWarrantyJobRunning = false;
+    }
+  }, {
+    timezone: 'America/New_York'
+  });
+
+  cron.schedule('0 7 * * *', async () => {
+    if (isSubscriptionJobRunning) {
+      console.log('Subscription job already running, skipping');
+      return;
+    }
+    isSubscriptionJobRunning = true;
+    try {
+      const expiredCount = await processGracePeriodExpirations();
+      console.log(`Grace period check: ${expiredCount} accounts suspended`);
+      const reminderCount = await processTrialReminders();
+      console.log(`Trial reminders: ${reminderCount} pre-charge reminders sent`);
+    } catch (error) {
+      console.error('Subscription cron job failed:', error);
+    } finally {
+      isSubscriptionJobRunning = false;
     }
   }, {
     timezone: 'America/New_York'

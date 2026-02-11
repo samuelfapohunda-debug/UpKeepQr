@@ -684,6 +684,54 @@ export const householdsTable = pgTable("households", {
   createdByUserId: varchar("created_by_user_id", { length: 255 }), // UUID of admin who created (if admin-created)
   agentId: varchar("agent_id", { length: 255 }), // Agent who owns this household (nullable for direct orders)
   
+  // Subscription & Billing
+  subscriptionTier: varchar("subscription_tier", { length: 20 }).default('basic'),
+  billingInterval: varchar("billing_interval", { length: 20 }), // 'monthly', 'annual'
+  subscriptionStatus: varchar("subscription_status", { length: 30 }).default('incomplete'),
+  // Values: 'incomplete', 'incomplete_expired', 'trialing', 'active', 'past_due', 'canceled', 'unpaid', 'paused'
+
+  // Trial Management
+  trialStartsAt: timestamp("trial_starts_at"),
+  trialEndsAt: timestamp("trial_ends_at"),
+  trialUsed: boolean("trial_used").default(false),
+  firstPaymentAttemptAt: timestamp("first_payment_attempt_at"),
+
+  // Grace Period
+  gracePeriodEndsAt: timestamp("grace_period_ends_at"),
+
+  // Email Verification
+  emailVerified: boolean("email_verified").default(false),
+  emailVerificationToken: varchar("email_verification_token", { length: 255 }),
+  emailVerifiedAt: timestamp("email_verified_at"),
+
+  // Stripe Integration
+  stripeCustomerId: varchar("stripe_customer_id", { length: 255 }),
+  stripeSubscriptionId: varchar("stripe_subscription_id", { length: 255 }),
+  stripePaymentMethodId: varchar("stripe_payment_method_id", { length: 255 }),
+
+  // Canonical email for trial abuse detection
+  canonicalEmail: varchar("canonical_email", { length: 255 }),
+
+  // Compliance & Audit
+  termsAcceptedAt: timestamp("terms_accepted_at"),
+  privacyAcceptedAt: timestamp("privacy_accepted_at"),
+  signupIpAddress: varchar("signup_ip_address", { length: 45 }),
+  signupUserAgent: text("signup_user_agent"),
+
+  // Lifecycle Tracking
+  onboardingCompleted: boolean("onboarding_completed").default(false),
+  paymentAddedAt: timestamp("payment_added_at"),
+  canceledAt: timestamp("canceled_at"),
+  cancellationReason: text("cancellation_reason"),
+  cancellationType: varchar("cancellation_type", { length: 30 }),
+  cancellationSource: varchar("cancellation_source", { length: 50 }),
+  cancelAtPeriodEnd: boolean("cancel_at_period_end").default(false),
+
+  // Activation Metrics
+  firstQrScanAt: timestamp("first_qr_scan_at"),
+  firstMaintenanceTaskAt: timestamp("first_maintenance_task_at"),
+  smsEnabledAt: timestamp("sms_enabled_at"),
+  
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => ({
@@ -694,6 +742,13 @@ export const householdsTable = pgTable("households", {
   // Composite index for location filtering
   locationIdx: index("idx_households_location").on(table.state, table.zipcode),
   agentIdIdx: index("idx_households_agent_id").on(table.agentId),
+  // Subscription indexes
+  subscriptionStatusIdx: index("idx_households_subscription_status").on(table.subscriptionStatus),
+  trialEndsAtIdx: index("idx_households_trial_ends_at").on(table.trialEndsAt),
+  stripeCustomerIdIdx: index("idx_households_stripe_customer_id").on(table.stripeCustomerId),
+  trialUsedIdx: index("idx_households_trial_used").on(table.trialUsed),
+  gracePeriodIdx: index("idx_households_grace_period").on(table.gracePeriodEndsAt),
+  canonicalEmailIdx: index("idx_households_canonical_email").on(table.canonicalEmail),
 }));
 
 // Setup Form Notes table for admin comments
@@ -1403,6 +1458,118 @@ export const warrantyNotificationsTable = pgTable("warranty_notifications", {
 
 export type WarrantyNotification = typeof warrantyNotificationsTable.$inferSelect;
 export type InsertWarrantyNotification = typeof warrantyNotificationsTable.$inferInsert;
+
+// =====================================================
+// SUBSCRIPTION SYSTEM TABLES
+// =====================================================
+
+// Subscription Events Table (Audit Log for Stripe webhooks)
+export const subscriptionEventsTable = pgTable("subscription_events", {
+  id: serial("id").primaryKey(),
+  householdId: varchar("household_id", { length: 255 }).references(() => householdsTable.id, { onDelete: 'cascade' }),
+  stripeEventType: varchar("stripe_event_type", { length: 100 }).notNull(),
+  stripeEventId: varchar("stripe_event_id", { length: 255 }).unique().notNull(),
+  subscriptionStatusBefore: varchar("subscription_status_before", { length: 30 }),
+  subscriptionStatusAfter: varchar("subscription_status_after", { length: 30 }),
+  metadata: jsonb("metadata"),
+  processingError: text("processing_error"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  householdIdx: index("idx_sub_events_household_id").on(table.householdId),
+  eventTypeIdx: index("idx_sub_events_type").on(table.stripeEventType),
+  createdAtIdx: index("idx_sub_events_created_at").on(table.createdAt),
+}));
+
+export type SubscriptionEvent = typeof subscriptionEventsTable.$inferSelect;
+export type InsertSubscriptionEvent = typeof subscriptionEventsTable.$inferInsert;
+
+// Signup Attempts Table (Trial Abuse Prevention)
+export const signupAttemptsTable = pgTable("signup_attempts", {
+  id: serial("id").primaryKey(),
+  email: varchar("email", { length: 255 }).notNull(),
+  canonicalEmail: varchar("canonical_email", { length: 255 }),
+  ipAddress: varchar("ip_address", { length: 45 }),
+  userAgent: text("user_agent"),
+  deviceFingerprint: varchar("device_fingerprint", { length: 255 }),
+  success: boolean("success").default(false),
+  errorMessage: text("error_message"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  emailIdx: index("idx_signup_attempts_email").on(table.email),
+  canonicalIdx: index("idx_signup_attempts_canonical").on(table.canonicalEmail),
+  ipIdx: index("idx_signup_attempts_ip").on(table.ipAddress),
+  fingerprintIdx: index("idx_signup_attempts_fingerprint").on(table.deviceFingerprint),
+}));
+
+export type SignupAttempt = typeof signupAttemptsTable.$inferSelect;
+export type InsertSignupAttempt = typeof signupAttemptsTable.$inferInsert;
+
+// Email Events Table (Engagement Tracking)
+export const emailEventsTable = pgTable("email_events", {
+  id: serial("id").primaryKey(),
+  householdId: varchar("household_id", { length: 255 }).references(() => householdsTable.id, { onDelete: 'cascade' }),
+  emailType: varchar("email_type", { length: 50 }).notNull(),
+  // Values: verification, trial_welcome, trial_day20, trial_day27, pre_charge_reminder,
+  //         subscription_active, payment_failed, grace_period, cancellation_confirmed
+  sentAt: timestamp("sent_at").defaultNow().notNull(),
+  openedAt: timestamp("opened_at"),
+  clickedAt: timestamp("clicked_at"),
+  bounced: boolean("bounced").default(false),
+  errorMessage: text("error_message"),
+}, (table) => ({
+  householdIdx: index("idx_email_events_household_id").on(table.householdId),
+  emailTypeIdx: index("idx_email_events_type").on(table.emailType),
+}));
+
+export type EmailEvent = typeof emailEventsTable.$inferSelect;
+export type InsertEmailEvent = typeof emailEventsTable.$inferInsert;
+
+// Feature Permissions Table (Feature Gating)
+export const featurePermissionsTable = pgTable("feature_permissions", {
+  id: serial("id").primaryKey(),
+  subscriptionTier: varchar("subscription_tier", { length: 20 }).notNull(),
+  featureKey: varchar("feature_key", { length: 50 }).notNull(),
+  enabled: boolean("enabled").default(true),
+  limitValue: integer("limit_value"),
+}, (table) => ({
+  uniqueTierFeature: uniqueIndex("idx_feature_perm_tier_key").on(table.subscriptionTier, table.featureKey),
+}));
+
+export type FeaturePermission = typeof featurePermissionsTable.$inferSelect;
+export type InsertFeaturePermission = typeof featurePermissionsTable.$inferInsert;
+
+// Cancellation Feedback Table (Analytics)
+export const cancellationFeedbackTable = pgTable("cancellation_feedback", {
+  id: serial("id").primaryKey(),
+  householdId: varchar("household_id", { length: 255 }).references(() => householdsTable.id, { onDelete: 'cascade' }),
+  reason: varchar("reason", { length: 50 }),
+  // Reasons: too_expensive, not_using, missing_features, found_alternative, other
+  feedback: text("feedback"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  reasonIdx: index("idx_cancellation_feedback_reason").on(table.reason),
+  householdIdx: index("idx_cancellation_feedback_household").on(table.householdId),
+}));
+
+export type CancellationFeedback = typeof cancellationFeedbackTable.$inferSelect;
+export type InsertCancellationFeedback = typeof cancellationFeedbackTable.$inferInsert;
+
+// Subscription-related Zod schemas
+export const trialSignupSchema = z.object({
+  email: z.string().email("Valid email is required"),
+  name: z.string().min(1, "Name is required"),
+  billingInterval: z.enum(['monthly', 'annual']),
+  termsAccepted: z.boolean().refine(val => val === true, "You must accept the Terms of Service"),
+  privacyAccepted: z.boolean().refine(val => val === true, "You must accept the Privacy Policy"),
+  deviceFingerprint: z.string().optional(),
+});
+export type TrialSignupRequest = z.infer<typeof trialSignupSchema>;
+
+export const cancelSubscriptionSchema = z.object({
+  reason: z.enum(['too_expensive', 'not_using', 'missing_features', 'found_alternative', 'other']).optional(),
+  feedback: z.string().max(2000).optional(),
+});
+export type CancelSubscriptionRequest = z.infer<typeof cancelSubscriptionSchema>;
 
 // Lead Capture
 export * from "./lead-schema";

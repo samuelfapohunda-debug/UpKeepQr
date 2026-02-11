@@ -5,6 +5,7 @@ import { storage } from "./storage";
 import { authenticateAdmin, authenticateAgent } from "./middleware/auth";
 import { sendUserConfirmationEmail } from "./lib/email";
 import { insertMagnetBatchSchema, insertBatchSchema, setupActivateSchema, setupPreviewSchema, taskCompleteSchema, agentLoginSchema, checkoutSchema, leadsSchema, smsOptInSchema, smsVerifySchema, createProRequestSchema, updateProRequestStatusSchema, adminProRequestFiltersSchema, createNoteSchema, insertOrderMagnetOrderSchema, insertOrderMagnetItemSchema, insertOrderMagnetBatchSchema, insertOrderMagnetShipmentSchema, insertOrderMagnetAuditEventSchema } from "../shared/schema";
+import { registerSubscriptionRoutes, registerSubscriptionWebhookHandler } from "./routes/subscription";
 import { nanoid } from "nanoid";
 import { v4 as uuidv4 } from "uuid";
 import QRCode from "qrcode";
@@ -2332,6 +2333,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Let the React app handle /app routes
     next();
   });
+
+  registerSubscriptionWebhookHandler(app);
+  registerSubscriptionRoutes(app);
 
   const httpServer = createServer(app);
 
