@@ -34,6 +34,8 @@ import TermsOfService from "@/pages/legal/TermsOfService";
 import PrivacyPolicy from "@/pages/legal/PrivacyPolicy";
 import CookiePolicy from "@/pages/legal/CookiePolicy";
 import HomeownerDashboard from "@/features/homeowner/Dashboard";
+import SubscriptionSuccess from "@/pages/SubscriptionSuccess";
+import BillingSettings from "@/pages/BillingSettings";
 
 function Router() {
   return (
@@ -60,6 +62,8 @@ function Router() {
         <Route path="/setup/:token" component={SetupForm} />
         <Route path="/task/:token/:taskId" component={TaskDetail} />
         <Route path="/request-pro" component={RequestPro} />
+        <Route path="/subscription/success" component={SubscriptionSuccess} />
+        <Route path="/settings/billing" component={BillingSettings} />
         
         {/* Legal Pages */}
         <Route path="/terms-of-service" component={TermsOfService} />

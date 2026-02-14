@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import HouseholdDetails from "@/components/HouseholdDetails";
 import ApplianceManager from "@/components/ApplianceManager";
+import SubscriptionBanner from "@/components/SubscriptionBanner";
 import type { Task, Household, TasksResponse, TaskStats, DashboardTab } from "@/types/dashboard";
 import { useTabState } from "@/hooks/useTabState";
 
@@ -382,6 +383,7 @@ export default function CustomerDashboard() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+        <SubscriptionBanner />
         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as DashboardTab)} className="w-full">
           <TabsList className="grid grid-cols-3 mb-6">
             <TabsTrigger value="tasks" data-testid="tab-tasks">

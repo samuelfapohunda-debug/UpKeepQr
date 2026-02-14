@@ -6,6 +6,7 @@ import { eq, and, lte, sql } from "drizzle-orm";
 import { checkTrialAbuse, logSignupAttempt } from "../lib/trialAbuse";
 import { canonicalizeEmail } from "../lib/emailCanonicalization";
 import { checkFeatureAccess } from "../lib/featureGating";
+import { requireSessionAuth, type SessionAuthRequest } from "../middleware/sessionAuth";
 import {
   sendTrialWelcomeEmail,
   sendPreChargeReminderEmail,
@@ -169,12 +170,14 @@ export function registerSubscriptionRoutes(app: Express) {
     }
   });
 
-  app.post("/api/subscription/cancel", express.json(), async (req: Request, res: Response) => {
+  app.post("/api/subscription/cancel", requireSessionAuth, express.json(), async (req: Request, res: Response) => {
     try {
-      const { householdId, reason, feedback } = req.body;
+      const sessionReq = req as SessionAuthRequest;
+      const householdId = sessionReq.sessionHouseholdId;
+      const { reason, feedback } = req.body;
 
       if (!householdId) {
-        return res.status(400).json({ error: "Missing household ID" });
+        return res.status(401).json({ error: "Authentication required" });
       }
 
       const households = await db
@@ -227,9 +230,14 @@ export function registerSubscriptionRoutes(app: Express) {
     }
   });
 
-  app.get("/api/subscription/status/:householdId", async (req: Request, res: Response) => {
+  app.get("/api/subscription/status", requireSessionAuth, async (req: Request, res: Response) => {
     try {
-      const { householdId } = req.params;
+      const sessionReq = req as SessionAuthRequest;
+      const householdId = sessionReq.sessionHouseholdId;
+
+      if (!householdId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
 
       const households = await db
         .select({
@@ -278,9 +286,15 @@ export function registerSubscriptionRoutes(app: Express) {
     }
   });
 
-  app.get("/api/subscription/feature/:householdId/:featureKey", async (req: Request, res: Response) => {
+  app.get("/api/subscription/feature/:featureKey", requireSessionAuth, async (req: Request, res: Response) => {
     try {
-      const { householdId, featureKey } = req.params;
+      const sessionReq = req as SessionAuthRequest;
+      const householdId = sessionReq.sessionHouseholdId;
+      const { featureKey } = req.params;
+
+      if (!householdId) {
+        return res.status(401).json({ error: "Authentication required" });
+      }
       const result = await checkFeatureAccess(householdId, featureKey);
       res.json(result);
     } catch (error: any) {
@@ -332,12 +346,13 @@ export function registerSubscriptionRoutes(app: Express) {
     }
   });
 
-  app.post("/api/subscription/billing-portal", express.json(), async (req: Request, res: Response) => {
+  app.post("/api/subscription/billing-portal", requireSessionAuth, express.json(), async (req: Request, res: Response) => {
     try {
-      const { householdId } = req.body;
+      const sessionReq = req as SessionAuthRequest;
+      const householdId = sessionReq.sessionHouseholdId;
 
       if (!householdId) {
-        return res.status(400).json({ error: "Missing household ID" });
+        return res.status(401).json({ error: "Authentication required" });
       }
 
       const households = await db
