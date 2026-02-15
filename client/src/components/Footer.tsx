@@ -99,7 +99,7 @@ export default function Footer() {
                 <Facebook className="h-6 w-6" />
               </a>
               <a 
-                href="https://linkedin.com/company/maintcue" 
+                href="https://www.linkedin.com/in/maintcue-llc-6621513b1/" 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="hover:text-white transition-colors"
