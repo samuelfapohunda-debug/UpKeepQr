@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { Facebook, Instagram, Linkedin, Twitter } from "lucide-react";
+import { Facebook, Instagram, Linkedin } from "lucide-react";
 const maintcueLogo = '/images/maintcue-logo.svg';
 
 export default function Footer() {
@@ -78,16 +78,6 @@ export default function Footer() {
           <div>
             <h3 className="text-white font-semibold text-lg mb-4">Follow Us</h3>
             <div className="flex space-x-4">
-              <a 
-                href="https://twitter.com/maintcue" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="hover:text-white transition-colors"
-                aria-label="Twitter"
-                data-testid="link-social-twitter"
-              >
-                <Twitter className="h-6 w-6" />
-              </a>
               <a 
                 href="https://www.instagram.com/maintcue/" 
                 target="_blank" 
