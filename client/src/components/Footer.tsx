@@ -89,7 +89,7 @@ export default function Footer() {
                 <Twitter className="h-6 w-6" />
               </a>
               <a 
-                href="https://instagram.com/maintcue" 
+                href="https://www.instagram.com/maintcue/" 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="hover:text-white transition-colors"
