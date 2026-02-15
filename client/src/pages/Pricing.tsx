@@ -139,6 +139,18 @@ export default function Pricing() {
   const { toast } = useToast();
 
   const handleGetStarted = async (planId: string, interval: 'monthly' | 'annual') => {
+    const email = prompt("Enter your email to continue:");
+    const name = prompt("Enter your name:");
+    
+    if (!email || !name) {
+      toast({
+        title: "Information Required",
+        description: "Please provide your email and name to start your free trial",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setLoadingPlan(planId);
     
     try {
@@ -147,8 +159,8 @@ export default function Pricing() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           billingInterval: interval,
-          email: '',
-          name: '',
+          email: email,
+          name: name,
         }),
       });
       
