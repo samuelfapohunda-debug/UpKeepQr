@@ -3,6 +3,86 @@ import { Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 
+function CheckoutModal({ 
+  isOpen, 
+  onClose, 
+  onSubmit,
+  isLoading
+}: { 
+  isOpen: boolean; 
+  onClose: () => void; 
+  onSubmit: (email: string, name: string) => void;
+  isLoading: boolean;
+}) {
+  const [email, setEmail] = useState('');
+  const [name, setName] = useState('');
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white dark:bg-slate-800 rounded-xl p-6 w-full max-w-md shadow-xl">
+        <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
+          Start Your Free Trial
+        </h2>
+        <p className="text-sm text-slate-600 dark:text-slate-400 mb-6">
+          30 days free. No charge until trial ends. Cancel anytime.
+        </p>
+
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+              Full Name
+            </label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="John Smith"
+              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+              Email Address
+            </label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="john@example.com"
+              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            />
+          </div>
+        </div>
+
+        <div className="flex gap-3 mt-6">
+          <Button
+            onClick={onClose}
+            variant="outline"
+            className="flex-1"
+            disabled={isLoading}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={() => onSubmit(email, name)}
+            className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
+            disabled={isLoading || !email || !name}
+          >
+            {isLoading ? 'Loading...' : 'Continue to Payment'}
+          </Button>
+        </div>
+
+        <p className="text-xs text-slate-500 dark:text-slate-400 text-center mt-4">
+          🔒 Secure checkout powered by Stripe
+        </p>
+      </div>
+    </div>
+  );
+}
+
 function BillingToggle({ interval, onChange }: { interval: 'monthly' | 'annual'; onChange: (v: 'monthly' | 'annual') => void }) {
   return (
     <div className="flex items-center justify-center gap-3 mb-10">
@@ -14,7 +94,6 @@ function BillingToggle({ interval, onChange }: { interval: 'monthly' | 'annual';
         className={`relative w-14 h-7 rounded-full transition-colors duration-200 ${
           interval === 'annual' ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-600'
         }`}
-        data-testid="toggle-billing-interval"
         aria-label="Toggle billing interval"
       >
         <span className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full shadow transition-transform duration-200 ${
@@ -49,33 +128,17 @@ interface PricingCardProps {
 }
 
 function PricingCard({
-  title,
-  monthlyPrice,
-  annualPrice,
-  billingInterval,
-  badge,
-  features,
-  ctaLabel,
-  planId,
-  highlighted = false,
-  onGetStarted,
-  isLoading = false,
-  trialDays = 30,
+  title, monthlyPrice, annualPrice, billingInterval, badge, features,
+  ctaLabel, planId, highlighted = false, onGetStarted, isLoading = false, trialDays = 30,
 }: PricingCardProps) {
   const price = billingInterval === 'monthly' ? monthlyPrice : annualPrice;
-  const billedText = billingInterval === 'monthly'
-    ? 'Billed monthly'
-    : `Billed annually at $${(parseFloat(annualPrice.replace('$', '')) * 12).toFixed(0)}`;
+  const annualTotal = (parseFloat(annualPrice.replace('$', '')) * 12).toFixed(0);
+  const billedText = billingInterval === 'monthly' ? 'Billed monthly' : `Billed annually at $${annualTotal}`;
 
   return (
-    <div className={`
-      relative bg-white dark:bg-slate-800 rounded-xl p-6 md:p-8 
-      border-2 transition-all duration-300
-      ${highlighted 
-        ? 'border-emerald-500 shadow-lg' 
-        : 'border-slate-200 dark:border-slate-700 shadow-sm'
-      }
-    `}>
+    <div className={`relative bg-white dark:bg-slate-800 rounded-xl p-6 md:p-8 border-2 transition-all duration-300 ${
+      highlighted ? 'border-emerald-500 shadow-lg' : 'border-slate-200 dark:border-slate-700 shadow-sm'
+    }`}>
       {badge && (
         <div className="absolute -top-4 left-1/2 -translate-x-1/2">
           <span className="bg-emerald-500 text-white px-4 py-1 rounded-full text-sm font-semibold whitespace-nowrap">
@@ -83,34 +146,20 @@ function PricingCard({
           </span>
         </div>
       )}
-      
-      <h3 className="text-xl md:text-2xl font-bold text-slate-900 dark:text-white mb-2" data-testid={`text-plan-title-${planId}`}>
-        {title}
-      </h3>
-      
+      <h3 className="text-xl md:text-2xl font-bold text-slate-900 dark:text-white mb-2">{title}</h3>
       <div className="mb-4">
         <div className="flex items-baseline gap-2">
-          <span className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white" data-testid={`text-plan-price-${planId}`}>
-            {price}
-          </span>
+          <span className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white">{price}</span>
           <span className="text-slate-600 dark:text-slate-400">/ month</span>
         </div>
-        <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-          {billedText}
-        </p>
+        <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{billedText}</p>
       </div>
-
       {trialDays > 0 && (
         <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg px-4 py-3 mb-6">
-          <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300" data-testid={`text-trial-info-${planId}`}>
-            {trialDays}-day free trial included
-          </p>
-          <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-0.5">
-            No charge until trial ends. Cancel anytime.
-          </p>
+          <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300">{trialDays}-day free trial included</p>
+          <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-0.5">No charge until trial ends. Cancel anytime.</p>
         </div>
       )}
-      
       <ul className="space-y-3 mb-8">
         {features.map((feature, index) => (
           <li key={index} className="flex items-start gap-3">
@@ -119,13 +168,11 @@ function PricingCard({
           </li>
         ))}
       </ul>
-      
       <Button
         onClick={() => onGetStarted(planId, billingInterval)}
         disabled={isLoading}
         variant={highlighted ? "default" : "outline"}
         className={`w-full ${highlighted ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : ''}`}
-        data-testid={`button-pricing-${planId}`}
       >
         {isLoading ? 'Loading...' : ctaLabel}
       </Button>
@@ -136,40 +183,35 @@ function PricingCard({
 export default function Pricing() {
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const [billingInterval, setBillingInterval] = useState<'monthly' | 'annual'>('annual');
+  const [showModal, setShowModal] = useState(false);
+  const [pendingPlan, setPendingPlan] = useState<{planId: string, interval: 'monthly' | 'annual'} | null>(null);
   const { toast } = useToast();
 
-  const handleGetStarted = async (planId: string, interval: 'monthly' | 'annual') => {
-    const email = prompt("Enter your email to continue:");
-    const name = prompt("Enter your name:");
-    
-    if (!email || !name) {
-      toast({
-        title: "Information Required",
-        description: "Please provide your email and name to start your free trial",
-        variant: "destructive"
-      });
-      return;
-    }
+  const handleGetStarted = (planId: string, interval: 'monthly' | 'annual') => {
+    setPendingPlan({ planId, interval });
+    setShowModal(true);
+  };
 
+  const handleModalSubmit = async (email: string, name: string) => {
+    if (!pendingPlan) return;
+
+    const { planId, interval } = pendingPlan;
+    setShowModal(false);
     setLoadingPlan(planId);
-    
+
     try {
       const response = await fetch('/api/subscription/create-checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          billingInterval: interval,
-          email: email,
-          name: name,
-        }),
+        body: JSON.stringify({ billingInterval: interval, email, name }),
       });
-      
+
       const data = await response.json();
-      
+
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to start checkout');
+        throw new Error(data.error || 'Failed to create checkout session');
       }
-      
+
       if (data.url) {
         window.location.href = data.url;
       } else {
@@ -178,8 +220,8 @@ export default function Pricing() {
     } catch (error: any) {
       console.error('Checkout error:', error);
       toast({
-        title: "Checkout Unavailable",
-        description: "Subscription checkout is being set up. Please contact us to get started.",
+        title: "Checkout Error",
+        description: error.message || "Something went wrong. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -189,6 +231,13 @@ export default function Pricing() {
 
   return (
     <div className="flex flex-col min-h-screen bg-white dark:bg-slate-900">
+      <CheckoutModal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        onSubmit={handleModalSubmit}
+        isLoading={!!loadingPlan}
+      />
+
       <main className="flex-1 pt-16">
         <section className="w-full py-12 md:py-20">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -212,36 +261,20 @@ export default function Pricing() {
                 monthlyPrice="$9.99"
                 annualPrice="$6.99"
                 billingInterval={billingInterval}
-                features={[
-                  "1 Premium QR Magnet",
-                  "Smart maintenance task list",
-                  "Climate-based scheduling",
-                  "Email reminders",
-                  "Up to 3 SMS reminders/month",
-                  "Task completion history"
-                ]}
+                features={["1 Premium QR Magnet","Smart maintenance task list","Climate-based scheduling","Email reminders","Up to 3 SMS reminders/month","Task completion history"]}
                 ctaLabel="Start Free Trial"
                 planId="homeowner_basic"
-                highlighted={false}
                 onGetStarted={handleGetStarted}
                 isLoading={loadingPlan === "homeowner_basic"}
                 trialDays={30}
               />
-
               <PricingCard
                 title="Homeowner Plus"
                 monthlyPrice="$16.99"
                 annualPrice="$12.99"
                 billingInterval={billingInterval}
                 badge="Most Popular"
-                features={[
-                  "Up to 10 QR magnets",
-                  "Manage up to 3 properties",
-                  "Appliance-level maintenance tracking",
-                  "Priority reminders",
-                  "Exportable maintenance history",
-                  "Everything in Homeowner Basic"
-                ]}
+                features={["Up to 10 QR magnets","Manage up to 3 properties","Appliance-level maintenance tracking","Priority reminders","Exportable maintenance history","Everything in Homeowner Basic"]}
                 ctaLabel="Start Free Trial"
                 planId="homeowner_plus"
                 highlighted={true}
@@ -249,43 +282,26 @@ export default function Pricing() {
                 isLoading={loadingPlan === "homeowner_plus"}
                 trialDays={30}
               />
-
               <PricingCard
                 title="Realtor / Agent"
                 monthlyPrice="$49"
                 annualPrice="$39"
                 billingInterval={billingInterval}
-                features={[
-                  "25 branded QR magnets per year",
-                  "25 homeowner activations",
-                  "Agent dashboard",
-                  "Client activation tracking",
-                  "Co-branded QR experience"
-                ]}
+                features={["25 branded QR magnets per year","25 homeowner activations","Agent dashboard","Client activation tracking","Co-branded QR experience"]}
                 ctaLabel="Request Agent Access"
                 planId="realtor"
-                highlighted={false}
                 onGetStarted={handleGetStarted}
                 isLoading={loadingPlan === "realtor"}
                 trialDays={0}
               />
-
               <PricingCard
                 title="Property Manager"
                 monthlyPrice="$199"
                 annualPrice="$149"
                 billingInterval={billingInterval}
-                features={[
-                  "Up to 200 units",
-                  "Appliance & unit-level tracking",
-                  "Maintenance & service history logs",
-                  "Audit & compliance reports",
-                  "Bulk branded magnets",
-                  "SMS limits per unit"
-                ]}
+                features={["Up to 200 units","Appliance & unit-level tracking","Maintenance & service history logs","Audit & compliance reports","Bulk branded magnets","SMS limits per unit"]}
                 ctaLabel="Contact Sales"
                 planId="property_manager"
-                highlighted={false}
                 onGetStarted={handleGetStarted}
                 isLoading={loadingPlan === "property_manager"}
                 trialDays={0}
@@ -296,80 +312,41 @@ export default function Pricing() {
 
         <section className="bg-slate-50 dark:bg-slate-800 py-12 md:py-16 mt-12 md:mt-20">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-            <h3 className="text-xl md:text-2xl font-bold text-slate-900 dark:text-white text-center mb-8">
-              All Plans Include
-            </h3>
-            
+            <h3 className="text-xl md:text-2xl font-bold text-slate-900 dark:text-white text-center mb-8">All Plans Include</h3>
             <div className="grid sm:grid-cols-2 gap-6">
-              <div className="flex items-start gap-3">
-                <Check className="w-6 h-6 text-emerald-500 flex-shrink-0" />
-                <div>
-                  <p className="font-semibold text-slate-900 dark:text-white">Physical QR magnets shipped to you</p>
-                  <p className="text-sm text-slate-600 dark:text-slate-400">High-quality, weatherproof magnets</p>
+              {[
+                {title: "Physical QR magnets shipped to you", desc: "High-quality, weatherproof magnets"},
+                {title: "Secure cloud access", desc: "Your data is encrypted and protected"},
+                {title: "No ads", desc: "Clean interface, focused on your needs"},
+                {title: "Easy cancellation", desc: "Cancel anytime, no hassle"},
+              ].map((item, i) => (
+                <div key={i} className="flex items-start gap-3">
+                  <Check className="w-6 h-6 text-emerald-500 flex-shrink-0" />
+                  <div>
+                    <p className="font-semibold text-slate-900 dark:text-white">{item.title}</p>
+                    <p className="text-sm text-slate-600 dark:text-slate-400">{item.desc}</p>
+                  </div>
                 </div>
-              </div>
-              
-              <div className="flex items-start gap-3">
-                <Check className="w-6 h-6 text-emerald-500 flex-shrink-0" />
-                <div>
-                  <p className="font-semibold text-slate-900 dark:text-white">Secure cloud access</p>
-                  <p className="text-sm text-slate-600 dark:text-slate-400">Your data is encrypted and protected</p>
-                </div>
-              </div>
-              
-              <div className="flex items-start gap-3">
-                <Check className="w-6 h-6 text-emerald-500 flex-shrink-0" />
-                <div>
-                  <p className="font-semibold text-slate-900 dark:text-white">No ads</p>
-                  <p className="text-sm text-slate-600 dark:text-slate-400">Clean interface, focused on your needs</p>
-                </div>
-              </div>
-              
-              <div className="flex items-start gap-3">
-                <Check className="w-6 h-6 text-emerald-500 flex-shrink-0" />
-                <div>
-                  <p className="font-semibold text-slate-900 dark:text-white">Easy cancellation</p>
-                  <p className="text-sm text-slate-600 dark:text-slate-400">Cancel anytime, no hassle</p>
-                </div>
-              </div>
+              ))}
             </div>
           </div>
         </section>
 
         <section className="py-12 md:py-16">
           <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h3 className="text-xl md:text-2xl font-bold text-slate-900 dark:text-white mb-4">
-              Frequently Asked Questions
-            </h3>
-
+            <h3 className="text-xl md:text-2xl font-bold text-slate-900 dark:text-white mb-4">Frequently Asked Questions</h3>
             <div className="text-left space-y-6 mt-8">
-              <div>
-                <h4 className="font-semibold text-slate-900 dark:text-white mb-1">How does the free trial work?</h4>
-                <p className="text-sm text-slate-600 dark:text-slate-400">
-                  You get full access for 30 days. We will send you a reminder 3 days before your trial ends. If you do not cancel before the trial is over, your card on file will be charged for the plan you selected.
-                </p>
-              </div>
-
-              <div>
-                <h4 className="font-semibold text-slate-900 dark:text-white mb-1">Can I switch between monthly and annual?</h4>
-                <p className="text-sm text-slate-600 dark:text-slate-400">
-                  Yes. You can switch your billing interval at any time from your billing settings. Changes take effect at your next billing cycle.
-                </p>
-              </div>
-
-              <div>
-                <h4 className="font-semibold text-slate-900 dark:text-white mb-1">What happens if my payment fails?</h4>
-                <p className="text-sm text-slate-600 dark:text-slate-400">
-                  You will have a 3-day grace period to update your payment method. During this time, your account remains fully functional. After the grace period, access will be paused until payment is resolved.
-                </p>
-              </div>
-
-              <div>
-                <h4 className="font-semibold text-slate-900 dark:text-white mb-1">How do I cancel?</h4>
-                <p className="text-sm text-slate-600 dark:text-slate-400">
-                  You can cancel anytime from your billing settings page. Your access continues until the end of your current billing period.
-                </p>
-              </div>
+              {[
+                {q: "How does the free trial work?", a: "You get full access for 30 days. We will send you a reminder 3 days before your trial ends. If you do not cancel before the trial is over, your card on file will be charged for the plan you selected."},
+                {q: "Can I switch between monthly and annual?", a: "Yes. You can switch your billing interval at any time from your billing settings. Changes take effect at your next billing cycle."},
+                {q: "What happens if my payment fails?", a: "You will have a 3-day grace period to update your payment method. During this time, your account remains fully functional. After the grace period, access will be paused until payment is resolved."},
+                {q: "How do I cancel?", a: "You can cancel anytime from your billing settings page. Your access continues until the end of your current billing period."},
+              ].map((item, i) => (
+                <div key={i}>
+                  <h4 className="font-semibold text-slate-900 dark:text-white mb-1">{item.q}</h4>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">{item.a}</p>
+                </div>
+              ))}
             </div>
           </div>
         </section>
