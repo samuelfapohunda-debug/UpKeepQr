@@ -19,6 +19,7 @@ import maintenanceLogRoutes from './maintenanceLogs.js';
 import reportRoutes from './reports.js';
 import householdsRoutes from './households.js';
 import checkoutRoutes from './checkout.js';
+import { registerSubscriptionRoutes } from './subscription.js';
 import dashboardRoutes from './dashboard.js';
 import customerRoutes from './customer.js';
 
@@ -47,10 +48,12 @@ export function registerRoutes(app: Express) {
   app.use('/api/customer', customerRoutes);  // Customer authenticated routes
   app.use('/api/appliances', applianceRoutes);  // Appliance management routes
   app.use('/api/households', householdsRoutes);  // Households routes
+  registerSubscriptionRoutes(app);
   
   console.log('✅ Health routes registered at /health');
   console.log('✅ Dashboard routes registered at /api/dashboard');
   console.log('✅ Checkout routes registered at /api/checkout');
+  console.log('✅ Subscription routes registered at /api/subscription');
   console.log('✅ Auth routes registered at /api/auth');
   console.log('✅ QR routes registered at /api/qr');
   console.log('✅ Calendar routes registered at /api/calendar');
