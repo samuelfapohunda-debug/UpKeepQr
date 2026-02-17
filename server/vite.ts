@@ -82,8 +82,13 @@ export function serveStatic(app: Express) {
   }
 
   app.use(express.static(distPath));
-
-  app.use("*", (_req, res) => {
+  
+  // CRITICAL FIX: Only serve index.html for non-API routes
+  app.use("*", (req, res, next) => {
+    // Skip API routes and health checks
+    if (req.originalUrl.startsWith('/api') || req.originalUrl.startsWith('/health')) {
+      return next();
+    }
     res.sendFile(path.resolve(distPath, "index.html"));
   });
 }
