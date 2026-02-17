@@ -19,7 +19,7 @@ import maintenanceLogRoutes from './maintenanceLogs.js';
 import reportRoutes from './reports.js';
 import householdsRoutes from './households.js';
 import checkoutRoutes from './checkout.js';
-import { registerSubscriptionRoutes } from './subscription.js';
+import { registerSubscriptionRoutes } from '../../routes/subscription.js';
 import dashboardRoutes from './dashboard.js';
 import customerRoutes from './customer.js';
 
