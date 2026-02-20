@@ -11,6 +11,7 @@ import AnimatedBackground from "@/components/AnimatedBackground";
 
 export default function Home() {
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+  const [billingInterval, setBillingInterval] = useState<'monthly' | 'annual'>('annual');
   const { toast } = useToast();
 
   const handleCheckout = async (planId: string, planName: string) => {
@@ -572,14 +573,40 @@ export default function Home() {
         {/* Pricing Section */}
         <section id="pricing" className="py-20 bg-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-16">
+            <div className="text-center mb-8">
               <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">Simple, Smart Home Maintenance Pricing</h2>
               <p className="text-lg sm:text-xl text-slate-600 max-w-2xl mx-auto">
-                Simple pricing. No clutter. Cancel anytime at renewal.
+                Start with a 30-day free trial. Card required but not charged until trial ends.
               </p>
               <p className="text-base text-slate-500 mt-2">
-                Monthly plans, billed annually. Physical QR magnets included.
+                No clutter. No complexity. Cancel anytime.
               </p>
+            </div>
+
+            <div className="flex items-center justify-center gap-3 mb-10">
+              <span className={`text-sm font-medium transition-colors ${billingInterval === 'monthly' ? 'text-slate-900' : 'text-slate-500'}`}>
+                Monthly
+              </span>
+              <button
+                onClick={() => setBillingInterval(billingInterval === 'monthly' ? 'annual' : 'monthly')}
+                className={`relative w-14 h-7 rounded-full transition-all duration-300 ${
+                  billingInterval === 'annual' ? 'bg-emerald-500' : 'bg-slate-300'
+                }`}
+                aria-label="Toggle billing interval"
+                data-testid="button-home-billing-toggle"
+              >
+                <span className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full shadow transition-all duration-300 transform ${
+                  billingInterval === 'annual' ? 'translate-x-7 scale-105' : 'translate-x-0'
+                }`} />
+              </button>
+              <span className={`text-sm font-medium transition-colors ${billingInterval === 'annual' ? 'text-slate-900' : 'text-slate-500'}`}>
+                Annual
+              </span>
+              {billingInterval === 'annual' && (
+                <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
+                  Save 30%
+                </span>
+              )}
             </div>
             
             <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
@@ -593,12 +620,21 @@ export default function Home() {
                   </CardTitle>
                   <CardDescription>Perfect for single-home owners</CardDescription>
                   <div className="flex items-baseline gap-2 mt-2">
-                    <span className="text-4xl font-bold text-slate-900">$6.99</span>
+                    {billingInterval === 'annual' && (
+                      <span className="text-lg text-slate-400 line-through">$9.99</span>
+                    )}
+                    <span className="text-4xl font-bold text-slate-900">{billingInterval === 'monthly' ? '$9.99' : '$6.99'}</span>
                     <span className="text-slate-600">/ month</span>
                   </div>
-                  <p className="text-sm text-slate-500 mt-1">Billed annually at $69</p>
+                  <p className="text-sm text-slate-500 mt-1">
+                    {billingInterval === 'monthly' ? 'Billed monthly' : 'Billed annually at $83.88 (Save 30%)'}
+                  </p>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  <div className="bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-3">
+                    <p className="text-sm font-medium text-emerald-700">30-day free trial included</p>
+                    <p className="text-xs text-emerald-600 mt-0.5">Card required but not charged until trial ends</p>
+                  </div>
                   <ul className="space-y-3 text-sm">
                     <li className="flex items-center gap-2 text-slate-600">
                       <CheckCircle className="h-4 w-4 text-emerald-500 flex-shrink-0" />
@@ -628,10 +664,10 @@ export default function Home() {
                   <Button 
                     className="w-full bg-emerald-500 hover:bg-emerald-600 text-white" 
                     data-testid="button-homeowner-basic"
-                    onClick={() => handleCheckout('homeowner_basic_yearly', 'Homeowner Basic')}
-                    disabled={loadingPlan === 'homeowner_basic_yearly'}
+                    onClick={() => handleCheckout('homeowner_basic', 'Homeowner Basic')}
+                    disabled={loadingPlan === 'homeowner_basic'}
                   >
-                    {loadingPlan === 'homeowner_basic_yearly' ? 'Loading...' : 'Start Free'}
+                    {loadingPlan === 'homeowner_basic' ? 'Loading...' : 'Start Free Trial'}
                   </Button>
                 </CardContent>
               </Card>
@@ -646,12 +682,21 @@ export default function Home() {
                   </CardTitle>
                   <CardDescription>For multi-property owners</CardDescription>
                   <div className="flex items-baseline gap-2 mt-2">
-                    <span className="text-4xl font-bold text-slate-900">$12.99</span>
+                    {billingInterval === 'annual' && (
+                      <span className="text-lg text-slate-400 line-through">$16.99</span>
+                    )}
+                    <span className="text-4xl font-bold text-slate-900">{billingInterval === 'monthly' ? '$16.99' : '$12.99'}</span>
                     <span className="text-slate-600">/ month</span>
                   </div>
-                  <p className="text-sm text-slate-500 mt-1">Billed annually at $129</p>
+                  <p className="text-sm text-slate-500 mt-1">
+                    {billingInterval === 'monthly' ? 'Billed monthly' : 'Billed annually at $155.88 (Save 24%)'}
+                  </p>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  <div className="bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-3">
+                    <p className="text-sm font-medium text-emerald-700">30-day free trial included</p>
+                    <p className="text-xs text-emerald-600 mt-0.5">Card required but not charged until trial ends</p>
+                  </div>
                   <ul className="space-y-3 text-sm">
                     <li className="flex items-center gap-2 text-slate-600">
                       <CheckCircle className="h-4 w-4 text-emerald-500 flex-shrink-0" />
@@ -681,10 +726,10 @@ export default function Home() {
                   <Button 
                     className="w-full bg-emerald-500 hover:bg-emerald-600 text-white" 
                     data-testid="button-homeowner-plus"
-                    onClick={() => handleCheckout('homeowner_plus_yearly', 'Homeowner Plus')}
-                    disabled={loadingPlan === 'homeowner_plus_yearly'}
+                    onClick={() => handleCheckout('homeowner_plus', 'Homeowner Plus')}
+                    disabled={loadingPlan === 'homeowner_plus'}
                   >
-                    {loadingPlan === 'homeowner_plus_yearly' ? 'Loading...' : 'Start Free'}
+                    {loadingPlan === 'homeowner_plus' ? 'Loading...' : 'Start Free Trial'}
                   </Button>
                 </CardContent>
               </Card>
@@ -698,10 +743,15 @@ export default function Home() {
                   </CardTitle>
                   <CardDescription>For real estate professionals</CardDescription>
                   <div className="flex items-baseline gap-2 mt-2">
-                    <span className="text-4xl font-bold text-slate-900">$39</span>
+                    {billingInterval === 'annual' && (
+                      <span className="text-lg text-slate-400 line-through">$49</span>
+                    )}
+                    <span className="text-4xl font-bold text-slate-900">{billingInterval === 'monthly' ? '$49' : '$39'}</span>
                     <span className="text-slate-600">/ month</span>
                   </div>
-                  <p className="text-sm text-slate-500 mt-1">Billed annually at $390</p>
+                  <p className="text-sm text-slate-500 mt-1">
+                    {billingInterval === 'monthly' ? 'Billed monthly' : 'Billed annually at $468.00 (Save 20%)'}
+                  </p>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <ul className="space-y-3 text-sm">
@@ -729,10 +779,10 @@ export default function Home() {
                   <Button 
                     className="w-full bg-emerald-500 hover:bg-emerald-600 text-white" 
                     data-testid="button-realtor-agent"
-                    onClick={() => handleCheckout('realtor_yearly', 'Realtor / Agent')}
-                    disabled={loadingPlan === 'realtor_yearly'}
+                    onClick={() => handleCheckout('realtor', 'Realtor / Agent')}
+                    disabled={loadingPlan === 'realtor'}
                   >
-                    {loadingPlan === 'realtor_yearly' ? 'Loading...' : 'Start Free'}
+                    {loadingPlan === 'realtor' ? 'Loading...' : 'Request Agent Access'}
                   </Button>
                 </CardContent>
               </Card>
@@ -742,14 +792,19 @@ export default function Home() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-slate-900">
                     <Users className="h-5 w-5 text-emerald-500" />
-                    Property / Maintenance Manager
+                    Property Manager
                   </CardTitle>
                   <CardDescription>For property management companies</CardDescription>
                   <div className="flex items-baseline gap-2 mt-2">
-                    <span className="text-4xl font-bold text-slate-900">$149</span>
+                    {billingInterval === 'annual' && (
+                      <span className="text-lg text-slate-400 line-through">$199</span>
+                    )}
+                    <span className="text-4xl font-bold text-slate-900">{billingInterval === 'monthly' ? '$199' : '$149'}</span>
                     <span className="text-slate-600">/ month</span>
                   </div>
-                  <p className="text-sm text-slate-500 mt-1">Billed annually at $1,490</p>
+                  <p className="text-sm text-slate-500 mt-1">
+                    {billingInterval === 'monthly' ? 'Billed monthly' : 'Billed annually at $1,788.00 (Save 25%)'}
+                  </p>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <ul className="space-y-3 text-sm">
@@ -781,19 +836,18 @@ export default function Home() {
                   <Button 
                     className="w-full bg-emerald-500 hover:bg-emerald-600 text-white" 
                     data-testid="button-property-manager"
-                    onClick={() => handleCheckout('property_manager_yearly', 'Property Manager')}
-                    disabled={loadingPlan === 'property_manager_yearly'}
+                    onClick={() => handleCheckout('property_manager', 'Property Manager')}
+                    disabled={loadingPlan === 'property_manager'}
                   >
-                    {loadingPlan === 'property_manager_yearly' ? 'Loading...' : 'Start Free'}
+                    {loadingPlan === 'property_manager' ? 'Loading...' : 'Contact Sales'}
                   </Button>
                 </CardContent>
               </Card>
 
             </div>
             
-            {/* No credit card note */}
             <p className="text-center text-sm text-slate-500 mt-8">
-              No credit card required to get started.
+              Card required but not charged until trial ends.
             </p>
           </div>
         </section>
