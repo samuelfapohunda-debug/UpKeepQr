@@ -49,7 +49,15 @@ function AuthModal({
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 w-full max-w-md shadow-2xl" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 w-full max-w-md shadow-2xl relative" onClick={(e) => e.stopPropagation()}>
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+          aria-label="Close modal"
+          data-testid="button-close-modal"
+        >
+          <X className="w-5 h-5" />
+        </button>
         <div className="text-center mb-6">
           <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
             {isEnterprise ? 'Request Enterprise Access' : 'Start Your Free Trial'}
@@ -176,9 +184,9 @@ function AuthModal({
 
         <p className="text-xs text-slate-500 dark:text-slate-400 text-center mt-6">
           By continuing, you agree to our{' '}
-          <a href="/terms" className="text-emerald-600 hover:underline">Terms of Service</a>
+          <a href="/terms-of-service" className="text-emerald-600 hover:underline">Terms of Service</a>
           {' '}and{' '}
-          <a href="/privacy" className="text-emerald-600 hover:underline">Privacy Policy</a>
+          <a href="/privacy-policy" className="text-emerald-600 hover:underline">Privacy Policy</a>
         </p>
 
         {!isEnterprise && (
