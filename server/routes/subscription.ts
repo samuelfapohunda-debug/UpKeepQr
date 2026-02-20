@@ -307,7 +307,7 @@ export function registerSubscriptionRoutes(app: Express) {
     try {
       const { billingInterval, email, name } = req.body;
 
-      if (!billingInterval || !email) {
+      if (!billingInterval) {
         return res.status(400).json({ error: "Missing required fields" });
       }
 
