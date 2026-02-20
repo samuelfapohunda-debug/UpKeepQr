@@ -1,46 +1,137 @@
 import { useState } from "react";
-import { Check } from "lucide-react";
+import { Check, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 
-function CheckoutModal({ 
+const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+function AuthModal({ 
   isOpen, 
   onClose, 
   onSubmit,
-  isLoading
+  isLoading,
+  planType
 }: { 
   isOpen: boolean; 
   onClose: () => void; 
-  onSubmit: (email: string, name: string) => void;
+  onSubmit: (email: string, firstName: string, lastName: string) => void;
   isLoading: boolean;
+  planType: 'trial' | 'enterprise';
 }) {
   const [email, setEmail] = useState('');
-  const [name, setName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [emailError, setEmailError] = useState('');
 
   if (!isOpen) return null;
 
+  const handleEmailChange = (value: string) => {
+    setEmail(value.trim());
+    if (emailError && value.trim()) setEmailError('');
+  };
+
+  const handleSubmit = () => {
+    const trimmedEmail = email.trim();
+    const trimmedFirst = firstName.trim();
+    const trimmedLast = lastName.trim();
+
+    if (!trimmedEmail || !trimmedFirst || !trimmedLast) return;
+    
+    if (!isValidEmail(trimmedEmail)) {
+      setEmailError('Please enter a valid email address');
+      return;
+    }
+
+    onSubmit(trimmedEmail, trimmedFirst, trimmedLast);
+  };
+
+  const isEnterprise = planType === 'enterprise';
+
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-slate-800 rounded-xl p-6 w-full max-w-md shadow-xl">
-        <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
-          Start Your Free Trial
-        </h2>
-        <p className="text-sm text-slate-600 dark:text-slate-400 mb-6">
-          30 days free. No charge until trial ends. Cancel anytime.
-        </p>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 w-full max-w-md shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="text-center mb-6">
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
+            {isEnterprise ? 'Request Enterprise Access' : 'Start Your Free Trial'}
+          </h2>
+          <p className="text-sm text-slate-600 dark:text-slate-400">
+            {isEnterprise 
+              ? 'Our sales team will contact you within 24 hours'
+              : '30 days free. Card required but not charged until trial ends.'
+            }
+          </p>
+        </div>
+
+        {!isEnterprise && (
+          <>
+            <div className="space-y-3 mb-6">
+              <button 
+                className="w-full flex items-center justify-center gap-3 px-4 py-3 border-2 border-slate-300 dark:border-slate-600 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+                onClick={() => {}}
+                data-testid="button-google-oauth"
+              >
+                <svg className="w-5 h-5" viewBox="0 0 24 24">
+                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                </svg>
+                <span className="font-medium text-slate-700 dark:text-slate-300">Continue with Google</span>
+              </button>
+
+              <button 
+                className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-black text-white rounded-xl hover:bg-slate-800 transition-colors"
+                onClick={() => {}}
+                data-testid="button-apple-oauth"
+              >
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
+                </svg>
+                <span className="font-medium">Continue with Apple</span>
+              </button>
+            </div>
+
+            <div className="relative mb-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-slate-300 dark:border-slate-600"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-4 bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400">
+                  or continue with email
+                </span>
+              </div>
+            </div>
+          </>
+        )}
 
         <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-              Full Name
-            </label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="John Smith"
-              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-            />
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                First Name
+              </label>
+              <input
+                type="text"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                placeholder="John"
+                className="w-full px-3 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                data-testid="input-first-name"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                Last Name
+              </label>
+              <input
+                type="text"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                placeholder="Smith"
+                className="w-full px-3 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                data-testid="input-last-name"
+              />
+            </div>
           </div>
 
           <div>
@@ -50,34 +141,51 @@ function CheckoutModal({
             <input
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="john@example.com"
-              className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              onChange={(e) => handleEmailChange(e.target.value)}
+              placeholder="you@example.com"
+              className={`w-full px-3 py-2.5 border rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 ${
+                emailError 
+                  ? 'border-red-500 focus:ring-red-500' 
+                  : 'border-slate-300 dark:border-slate-600 focus:ring-emerald-500'
+              }`}
+              data-testid="input-email"
             />
+            {emailError && (
+              <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                <X className="w-3 h-3" />
+                {emailError}
+              </p>
+            )}
           </div>
+
+          <Button
+            onClick={handleSubmit}
+            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-lg font-medium text-base"
+            disabled={isLoading || !email || !firstName || !lastName}
+            data-testid="button-auth-submit"
+          >
+            {isLoading ? 'Loading...' : (isEnterprise ? 'Submit Request' : 'Continue')}
+          </Button>
+
+          {!isEnterprise && (
+            <p className="text-xs text-slate-500 dark:text-slate-400 text-center">
+              You'll be redirected to secure checkout
+            </p>
+          )}
         </div>
 
-        <div className="flex gap-3 mt-6">
-          <Button
-            onClick={onClose}
-            variant="outline"
-            className="flex-1"
-            disabled={isLoading}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={() => onSubmit(email, name)}
-            className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
-            disabled={isLoading || !email || !name}
-          >
-            {isLoading ? 'Loading...' : 'Continue to Payment'}
-          </Button>
-        </div>
-
-        <p className="text-xs text-slate-500 dark:text-slate-400 text-center mt-4">
-          🔒 Secure checkout powered by Stripe
+        <p className="text-xs text-slate-500 dark:text-slate-400 text-center mt-6">
+          By continuing, you agree to our{' '}
+          <a href="/terms" className="text-emerald-600 hover:underline">Terms of Service</a>
+          {' '}and{' '}
+          <a href="/privacy" className="text-emerald-600 hover:underline">Privacy Policy</a>
         </p>
+
+        {!isEnterprise && (
+          <p className="text-xs text-center text-slate-500 dark:text-slate-400 mt-4">
+            Secure checkout powered by Stripe
+          </p>
+        )}
       </div>
     </div>
   );
@@ -86,25 +194,26 @@ function CheckoutModal({
 function BillingToggle({ interval, onChange }: { interval: 'monthly' | 'annual'; onChange: (v: 'monthly' | 'annual') => void }) {
   return (
     <div className="flex items-center justify-center gap-3 mb-10">
-      <span className={`text-sm font-medium ${interval === 'monthly' ? 'text-slate-900 dark:text-white' : 'text-slate-500 dark:text-slate-400'}`}>
+      <span className={`text-sm font-medium transition-colors ${interval === 'monthly' ? 'text-slate-900 dark:text-white' : 'text-slate-500 dark:text-slate-400'}`}>
         Monthly
       </span>
       <button
         onClick={() => onChange(interval === 'monthly' ? 'annual' : 'monthly')}
-        className={`relative w-14 h-7 rounded-full transition-colors duration-200 ${
+        className={`relative w-14 h-7 rounded-full transition-all duration-300 ${
           interval === 'annual' ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-600'
         }`}
         aria-label="Toggle billing interval"
+        data-testid="button-billing-toggle"
       >
-        <span className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full shadow transition-transform duration-200 ${
-          interval === 'annual' ? 'translate-x-7' : 'translate-x-0'
+        <span className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full shadow transition-all duration-300 transform ${
+          interval === 'annual' ? 'translate-x-7 scale-105' : 'translate-x-0'
         }`} />
       </button>
-      <span className={`text-sm font-medium ${interval === 'annual' ? 'text-slate-900 dark:text-white' : 'text-slate-500 dark:text-slate-400'}`}>
+      <span className={`text-sm font-medium transition-colors ${interval === 'annual' ? 'text-slate-900 dark:text-white' : 'text-slate-500 dark:text-slate-400'}`}>
         Annual
       </span>
       {interval === 'annual' && (
-        <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 px-2 py-0.5 rounded-full">
+        <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 px-2 py-0.5 rounded-full animate-in fade-in slide-in-from-top-2">
           Save 30%
         </span>
       )}
@@ -112,33 +221,117 @@ function BillingToggle({ interval, onChange }: { interval: 'monthly' | 'annual';
   );
 }
 
-interface PricingCardProps {
+interface PlanConfig {
+  id: string;
   title: string;
   monthlyPrice: string;
   annualPrice: string;
-  billingInterval: 'monthly' | 'annual';
   badge?: string;
   features: string[];
   ctaLabel: string;
-  planId: string;
   highlighted?: boolean;
-  onGetStarted: (planId: string, interval: 'monthly' | 'annual') => void;
+  trialDays: number;
+  type: 'trial' | 'enterprise';
+}
+
+const PRICING_PLANS: PlanConfig[] = [
+  {
+    id: 'homeowner_basic',
+    title: 'Homeowner Basic',
+    monthlyPrice: '$9.99',
+    annualPrice: '$6.99',
+    features: [
+      '1 Premium QR Magnet',
+      'Smart maintenance task list',
+      'Climate-based scheduling',
+      'Email reminders',
+      'Up to 3 SMS reminders/month',
+      'Task completion history'
+    ],
+    ctaLabel: 'Start Free Trial',
+    highlighted: false,
+    trialDays: 30,
+    type: 'trial'
+  },
+  {
+    id: 'homeowner_plus',
+    title: 'Homeowner Plus',
+    monthlyPrice: '$16.99',
+    annualPrice: '$12.99',
+    badge: 'Most Popular',
+    features: [
+      'Up to 10 QR magnets',
+      'Manage up to 3 properties',
+      'Appliance-level maintenance tracking',
+      'Priority reminders',
+      'Exportable maintenance history',
+      'Everything in Homeowner Basic'
+    ],
+    ctaLabel: 'Start Free Trial',
+    highlighted: true,
+    trialDays: 30,
+    type: 'trial'
+  },
+  {
+    id: 'realtor',
+    title: 'Realtor / Agent',
+    monthlyPrice: '$49',
+    annualPrice: '$39',
+    features: [
+      '25 branded QR magnets per year',
+      '25 homeowner activations',
+      'Agent dashboard',
+      'Client activation tracking',
+      'Co-branded QR experience'
+    ],
+    ctaLabel: 'Request Agent Access',
+    highlighted: false,
+    trialDays: 0,
+    type: 'enterprise'
+  },
+  {
+    id: 'property_manager',
+    title: 'Property Manager',
+    monthlyPrice: '$199',
+    annualPrice: '$149',
+    features: [
+      'Up to 200 units',
+      'Appliance & unit-level tracking',
+      'Maintenance & service history logs',
+      'Audit & compliance reports',
+      'Bulk branded magnets',
+      'SMS limits per unit'
+    ],
+    ctaLabel: 'Contact Sales',
+    highlighted: false,
+    trialDays: 0,
+    type: 'enterprise'
+  }
+];
+
+interface PricingCardProps extends PlanConfig {
+  billingInterval: 'monthly' | 'annual';
+  onGetStarted: (planId: string, interval: 'monthly' | 'annual', type: 'trial' | 'enterprise') => void;
   isLoading?: boolean;
-  trialDays?: number;
 }
 
 function PricingCard({
-  title, monthlyPrice, annualPrice, billingInterval, badge, features,
-  ctaLabel, planId, highlighted = false, onGetStarted, isLoading = false, trialDays = 30,
+  id, title, monthlyPrice, annualPrice, billingInterval, badge, features,
+  ctaLabel, highlighted = false, onGetStarted, isLoading = false, trialDays, type
 }: PricingCardProps) {
-  const price = billingInterval === 'monthly' ? monthlyPrice : annualPrice;
-  const annualTotal = (parseFloat(annualPrice.replace('$', '')) * 12).toFixed(0);
-  const billedText = billingInterval === 'monthly' ? 'Billed monthly' : `Billed annually at $${annualTotal}`;
+  const currentPrice = billingInterval === 'monthly' ? monthlyPrice : annualPrice;
+  const monthlyPriceNum = parseFloat(monthlyPrice.replace('$', ''));
+  const annualPriceNum = parseFloat(annualPrice.replace('$', ''));
+  const annualTotal = (annualPriceNum * 12).toFixed(2);
+  
+  const savings = billingInterval === 'annual' 
+    ? Math.round(((monthlyPriceNum - annualPriceNum) / monthlyPriceNum) * 100)
+    : 0;
 
   return (
     <div className={`relative bg-white dark:bg-slate-800 rounded-xl p-6 md:p-8 border-2 transition-all duration-300 ${
       highlighted ? 'border-emerald-500 shadow-lg' : 'border-slate-200 dark:border-slate-700 shadow-sm'
-    }`}>
+    }`} data-testid={`card-pricing-${id}`}>
       {badge && (
         <div className="absolute -top-4 left-1/2 -translate-x-1/2">
           <span className="bg-emerald-500 text-white px-4 py-1 rounded-full text-sm font-semibold whitespace-nowrap">
@@ -149,15 +342,25 @@ function PricingCard({
       <h3 className="text-xl md:text-2xl font-bold text-slate-900 dark:text-white mb-2">{title}</h3>
       <div className="mb-4">
         <div className="flex items-baseline gap-2">
-          <span className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white">{price}</span>
+          {billingInterval === 'annual' && (
+            <span className="text-lg text-slate-400 dark:text-slate-500 line-through">
+              {monthlyPrice}
+            </span>
+          )}
+          <span className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white">{currentPrice}</span>
           <span className="text-slate-600 dark:text-slate-400">/ month</span>
         </div>
-        <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{billedText}</p>
+        <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+          {billingInterval === 'monthly' 
+            ? 'Billed monthly' 
+            : `Billed annually at $${annualTotal} (Save ${savings}%)`
+          }
+        </p>
       </div>
       {trialDays > 0 && (
         <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-lg px-4 py-3 mb-6">
           <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300">{trialDays}-day free trial included</p>
-          <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-0.5">No charge until trial ends. Cancel anytime.</p>
+          <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-0.5">Card required but not charged until trial ends</p>
         </div>
       )}
       <ul className="space-y-3 mb-8">
@@ -169,10 +372,11 @@ function PricingCard({
         ))}
       </ul>
       <Button
-        onClick={() => onGetStarted(planId, billingInterval)}
+        onClick={() => onGetStarted(id, billingInterval, type)}
         disabled={isLoading}
         variant={highlighted ? "default" : "outline"}
         className={`w-full ${highlighted ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : ''}`}
+        data-testid={`button-get-started-${id}`}
       >
         {isLoading ? 'Loading...' : ctaLabel}
       </Button>
@@ -183,27 +387,34 @@ function PricingCard({
 export default function Pricing() {
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const [billingInterval, setBillingInterval] = useState<'monthly' | 'annual'>('annual');
-  const [showModal, setShowModal] = useState(false);
-  const [pendingPlan, setPendingPlan] = useState<{planId: string, interval: 'monthly' | 'annual'} | null>(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [pendingPlan, setPendingPlan] = useState<{planId: string, interval: 'monthly' | 'annual', type: 'trial' | 'enterprise'} | null>(null);
   const { toast } = useToast();
 
-  const handleGetStarted = (planId: string, interval: 'monthly' | 'annual') => {
-    setPendingPlan({ planId, interval });
-    setShowModal(true);
+  const handleGetStarted = (planId: string, interval: 'monthly' | 'annual', type: 'trial' | 'enterprise') => {
+    setPendingPlan({ planId, interval, type });
+    setShowAuthModal(true);
   };
 
-  const handleModalSubmit = async (email: string, name: string) => {
+  const handleAuthSubmit = async (email: string, firstName: string, lastName: string) => {
     if (!pendingPlan) return;
 
-    const { planId, interval } = pendingPlan;
-    setShowModal(false);
+    const { planId, interval, type } = pendingPlan;
+    setShowAuthModal(false);
     setLoadingPlan(planId);
 
     try {
+      const fullName = `${firstName} ${lastName}`.trim();
+      
       const response = await fetch('/api/subscription/create-checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ billingInterval: interval, email, name }),
+        body: JSON.stringify({ 
+          planId,
+          billingInterval: interval,
+          email,
+          name: fullName,
+        }),
       });
 
       const data = await response.json();
@@ -212,7 +423,12 @@ export default function Pricing() {
         throw new Error(data.error || 'Failed to create checkout session');
       }
 
-      if (data.url) {
+      if (type === 'enterprise') {
+        toast({
+          title: "Request Submitted!",
+          description: "Our sales team will contact you within 24 hours.",
+        });
+      } else if (data.url) {
         window.location.href = data.url;
       } else {
         throw new Error('No checkout URL received');
@@ -231,11 +447,12 @@ export default function Pricing() {
 
   return (
     <div className="flex flex-col min-h-screen bg-white dark:bg-slate-900">
-      <CheckoutModal
-        isOpen={showModal}
-        onClose={() => setShowModal(false)}
-        onSubmit={handleModalSubmit}
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        onSubmit={handleAuthSubmit}
         isLoading={!!loadingPlan}
+        planType={pendingPlan?.type || 'trial'}
       />
 
       <main className="flex-1 pt-16">
@@ -246,7 +463,7 @@ export default function Pricing() {
                 Simple, Smart Home Maintenance Pricing
               </h1>
               <p className="text-lg md:text-xl text-slate-700 dark:text-slate-300 mb-2">
-                Start with a 30-day free trial. No credit card required to explore.
+                Start with a 30-day free trial. Card required but not charged until trial ends.
               </p>
               <p className="text-base text-slate-600 dark:text-slate-400">
                 No clutter. No complexity. Cancel anytime.
@@ -256,56 +473,15 @@ export default function Pricing() {
             <BillingToggle interval={billingInterval} onChange={setBillingInterval} />
 
             <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
-              <PricingCard
-                title="Homeowner Basic"
-                monthlyPrice="$9.99"
-                annualPrice="$6.99"
-                billingInterval={billingInterval}
-                features={["1 Premium QR Magnet","Smart maintenance task list","Climate-based scheduling","Email reminders","Up to 3 SMS reminders/month","Task completion history"]}
-                ctaLabel="Start Free Trial"
-                planId="homeowner_basic"
-                onGetStarted={handleGetStarted}
-                isLoading={loadingPlan === "homeowner_basic"}
-                trialDays={30}
-              />
-              <PricingCard
-                title="Homeowner Plus"
-                monthlyPrice="$16.99"
-                annualPrice="$12.99"
-                billingInterval={billingInterval}
-                badge="Most Popular"
-                features={["Up to 10 QR magnets","Manage up to 3 properties","Appliance-level maintenance tracking","Priority reminders","Exportable maintenance history","Everything in Homeowner Basic"]}
-                ctaLabel="Start Free Trial"
-                planId="homeowner_plus"
-                highlighted={true}
-                onGetStarted={handleGetStarted}
-                isLoading={loadingPlan === "homeowner_plus"}
-                trialDays={30}
-              />
-              <PricingCard
-                title="Realtor / Agent"
-                monthlyPrice="$49"
-                annualPrice="$39"
-                billingInterval={billingInterval}
-                features={["25 branded QR magnets per year","25 homeowner activations","Agent dashboard","Client activation tracking","Co-branded QR experience"]}
-                ctaLabel="Request Agent Access"
-                planId="realtor"
-                onGetStarted={handleGetStarted}
-                isLoading={loadingPlan === "realtor"}
-                trialDays={0}
-              />
-              <PricingCard
-                title="Property Manager"
-                monthlyPrice="$199"
-                annualPrice="$149"
-                billingInterval={billingInterval}
-                features={["Up to 200 units","Appliance & unit-level tracking","Maintenance & service history logs","Audit & compliance reports","Bulk branded magnets","SMS limits per unit"]}
-                ctaLabel="Contact Sales"
-                planId="property_manager"
-                onGetStarted={handleGetStarted}
-                isLoading={loadingPlan === "property_manager"}
-                trialDays={0}
-              />
+              {PRICING_PLANS.map(plan => (
+                <PricingCard
+                  key={plan.id}
+                  {...plan}
+                  billingInterval={billingInterval}
+                  onGetStarted={handleGetStarted}
+                  isLoading={loadingPlan === plan.id}
+                />
+              ))}
             </div>
           </div>
         </section>
@@ -337,9 +513,9 @@ export default function Pricing() {
             <h3 className="text-xl md:text-2xl font-bold text-slate-900 dark:text-white mb-4">Frequently Asked Questions</h3>
             <div className="text-left space-y-6 mt-8">
               {[
-                {q: "How does the free trial work?", a: "You get full access for 30 days. We will send you a reminder 3 days before your trial ends. If you do not cancel before the trial is over, your card on file will be charged for the plan you selected."},
+                {q: "How does the free trial work?", a: "You get full access for 30 days. We require a card upfront but won't charge it until your trial ends. Cancel anytime before then--no questions asked."},
                 {q: "Can I switch between monthly and annual?", a: "Yes. You can switch your billing interval at any time from your billing settings. Changes take effect at your next billing cycle."},
-                {q: "What happens if my payment fails?", a: "You will have a 3-day grace period to update your payment method. During this time, your account remains fully functional. After the grace period, access will be paused until payment is resolved."},
+                {q: "What happens if my payment fails?", a: "You'll have a 3-day grace period to update your payment method. During this time, your account remains fully functional. After the grace period, access will be paused until payment is resolved."},
                 {q: "How do I cancel?", a: "You can cancel anytime from your billing settings page. Your access continues until the end of your current billing period."},
               ].map((item, i) => (
                 <div key={i}>
