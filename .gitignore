@@ -12,3 +12,4 @@ serviceAccountKey.json
 *.backup_*
 .env*
 *.backup
+.config/
