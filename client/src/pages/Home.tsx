@@ -69,7 +69,7 @@ export default function Home() {
                     onClick={() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })}
                     data-testid="button-get-started"
                   >
-                    Start Free (No Credit Card Required)
+                    Start Free (30 Days Free)
                   </Button>
                 </div>
                 
@@ -108,7 +108,7 @@ export default function Home() {
                     </li>
                     <li className="flex items-center gap-2">
                       <CheckCircle className="w-5 h-5 text-emerald-500 flex-shrink-0" aria-hidden="true" />
-                      No credit card required
+                      30 days free
                     </li>
                     <li className="flex items-center gap-2">
                       <CheckCircle className="w-5 h-5 text-emerald-500 flex-shrink-0" aria-hidden="true" />
@@ -946,7 +946,7 @@ export default function Home() {
               Get Started Free
             </Button>
             <p className="text-sm text-emerald-100 mt-6">
-              No credit card required. Cancel anytime. 30-day guarantee.
+              30 days free. Cancel anytime. 30-day guarantee.
             </p>
           </div>
         </section>

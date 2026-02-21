@@ -15,7 +15,7 @@ const defaultItems: AnnouncementItem[] = [
   { id: "2", text: "5,000+ homeowners never miss maintenance tasks" },
   { id: "3", text: "Smart QR codes track your home's entire service history" },
   { id: "4", text: "Climate-aware reminders for seasonal maintenance" },
-  { id: "5", text: "Setup in under 2 minutes - No credit card required" },
+  { id: "5", text: "Setup in under 2 minutes - 30 days free" },
 ];
 
 export default function ScrollingAnnouncement({
