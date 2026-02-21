@@ -1,0 +1,244 @@
+# Create a temporary file with the new AuthModal code
+cat > /tmp/auth_modal_native.txt << 'ENDFILE'
+import { useState, useEffect } from "react";
+import { Check, X } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
+
+// Declare Google Identity Services types
+declare global {
+  interface Window {
+    google?: {
+      accounts: {
+        id: {
+          initialize: (config: any) => void;
+          renderButton: (element: HTMLElement, options: any) => void;
+          prompt: () => void;
+        };
+      };
+    };
+  }
+}
+
+const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
+
+function AuthModal({ 
+  isOpen, 
+  onClose, 
+  onSubmit,
+  isLoading,
+  planType
+}: { 
+  isOpen: boolean; 
+  onClose: () => void; 
+  onSubmit: (email: string, firstName: string, lastName: string) => void;
+  isLoading: boolean;
+  planType: 'trial' | 'enterprise';
+}) {
+  const [email, setEmail] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [emailError, setEmailError] = useState('');
+  const { toast } = useToast();
+
+  useEffect(() => {
+    if (!isOpen || planType === 'enterprise') return;
+
+    // Initialize Google Sign-In when modal opens
+    if (window.google) {
+      window.google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: handleGoogleSignIn,
+      });
+
+      const buttonDiv = document.getElementById('google-signin-button');
+      if (buttonDiv) {
+        window.google.accounts.id.renderButton(buttonDiv, {
+          theme: 'outline',
+          size: 'large',
+          width: 400,
+          text: 'continue_with',
+        });
+      }
+    }
+  }, [isOpen, planType]);
+
+  const handleGoogleSignIn = async (response: any) => {
+    try {
+      // Decode the JWT token to get user info
+      const payload = JSON.parse(atob(response.credential.split('.')[1]));
+      
+      const nameParts = (payload.name || '').split(' ');
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
+      
+      // Auto-submit with Google data
+      onSubmit(payload.email, firstName, lastName);
+    } catch (err: any) {
+      toast({
+        title: "Google Sign-In Error",
+        description: err.message || "Failed to sign in with Google",
+        variant: "destructive"
+      });
+    }
+  };
+
+  if (!isOpen) return null;
+
+  const handleEmailChange = (value: string) => {
+    setEmail(value.trim());
+    if (emailError && value.trim()) setEmailError('');
+  };
+
+  const handleSubmit = () => {
+    const trimmedEmail = email.trim();
+    const trimmedFirst = firstName.trim();
+    const trimmedLast = lastName.trim();
+
+    if (!trimmedEmail || !trimmedFirst || !trimmedLast) return;
+    
+    if (!isValidEmail(trimmedEmail)) {
+      setEmailError('Please enter a valid email address');
+      return;
+    }
+
+    onSubmit(trimmedEmail, trimmedFirst, trimmedLast);
+  };
+
+  const isEnterprise = planType === 'enterprise';
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 w-full max-w-md shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="text-center mb-6">
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
+            {isEnterprise ? 'Request Enterprise Access' : 'Start Your Free Trial'}
+          </h2>
+          <p className="text-sm text-slate-600 dark:text-slate-400">
+            {isEnterprise 
+              ? 'Our sales team will contact you within 24 hours'
+              : '30 days free. Card required but not charged until trial ends.'
+            }
+          </p>
+        </div>
+
+        {!isEnterprise && (
+          <>
+            {/* Google Sign-In Button */}
+            <div className="mb-6">
+              <div id="google-signin-button" className="flex justify-center"></div>
+            </div>
+
+            <div className="relative mb-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-slate-300 dark:border-slate-600"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-4 bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400">
+                  or continue with email
+                </span>
+              </div>
+            </div>
+          </>
+        )}
+
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                First Name
+              </label>
+              <input
+                type="text"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                placeholder="John"
+                className="w-full px-3 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                Last Name
+              </label>
+              <input
+                type="text"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                placeholder="Smith"
+                className="w-full px-3 py-2.5 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+              Email Address
+            </label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => handleEmailChange(e.target.value)}
+              placeholder="you@example.com"
+              className={`w-full px-3 py-2.5 border rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 ${
+                emailError 
+                  ? 'border-red-500 focus:ring-red-500' 
+                  : 'border-slate-300 dark:border-slate-600 focus:ring-emerald-500'
+              }`}
+            />
+            {emailError && (
+              <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                <X className="w-3 h-3" />
+                {emailError}
+              </p>
+            )}
+          </div>
+
+          <Button
+            onClick={handleSubmit}
+            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-lg font-medium text-base"
+            disabled={isLoading || !email || !firstName || !lastName}
+          >
+            {isLoading ? 'Loading...' : (isEnterprise ? 'Submit Request' : 'Continue →')}
+          </Button>
+
+          {!isEnterprise && (
+            <p className="text-xs text-slate-500 dark:text-slate-400 text-center">
+              ↗️ You'll be redirected to secure checkout
+            </p>
+          )}
+        </div>
+
+        <p className="text-xs text-slate-500 dark:text-slate-400 text-center mt-6">
+          By continuing, you agree to our{' '}
+          <a href="/terms" className="text-emerald-600 hover:underline">Terms of Service</a>
+          {' '}and{' '}
+          <a href="/privacy" className="text-emerald-600 hover:underline">Privacy Policy</a>
+        </p>
+
+        {!isEnterprise && (
+          <p className="text-xs text-center text-slate-500 dark:text-slate-400 mt-4">
+            🔒 Secure checkout powered by Stripe
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+ENDFILE
+
+echo "✅ Native Google OAuth code ready"
+```
+
+Now I need to update the Pricing.tsx file. Let me use Replit Agent for this since it's a large file.
+
+**Give this to Replit Agent:**
+```
+Update client/src/pages/Pricing.tsx:
+
+1. Remove the import: import { useGoogleLogin } from '@react-oauth/google';
+
+2. Replace the entire AuthModal function with the code from /tmp/auth_modal_native.txt
+
+Keep everything else in the file exactly the same (BillingToggle, PricingCard, PRICING_PLANS, main Pricing component).
