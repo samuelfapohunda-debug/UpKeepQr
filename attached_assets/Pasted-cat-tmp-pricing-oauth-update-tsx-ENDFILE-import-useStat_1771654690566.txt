@@ -1,0 +1,147 @@
+cat > /tmp/pricing_oauth_update.tsx << 'ENDFILE'
+import { useState } from "react";
+import { Check, X } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import { useGoogleLogin } from '@react-oauth/google';
+
+const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+function AuthModal({ 
+  isOpen, 
+  onClose, 
+  onSubmit,
+  isLoading,
+  planType
+}: { 
+  isOpen: boolean; 
+  onClose: () => void; 
+  onSubmit: (email: string, firstName: string, lastName: string) => void;
+  isLoading: boolean;
+  planType: 'trial' | 'enterprise';
+}) {
+  const [email, setEmail] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [emailError, setEmailError] = useState('');
+  const { toast } = useToast();
+
+  // Google OAuth Login Handler
+  const handleGoogleSuccess = async (tokenResponse: any) => {
+    try {
+      // Get user info from Google
+      const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+        headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
+      });
+      
+      const userInfo = await userInfoResponse.json();
+      
+      // Extract name parts
+      const nameParts = (userInfo.name || '').split(' ');
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
+      
+      // Auto-submit with Google data
+      onSubmit(userInfo.email, firstName, lastName);
+    } catch (err: any) {
+      toast({
+        title: "Google Sign-In Error",
+        description: err.message || "Failed to sign in with Google",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const googleLogin = useGoogleLogin({
+    onSuccess: handleGoogleSuccess,
+    onError: () => {
+      toast({
+        title: "Sign-In Failed",
+        description: "Could not sign in with Google. Please try email instead.",
+        variant: "destructive"
+      });
+    },
+  });
+
+  if (!isOpen) return null;
+
+  const handleEmailChange = (value: string) => {
+    setEmail(value.trim());
+    if (emailError && value.trim()) setEmailError('');
+  };
+ENDFILE
+
+# Now use sed to update just the AuthModal function in your Pricing.tsx
+sed -i '1,/^function AuthModal/!b; /^function AuthModal/,/^  if (!isOpen) return null;/{ r /tmp/pricing_oauth_update.tsx
+d; }' client/src/pages/Pricing.tsx
+
+# Also update the Google button onClick handler
+sed -i "s/onClick={() => {\/\* Google OAuth - to be implemented \*\/}}/onClick={() => googleLogin()}/g" client/src/pages/Pricing.tsx
+
+# Remove the Apple button since we're not implementing it yet
+sed -i '/Continue with Apple/,+9d' client/src/pages/Pricing.tsx
+
+# Remove the "or continue with email" divider since we only have Google now
+sed -i '/or continue with email/,+7d' client/src/pages/Pricing.tsx
+
+echo "✅ Pricing.tsx updated with Google OAuth!"
+```
+
+Wait, this is getting complex with sed. Let me use Replit Agent instead. 
+
+---
+
+## 🎯 **BETTER APPROACH: Use Replit Agent**
+
+Give this prompt to **Replit Agent**:
+```
+Update client/src/pages/Pricing.tsx to add Google OAuth:
+
+1. Add this import at the top:
+   import { useGoogleLogin } from '@react-oauth/google';
+
+2. In the AuthModal function, add Google login handler BEFORE "if (!isOpen) return null;":
+
+   const { toast } = useToast();
+
+   const handleGoogleSuccess = async (tokenResponse: any) => {
+     try {
+       const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+         headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
+       });
+       const userInfo = await userInfoResponse.json();
+       const nameParts = (userInfo.name || '').split(' ');
+       const firstName = nameParts[0] || '';
+       const lastName = nameParts.slice(1).join(' ') || '';
+       onSubmit(userInfo.email, firstName, lastName);
+     } catch (err: any) {
+       toast({
+         title: "Google Sign-In Error",
+         description: err.message || "Failed to sign in with Google",
+         variant: "destructive"
+       });
+     }
+   };
+
+   const googleLogin = useGoogleLogin({
+     onSuccess: handleGoogleSuccess,
+     onError: () => {
+       toast({
+         title: "Sign-In Failed",
+         description: "Could not sign in with Google. Please try email instead.",
+         variant: "destructive"
+       });
+     },
+   });
+
+3. Update the Google button onClick from:
+   onClick={() => {/* Google OAuth - to be implemented */}}
+   
+   To:
+   onClick={() => googleLogin()}
+
+4. Remove the Apple Sign-In button completely (the entire <button> element)
+
+5. Remove the "or continue with email" divider section
+
+Keep everything else exactly the same!
