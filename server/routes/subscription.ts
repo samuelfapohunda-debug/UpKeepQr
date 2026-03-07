@@ -24,6 +24,36 @@ const GRACE_PERIOD_DAYS = 3;
 const MONTHLY_PRICE_ID = process.env.STRIPE_MONTHLY_PRICE_ID || '';
 const ANNUAL_PRICE_ID = process.env.STRIPE_ANNUAL_PRICE_ID || '';
 
+const PLAN_PRICE_MAP: Record<string, Record<string, string>> = {
+  homeowner_basic: {
+    monthly: 'price_1So4rLDCF1d9RFesuB6nZF9I',
+    annual: 'price_1T0u3DDCF1d9RFesAlvXvBKT',
+  },
+  homeowner_plus: {
+    monthly: 'price_1So4vODCF1d9RFeshJuQovFg',
+    annual: 'price_1So4xEDCF1d9RFes6jwKc1P0',
+  },
+  realtor: {
+    monthly: 'price_1So525DCF1d9RFesBxOYhY2X',
+    annual: 'price_1So53DDCF1d9RFes2KzS4g26',
+  },
+  property_manager: {
+    monthly: 'price_1So54hDCF1d9RFesWIaqD2hC',
+    annual: 'price_1So55cDCF1d9RFesFG8Yg5I6',
+  },
+};
+
+function resolvePriceId(planId: string | undefined, billingInterval: string): string | null {
+  if (planId && PLAN_PRICE_MAP[planId]?.[billingInterval]) {
+    return PLAN_PRICE_MAP[planId][billingInterval];
+  }
+  const fallback = billingInterval === 'monthly' ? MONTHLY_PRICE_ID : ANNUAL_PRICE_ID;
+  if (fallback && !fallback.includes('placeholder')) {
+    return fallback;
+  }
+  return null;
+}
+
 async function logSubscriptionEvent(
   householdId: string | null,
   stripeEventType: string,
@@ -70,7 +100,7 @@ export function registerSubscriptionRoutes(app: Express) {
   
   app.post("/api/subscription/trial-signup", express.json(), async (req: Request, res: Response) => {
     try {
-      const { email, name, billingInterval, paymentMethodId, termsAccepted, deviceFingerprint } = req.body;
+      const { email, name, planId, billingInterval, paymentMethodId, termsAccepted, deviceFingerprint } = req.body;
 
       if (!email || !name || !billingInterval || !paymentMethodId || !termsAccepted) {
         return res.status(400).json({ error: "Missing required fields" });
@@ -107,10 +137,10 @@ export function registerSubscriptionRoutes(app: Express) {
         invoice_settings: { default_payment_method: paymentMethodId },
       });
 
-      const priceId = billingInterval === 'monthly' ? MONTHLY_PRICE_ID : ANNUAL_PRICE_ID;
+      const priceId = resolvePriceId(planId, billingInterval);
 
-      if (!priceId || priceId.includes('placeholder')) {
-        console.error("[Trial Signup] Stripe price IDs not configured. Set STRIPE_MONTHLY_PRICE_ID and STRIPE_ANNUAL_PRICE_ID environment variables with real Stripe Price IDs.");
+      if (!priceId) {
+        console.error(`[Trial Signup] No price ID found for plan=${planId}, interval=${billingInterval}`);
         return res.status(503).json({ error: "Subscription checkout is not yet configured. Please contact support." });
       }
 
@@ -310,7 +340,7 @@ export function registerSubscriptionRoutes(app: Express) {
 
   app.post("/api/subscription/create-checkout", express.json(), async (req: Request, res: Response) => {
     try {
-      const { billingInterval, email, name } = req.body;
+      const { planId, billingInterval, email, name } = req.body;
 
       if (!billingInterval) {
         return res.status(400).json({ error: "Missing required fields" });
@@ -320,12 +350,14 @@ export function registerSubscriptionRoutes(app: Express) {
         return res.status(500).json({ error: "Payment system not configured" });
       }
 
-      const priceId = billingInterval === 'monthly' ? MONTHLY_PRICE_ID : ANNUAL_PRICE_ID;
+      const priceId = resolvePriceId(planId, billingInterval);
 
-      if (!priceId || priceId.includes('placeholder')) {
-        console.error("[Subscription Checkout] Stripe price IDs not configured. Set STRIPE_MONTHLY_PRICE_ID and STRIPE_ANNUAL_PRICE_ID environment variables with real Stripe Price IDs.");
+      if (!priceId) {
+        console.error(`[Subscription Checkout] No price ID found for plan=${planId}, interval=${billingInterval}`);
         return res.status(503).json({ error: "Subscription checkout is not yet configured. Please contact support." });
       }
+
+      console.log(`[Subscription Checkout] Using price ID: ${priceId} for plan=${planId}, interval=${billingInterval}`);
 
       const baseUrl = process.env.PUBLIC_BASE_URL || `https://${req.get('host')}`;
 
@@ -345,6 +377,7 @@ export function registerSubscriptionRoutes(app: Express) {
         cancel_url: `${baseUrl}/pricing`,
         metadata: {
           signup_type: 'subscription',
+          plan_id: planId || '',
           billing_interval: billingInterval,
           customer_name: name || '',
         },
