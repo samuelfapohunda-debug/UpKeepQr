@@ -109,6 +109,11 @@ export function registerSubscriptionRoutes(app: Express) {
 
       const priceId = billingInterval === 'monthly' ? MONTHLY_PRICE_ID : ANNUAL_PRICE_ID;
 
+      if (!priceId || priceId.includes('placeholder')) {
+        console.error("[Trial Signup] Stripe price IDs not configured. Set STRIPE_MONTHLY_PRICE_ID and STRIPE_ANNUAL_PRICE_ID environment variables with real Stripe Price IDs.");
+        return res.status(503).json({ error: "Subscription checkout is not yet configured. Please contact support." });
+      }
+
       const subscription = await stripe.subscriptions.create({
         customer: customer.id,
         items: [{ price: priceId }],
@@ -316,6 +321,12 @@ export function registerSubscriptionRoutes(app: Express) {
       }
 
       const priceId = billingInterval === 'monthly' ? MONTHLY_PRICE_ID : ANNUAL_PRICE_ID;
+
+      if (!priceId || priceId.includes('placeholder')) {
+        console.error("[Subscription Checkout] Stripe price IDs not configured. Set STRIPE_MONTHLY_PRICE_ID and STRIPE_ANNUAL_PRICE_ID environment variables with real Stripe Price IDs.");
+        return res.status(503).json({ error: "Subscription checkout is not yet configured. Please contact support." });
+      }
+
       const baseUrl = process.env.PUBLIC_BASE_URL || `https://${req.get('host')}`;
 
       const session = await stripe.checkout.sessions.create({

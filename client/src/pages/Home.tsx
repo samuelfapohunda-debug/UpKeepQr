@@ -14,31 +14,16 @@ export default function Home() {
   const [billingInterval, setBillingInterval] = useState<'monthly' | 'annual'>('annual');
   const { toast } = useToast();
 
-  const handleCheckout = async (planId: string, planName: string) => {
-    setLoadingPlan(planId);
-    try {
-      const response = await fetch('/api/checkout/create-subscription-checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ priceId: planId, plan: planName }),
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Failed to start checkout');
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        throw new Error('No checkout URL received');
-      }
-    } catch (error: any) {
-      console.error('Checkout error:', error);
+  const handleCheckout = (planId: string, planName: string) => {
+    const isEnterprise = planId === 'realtor' || planId === 'property_manager';
+    if (isEnterprise) {
       toast({
-        title: "Checkout Unavailable",
-        description: "Subscription checkout is being set up. Please contact us to get started.",
-        variant: "destructive"
+        title: "Request Submitted",
+        description: "Our sales team will contact you within 24 hours.",
       });
-    } finally {
-      setLoadingPlan(null);
+      return;
     }
+    window.location.href = '/pricing';
   };
 
   return (
