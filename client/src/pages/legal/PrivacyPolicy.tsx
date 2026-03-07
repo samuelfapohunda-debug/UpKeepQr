@@ -1,8 +1,8 @@
 export default function PrivacyPolicy() {
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pt-20 sm:pt-24 pb-12">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 sm:p-8">
           <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-6" data-testid="text-privacy-title">MaintCue Privacy Policy</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-8">Last Updated: January 25, 2026</p>
           

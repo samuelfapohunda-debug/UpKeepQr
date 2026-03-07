@@ -229,7 +229,7 @@ export default function Contact() {
 
             <div className="space-y-10">
               <div data-testid="stat-homeowners">
-                <div className="text-5xl md:text-6xl font-bold text-blue-600 dark:text-blue-400 leading-none mb-2">
+                <div className="text-4xl md:text-5xl lg:text-6xl font-bold text-blue-600 dark:text-blue-400 leading-none mb-2">
                   5000+
                 </div>
                 <div className="text-lg text-gray-600 dark:text-gray-400 font-medium">
@@ -238,7 +238,7 @@ export default function Contact() {
               </div>
 
               <div data-testid="stat-realtors">
-                <div className="text-5xl md:text-6xl font-bold text-blue-600 dark:text-blue-400 leading-none mb-2">
+                <div className="text-4xl md:text-5xl lg:text-6xl font-bold text-blue-600 dark:text-blue-400 leading-none mb-2">
                   100+
                 </div>
                 <div className="text-lg text-gray-600 dark:text-gray-400 font-medium">
@@ -247,7 +247,7 @@ export default function Contact() {
               </div>
 
               <div data-testid="stat-apartments">
-                <div className="text-5xl md:text-6xl font-bold text-blue-600 dark:text-blue-400 leading-none mb-2">
+                <div className="text-4xl md:text-5xl lg:text-6xl font-bold text-blue-600 dark:text-blue-400 leading-none mb-2">
                   20+
                 </div>
                 <div className="text-lg text-gray-600 dark:text-gray-400 font-medium">

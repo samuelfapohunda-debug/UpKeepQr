@@ -6,7 +6,7 @@ export default function Footer() {
   return (
     <footer className="bg-gray-900 text-gray-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-8">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8">
           
           <div>
             <Link href="/" className="inline-block mb-4" data-testid="footer-logo-link">
@@ -77,12 +77,12 @@ export default function Footer() {
           {/* Social Media Section */}
           <div>
             <h3 className="text-white font-semibold text-lg mb-4">Follow Us</h3>
-            <div className="flex space-x-4">
+            <div className="flex gap-2 flex-wrap">
               <a 
                 href="https://www.instagram.com/maintcue/" 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="hover:text-white transition-colors"
+                className="inline-flex items-center justify-center min-w-[44px] min-h-[44px] hover:text-white transition-colors"
                 aria-label="Instagram"
                 data-testid="link-social-instagram"
               >
@@ -92,7 +92,7 @@ export default function Footer() {
                 href="https://facebook.com/maintcue" 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="hover:text-white transition-colors"
+                className="inline-flex items-center justify-center min-w-[44px] min-h-[44px] hover:text-white transition-colors"
                 aria-label="Facebook"
                 data-testid="link-social-facebook"
               >
@@ -102,7 +102,7 @@ export default function Footer() {
                 href="https://www.linkedin.com/in/maintcue-llc-6621513b1/" 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="hover:text-white transition-colors"
+                className="inline-flex items-center justify-center min-w-[44px] min-h-[44px] hover:text-white transition-colors"
                 aria-label="LinkedIn"
                 data-testid="link-social-linkedin"
               >
@@ -112,7 +112,7 @@ export default function Footer() {
                 href="https://tiktok.com/@maintcue" 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="hover:text-white transition-colors"
+                className="inline-flex items-center justify-center min-w-[44px] min-h-[44px] hover:text-white transition-colors"
                 aria-label="TikTok"
                 data-testid="link-social-tiktok"
               >

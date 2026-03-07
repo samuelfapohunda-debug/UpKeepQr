@@ -68,10 +68,11 @@ function AuthModal({
 
         const buttonDiv = document.getElementById('google-signin-button');
         if (buttonDiv) {
+          const buttonWidth = Math.min(buttonDiv.clientWidth || 360, 400);
           window.google.accounts.id.renderButton(buttonDiv, {
             theme: 'outline',
             size: 'large',
-            width: 400,
+            width: buttonWidth,
             text: 'continue_with',
           });
         }
@@ -108,7 +109,7 @@ function AuthModal({
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-white dark:bg-slate-800 rounded-2xl p-8 w-full max-w-md shadow-2xl relative" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 sm:p-8 w-full max-w-md shadow-2xl relative" onClick={(e) => e.stopPropagation()}>
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
@@ -237,7 +238,7 @@ function AuthModal({
 
 function BillingToggle({ interval, onChange }: { interval: 'monthly' | 'annual'; onChange: (v: 'monthly' | 'annual') => void }) {
   return (
-    <div className="flex items-center justify-center gap-3 mb-10">
+    <div className="flex items-center justify-center gap-3 mb-10 flex-wrap">
       <span className={`text-sm font-medium transition-colors ${interval === 'monthly' ? 'text-slate-900 dark:text-white' : 'text-slate-500 dark:text-slate-400'}`}>
         Monthly
       </span>
@@ -516,7 +517,7 @@ export default function Pricing() {
 
             <BillingToggle interval={billingInterval} onChange={setBillingInterval} />
 
-            <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 max-w-5xl mx-auto">
               {PRICING_PLANS.map(plan => (
                 <PricingCard
                   key={plan.id}

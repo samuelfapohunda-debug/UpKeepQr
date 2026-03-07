@@ -121,7 +121,7 @@ export default function Home() {
               </p>
             </div>
             
-            <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 max-w-4xl mx-auto">
               {/* BEFORE Column */}
               <Card className="border-red-200 bg-red-50/50">
                 <CardHeader>
@@ -273,7 +273,7 @@ export default function Home() {
             </div>
             
             {/* 2-column grid */}
-            <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 max-w-5xl mx-auto">
               
               {/* Benefit 1 */}
               <div className="flex gap-4">
@@ -412,7 +412,7 @@ export default function Home() {
               </p>
             </div>
 
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {/* Homeowners */}
               <Card className="border-slate-200 shadow-sm card-hover bg-white">
                 <CardHeader className="pb-3">
@@ -594,7 +594,7 @@ export default function Home() {
               )}
             </div>
             
-            <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 max-w-5xl mx-auto">
               
               {/* Homeowner Basic */}
               <Card className="relative border-slate-200 shadow-sm card-hover bg-white">
@@ -843,7 +843,7 @@ export default function Home() {
             <div className="text-center mb-16">
               <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">Frequently Asked Questions</h2>
             </div>
-            <div className="max-w-4xl mx-auto grid gap-6 lg:grid-cols-2">
+            <div className="max-w-4xl mx-auto grid grid-cols-1 gap-6 lg:grid-cols-2">
               <Card className="border-slate-200 shadow-sm bg-white">
                 <CardHeader>
                   <CardTitle className="text-lg text-slate-900">How does the QR magnet work?</CardTitle>

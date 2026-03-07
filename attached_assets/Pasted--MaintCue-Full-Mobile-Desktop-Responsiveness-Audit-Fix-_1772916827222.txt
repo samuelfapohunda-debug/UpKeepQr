@@ -1,0 +1,194 @@
+# 🎯 **MaintCue Full Mobile & Desktop Responsiveness Audit & Fix**
+
+**Task:** Complete systematic responsiveness audit and fix across every UI surface in MaintCue. Go component by component, screen by screen. Do not skip anything.
+
+---
+
+## 📋 **PRIORITY ORDER — Work in this exact sequence:**
+
+### **1. Critical User Flows (Highest Priority)**
+- ✅ **Pricing page** (`/pricing`) — plan cards, billing toggle, trial messaging, CTA buttons
+- ✅ **Google OAuth modal** — auth form, input fields, sign-in button
+- 🔄 **QR scanner flow** — camera view, scan result, property selection
+- 🔄 **Maintenance task flow** — task list, task detail, mark complete, add notes
+- 🔄 **Property management** — add property form, property list, property detail
+
+### **2. Marketing & Public Pages**
+- 🔄 **Homepage/Landing** (`/`) — hero section, features, pricing preview, CTA
+- 🔄 **About page** — team section, mission statement, contact info
+- 🔄 **Request Pro page** (`/request-pro`) — contractor request form, Google Maps integration
+- 🔄 **Contact page** — contact form, validation messages
+
+### **3. Dashboard (Homeowner)**
+- 🔄 **Dashboard home** — overview, upcoming tasks, property cards
+- 🔄 **Properties list** — property grid/list, add property button
+- 🔄 **Maintenance history** — task timeline, filters, search
+- 🔄 **Settings** — profile, notification preferences, subscription management
+
+### **4. Dashboard (Realtor/Property Manager)**
+- 🔄 **Client management** — client list, add client, client detail
+- 🔄 **Bulk QR generation** — select properties, download QR codes
+- 🔄 **Analytics** — revenue charts, client metrics, usage stats
+
+### **5. Auth & Onboarding**
+- 🔄 **Sign in page** — email/password form, Google OAuth button
+- 🔄 **Sign up page** — registration form, plan selection
+- 🔄 **Onboarding flow** — welcome, add first property, QR setup
+
+### **6. Legal & Footer**
+- 🔄 **Terms of Service**
+- 🔄 **Privacy Policy**
+- 🔄 **Footer** — links, copyright, social icons
+
+---
+
+## ✅ **AUDIT CRITERIA — Check every item for each screen:**
+
+### **Layout**
+- ✅ Reflows properly at **375px (iPhone SE)**, **390px (iPhone 14)**, **414px**, **768px (tablet)**, **1280px**, **1440px**
+- ✅ No horizontal scrolling
+- ✅ No content clipped or overflowing viewport
+
+### **Typography**
+- ✅ Minimum **14px body text**, **12px labels** on mobile
+- ✅ No text overflow or truncation hiding critical info
+- ✅ Line heights readable on small screens
+- ✅ Font sizes scale up appropriately on desktop (use `lg:text-xl`, `xl:text-2xl`)
+
+### **Touch Targets**
+- ✅ All buttons, links, inputs **minimum 44×44px**
+- ✅ Adequate spacing between tappable elements (minimum 8px gap)
+- ✅ QR scanner button large enough for easy tap
+
+### **Forms**
+- ✅ All inputs, selects, textareas **full-width on mobile** (`w-full`)
+- ✅ Labels visible and properly aligned
+- ✅ Error messages visible and not hidden
+- ✅ No inputs hidden behind mobile keyboard
+- ✅ React Hook Form validation messages display correctly on mobile
+
+### **Navigation**
+- ✅ Header fixed or sticky where needed
+- ✅ Mobile hamburger menu accessible
+- ✅ Back buttons visible and functional
+- ✅ No nav elements overlapping content
+- ✅ Logo scales appropriately on mobile
+
+### **Modals and Overlays**
+- ✅ Full screen or **w-[95%] max-h-[90vh]** on mobile
+- ✅ Scrollable content inside modal
+- ✅ Close button always visible (fixed at top on mobile)
+- ✅ Google OAuth modal properly centered
+- ✅ Not cut off at top or bottom
+- ✅ `overflow-y-auto` for long content
+
+### **Images & Icons**
+- ✅ Responsive, not stretched or distorted
+- ✅ QR codes display at appropriate size on mobile
+- ✅ Property images maintain aspect ratio
+- ✅ Lucide icons scale properly
+
+### **Grids and Cards**
+- ✅ Pricing plan cards: **grid-cols-1 sm:grid-cols-2 lg:grid-cols-4**
+- ✅ Property cards: **grid-cols-1 sm:grid-cols-2 lg:grid-cols-3**
+- ✅ Task cards: **grid-cols-1** on mobile
+- ✅ Cards don't overflow
+- ✅ Spacing consistent (`gap-4 md:gap-6`)
+
+### **Fixed and Sticky Elements**
+- ✅ Bottom CTAs use `pb-[env(safe-area-inset-bottom)]` for notched phones
+- ✅ Sticky headers don't overlap scrollable content
+- ✅ Fixed "Start Free Trial" buttons don't cover content
+
+### **Flex and Grid Overflow**
+- ✅ No flex children overflowing containers
+- ✅ Gap and padding appropriate at small screens
+- ✅ Billing toggle (`monthly/annual`) wraps properly
+
+### **MaintCue-Specific Elements**
+
+**Pricing Page:**
+- ✅ Plan cards stack vertically on mobile (grid-cols-1)
+- ✅ Billing toggle visible and tappable
+- ✅ Strikethrough pricing displays correctly
+- ✅ "Most Popular" badge positioned correctly
+- ✅ Feature lists readable without horizontal scroll
+- ✅ "Start Free Trial" buttons full-width on mobile
+
+**QR Scanner:**
+- ✅ Camera viewfinder full-width on mobile
+- ✅ Scan instructions visible
+- ✅ Manual entry fallback accessible
+
+**Property Management:**
+- ✅ Add property form inputs stack vertically
+- ✅ Google Maps integration responsive
+- ✅ Property address autocomplete works on mobile
+
+**Task Management:**
+- ✅ Task cards readable on small screens
+- ✅ "Mark Complete" button easy to tap
+- ✅ Task notes textarea expands properly
+
+**Dashboard:**
+- ✅ Metric cards stack to **grid-cols-1** on mobile
+- ✅ Charts/graphs responsive (Recharts library)
+- ✅ Side navigation collapses to hamburger on mobile
+
+---
+
+## 🧪 **EDGE CASE TESTING**
+
+After fixing each screen, test:
+- ✅ Very long property names ("The Johnson Family Summer Home at 1234 Long Street Name")
+- ✅ Long maintenance task names ("Annual HVAC System Inspection & Filter Replacement")
+- ✅ Long prices ($1,000.00+)
+- ✅ Long button text ("Complete 30-Day Free Trial Signup")
+- ✅ `env(safe-area-inset-bottom)` for notched phones
+- ✅ Landscape orientation on mobile
+- ✅ Dark mode (if implemented)
+
+---
+
+## 🛠️ **HOW TO WORK**
+
+1. Go through each surface **one at a time** in priority order
+2. For each surface: **identify all issues first**, then fix them all before moving on
+3. Use **Tailwind responsive prefixes** (`sm:`, `md:`, `lg:`, `xl:`) consistently
+4. **Mobile-first** approach: base styles for mobile, add `sm:` and up for larger screens
+5. Desktop fixes use `lg:` and `xl:` prefixes
+6. **Do NOT change:**
+   - Functionality, logic, or data fetching
+   - Business rules or validation
+   - Color tokens or design system values
+   - API endpoints or route structure
+7. **Only fix:** Layout, spacing, sizing, breakpoints, overflow
+
+---
+
+## 📊 **DESKTOP AUDIT (1280px & 1440px)**
+
+- ✅ Content not too wide or too narrow
+- ✅ No excessive whitespace
+- ✅ Text line length comfortable to read (max-w-prose where needed)
+- ✅ Grids use available space well at large sizes
+- ✅ Font sizes scale up appropriately
+- ✅ Dashboard side navigation visible and functional
+
+---
+
+## 📝 **DELIVERABLE**
+
+After completing all fixes, provide:
+1. **Summary of every file changed**
+2. **What was fixed in each file**
+3. **Before/after screenshots** of critical fixes
+4. **Remaining issues** (if any)
+
+---
+
+## 🚀 **START HERE**
+
+Begin with **Pricing Page** (`client/src/pages/Pricing.tsx`) — this is the most critical user-facing page. Audit and fix all responsiveness issues before moving to the next surface.
+
+**Ready to start?** 💪

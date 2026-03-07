@@ -349,7 +349,7 @@ export default function CustomerDashboard() {
             <div className="flex items-center space-x-3">
               <Home className="h-8 w-8" />
               <div>
-                <h1 className="text-2xl font-bold sm:text-3xl" data-testid="text-welcome-name">
+                <h1 className="text-xl font-bold sm:text-2xl md:text-3xl" data-testid="text-welcome-name">
                   Welcome, {household.firstName}!
                 </h1>
                 <p className="text-blue-100 text-sm" data-testid="text-home-info">
@@ -371,7 +371,7 @@ export default function CustomerDashboard() {
                 variant="outline" 
                 size="sm" 
                 onClick={handleLogout}
-                className="bg-white/10 border-white/20 hover:bg-white/20 text-white"
+                className="bg-white/10 border-white/20 text-white"
                 data-testid="button-logout"
               >
                 <LogOut className="h-4 w-4 mr-2" />
@@ -385,67 +385,67 @@ export default function CustomerDashboard() {
       <div className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
         <SubscriptionBanner />
         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as DashboardTab)} className="w-full">
-          <TabsList className="grid grid-cols-3 mb-6">
+          <TabsList className="grid w-full grid-cols-3 mb-6">
             <TabsTrigger value="tasks" data-testid="tab-tasks">
-              <ListTodo className="h-4 w-4 mr-2" />
-              Tasks
+              <ListTodo className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Tasks</span>
             </TabsTrigger>
             <TabsTrigger value="appliances" data-testid="tab-appliances">
-              <Settings className="h-4 w-4 mr-2" />
-              Appliances
+              <Settings className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Appliances</span>
             </TabsTrigger>
             <TabsTrigger value="details" data-testid="tab-details">
-              <User className="h-4 w-4 mr-2" />
-              Details
+              <User className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Details</span>
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="tasks" className="space-y-4">
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
               <Card data-testid="stat-total">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between gap-2">
+                <CardContent className="p-3 sm:p-4">
+                  <div className="flex items-center justify-between gap-1">
                     <div>
-                      <p className="text-sm text-muted-foreground">Total Tasks</p>
-                      <p className="text-2xl font-bold">{stats.total}</p>
+                      <p className="text-xs sm:text-sm text-muted-foreground">Total Tasks</p>
+                      <p className="text-xl sm:text-2xl font-bold">{stats.total}</p>
                     </div>
-                    <ListTodo className="h-8 w-8 text-blue-500" />
+                    <ListTodo className="h-6 w-6 sm:h-8 sm:w-8 text-blue-500 flex-shrink-0" />
                   </div>
                 </CardContent>
               </Card>
 
               <Card data-testid="stat-completed">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between gap-2">
+                <CardContent className="p-3 sm:p-4">
+                  <div className="flex items-center justify-between gap-1">
                     <div>
-                      <p className="text-sm text-muted-foreground">Completed</p>
-                      <p className="text-2xl font-bold text-green-600">{stats.completed}</p>
+                      <p className="text-xs sm:text-sm text-muted-foreground">Completed</p>
+                      <p className="text-xl sm:text-2xl font-bold text-green-600">{stats.completed}</p>
                     </div>
-                    <CheckCircle2 className="h-8 w-8 text-green-500" />
+                    <CheckCircle2 className="h-6 w-6 sm:h-8 sm:w-8 text-green-500 flex-shrink-0" />
                   </div>
                 </CardContent>
               </Card>
 
               <Card data-testid="stat-pending">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between gap-2">
+                <CardContent className="p-3 sm:p-4">
+                  <div className="flex items-center justify-between gap-1">
                     <div>
-                      <p className="text-sm text-muted-foreground">Pending</p>
-                      <p className="text-2xl font-bold text-blue-600">{stats.pending}</p>
+                      <p className="text-xs sm:text-sm text-muted-foreground">Pending</p>
+                      <p className="text-xl sm:text-2xl font-bold text-blue-600">{stats.pending}</p>
                     </div>
-                    <Clock className="h-8 w-8 text-blue-500" />
+                    <Clock className="h-6 w-6 sm:h-8 sm:w-8 text-blue-500 flex-shrink-0" />
                   </div>
                 </CardContent>
               </Card>
 
               <Card data-testid="stat-overdue">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between gap-2">
+                <CardContent className="p-3 sm:p-4">
+                  <div className="flex items-center justify-between gap-1">
                     <div>
-                      <p className="text-sm text-muted-foreground">Overdue</p>
-                      <p className="text-2xl font-bold text-red-600">{stats.overdue}</p>
+                      <p className="text-xs sm:text-sm text-muted-foreground">Overdue</p>
+                      <p className="text-xl sm:text-2xl font-bold text-red-600">{stats.overdue}</p>
                     </div>
-                    <AlertTriangle className="h-8 w-8 text-red-500" />
+                    <AlertTriangle className="h-6 w-6 sm:h-8 sm:w-8 text-red-500 flex-shrink-0" />
                   </div>
                 </CardContent>
               </Card>
@@ -470,6 +470,7 @@ export default function CustomerDashboard() {
                         size="sm"
                         onClick={() => handleDownloadCalendar(household.id)}
                         disabled={isDownloadingCalendar || stats.pending === 0}
+                        className="w-full sm:w-auto"
                         data-testid="button-sync-calendar"
                       >
                         {isDownloadingCalendar ? (
@@ -531,8 +532,8 @@ export default function CustomerDashboard() {
                             <span>Every {task.frequencyMonths} months</span>
                           </div>
                         </div>
-                        <div className="flex items-center gap-3 flex-shrink-0">
-                          <div className="text-right">
+                        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0 flex-wrap">
+                          <div className="text-left sm:text-right">
                             <p className="text-xs text-muted-foreground">Due</p>
                             <p className="text-sm font-medium">{formatDate(task.dueDate)}</p>
                           </div>
