@@ -294,7 +294,7 @@ const PRICING_PLANS: PlanConfig[] = [
       'Task completion history'
     ],
     ctaLabel: 'Start Free Trial',
-    highlighted: false,
+    highlighted: true,
     trialDays: 30,
     type: 'trial'
   },
@@ -329,10 +329,10 @@ const PRICING_PLANS: PlanConfig[] = [
       'Client activation tracking',
       'Co-branded QR experience'
     ],
-    ctaLabel: 'Request Agent Access',
-    highlighted: false,
-    trialDays: 0,
-    type: 'enterprise'
+    ctaLabel: 'Start Free Trial',
+    highlighted: true,
+    trialDays: 30,
+    type: 'trial'
   },
   {
     id: 'property_manager',
@@ -347,10 +347,10 @@ const PRICING_PLANS: PlanConfig[] = [
       'Bulk branded magnets',
       'SMS limits per unit'
     ],
-    ctaLabel: 'Contact Sales',
-    highlighted: false,
-    trialDays: 0,
-    type: 'enterprise'
+    ctaLabel: 'Start Free Trial',
+    highlighted: true,
+    trialDays: 30,
+    type: 'trial'
   }
 ];
 
@@ -468,12 +468,7 @@ export default function Pricing() {
         throw new Error(data.error || 'Failed to create checkout session');
       }
 
-      if (type === 'enterprise') {
-        toast({
-          title: "Request Submitted!",
-          description: "Our sales team will contact you within 24 hours.",
-        });
-      } else if (data.url) {
+      if (data.url) {
         window.location.href = data.url;
       } else {
         throw new Error('No checkout URL received');

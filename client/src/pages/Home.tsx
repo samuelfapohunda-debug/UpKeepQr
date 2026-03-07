@@ -15,14 +15,6 @@ export default function Home() {
   const { toast } = useToast();
 
   const handleCheckout = (planId: string, planName: string) => {
-    const isEnterprise = planId === 'realtor' || planId === 'property_manager';
-    if (isEnterprise) {
-      toast({
-        title: "Request Submitted",
-        description: "Our sales team will contact you within 24 hours.",
-      });
-      return;
-    }
     window.location.href = '/pricing';
   };
 
@@ -739,6 +731,10 @@ export default function Home() {
                   </p>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  <div className="bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-3">
+                    <p className="text-sm font-medium text-emerald-700">30-day free trial included</p>
+                    <p className="text-xs text-emerald-600 mt-0.5">Card required but not charged until trial ends</p>
+                  </div>
                   <ul className="space-y-3 text-sm">
                     <li className="flex items-center gap-2 text-slate-600">
                       <CheckCircle className="h-4 w-4 text-emerald-500 flex-shrink-0" />
@@ -767,7 +763,7 @@ export default function Home() {
                     onClick={() => handleCheckout('realtor', 'Realtor / Agent')}
                     disabled={loadingPlan === 'realtor'}
                   >
-                    {loadingPlan === 'realtor' ? 'Loading...' : 'Request Agent Access'}
+                    {loadingPlan === 'realtor' ? 'Loading...' : 'Start Free Trial'}
                   </Button>
                 </CardContent>
               </Card>
@@ -792,6 +788,10 @@ export default function Home() {
                   </p>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  <div className="bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-3">
+                    <p className="text-sm font-medium text-emerald-700">30-day free trial included</p>
+                    <p className="text-xs text-emerald-600 mt-0.5">Card required but not charged until trial ends</p>
+                  </div>
                   <ul className="space-y-3 text-sm">
                     <li className="flex items-center gap-2 text-slate-600">
                       <CheckCircle className="h-4 w-4 text-emerald-500 flex-shrink-0" />
@@ -824,7 +824,7 @@ export default function Home() {
                     onClick={() => handleCheckout('property_manager', 'Property Manager')}
                     disabled={loadingPlan === 'property_manager'}
                   >
-                    {loadingPlan === 'property_manager' ? 'Loading...' : 'Contact Sales'}
+                    {loadingPlan === 'property_manager' ? 'Loading...' : 'Start Free Trial'}
                   </Button>
                 </CardContent>
               </Card>
