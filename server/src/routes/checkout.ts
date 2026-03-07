@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { checkoutSchema } from '../../../shared/schema';
+import { stripe } from '../lib/stripe.js';
 
 const router = Router();
 
@@ -9,21 +10,8 @@ const SKU_CONFIG = {
   '100pack': { name: 'Agent 100-Pack', description: '100 QR magnets for real estate agents', price: 89900, quantity: 100, isAgentPack: true },
 };
 
-function getStripe() {
-  if ((global as any).__STRIPE_INSTANCE__) return (global as any).__STRIPE_INSTANCE__;
-  const key = process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRETE_KEY;
-  if (key) {
-    try {
-      const Stripe = require('stripe');
-      return new Stripe(key, { apiVersion: '2024-06-20' });
-    } catch { return null; }
-  }
-  return null;
-}
-
 router.post('/', async (req, res) => {
   try {
-    const stripe = getStripe();
     
     if (!stripe) {
       console.error('[Checkout] Stripe not configured');
@@ -88,7 +76,6 @@ router.post('/', async (req, res) => {
 
 router.post('/create-subscription-checkout', async (req, res) => {
   try {
-    const stripe = getStripe();
     
     if (!stripe) {
       console.error('[Subscription Checkout] Stripe not configured');

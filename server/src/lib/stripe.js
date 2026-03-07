@@ -2,11 +2,13 @@ import * as StripeModule from 'stripe';
 
 const Stripe = StripeModule.default || StripeModule;
 
-// Get the Stripe instance from the global (set by preload-stripe.cjs)
-// or create a new one if not available
+const stripeKey = process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRETE_KEY;
+
 export const stripe = global.__STRIPE_INSTANCE__ || 
-  (process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY) : null);
+  (stripeKey ? new Stripe(stripeKey, { apiVersion: '2024-06-20' }) : null);
 
 if (!stripe) {
-  console.warn('⚠️  Stripe is not available - STRIPE_SECRET_KEY not configured');
+  console.warn('[Stripe] Not available - no STRIPE_SECRET_KEY or STRIPE_SECRETE_KEY found');
+} else {
+  console.log('[Stripe] Instance ready');
 }

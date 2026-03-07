@@ -16,17 +16,7 @@ import {
   sendAccountSuspendedEmail,
 } from "../lib/subscriptionEmails";
 import type Stripe from "stripe";
-
-const stripe: import("stripe").default | null = (global as any).__STRIPE_INSTANCE__ || (() => {
-  const key = process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRETE_KEY;
-  if (key) {
-    try {
-      const Stripe = require('stripe');
-      return new Stripe(key, { apiVersion: '2024-06-20' });
-    } catch { return null; }
-  }
-  return null;
-})();
+import { stripe } from "../src/lib/stripe.js";
 
 const TRIAL_DAYS = 30;
 const GRACE_PERIOD_DAYS = 3;
