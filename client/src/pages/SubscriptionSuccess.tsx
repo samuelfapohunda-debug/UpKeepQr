@@ -1,9 +1,53 @@
-import { Check, ArrowRight } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Check, ArrowRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Link } from "wouter";
+import { useLocation } from "wouter";
 
 export default function SubscriptionSuccess() {
+  const [, navigate] = useLocation();
+  const [activating, setActivating] = useState(true);
+  const [activated, setActivated] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const sessionId = params.get("session_id");
+
+    if (!sessionId) {
+      setActivating(false);
+      return;
+    }
+
+    const activate = async () => {
+      try {
+        const res = await fetch("/api/subscription/activate-session", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ sessionId }),
+        });
+
+        if (res.ok) {
+          setActivated(true);
+        } else {
+          const data = await res.json();
+          setError(data.error || "Could not activate session");
+        }
+      } catch (err) {
+        setError("Could not connect to server");
+      } finally {
+        setActivating(false);
+      }
+    };
+
+    activate();
+  }, []);
+
+  const handleGoToDashboard = () => {
+    navigate("/my-home");
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-white dark:bg-slate-900">
       <main className="flex-1 flex items-center justify-center px-4 py-16">
@@ -31,11 +75,31 @@ export default function SubscriptionSuccess() {
             </ul>
           </div>
 
-          <Link href="/my-home">
-            <Button className="w-full bg-emerald-600 hover:bg-emerald-700 text-white" data-testid="button-go-to-dashboard">
+          {activating ? (
+            <Button className="w-full bg-emerald-600 text-white" disabled data-testid="button-go-to-dashboard">
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              Setting up your account...
+            </Button>
+          ) : error ? (
+            <div className="space-y-3">
+              <p className="text-sm text-red-600">{error}</p>
+              <Button
+                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
+                onClick={() => window.location.reload()}
+                data-testid="button-retry"
+              >
+                Try Again
+              </Button>
+            </div>
+          ) : (
+            <Button
+              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
+              onClick={handleGoToDashboard}
+              data-testid="button-go-to-dashboard"
+            >
               Go to Dashboard <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
-          </Link>
+          )}
         </Card>
       </main>
     </div>

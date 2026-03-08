@@ -20,6 +20,7 @@ import { stripe } from "../src/lib/stripe.js";
 
 const TRIAL_DAYS = 30;
 const GRACE_PERIOD_DAYS = 3;
+const activatedCheckoutSessions = new Set<string>();
 const MONTHLY_PRICE_ID = process.env.STRIPE_MONTHLY_PRICE_ID || '';
 const ANNUAL_PRICE_ID = process.env.STRIPE_ANNUAL_PRICE_ID || '';
 
@@ -386,6 +387,70 @@ export function registerSubscriptionRoutes(app: Express) {
     } catch (error: any) {
       console.error("Create checkout error:", error);
       res.status(500).json({ error: "Failed to create checkout session" });
+    }
+  });
+
+  app.post("/api/subscription/activate-session", express.json(), async (req: Request, res: Response) => {
+    try {
+      const { sessionId } = req.body;
+      if (!sessionId || !stripe) {
+        return res.status(400).json({ error: "Missing session ID" });
+      }
+
+      const checkoutSession = await stripe.checkout.sessions.retrieve(sessionId);
+      if (!checkoutSession || checkoutSession.status !== 'complete') {
+        return res.status(400).json({ error: "Invalid or incomplete checkout session" });
+      }
+
+      if (checkoutSession.mode !== 'subscription' || checkoutSession.metadata?.signup_type !== 'subscription') {
+        return res.status(400).json({ error: "Invalid checkout session type" });
+      }
+
+      if (activatedCheckoutSessions.has(sessionId)) {
+        return res.status(400).json({ error: "This checkout session has already been used" });
+      }
+
+      const customerId = checkoutSession.customer as string;
+      const email = (checkoutSession.customer_email || checkoutSession.customer_details?.email || '').toLowerCase();
+
+      if (!email) {
+        return res.status(400).json({ error: "No email found for this session" });
+      }
+
+      let retries = 0;
+      let household = await getHouseholdByStripeCustomerId(customerId);
+      while (!household && retries < 5) {
+        await new Promise(r => setTimeout(r, 1500));
+        household = await getHouseholdByStripeCustomerId(customerId);
+        retries++;
+      }
+
+      if (!household) {
+        return res.status(404).json({ error: "Account not yet created. Please wait a moment and try again." });
+      }
+
+      activatedCheckoutSessions.add(sessionId);
+      if (activatedCheckoutSessions.size > 1000) {
+        const first = activatedCheckoutSessions.values().next().value;
+        if (first) activatedCheckoutSessions.delete(first);
+      }
+
+      const { createSession } = await import("../lib/magicLink.js");
+      const sessionToken = await createSession(email, household.id.toString());
+
+      const isProduction = process.env.NODE_ENV === 'production';
+      res.cookie('maintcue_session', sessionToken, {
+        httpOnly: true,
+        secure: isProduction,
+        sameSite: 'strict',
+        maxAge: 30 * 24 * 60 * 60 * 1000,
+        path: '/'
+      });
+
+      res.json({ success: true, householdId: household.id });
+    } catch (error: any) {
+      console.error("[Activate Session] Error:", error);
+      res.status(500).json({ error: "Failed to activate session" });
     }
   });
 
