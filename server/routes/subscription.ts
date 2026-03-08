@@ -17,6 +17,7 @@ import {
 } from "../lib/subscriptionEmails";
 import type Stripe from "stripe";
 import { stripe } from "../src/lib/stripe.js";
+import { createSession } from "../lib/magicLink.js";
 
 const TRIAL_DAYS = 30;
 const GRACE_PERIOD_DAYS = 3;
@@ -393,25 +394,27 @@ export function registerSubscriptionRoutes(app: Express) {
   app.post("/api/subscription/activate-session", express.json(), async (req: Request, res: Response) => {
     try {
       const { sessionId } = req.body;
+      console.log("[Activate Session] Request received, sessionId:", sessionId ? sessionId.substring(0, 20) + '...' : 'missing');
+
       if (!sessionId || !stripe) {
-        return res.status(400).json({ error: "Missing session ID" });
+        console.log("[Activate Session] Missing sessionId or stripe not configured");
+        return res.status(400).json({ error: "Missing session ID or payment system not configured" });
       }
 
       const checkoutSession = await stripe.checkout.sessions.retrieve(sessionId);
+      console.log("[Activate Session] Checkout session status:", checkoutSession?.status, "mode:", checkoutSession?.mode, "metadata:", JSON.stringify(checkoutSession?.metadata));
+
       if (!checkoutSession || checkoutSession.status !== 'complete') {
         return res.status(400).json({ error: "Invalid or incomplete checkout session" });
       }
 
-      if (checkoutSession.mode !== 'subscription' || checkoutSession.metadata?.signup_type !== 'subscription') {
+      if (checkoutSession.mode !== 'subscription') {
         return res.status(400).json({ error: "Invalid checkout session type" });
-      }
-
-      if (activatedCheckoutSessions.has(sessionId)) {
-        return res.status(400).json({ error: "This checkout session has already been used" });
       }
 
       const customerId = checkoutSession.customer as string;
       const email = (checkoutSession.customer_email || checkoutSession.customer_details?.email || '').toLowerCase();
+      console.log("[Activate Session] Customer:", customerId, "Email:", email);
 
       if (!email) {
         return res.status(400).json({ error: "No email found for this session" });
@@ -419,38 +422,43 @@ export function registerSubscriptionRoutes(app: Express) {
 
       let retries = 0;
       let household = await getHouseholdByStripeCustomerId(customerId);
-      while (!household && retries < 5) {
-        await new Promise(r => setTimeout(r, 1500));
+      while (!household && retries < 8) {
+        console.log(`[Activate Session] Household not found, retry ${retries + 1}/8...`);
+        await new Promise(r => setTimeout(r, 2000));
         household = await getHouseholdByStripeCustomerId(customerId);
         retries++;
       }
 
       if (!household) {
+        const [byEmail] = await db.select().from(householdsTable).where(eq(householdsTable.email, email)).limit(1);
+        household = byEmail || null;
+        if (household) {
+          console.log("[Activate Session] Found household by email fallback, id:", household.id);
+        }
+      }
+
+      if (!household) {
+        console.log("[Activate Session] Household not found after all retries for customer:", customerId, "email:", email);
         return res.status(404).json({ error: "Account not yet created. Please wait a moment and try again." });
       }
 
-      activatedCheckoutSessions.add(sessionId);
-      if (activatedCheckoutSessions.size > 1000) {
-        const first = activatedCheckoutSessions.values().next().value;
-        if (first) activatedCheckoutSessions.delete(first);
-      }
-
-      const { createSession } = await import("../lib/magicLink.js");
+      console.log("[Activate Session] Found household:", household.id, "- creating session");
       const sessionToken = await createSession(email, household.id.toString());
 
       const isProduction = process.env.NODE_ENV === 'production';
       res.cookie('maintcue_session', sessionToken, {
         httpOnly: true,
         secure: isProduction,
-        sameSite: 'strict',
+        sameSite: 'lax',
         maxAge: 30 * 24 * 60 * 60 * 1000,
         path: '/'
       });
 
+      console.log("[Activate Session] Session created successfully for household:", household.id);
       res.json({ success: true, householdId: household.id });
     } catch (error: any) {
-      console.error("[Activate Session] Error:", error);
-      res.status(500).json({ error: "Failed to activate session" });
+      console.error("[Activate Session] Error:", error?.message || error, error?.stack);
+      res.status(500).json({ error: "Failed to activate session. Please try again." });
     }
   });
 

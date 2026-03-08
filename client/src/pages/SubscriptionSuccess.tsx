@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Check, ArrowRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -9,6 +9,9 @@ export default function SubscriptionSuccess() {
   const [activating, setActivating] = useState(true);
   const [activated, setActivated] = useState(false);
   const [error, setError] = useState("");
+  const [retryCount, setRetryCount] = useState(0);
+  const maxAutoRetries = 3;
+  const attemptedRef = useRef(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -16,11 +19,18 @@ export default function SubscriptionSuccess() {
 
     if (!sessionId) {
       setActivating(false);
+      setActivated(true);
       return;
     }
 
-    const activate = async () => {
+    if (attemptedRef.current) return;
+    attemptedRef.current = true;
+
+    const activate = async (attempt: number) => {
       try {
+        setActivating(true);
+        setError("");
+
         const res = await fetch("/api/subscription/activate-session", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -30,22 +40,66 @@ export default function SubscriptionSuccess() {
 
         if (res.ok) {
           setActivated(true);
-        } else {
-          const data = await res.json();
-          setError(data.error || "Could not activate session");
+          setActivating(false);
+          return;
         }
+
+        const data = await res.json().catch(() => ({ error: "Server error" }));
+
+        if (res.status === 404 && attempt < maxAutoRetries) {
+          setRetryCount(attempt + 1);
+          await new Promise(r => setTimeout(r, 3000));
+          return activate(attempt + 1);
+        }
+
+        setError(data.error || "Could not activate session");
+        setActivating(false);
       } catch (err) {
-        setError("Could not connect to server");
-      } finally {
+        if (attempt < maxAutoRetries) {
+          setRetryCount(attempt + 1);
+          await new Promise(r => setTimeout(r, 3000));
+          return activate(attempt + 1);
+        }
+        setError("Could not connect to server. Please try again.");
         setActivating(false);
       }
     };
 
-    activate();
+    activate(0);
   }, []);
 
   const handleGoToDashboard = () => {
     navigate("/my-home");
+  };
+
+  const handleManualRetry = async () => {
+    const params = new URLSearchParams(window.location.search);
+    const sessionId = params.get("session_id");
+    if (!sessionId) return;
+
+    setActivating(true);
+    setError("");
+    attemptedRef.current = false;
+
+    try {
+      const res = await fetch("/api/subscription/activate-session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ sessionId }),
+      });
+
+      if (res.ok) {
+        setActivated(true);
+      } else {
+        const data = await res.json().catch(() => ({ error: "Server error" }));
+        setError(data.error || "Could not activate session");
+      }
+    } catch (err) {
+      setError("Could not connect to server. Please try again.");
+    } finally {
+      setActivating(false);
+    }
   };
 
   return (
@@ -78,14 +132,14 @@ export default function SubscriptionSuccess() {
           {activating ? (
             <Button className="w-full bg-emerald-600 text-white" disabled data-testid="button-go-to-dashboard">
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Setting up your account...
+              {retryCount > 0 ? `Setting up your account (attempt ${retryCount + 1})...` : "Setting up your account..."}
             </Button>
           ) : error ? (
             <div className="space-y-3">
-              <p className="text-sm text-red-600">{error}</p>
+              <p className="text-sm text-red-600" data-testid="text-activation-error">{error}</p>
               <Button
                 className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
-                onClick={() => window.location.reload()}
+                onClick={handleManualRetry}
                 data-testid="button-retry"
               >
                 Try Again
