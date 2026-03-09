@@ -1,4 +1,4 @@
-import { sendEmail } from '../sendgrid';
+import { sendEmail } from '../lib/email.js';
 
 // Helper function to generate ticket ID like CU-48271
 export function makeTicketId(): string {
@@ -15,8 +15,6 @@ export function getFirstName(fullName: string): string {
 const FROM_EMAIL = process.env.FROM_EMAIL || 'Support@MaintCue.Com';
 const FROM_NAME = process.env.FROM_NAME || 'MaintCue Support';
 const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || 'ops@maintcue.com,admin@maintcue.com').split(',').map(email => email.trim());
-const SENDGRID_TEMPLATE_CONTACT_ACK = process.env.SENDGRID_TEMPLATE_CONTACT_ACK;
-const _SENDGRID_SANDBOX_MODE = process.env.SENDGRID_SANDBOX_MODE === 'true';
 const _SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || FROM_EMAIL;
 
 interface ContactAckEmailParams {
@@ -92,12 +90,6 @@ support@maintcue.com`;
 </html>`;
 
   try {
-    // Use dynamic template if configured, otherwise use HTML fallback
-    if (SENDGRID_TEMPLATE_CONTACT_ACK) {
-      // Use SendGrid dynamic template (implementation would go here)
-      // For now, falling back to HTML version
-    }
-
     const success = await sendEmail({
       to: email,
       from: `${FROM_NAME} <${FROM_EMAIL}>`,

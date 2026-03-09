@@ -1,16 +1,5 @@
-import { MailService, MailDataRequired } from '@sendgrid/mail';
-import type { AttachmentData } from '@sendgrid/helpers/classes/attachment';
+import { sendResendEmail } from './resend.js';
 import { getEmailLogoHtml } from './emailBranding.js';
-
-const mailService = new MailService();
-
-// Initialize SendGrid with better error handling
-if (!process.env.SENDGRID_API_KEY) {
-  console.warn("⚠️ SENDGRID_API_KEY not set - email notifications disabled");
-} else {
-  console.log("✅ SENDGRID_API_KEY loaded, initializing...");
-  mailService.setApiKey(process.env.SENDGRID_API_KEY);
-}
 
 interface EmailParams {
   to: string;
@@ -18,55 +7,23 @@ interface EmailParams {
   subject: string;
   text?: string;
   html?: string;
-  attachments?: AttachmentData[];  // For inline CID images (Gmail/Outlook compatibility)
+  replyTo?: string;
+  attachments?: Array<{
+    filename: string;
+    content: string;
+  }>;
 }
 
 export async function sendEmail(params: EmailParams): Promise<boolean> {
-  try {
-    if (!process.env.SENDGRID_API_KEY) {
-      console.log('⚠️ SENDGRID_API_KEY not set. Email would be sent:', params.subject, 'to', params.to);
-      return true;
-    }
-
-    console.log('📧 Attempting to send email:', {
-      to: params.to,
-      from: params.from,
-      subject: params.subject
-    });
-
-    const emailData: any = {
-      to: params.to,
-      from: params.from,
-      subject: params.subject,
-      text: params.text,
-      html: params.html,
-    };
-    
-    // Add attachments if provided (for CID inline images)
-    if (params.attachments && params.attachments.length > 0) {
-      emailData.attachments = params.attachments;
-    }
-    
-    const result = await mailService.send(emailData);
-
-    console.log('✅ Email sent successfully:', {
-      to: params.to,
-      statusCode: result[0].statusCode
-    });
-
-    return true;
-  } catch (error: any) {
-    console.error('❌ SendGrid email error:', {
-      message: error.message,
-      code: error.code,
-      statusCode: error.response?.statusCode,
-      errors: error.response?.body?.errors || [],
-      responseBody: JSON.stringify(error.response?.body || {}),
-      to: params.to,
-      from: params.from
-    });
-    return false;
-  }
+  return sendResendEmail({
+    to: params.to,
+    from: params.from,
+    subject: params.subject,
+    text: params.text,
+    html: params.html,
+    replyTo: params.replyTo,
+    attachments: params.attachments,
+  });
 }
 
 // Email templates for Request a Pro feature
@@ -77,7 +34,7 @@ const ADMIN_EMAIL: string = process.env.ADMIN_EMAIL || 'admin@maintcue.com';
 console.log('📧 Email configuration loaded:', {
   FROM_EMAIL,
   ADMIN_EMAIL,
-  sendgridConfigured: !!process.env.SENDGRID_API_KEY
+  resendConfigured: !!process.env.RESEND_API_KEY
 });
 
 export async function sendUserConfirmationEmail(
@@ -285,28 +242,14 @@ export async function sendWelcomeEmailWithQR(params: {
   // For large orders (100-pack), only attach preview images to keep email size manageable
   const itemsToAttach = quantity > 10 ? items.slice(0, 2) : items;
   
-  const attachments = itemsToAttach.map((item, index) => {
-    // Validate and extract base64 data from data URL
-    if (!item.qrCodeImage || !item.qrCodeImage.includes('base64,')) {
-      console.warn(`⚠️ Invalid QR code image format for item ${index}, skipping attachment`);
-      return null;
+  const qrDataUris: Record<number, string> = {};
+  itemsToAttach.forEach((item, index) => {
+    if (item.qrCodeImage && item.qrCodeImage.includes('base64,')) {
+      qrDataUris[index] = item.qrCodeImage;
+    } else if (item.qrCodeImage) {
+      qrDataUris[index] = `data:image/png;base64,${item.qrCodeImage}`;
     }
-    
-    try {
-      // Extract base64 data from data URL (remove "data:image/png;base64," prefix)
-      const base64Data = item.qrCodeImage.split(',')[1];
-      return {
-        content: base64Data,
-        filename: `qr-code-${index + 1}.png`,
-        type: 'image/png',
-        disposition: 'inline',
-        content_id: `qr_code_${index}`  // CID for referencing in HTML
-      };
-    } catch (error) {
-      console.error(`❌ Error processing QR code image for item ${index}:`, error);
-      return null;
-    }
-  }).filter(Boolean) as AttachmentData[];  // Remove null entries
+  });
   
   // Special handling for large orders (100-pack)
   let qrRows;
@@ -321,7 +264,7 @@ export async function sendWelcomeEmailWithQR(params: {
             QR Code #${index + 1}
           </p>
           <img 
-            src="cid:qr_code_${index}" 
+            src="${qrDataUris[index] || ''}" 
             alt="QR Code ${index + 1}" 
             style="
               width: 250px; 
@@ -392,7 +335,7 @@ export async function sendWelcomeEmailWithQR(params: {
             ${quantity > 1 ? `QR Code #${index + 1}` : 'Your QR Code'}
           </p>
           <img 
-            src="cid:qr_code_${index}" 
+            src="${qrDataUris[index] || ''}" 
             alt="QR Code ${index + 1}" 
             style="
               width: 250px; 
@@ -519,7 +462,7 @@ export async function sendWelcomeEmailWithQR(params: {
     from: FROM_EMAIL,
     subject,
     html,
-    attachments  // Include CID attachments for inline QR images
+    
   });
 }
 
@@ -810,7 +753,7 @@ The MaintCue Team
       `
     };
 
-    await mailService.send(msg);
+    await sendEmail({ to: msg.to, from: msg.from, subject: msg.subject, html: msg.html, text: msg.text });
     console.log(`✅ Setup confirmation email sent to ${customerEmail}`);
     
   } catch (error) {
@@ -1062,7 +1005,7 @@ Setup completed at: ${new Date().toLocaleString()}
       `
     };
 
-    await mailService.send(msg);
+    await sendEmail({ to: msg.to, from: msg.from, subject: msg.subject, html: msg.html, text: msg.text });
     console.log(`✅ Admin notification sent for household ${householdId}`);
     
   } catch (error) {
@@ -1088,7 +1031,7 @@ export async function sendSubscriptionWelcomeEmail(
   // Build QR codes section if provided
   let qrCodesHtml = '';
   let qrCodesText = '';
-  let qrAttachments: any[] = [];
+  
   
   if (qrCodes && qrCodes.length > 0) {
     const downloadUrl = orderId ? `${baseUrl}/api/orders/${orderId}/qr-codes` : '#';
@@ -1096,36 +1039,22 @@ export async function sendSubscriptionWelcomeEmail(
     // Prepare CID attachments for QR code images (limit to first 10 for email size)
     const itemsToAttach = qrCodes.length > 10 ? qrCodes.slice(0, 2) : qrCodes;
     
-    qrAttachments = itemsToAttach.map((qr, index) => {
-      if (!qr.qrUrl || !qr.qrUrl.includes('base64,')) {
-        console.warn(`Invalid QR code image format for item ${index}`);
-        return null;
+    const subQrDataUris: Record<number, string> = {};
+    itemsToAttach.forEach((qr, index) => {
+      if (qr.qrUrl && qr.qrUrl.includes('base64,')) {
+        subQrDataUris[index] = qr.qrUrl;
+      } else if (qr.qrUrl) {
+        subQrDataUris[index] = `data:image/png;base64,${qr.qrUrl}`;
       }
-      
-      try {
-        const base64Data = qr.qrUrl.split(',')[1];
-        return {
-          filename: `qr-code-${index + 1}.png`,
-          content: base64Data,
-          encoding: 'base64',
-          type: 'image/png',
-          content_id: `qr_code_${index}`,
-          disposition: 'inline'
-        };
-      } catch (error) {
-        console.error(`Error processing QR code ${index}:`, error);
-        return null;
-      }
-    }).filter(Boolean);
+    });
     
-    // HTML section for QR codes
     const qrItemsHtml = itemsToAttach.map((qr, index) => `
       <div style="text-align: center; margin: 20px 0; padding: 20px; background: white; border-radius: 8px; border: 1px solid #e5e7eb;">
         <h4 style="margin: 0 0 10px 0; color: #166534;">
           ${qrCodes.length > 1 ? `QR Code #${index + 1}` : 'Your QR Code'}
         </h4>
         <img 
-          src="cid:qr_code_${index}" 
+          src="${subQrDataUris[index] || ''}" 
           alt="QR Code ${index + 1}" 
           style="width: 200px; height: 200px; border: 2px solid #10b981; border-radius: 8px; margin-bottom: 15px;"
         />
@@ -1306,7 +1235,7 @@ Questions? Contact us at support@maintcue.com
     subject,
     html,
     text,
-    attachments: qrAttachments.length > 0 ? qrAttachments : undefined
+    
   });
 }
 

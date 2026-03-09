@@ -128,7 +128,7 @@ router.post('/stripe/webhook', express.raw({ type: 'application/json' }), async 
       console.log('✅ Order created:', orderId);
 
       // 📧 SEND CUSTOMER CONFIRMATION EMAIL
-      if (customerEmail && process.env.SENDGRID_API_KEY) {
+      if (customerEmail && process.env.RESEND_API_KEY) {
         console.log('📧 Sending customer confirmation email to:', customerEmail);
         
         try {
@@ -213,14 +213,14 @@ The MaintCue Team`,
         if (!customerEmail) {
           console.log('⚠️ No customer email provided, skipping customer notification');
         }
-        if (!process.env.SENDGRID_API_KEY) {
-          console.log('⚠️ SENDGRID_API_KEY not set, skipping customer notification');
+        if (!process.env.RESEND_API_KEY) {
+          console.log('⚠️ RESEND_API_KEY not set, skipping customer notification');
         }
       }
 
       // �� SEND ADMIN NOTIFICATION EMAIL
       const adminEmail = process.env.ADMIN_EMAIL;
-      if (adminEmail && process.env.SENDGRID_API_KEY) {
+      if (adminEmail && process.env.RESEND_API_KEY) {
         console.log('📧 Sending admin notification to:', adminEmail);
         
         try {
@@ -295,8 +295,8 @@ Setup Link: ${qrUrl}`,
         if (!adminEmail) {
           console.log('⚠️ ADMIN_EMAIL not set in .env, skipping admin notification');
         }
-        if (!process.env.SENDGRID_API_KEY) {
-          console.log('⚠️ SENDGRID_API_KEY not set, skipping admin notification');
+        if (!process.env.RESEND_API_KEY) {
+          console.log('⚠️ RESEND_API_KEY not set, skipping admin notification');
         }
       }
 
@@ -347,7 +347,7 @@ if (process.env.NODE_ENV === 'development') {
         
         console.log('💰 Processing test payment:', { orderId, customerEmail, amount: amountPaid });
         
-        if (customerEmail && process.env.SENDGRID_API_KEY) {
+        if (customerEmail && process.env.RESEND_API_KEY) {
           console.log('�� Sending test email to:', customerEmail);
           try {
             const emailSent = await sendEmail({

@@ -1,17 +1,11 @@
 import { Router, Request, Response } from "express";
 import rateLimit from "express-rate-limit";
-import sgMail from "@sendgrid/mail";
+import { sendResendEmail } from "../../lib/resend.js";
 import { storage } from "../../storage.js";
 import { createProRequestSchema } from "@shared/schema";
 import { createAuditLog } from "./utils.js";
 
 const router = Router();
-
-// Configure SendGrid
-const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
-if (SENDGRID_API_KEY) {
-  sgMail.setApiKey(SENDGRID_API_KEY);
-}
 
 const FROM_EMAIL = process.env.FROM_EMAIL || 'noreply@maintcue.com';
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'support@maintcue.com';
@@ -37,8 +31,8 @@ async function sendUserConfirmationEmail(
   trackingCode: string,
   trade: string
 ): Promise<void> {
-  if (!SENDGRID_API_KEY) {
-    console.warn('⚠️ SendGrid not configured, skipping user confirmation email');
+  if (!process.env.RESEND_API_KEY) {
+    console.warn('⚠️ Resend not configured, skipping user confirmation email');
     return;
   }
 
@@ -92,7 +86,13 @@ MaintCue Team
     subject: msg.subject
   });
 
-  await sgMail.send(msg);
+  await sendResendEmail({
+    to: msg.to,
+    from: msg.from,
+    subject: msg.subject,
+    html: msg.html,
+    text: msg.text,
+  });
   console.log('✅ User confirmation email sent successfully');
 }
 
@@ -109,8 +109,8 @@ async function sendAdminAlertEmail(
   description: string,
   address: string
 ): Promise<void> {
-  if (!SENDGRID_API_KEY) {
-    console.warn('⚠️ SendGrid not configured, skipping admin alert email');
+  if (!process.env.RESEND_API_KEY) {
+    console.warn('⚠️ Resend not configured, skipping admin alert email');
     return;
   }
 
@@ -185,7 +185,13 @@ This is an automated notification from MaintCue.
     subject: msg.subject
   });
 
-  await sgMail.send(msg);
+  await sendResendEmail({
+    to: msg.to,
+    from: msg.from,
+    subject: msg.subject,
+    html: msg.html,
+    text: msg.text,
+  });
   console.log('✅ Admin alert email sent successfully');
 }
 

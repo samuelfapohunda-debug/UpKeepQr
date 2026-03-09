@@ -71,7 +71,7 @@ The project uses PostgreSQL with Drizzle ORM, hosted on Neon serverless. It empl
 
 ## Communication Services
 - **Twilio**: SMS integration.
-- **SendGrid**: Email integration.
+- **Resend**: Email delivery service (migrated from SendGrid). Service module at `server/lib/resend.ts`, wrapper in `server/lib/email.ts`.
 
 ## Payment Integration
 - **Stripe**: Payment processing.

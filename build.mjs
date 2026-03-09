@@ -49,7 +49,7 @@ async function build() {
         'ics',
         'csv-writer',
         'node-cron',
-        '@sendgrid/mail',
+        'resend',
         'firebase-admin',
         'firebase',
         'dotenv',
