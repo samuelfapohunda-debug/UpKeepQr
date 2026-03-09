@@ -68,6 +68,7 @@
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-hook-form": "^7.71.2",
+    "resend": "^6.9.3",
     "scmp": "^2.1.0",
     "stripe": "^17.5.0",
     "tailwind-merge": "^3.5.0",

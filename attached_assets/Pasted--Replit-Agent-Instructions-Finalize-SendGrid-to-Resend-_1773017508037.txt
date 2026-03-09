@@ -1,0 +1,318 @@
+# 🎯 **Replit Agent Instructions: Finalize SendGrid to Resend Migration**
+
+---
+
+## **OBJECTIVE**
+Complete the migration from SendGrid to Resend email service. The DNS records are already configured in Bluehost, and the `resend` npm package is already installed. Your task is to update the codebase to use Resend instead of SendGrid.
+
+---
+
+## **CONTEXT**
+- **Current state:** The app uses SendGrid (`@sendgrid/mail`) for all email functionality
+- **Goal:** Replace all SendGrid code with Resend API calls
+- **DNS:** Already configured with Resend SPF and DKIM records
+- **Package:** `resend` npm package already installed
+
+---
+
+## **FILES TO MODIFY**
+
+### **1. CREATE: `server/lib/resend.ts`**
+Create a new Resend email service that mirrors the SendGrid interface:
+
+```typescript
+import { Resend } from 'resend';
+
+const resend = new Resend(process.env.RESEND_API_KEY);
+
+if (!process.env.RESEND_API_KEY) {
+  console.warn("⚠️ RESEND_API_KEY not set - email notifications disabled");
+} else {
+  console.log("✅ RESEND_API_KEY loaded, Resend initialized");
+}
+
+export interface ResendEmailParams {
+  to: string | string[];
+  from?: string;
+  subject: string;
+  text?: string;
+  html?: string;
+  replyTo?: string;
+  attachments?: Array<{
+    filename: string;
+    content: string; // base64 encoded
+  }>;
+}
+
+export async function sendResendEmail(params: ResendEmailParams): Promise<boolean> {
+  try {
+    if (!process.env.RESEND_API_KEY) {
+      console.log('⚠️ RESEND_API_KEY not set. Email would be sent:', params.subject, 'to', params.to);
+      return true;
+    }
+
+    const from = params.from || process.env.FROM_EMAIL || 'MaintCue <no-reply@maintcue.com>';
+
+    console.log('📧 Attempting to send email via Resend:', {
+      to: params.to,
+      from,
+      subject: params.subject
+    });
+
+    const { data, error } = await resend.emails.send({
+      from,
+      to: Array.isArray(params.to) ? params.to : [params.to],
+      subject: params.subject,
+      text: params.text,
+      html: params.html,
+      reply_to: params.replyTo,
+      attachments: params.attachments?.map(att => ({
+        filename: att.filename,
+        content: Buffer.from(att.content, 'base64'),
+      })),
+    });
+
+    if (error) {
+      console.error('❌ Resend email error:', {
+        message: error.message,
+        name: error.name,
+        to: params.to,
+        from
+      });
+      return false;
+    }
+
+    console.log('✅ Email sent successfully via Resend:', {
+      id: data?.id,
+      to: params.to
+    });
+
+    return true;
+  } catch (error: any) {
+    console.error('❌ Unexpected Resend error:', {
+      message: error.message,
+      to: params.to,
+      from: params.from
+    });
+    return false;
+  }
+}
+
+export default resend;
+```
+
+---
+
+### **2. UPDATE: `server/lib/email.ts`**
+
+**Changes needed:**
+1. Remove SendGrid imports:
+   ```typescript
+   // REMOVE these lines:
+   import { MailService, MailDataRequired } from '@sendgrid/mail';
+   import type { AttachmentData } from '@sendgrid/helpers/classes/attachment';
+   const mailService = new MailService();
+   ```
+
+2. Add Resend import:
+   ```typescript
+   // ADD this line at top:
+   import { sendResendEmail } from './resend.js';
+   ```
+
+3. Update the `sendEmail` function (lines ~27-71):
+   ```typescript
+   export async function sendEmail(params: EmailParams): Promise<boolean> {
+     // Convert SendGrid attachment format to Resend format if needed
+     const resendAttachments = params.attachments?.map(att => ({
+       filename: att.filename,
+       content: att.content, // Already base64
+     }));
+
+     return sendResendEmail({
+       to: params.to,
+       from: params.from,
+       subject: params.subject,
+       text: params.text,
+       html: params.html,
+       attachments: resendAttachments,
+     });
+   }
+   ```
+
+4. Update the `sendSetupConfirmationEmail` function (around line 560):
+   - Replace `await mailService.send(msg);` with `return sendEmail({ to: msg.to, from: msg.from, subject: msg.subject, html: msg.html, text: msg.text });`
+
+5. Update `sendAdminSetupNotification` function (around line 680):
+   - Replace `await mailService.send(msg);` with `return sendEmail({ to: msg.to, from: msg.from, subject: msg.subject, html: msg.html, text: msg.text });`
+
+6. Update logging lines:
+   - Change `sendgridConfigured:` to `resendConfigured:`
+
+**IMPORTANT:** Keep ALL email template functions unchanged (sendUserConfirmationEmail, sendAdminNotificationEmail, sendPaymentConfirmationEmail, sendWelcomeEmailWithQR, etc.). Only change the underlying `sendEmail` implementation.
+
+---
+
+### **3. UPDATE: `server/src/routes/proRequests.ts`**
+
+**Changes needed:**
+1. Remove SendGrid import and initialization:
+   ```typescript
+   // REMOVE these lines:
+   import sgMail from "@sendgrid/mail";
+   const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
+   if (SENDGRID_API_KEY) {
+     sgMail.setApiKey(SENDGRID_API_KEY);
+   }
+   ```
+
+2. The `sendUserConfirmationEmail` and `sendAdminAlertEmail` functions already use `sgMail.send()`. Update to use a generic email sender or import from `server/lib/email.ts`
+
+3. Update conditional checks:
+   ```typescript
+   // CHANGE from:
+   if (!SENDGRID_API_KEY) {
+     console.warn('⚠️ SendGrid not configured...');
+   }
+   
+   // TO:
+   if (!process.env.RESEND_API_KEY) {
+     console.warn('⚠️ Resend not configured...');
+   }
+   ```
+
+4. Replace `sgMail.send(msg)` calls with a Resend-compatible send function
+
+---
+
+### **4. UPDATE: `server/services/notifyContact.ts`**
+
+**Changes needed:**
+1. Update import:
+   ```typescript
+   // CHANGE from:
+   import { sendEmail } from '../sendgrid';
+   
+   // TO:
+   import { sendResendEmail } from '../lib/resend.js';
+   ```
+
+2. Update all `sendEmail()` calls to `sendResendEmail()` or keep them as `sendEmail` if you create a wrapper
+
+3. Remove SendGrid-specific template references:
+   ```typescript
+   // REMOVE:
+   const SENDGRID_TEMPLATE_CONTACT_ACK = process.env.SENDGRID_TEMPLATE_CONTACT_ACK;
+   ```
+
+4. Update type definitions if needed to match Resend's interface
+
+---
+
+### **5. DELETE: `server/sendgrid.ts`**
+This file is no longer needed. Delete it completely.
+
+---
+
+## **PACKAGE.JSON UPDATES**
+
+Remove SendGrid dependencies:
+```bash
+npm uninstall @sendgrid/mail @sendgrid/helpers
+```
+
+Verify `resend` is in dependencies (it should already be installed):
+```bash
+npm list resend
+```
+
+---
+
+## **TESTING CHECKLIST**
+
+After making changes, verify:
+
+1. ✅ **No SendGrid imports remain:**
+   ```bash
+   grep -rn "sendgrid\|@sendgrid" server/ --include="*.ts" --include="*.js"
+   ```
+   Should return: `(no results)` or only comments
+
+2. ✅ **Resend is imported correctly:**
+   ```bash
+   grep -rn "from 'resend'" server/ --include="*.ts"
+   ```
+   Should show imports in `server/lib/resend.ts`
+
+3. ✅ **All email functions still exported:**
+   ```bash
+   grep "export async function send" server/lib/email.ts
+   ```
+   Should show all template functions
+
+4. ✅ **TypeScript compiles without errors:**
+   ```bash
+   npm run build
+   ```
+
+5. ✅ **Environment variable updated:**
+   - `RESEND_API_KEY` should be set in Replit Secrets
+   - `RESEND_API_KEY` should be set in Render Environment
+
+---
+
+## **CRITICAL RULES**
+
+1. **DO NOT** change any email template HTML/text content
+2. **DO NOT** modify function signatures of email template functions
+3. **DO NOT** change the `EmailParams` interface structure
+4. **DO** maintain backward compatibility with existing code that calls these functions
+5. **DO** preserve all logging statements (just update "SendGrid" to "Resend" in messages)
+6. **DO** keep error handling patterns the same
+
+---
+
+## **VERIFICATION STEPS**
+
+After completing the migration:
+
+1. Run `npm run build` - should complete without errors
+2. Search for remaining SendGrid references - should find none
+3. Verify all email template functions are still exported
+4. Check that `server/lib/resend.ts` exists and exports `sendResendEmail`
+5. Confirm `server/sendgrid.ts` is deleted
+
+---
+
+## **COMMIT MESSAGE**
+
+After successful migration:
+```
+feat: migrate from SendGrid to Resend for email delivery
+
+- Created server/lib/resend.ts with Resend email service
+- Updated server/lib/email.ts to use Resend instead of SendGrid
+- Updated server/src/routes/proRequests.ts to use Resend
+- Updated server/services/notifyContact.ts to use Resend
+- Removed server/sendgrid.ts (no longer needed)
+- Removed @sendgrid/mail and @sendgrid/helpers packages
+
+All email templates preserved, only delivery mechanism changed.
+DNS records already configured with Resend SPF and DKIM.
+```
+
+---
+
+## **SUCCESS CRITERIA**
+
+Migration is complete when:
+- ✅ No `@sendgrid` imports exist in codebase
+- ✅ `server/lib/resend.ts` created and working
+- ✅ All email functions still work with same interfaces
+- ✅ TypeScript builds without errors
+- ✅ `npm run build` succeeds
+- ✅ Ready to deploy and test email sending
+
+---
+
+**BEGIN THE MIGRATION NOW.** Work systematically through each file, test as you go, and report any issues encountered.
