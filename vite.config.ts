@@ -6,6 +6,8 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+const buildVersion = process.env.VITE_BUILD_VERSION || new Date().toISOString().split('T')[0];
+
 export default defineConfig({
   plugins: [react()],
   resolve: {
@@ -18,6 +20,9 @@ export default defineConfig({
   build: {
     outDir: path.resolve(__dirname, "dist", "public"),
     emptyOutDir: true,
+  },
+  define: {
+    '__BUILD_VERSION__': JSON.stringify(buildVersion),
   },
   optimizeDeps: {
     exclude: ['@react-oauth/google']

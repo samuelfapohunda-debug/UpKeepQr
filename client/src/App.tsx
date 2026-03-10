@@ -8,6 +8,8 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import ScrollToTop from "@/components/ScrollToTop";
+import { InstallPWA } from "@/components/InstallPWA";
+import { NotificationPermission } from "@/components/NotificationPermission";
 import Home from "@/pages/Home";
 import Pricing from "@/pages/Pricing";
 import Contact from "@/pages/Contact";
@@ -119,6 +121,8 @@ function App() {
         <AuthProvider>
           <Toaster />
           <Router />
+          <InstallPWA />
+          <NotificationPermission />
         </AuthProvider>
       </TooltipProvider>
     </QueryClientProvider>
