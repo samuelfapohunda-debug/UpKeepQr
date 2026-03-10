@@ -174,3 +174,81 @@ export async function sendAccountSuspendedEmail(email: string, name: string) {
     text: `Hi ${name}, your MaintCue account has been paused due to payment issues. Reactivate at ${APP_URL}/pricing`
   });
 }
+
+export async function sendSubscriptionWelcomeEmail(
+  email: string,
+  name: string,
+  planName: string,
+  amountPaid: string,
+  orderId: string | undefined,
+  qrCodes: Array<{ code: string; qrUrl: string; setupUrl: string }>
+) {
+  const qrSection = qrCodes.length > 0 ? `
+    <div style="background: #f0fdf4; border-radius: 6px; padding: 20px; margin: 20px 0; border: 1px solid #10b981;">
+      <p style="margin: 0 0 8px 0; color: #059669; font-size: 16px; font-weight: 600;">[i] Your QR Code${qrCodes.length > 1 ? 's' : ''}</p>
+      <p style="margin: 0 0 12px 0;">You have <strong>${qrCodes.length} QR code${qrCodes.length > 1 ? 's' : ''}</strong> ready to use with your ${planName} plan.</p>
+      ${qrCodes.length <= 5 ? qrCodes.map((qr, i) => `
+        <div style="background: #fff; border-radius: 4px; padding: 12px; margin: 8px 0; border: 1px solid #d1fae5;">
+          <p style="margin: 0; font-size: 13px;"><strong>Code ${i + 1}:</strong> ${qr.code}</p>
+          <p style="margin: 4px 0 0 0; font-size: 12px; color: #6b7280;">Setup: <a href="${qr.setupUrl}" style="color: #10b981;">${qr.setupUrl}</a></p>
+        </div>
+      `).join('') : `
+        <p style="margin: 0; font-size: 13px;">Your ${qrCodes.length} QR codes are attached to your order${orderId ? ` (${orderId})` : ''} and ready for activation.</p>
+      `}
+    </div>
+  ` : '';
+
+  const html = emailWrapper('Welcome to MaintCue', `
+    <h2 style="margin-top: 0;">Hi ${name},</h2>
+    <p>Thank you for subscribing to the <strong>${planName}</strong> plan!</p>
+    <div style="background: #f8fafc; border-radius: 6px; padding: 16px; margin: 16px 0; border: 1px solid #e2e8f0;">
+      <p style="margin: 0 0 8px 0;"><strong>Plan:</strong> ${planName}</p>
+      ${orderId ? `<p style="margin: 0 0 8px 0;"><strong>Order:</strong> ${orderId}</p>` : ''}
+      <p style="margin: 0;"><strong>Amount:</strong> $${amountPaid}</p>
+    </div>
+    ${qrSection}
+    <p>Your 30-day free trial has started. You can access your dashboard anytime:</p>
+    <div style="text-align: center; margin: 24px 0;">
+      <a href="${APP_URL}/my-home" style="display: inline-block; background: #10b981; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600;">Go to Dashboard</a>
+    </div>
+    <p style="font-size: 14px; color: #6b7280;">Questions? Reply to this email and we will help you get started.</p>
+  `);
+
+  return sendEmail({
+    to: email,
+    from: FROM_EMAIL,
+    subject: `Welcome to MaintCue - ${planName} Plan`,
+    html,
+    text: `Hi ${name}, welcome to MaintCue! Your ${planName} plan is active. You have ${qrCodes.length} QR code(s). Visit ${APP_URL}/my-home to get started.`
+  });
+}
+
+export async function sendAdminSubscriptionNotification(
+  customerEmail: string,
+  customerName: string,
+  planName: string,
+  amountPaid: string,
+  subscriptionId: string,
+  qrCodeCount: number
+) {
+  const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'support@maintcue.com';
+
+  const html = emailWrapper('New Subscription', `
+    <h2 style="margin-top: 0;">New Subscription Created</h2>
+    <div style="background: #f8fafc; border-radius: 6px; padding: 16px; margin: 16px 0; border: 1px solid #e2e8f0;">
+      <p style="margin: 0 0 8px 0;"><strong>Customer:</strong> ${customerName} (${customerEmail})</p>
+      <p style="margin: 0 0 8px 0;"><strong>Plan:</strong> ${planName}</p>
+      <p style="margin: 0 0 8px 0;"><strong>Amount:</strong> $${amountPaid}</p>
+      <p style="margin: 0 0 8px 0;"><strong>QR Codes:</strong> ${qrCodeCount}</p>
+      <p style="margin: 0;"><strong>Subscription ID:</strong> ${subscriptionId}</p>
+    </div>
+  `);
+
+  return sendEmail({
+    to: ADMIN_EMAIL,
+    from: FROM_EMAIL,
+    subject: `[Admin] New subscription: ${customerName} - ${planName}`,
+    html,
+    text: `New subscription: ${customerName} (${customerEmail}), plan: ${planName}, amount: $${amountPaid}, QR codes: ${qrCodeCount}, subscription: ${subscriptionId}`
+  });
+}

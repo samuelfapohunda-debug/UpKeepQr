@@ -61,8 +61,9 @@ app.use((req, res, next) => {
     allowedHeaders: ["Content-Type", "Authorization"]
   }));
 
-  // ⚡ CRITICAL: Stripe webhook needs raw body BEFORE express.json() parses it
+  // ⚡ CRITICAL: Stripe webhooks need raw body BEFORE express.json() parses it
   app.use('/api/webhook/stripe', express.raw({ type: 'application/json' }));
+  app.use('/api/stripe/subscription-webhook', express.raw({ type: 'application/json' }));
 
   app.use(express.json());
   app.use(express.urlencoded({ extended: false }));

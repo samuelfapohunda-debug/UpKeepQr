@@ -19,7 +19,7 @@ import maintenanceLogRoutes from './maintenanceLogs.js';
 import reportRoutes from './reports.js';
 import householdsRoutes from './households.js';
 import checkoutRoutes from './checkout.js';
-import { registerSubscriptionRoutes } from '../../routes/subscription.js';
+import { registerSubscriptionRoutes, registerSubscriptionWebhookHandler } from '../../routes/subscription.js';
 import dashboardRoutes from './dashboard.js';
 import customerRoutes from './customer.js';
 
@@ -49,6 +49,7 @@ export function registerRoutes(app: Express) {
   app.use('/api/appliances', applianceRoutes);  // Appliance management routes
   app.use('/api/households', householdsRoutes);  // Households routes
   registerSubscriptionRoutes(app);
+  registerSubscriptionWebhookHandler(app);
   
   console.log('✅ Health routes registered at /health');
   console.log('✅ Dashboard routes registered at /api/dashboard');

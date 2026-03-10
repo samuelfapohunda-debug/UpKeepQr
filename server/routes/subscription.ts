@@ -1,8 +1,9 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import express from "express";
 import { db } from "../db";
-import { householdsTable, subscriptionEventsTable, cancellationFeedbackTable, emailEventsTable, signupAttemptsTable } from "@shared/schema";
+import { householdsTable, subscriptionEventsTable, cancellationFeedbackTable, emailEventsTable, signupAttemptsTable, orderMagnetOrdersTable, orderMagnetItemsTable, stripeEventsTable } from "@shared/schema";
 import { eq, and, lte, sql } from "drizzle-orm";
+import { nanoid } from "nanoid";
 import { checkTrialAbuse, logSignupAttempt } from "../lib/trialAbuse";
 import { canonicalizeEmail } from "../lib/emailCanonicalization";
 import { checkFeatureAccess } from "../lib/featureGating";
@@ -14,7 +15,14 @@ import {
   sendSubscriptionActiveEmail,
   sendCancellationConfirmedEmail,
   sendAccountSuspendedEmail,
+  sendSubscriptionWelcomeEmail,
+  sendAdminSubscriptionNotification,
 } from "../lib/subscriptionEmails";
+import {
+  sendAdminErrorAlert,
+} from "../lib/email";
+import { generateQRCodes } from "../lib/qr";
+import { generateOrderId } from "../utils/orderIdGenerator.js";
 import type Stripe from "stripe";
 import { stripe } from "../src/lib/stripe.js";
 import { createSession } from "../lib/magicLink.js";
@@ -761,14 +769,129 @@ export function registerSubscriptionWebhookHandler(app: Express) {
                 createdBy: 'customer',
               }).returning();
 
+              const planId = session.metadata?.plan_id || '';
+              const planLower = planId.toLowerCase().replace(/[_-]/g, ' ');
+              let qrCodeCount = 1;
+              let planDisplayName = 'Homeowner Basic';
+              if (planLower.includes('property') || planLower.includes('manager')) {
+                qrCodeCount = 200;
+                planDisplayName = 'Property Manager';
+              } else if (planLower.includes('realtor') || planLower.includes('agent')) {
+                qrCodeCount = 25;
+                planDisplayName = 'Realtor / Agent';
+              } else if (planLower.includes('plus')) {
+                qrCodeCount = 10;
+                planDisplayName = 'Homeowner Plus';
+              } else {
+                qrCodeCount = 1;
+                planDisplayName = 'Homeowner Basic';
+              }
+
+              const amountPaid = String((session.amount_total || 0) / 100);
+              const baseUrl = process.env.PUBLIC_BASE_URL || 'https://maintcue.com';
+
+              let generatedQrCodes: Array<{ code: string; qrUrl: string; setupUrl: string }> = [];
+              let orderId: string | undefined;
+
               try {
-                await sendTrialWelcomeEmail(email, name, trialEnd);
-                await db.insert(emailEventsTable).values({
-                  householdId: household.id,
-                  emailType: 'trial_welcome',
+                const activationCodes = Array.from({ length: qrCodeCount }, () => nanoid(12));
+                generatedQrCodes = await generateQRCodes(activationCodes, baseUrl);
+                console.log(`[Subscription Webhook] Generated ${generatedQrCodes.length} QR codes for plan: ${planDisplayName}`);
+
+                orderId = await generateOrderId();
+
+                await db.transaction(async (tx) => {
+                  // @ts-expect-error - Drizzle schema inference
+                  const [order] = await tx.insert(orderMagnetOrdersTable).values({
+                    orderId,
+                    customerName: name,
+                    customerEmail: email.toLowerCase(),
+                    customerPhone: '',
+                    shipAddressLine1: '',
+                    shipAddressLine2: '',
+                    shipCity: '',
+                    shipState: '',
+                    shipZip: '',
+                    subtotal: amountPaid,
+                    total: amountPaid,
+                    paymentStatus: 'paid',
+                    paymentProvider: 'stripe',
+                    paymentRef: session.id,
+                    status: 'paid',
+                  }).returning();
+
+                  for (let i = 0; i < activationCodes.length; i++) {
+                    // @ts-expect-error - Drizzle schema inference
+                    await tx.insert(orderMagnetItemsTable).values({
+                      orderId: order.id,
+                      sku: `subscription-${planId.toLowerCase().replace(/\s+/g, '-')}`,
+                      quantity: 1,
+                      unitPrice: String((session.amount_total || 0) / (100 * qrCodeCount)),
+                      activationCode: activationCodes[i],
+                      qrUrl: generatedQrCodes[i].qrUrl,
+                      activationStatus: 'inactive',
+                    });
+                  }
                 });
+
+                console.log(`[Subscription Webhook] Created order ${orderId} with ${activationCodes.length} QR codes`);
+              } catch (qrErr: any) {
+                console.error("[Subscription Webhook] Failed to generate QR codes:", qrErr);
+                sendAdminErrorAlert(
+                  'Subscription QR Code Generation Failed',
+                  qrErr?.message || 'Unknown error',
+                  { sessionId: session.id, email, planDisplayName, qrCodeCount }
+                ).catch(e => console.error('Failed to send error alert:', e));
+              }
+
+              try {
+                const trialResult = await sendTrialWelcomeEmail(email, name, trialEnd);
+                if (trialResult) {
+                  await db.insert(emailEventsTable).values({
+                    householdId: household.id,
+                    emailType: 'trial_welcome',
+                  });
+                } else {
+                  console.error("[Subscription Webhook] Trial welcome email returned false for:", email);
+                }
               } catch (emailErr) {
                 console.error("Failed to send trial welcome email:", emailErr);
+              }
+
+              try {
+                const welcomeResult = await sendSubscriptionWelcomeEmail(
+                  email,
+                  name,
+                  planDisplayName,
+                  amountPaid,
+                  orderId,
+                  generatedQrCodes
+                );
+                if (welcomeResult) {
+                  console.log('[Subscription Webhook] Subscription welcome email with QR codes sent to:', email);
+                  await db.insert(emailEventsTable).values({
+                    householdId: household.id,
+                    emailType: 'subscription_welcome',
+                  });
+                } else {
+                  console.error('[Subscription Webhook] Subscription welcome email returned false for:', email);
+                }
+              } catch (emailErr) {
+                console.error("Failed to send subscription welcome email:", emailErr);
+              }
+
+              try {
+                await sendAdminSubscriptionNotification(
+                  email,
+                  name,
+                  planDisplayName,
+                  amountPaid,
+                  subscriptionId,
+                  qrCodeCount
+                );
+                console.log('[Subscription Webhook] Admin notification sent');
+              } catch (emailErr) {
+                console.error("Failed to send admin subscription notification:", emailErr);
               }
 
               await logSubscriptionEvent(
@@ -777,7 +900,7 @@ export function registerSubscriptionWebhookHandler(app: Express) {
                 event.id,
                 null,
                 'trialing',
-                { sessionId: session.id, subscriptionId }
+                { sessionId: session.id, subscriptionId, qrCodeCount, orderId }
               );
             }
           }

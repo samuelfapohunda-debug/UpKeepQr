@@ -399,10 +399,10 @@ router.post('/stripe', async (req: Request, res: Response) => {
         if (result) {
           console.log('[WEBHOOK] Welcome email with QR codes SENT to:', customerEmail);
         } else {
-          console.error('[WEBHOOK] Welcome email returned false - check SendGrid sender verification');
+          console.error('[WEBHOOK] Welcome email returned false - check Resend sender verification');
           sendAdminErrorAlert(
             'Welcome Email Failed (returned false)',
-            'sendWelcomeEmailWithQR returned false - likely SendGrid sender verification issue',
+            'sendWelcomeEmailWithQR returned false - likely Resend sender verification issue',
             { orderId: resultOrderId, customerEmail, qrCodesCount: resultQrCodes.length }
           ).catch(e => console.error('Failed to send error alert:', e));
         }
@@ -501,7 +501,7 @@ if (process.env.NODE_ENV !== 'production') {
     }
   });
 
-  // Email test endpoint for troubleshooting SendGrid configuration (admin-only)
+  // Email test endpoint for troubleshooting Resend configuration (admin-only)
   router.get('/test-email', authenticateAgent, async (req: Request, res: Response) => {
     try {
       const testEmail = req.query.email as string || 'samuel.fapohunda@gmail.com';
@@ -526,7 +526,7 @@ if (process.env.NODE_ENV !== 'production') {
         res.status(500).json({ 
           success: false, 
           message: 'Email failed to send',
-          details: 'Check server logs for SendGrid error details'
+          details: 'Check server logs for Resend error details'
         });
       }
     } catch (error: any) {
