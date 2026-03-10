@@ -1,12 +1,12 @@
 import { Resend } from 'resend';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+let resend: Resend | null = null;
 
-// Initialize Resend with error handling
-if (!process.env.RESEND_API_KEY) {
-  console.warn("⚠️ RESEND_API_KEY not set - email notifications disabled");
-} else {
+if (process.env.RESEND_API_KEY) {
+  resend = new Resend(process.env.RESEND_API_KEY);
   console.log("✅ RESEND_API_KEY loaded, Resend initialized");
+} else {
+  console.warn("⚠️ RESEND_API_KEY not set - email notifications disabled");
 }
 
 export interface ResendEmailParams {
@@ -24,7 +24,7 @@ export interface ResendEmailParams {
 
 export async function sendResendEmail(params: ResendEmailParams): Promise<boolean> {
   try {
-    if (!process.env.RESEND_API_KEY) {
+    if (!resend) {
       console.log('⚠️ RESEND_API_KEY not set. Email would be sent:', params.subject, 'to', params.to);
       return true;
     }
