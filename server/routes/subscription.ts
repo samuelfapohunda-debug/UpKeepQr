@@ -537,6 +537,8 @@ export function registerSubscriptionWebhookHandler(app: Express) {
       return res.json({ received: true, duplicate: true });
     }
 
+    console.log(`[Subscription Webhook] Processing event: ${event.type} (${event.id})`);
+
     try {
       switch (event.type) {
         case 'customer.subscription.created': {
@@ -735,7 +737,15 @@ export function registerSubscriptionWebhookHandler(app: Express) {
         case 'checkout.session.completed': {
           const session = event.data.object as Stripe.Checkout.Session;
           
-          if (session.metadata?.signup_type === 'subscription') {
+          console.log('[Subscription Webhook] checkout.session.completed:', {
+            sessionId: session.id,
+            mode: session.mode,
+            metadata: session.metadata,
+            customerEmail: session.customer_email || session.customer_details?.email,
+            customerId: session.customer,
+          });
+
+          if (session.mode === 'subscription' || session.metadata?.signup_type === 'subscription') {
             const customerId = session.customer as string;
             const existing = await getHouseholdByStripeCustomerId(customerId);
             
@@ -769,7 +779,7 @@ export function registerSubscriptionWebhookHandler(app: Express) {
                 createdBy: 'customer',
               }).returning();
 
-              const planId = session.metadata?.plan_id || '';
+              const planId = session.metadata?.plan_id || session.metadata?.plan || '';
               const planLower = planId.toLowerCase().replace(/[_-]/g, ' ');
               let qrCodeCount = 1;
               let planDisplayName = 'Homeowner Basic';
