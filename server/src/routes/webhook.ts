@@ -65,21 +65,26 @@ router.post('/stripe', async (req: Request, res: Response) => {
 
     // Handle subscription checkouts with QR code generation
     if (session.mode === 'subscription') {
-      console.log('📦 Processing subscription checkout');
+      console.log('[WEBHOOK] Processing subscription checkout:', {
+        sessionId: session.id,
+        eventId: event.id,
+        mode: session.mode,
+        metadata: session.metadata,
+        customerEmail: session.customer_details?.email,
+        amountTotal: session.amount_total,
+        subscription: session.subscription,
+      });
       
-      const customerEmail = session.customer_details?.email || '';
-      const customerName = session.customer_details?.name || '';
-      const planName = session.metadata?.plan || 'MaintCue Subscription';
+      const customerEmail = session.customer_details?.email || session.customer_email || '';
+      const customerName = session.customer_details?.name || session.metadata?.customer_name || '';
+      const planName = session.metadata?.plan || session.metadata?.plan_id || 'MaintCue Subscription';
       const amountPaid = String((session.amount_total || 0) / 100);
       const subscriptionId = session.subscription || '';
       const baseUrl = process.env.PUBLIC_BASE_URL || 'https://maintcue.com';
       
-      // Determine QR code quantity based on plan tier
-      // Supports both display names (e.g., "Homeowner Basic") and internal IDs (e.g., "homeowner_basic_yearly")
-      let qrCodeCount = 1; // Default for unknown plans
+      let qrCodeCount = 1;
       const planLower = planName.toLowerCase().replace(/[_-]/g, ' ');
       
-      // Check in order of specificity (most specific first)
       if (planLower.includes('property manager') || planLower.includes('property')) {
         qrCodeCount = 200;
       } else if (planLower.includes('realtor') || planLower.includes('agent')) {
@@ -90,47 +95,50 @@ router.post('/stripe', async (req: Request, res: Response) => {
         qrCodeCount = 1;
       }
       
-      console.log(`🎯 Generating ${qrCodeCount} QR codes for plan: ${planName}`);
+      console.log(`[WEBHOOK] Plan: ${planName}, QR count: ${qrCodeCount}`);
       
+      let generatedQrCodes: Array<{ code: string; qrUrl: string; setupUrl: string }> = [];
+      let resultOrderId: string | undefined;
+      let alreadyProcessed = false;
+
+      // Step 1: Generate QR codes and create order records
       try {
-        // Generate activation codes and QR codes
         const activationCodes = Array.from({ length: qrCodeCount }, () => nanoid(12));
-        const qrCodes = await generateQRCodes(activationCodes, baseUrl);
-        console.log(`✅ Generated ${qrCodes.length} QR codes for subscription`);
+        generatedQrCodes = await generateQRCodes(activationCodes, baseUrl);
+        console.log(`[WEBHOOK] Generated ${generatedQrCodes.length} QR codes`);
         
-        // Wrap in transaction to store QR codes
-        const result = await db.transaction(async (tx) => {
-          // Check for duplicate event (idempotency)
+        const txResult = await db.transaction(async (tx) => {
           try {
-            // @ts-expect-error - TypeScript LSP cache issue with Drizzle schema inference
+            // @ts-expect-error - Drizzle schema inference
             await tx.insert(stripeEventsTable).values({
               eventId: event.id,
               eventType: event.type,
               sessionId: session.id,
             });
-            console.log(`🆕 Processing new subscription event: ${event.id}`);
           } catch (error: any) {
             if (error.code === '23505') {
-              console.log(`✅ Subscription event ${event.id} already processed`);
-              return { alreadyProcessed: true };
+              console.log(`[WEBHOOK] Event ${event.id} already processed (duplicate)`);
+              return { alreadyProcessed: true as const };
             }
             throw error;
           }
           
-          // Create a "virtual order" for subscription QR codes
           const orderId = await generateOrderId();
           
-          // @ts-expect-error - TypeScript LSP cache issue with Drizzle schema
+          const rawZip = session.customer_details?.address?.postal_code || '';
+          const safeZip = rawZip.substring(0, 5);
+
+          // @ts-expect-error - Drizzle schema inference
           const [order] = await tx.insert(orderMagnetOrdersTable).values({
             orderId,
-            customerName,
-            customerEmail,
+            customerName: customerName || 'Subscriber',
+            customerEmail: customerEmail || '',
             customerPhone: session.customer_details?.phone || '',
-            shipAddressLine1: session.customer_details?.address?.line1 || '',
+            shipAddressLine1: session.customer_details?.address?.line1 || 'N/A',
             shipAddressLine2: session.customer_details?.address?.line2 || '',
-            shipCity: session.customer_details?.address?.city || '',
-            shipState: session.customer_details?.address?.state || '',
-            shipZip: session.customer_details?.address?.postal_code || '',
+            shipCity: session.customer_details?.address?.city || 'N/A',
+            shipState: session.customer_details?.address?.state || 'N/A',
+            shipZip: safeZip || '00000',
             subtotal: amountPaid,
             total: amountPaid,
             paymentStatus: 'paid',
@@ -139,107 +147,88 @@ router.post('/stripe', async (req: Request, res: Response) => {
             status: 'paid'
           }).returning();
           
-          console.log(`✅ Created virtual order for subscription: ${orderId}`);
-          
-          // Update event record with order ID
-          // @ts-expect-error - TypeScript LSP cache issue with Drizzle schema inference
+          // @ts-expect-error - Drizzle schema inference
           await tx.update(stripeEventsTable)
             .set({ orderId })
             .where(eq(stripeEventsTable.eventId, event.id));
           
-          // Create order items (one per QR code)
           for (let i = 0; i < activationCodes.length; i++) {
-            const code = activationCodes[i];
-            const qr = qrCodes[i];
-            
-            // @ts-expect-error - TypeScript LSP cache issue
+            // @ts-expect-error - Drizzle schema inference
             await tx.insert(orderMagnetItemsTable).values({
               orderId: order.id,
               sku: `subscription-${planName.toLowerCase().replace(/\s+/g, '-')}`,
               quantity: 1,
               unitPrice: String((session.amount_total || 0) / (100 * qrCodeCount)),
-              activationCode: code,
-              qrUrl: qr.qrUrl,
+              activationCode: activationCodes[i],
+              qrUrl: generatedQrCodes[i].qrUrl,
               activationStatus: 'inactive'
             });
           }
           
-          console.log(`✅ Created ${activationCodes.length} QR codes for subscription`);
-          
-          return { 
-            alreadyProcessed: false, 
-            orderId,
-            qrCodes 
-          };
+          console.log(`[WEBHOOK] Created order ${orderId} with ${activationCodes.length} items`);
+          return { alreadyProcessed: false as const, orderId };
         });
         
-        // If already processed, return early
-        if (result.alreadyProcessed) {
-          return res.json({ received: true, alreadyProcessed: true, type: 'subscription' });
+        if (txResult.alreadyProcessed) {
+          alreadyProcessed = true;
+        } else {
+          resultOrderId = txResult.orderId;
         }
-        
-        const { orderId, qrCodes: generatedQrCodes } = result;
-        
-        // Send emails with QR codes
-        console.log('📧 Sending subscription emails with QR codes to:', customerEmail);
-        
-        await Promise.all([
-          // Customer welcome email WITH QR codes
-          sendSubscriptionWelcomeEmail(
-            customerEmail,
-            customerName,
-            planName,
-            amountPaid,
-            orderId,
-            generatedQrCodes
-          ).then(emailResult => {
-            if (emailResult) {
-              console.log('✅ Subscription welcome email with QR codes sent to:', customerEmail);
-            } else {
-              console.error('❌ Subscription welcome email failed');
-            }
-          }).catch(error => {
-            console.error('❌ Failed to send subscription welcome email:', error);
-          }),
-          
-          // Admin notification with QR count
-          sendAdminSubscriptionNotification(
-            customerEmail,
-            customerName,
-            planName,
-            amountPaid,
-            String(subscriptionId),
-            qrCodeCount
-          ).then(emailResult => {
-            if (emailResult) {
-              console.log('✅ Admin subscription notification sent');
-            } else {
-              console.error('❌ Admin subscription notification failed');
-            }
-          }).catch(error => {
-            console.error('❌ Failed to send admin subscription notification:', error);
-          })
-        ]);
-        
-        console.log('✅ Subscription checkout with QR codes processed successfully');
-        return res.json({ 
-          received: true, 
-          type: 'subscription', 
-          plan: planName,
-          qrCodesGenerated: qrCodeCount,
-          orderId 
-        });
-        
       } catch (error: any) {
-        console.error('❌ Error processing subscription:', error?.message);
+        console.error('[WEBHOOK] QR/order creation failed:', error?.message, error?.stack);
         sendAdminErrorAlert(
-          'Subscription Webhook Failed',
+          'Subscription Webhook - QR Creation Failed',
           error?.message || 'Unknown error',
-          { sessionId: session.id, customerEmail, planName, qrCodeCount }
+          { sessionId: session.id, eventId: event.id, customerEmail, planName, errorStack: error?.stack?.substring(0, 500) }
         ).catch(e => console.error('Failed to send error alert:', e));
-        
-        return res.status(500).json({ error: 'Failed to process subscription' });
       }
+
+      if (alreadyProcessed) {
+        return res.json({ received: true, alreadyProcessed: true, type: 'subscription' });
+      }
+
+      // Step 2: Send emails (never fail the webhook for email errors)
+      try {
+        console.log('[WEBHOOK] Sending subscription welcome email to:', customerEmail);
+        const emailResult = await sendSubscriptionWelcomeEmail(
+          customerEmail,
+          customerName,
+          planName,
+          amountPaid,
+          resultOrderId,
+          generatedQrCodes
+        );
+        if (emailResult) {
+          console.log('[WEBHOOK] Subscription welcome email sent successfully');
+        } else {
+          console.error('[WEBHOOK] Subscription welcome email returned false');
+        }
+      } catch (emailErr: any) {
+        console.error('[WEBHOOK] Welcome email error:', emailErr?.message, emailErr?.stack);
+      }
+
+      try {
+        await sendAdminSubscriptionNotification(
+          customerEmail,
+          customerName,
+          planName,
+          amountPaid,
+          String(subscriptionId),
+          qrCodeCount
+        );
+        console.log('[WEBHOOK] Admin notification sent');
+      } catch (emailErr: any) {
+        console.error('[WEBHOOK] Admin notification error:', emailErr?.message);
+      }
+
+      console.log('[WEBHOOK] Subscription checkout processed:', { plan: planName, qrCodes: qrCodeCount, orderId: resultOrderId });
+      return res.json({ 
+        received: true, 
+        type: 'subscription', 
+        plan: planName,
+        qrCodesGenerated: qrCodeCount,
+        orderId: resultOrderId 
+      });
     }
 
     // Handle one-time payment (magnet orders)
