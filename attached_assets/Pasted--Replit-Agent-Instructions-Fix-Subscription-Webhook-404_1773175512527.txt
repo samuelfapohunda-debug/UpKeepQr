@@ -1,0 +1,140 @@
+# 🎯 **Replit Agent Instructions: Fix Subscription Webhook 404 Error**
+
+---
+
+## **OBJECTIVE**
+Fix the 404 error on `/api/stripe/subscription-webhook` endpoint by correcting the import path in `server/src/routes/index.ts`. The webhook handler function is being imported from the wrong file.
+
+---
+
+## **PROBLEM IDENTIFIED**
+
+**Current state (BROKEN):**
+```typescript
+// server/src/routes/index.ts - Line 22
+import { registerSubscriptionRoutes, registerSubscriptionWebhookHandler } from '../../routes/subscription.js';
+```
+
+**Issue:** `registerSubscriptionWebhookHandler` does NOT exist in `subscription.js` - it's in `webhooks.ts`. This causes the import to fail silently and the webhook route is never registered, resulting in 404 errors.
+
+**Evidence:**
+```bash
+curl -I https://maintcue.com/api/stripe/subscription-webhook
+# Returns: HTTP/2 404 ❌
+```
+
+---
+
+## **THE FIX**
+
+Update `server/src/routes/index.ts` to import from the correct files:
+
+### **Step 1: Locate the broken import**
+
+Find this line in `server/src/routes/index.ts` (around line 22):
+
+```typescript
+import { registerSubscriptionRoutes, registerSubscriptionWebhookHandler } from '../../routes/subscription.js';
+```
+
+### **Step 2: Replace with correct imports**
+
+Change it to:
+
+```typescript
+import { registerSubscriptionRoutes } from '../../routes/subscription.js';
+import { registerSubscriptionWebhookHandler } from '../../routes/webhooks.js';
+```
+
+**Explanation:**
+- `registerSubscriptionRoutes` is correctly in `subscription.js` ✅
+- `registerSubscriptionWebhookHandler` is actually in `webhooks.ts` ✅
+
+---
+
+## **VERIFICATION**
+
+After making the change, verify:
+
+1. **Check the file was updated:**
+   ```bash
+   grep -A1 "registerSubscriptionRoutes" server/src/routes/index.ts
+   ```
+   
+   **Expected output:**
+   ```typescript
+   import { registerSubscriptionRoutes } from '../../routes/subscription.js';
+   import { registerSubscriptionWebhookHandler } from '../../routes/webhooks.js';
+   ```
+
+2. **Ensure the function call is still there (around line 52):**
+   ```bash
+   grep "registerSubscriptionWebhookHandler(app)" server/src/routes/index.ts
+   ```
+   
+   **Expected output:**
+   ```typescript
+   registerSubscriptionWebhookHandler(app);
+   ```
+
+---
+
+## **COMMIT MESSAGE**
+
+```bash
+git add server/src/routes/index.ts
+git commit -m "fix: correct import path for subscription webhook handler
+
+Issue: registerSubscriptionWebhookHandler was imported from wrong file
+- Was: importing from subscription.js (doesn't exist there)
+- Now: importing from webhooks.js (correct location)
+
+This caused /api/stripe/subscription-webhook to return 404.
+
+Fixes:
+- Split import statement into two separate imports
+- registerSubscriptionRoutes from subscription.js
+- registerSubscriptionWebhookHandler from webhooks.js
+
+Result: Webhook endpoint will now properly register and handle
+checkout.session.completed events for QR code generation."
+```
+
+---
+
+## **TESTING AFTER DEPLOYMENT**
+
+After the fix is deployed:
+
+```bash
+# Test webhook endpoint (should NOT be 404)
+curl -I https://maintcue.com/api/stripe/subscription-webhook
+
+# Expected: HTTP/2 200 or 405 (Method Not Allowed for GET)
+# NOT: HTTP/2 404 ❌
+```
+
+---
+
+## **CRITICAL RULES**
+
+1. **DO NOT** change the function call `registerSubscriptionWebhookHandler(app)` on line 52
+2. **DO NOT** modify any other imports in the file
+3. **DO** only split the one import line into two separate imports
+4. **DO** verify both functions are called in the correct order (subscription routes first, then webhook handler)
+
+---
+
+## **SUCCESS CRITERIA**
+
+Fix is complete when:
+- ✅ Two separate import statements exist (one for each file)
+- ✅ `registerSubscriptionRoutes` imported from `subscription.js`
+- ✅ `registerSubscriptionWebhookHandler` imported from `webhooks.js`
+- ✅ Both functions are still called in `registerRoutes()`
+- ✅ File compiles without TypeScript errors
+- ✅ After deployment, `/api/stripe/subscription-webhook` returns 200/405, not 404
+
+---
+
+**BEGIN FIX NOW.** Make only the import change described above. Commit with the provided message. Report when complete.
