@@ -117,83 +117,89 @@ router.post('/stripe', async (req: Request, res: Response) => {
         console.warn(`[WEBHOOK] stripe_events insert failed (non-fatal):`, idempotencyErr?.message);
       }
 
-      // Step 1: Check if order already exists for this payment_ref (second layer dedup)
+      // Step 1: Check if order already exists for this payment_ref (skip order creation but still send email)
+      let orderAlreadyExists = false;
       try {
         const existingOrder = await db
-          .select({ id: orderMagnetOrdersTable.id })
+          .select({ id: orderMagnetOrdersTable.id, orderId: orderMagnetOrdersTable.orderId })
           .from(orderMagnetOrdersTable)
           .where(eq(orderMagnetOrdersTable.paymentRef, session.id))
           .limit(1);
         if (existingOrder.length > 0) {
-          console.log(`[WEBHOOK] Order already exists for session ${session.id}, skipping`);
-          return res.json({ received: true, alreadyProcessed: true, type: 'subscription' });
+          console.log(`[WEBHOOK] Order already exists for session ${session.id}: ${existingOrder[0].orderId}`);
+          resultOrderId = existingOrder[0].orderId;
+          orderAlreadyExists = true;
         }
       } catch (checkErr: any) {
         console.warn(`[WEBHOOK] Dedup check failed (continuing):`, checkErr?.message);
       }
 
-      // Step 2: Generate QR codes and create order records
-      try {
-        const activationCodes = Array.from({ length: qrCodeCount }, () => nanoid(12));
-        generatedQrCodes = await generateQRCodes(activationCodes, baseUrl);
-        console.log(`[WEBHOOK] Generated ${generatedQrCodes.length} QR codes`);
-        
-        const orderId = await generateOrderId();
-        
-        const rawZip = session.customer_details?.address?.postal_code || '';
-        const safeZip = rawZip.substring(0, 5);
-
-        await db.transaction(async (tx) => {
-          // @ts-expect-error - Drizzle schema inference
-          const [order] = await tx.insert(orderMagnetOrdersTable).values({
-            orderId,
-            customerName: customerName || 'Subscriber',
-            customerEmail: customerEmail || '',
-            customerPhone: session.customer_details?.phone || '',
-            shipAddressLine1: session.customer_details?.address?.line1 || 'N/A',
-            shipAddressLine2: session.customer_details?.address?.line2 || '',
-            shipCity: session.customer_details?.address?.city || 'N/A',
-            shipState: session.customer_details?.address?.state || 'N/A',
-            shipZip: safeZip || '00000',
-            subtotal: amountPaid,
-            total: amountPaid,
-            paymentStatus: 'paid',
-            paymentProvider: 'stripe',
-            paymentRef: session.id,
-            status: 'paid'
-          }).returning();
-          
-          for (let i = 0; i < activationCodes.length; i++) {
-            // @ts-expect-error - Drizzle schema inference
-            await tx.insert(orderMagnetItemsTable).values({
-              orderId: order.id,
-              sku: `subscription-${planName.toLowerCase().replace(/\s+/g, '-')}`,
-              quantity: 1,
-              unitPrice: String((session.amount_total || 0) / (100 * qrCodeCount)),
-              activationCode: activationCodes[i],
-              qrUrl: generatedQrCodes[i].qrUrl,
-              activationStatus: 'inactive'
-            });
-          }
-        });
-
-        resultOrderId = orderId;
-        console.log(`[WEBHOOK] Created order ${orderId} with ${activationCodes.length} items`);
-
-        // Update stripe_events with order ID (non-fatal)
+      // Step 2: Generate QR codes and create order records (skip if order already exists)
+      if (!orderAlreadyExists) {
         try {
-          // @ts-expect-error - Drizzle schema inference
-          await db.update(stripeEventsTable)
-            .set({ orderId })
-            .where(eq(stripeEventsTable.eventId, event.id));
-        } catch (_) { /* non-fatal */ }
-      } catch (error: any) {
-        console.error('[WEBHOOK] QR/order creation failed:', error?.message, error?.stack);
-        sendAdminErrorAlert(
-          'Subscription Webhook - QR Creation Failed',
-          error?.message || 'Unknown error',
-          { sessionId: session.id, eventId: event.id, customerEmail, planName, errorStack: error?.stack?.substring(0, 500) }
-        ).catch(e => console.error('Failed to send error alert:', e));
+          const activationCodes = Array.from({ length: qrCodeCount }, () => nanoid(12));
+          generatedQrCodes = await generateQRCodes(activationCodes, baseUrl);
+          console.log(`[WEBHOOK] Generated ${generatedQrCodes.length} QR codes`);
+          
+          const orderId = await generateOrderId();
+          
+          const rawZip = session.customer_details?.address?.postal_code || '';
+          const safeZip = rawZip.substring(0, 5);
+
+          await db.transaction(async (tx) => {
+            // @ts-expect-error - Drizzle schema inference
+            const [order] = await tx.insert(orderMagnetOrdersTable).values({
+              orderId,
+              customerName: customerName || 'Subscriber',
+              customerEmail: customerEmail || '',
+              customerPhone: session.customer_details?.phone || '',
+              shipAddressLine1: session.customer_details?.address?.line1 || 'N/A',
+              shipAddressLine2: session.customer_details?.address?.line2 || '',
+              shipCity: session.customer_details?.address?.city || 'N/A',
+              shipState: session.customer_details?.address?.state || 'N/A',
+              shipZip: safeZip || '00000',
+              subtotal: amountPaid,
+              total: amountPaid,
+              paymentStatus: 'paid',
+              paymentProvider: 'stripe',
+              paymentRef: session.id,
+              status: 'paid'
+            }).returning();
+            
+            for (let i = 0; i < activationCodes.length; i++) {
+              // @ts-expect-error - Drizzle schema inference
+              await tx.insert(orderMagnetItemsTable).values({
+                orderId: order.id,
+                sku: `subscription-${planName.toLowerCase().replace(/\s+/g, '-')}`,
+                quantity: 1,
+                unitPrice: String((session.amount_total || 0) / (100 * qrCodeCount)),
+                activationCode: activationCodes[i],
+                qrUrl: generatedQrCodes[i].qrUrl,
+                activationStatus: 'inactive'
+              });
+            }
+          });
+
+          resultOrderId = orderId;
+          console.log(`[WEBHOOK] Created order ${orderId} with ${activationCodes.length} items`);
+
+          // Update stripe_events with order ID (non-fatal)
+          try {
+            // @ts-expect-error - Drizzle schema inference
+            await db.update(stripeEventsTable)
+              .set({ orderId })
+              .where(eq(stripeEventsTable.eventId, event.id));
+          } catch (_) { /* non-fatal */ }
+        } catch (error: any) {
+          console.error('[WEBHOOK] QR/order creation failed:', error?.message, error?.stack);
+          sendAdminErrorAlert(
+            'Subscription Webhook - QR Creation Failed',
+            error?.message || 'Unknown error',
+            { sessionId: session.id, eventId: event.id, customerEmail, planName, errorStack: error?.stack?.substring(0, 500) }
+          ).catch(e => console.error('Failed to send error alert:', e));
+        }
+      } else {
+        console.log(`[WEBHOOK] Skipping order creation (already exists), proceeding to send email`);
       }
 
       // Step 2: Send emails (never fail the webhook for email errors)
