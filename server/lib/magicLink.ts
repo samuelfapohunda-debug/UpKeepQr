@@ -20,9 +20,8 @@ export async function generateMagicLink(
     used: false
   });
   
-  const baseUrl = process.env.PUBLIC_BASE_URL || process.env.REPLIT_DEV_DOMAIN 
-    ? `https://${process.env.REPLIT_DEV_DOMAIN}` 
-    : 'https://maintcue.com';
+  const baseUrl = process.env.PUBLIC_BASE_URL 
+    || (process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : 'https://maintcue.com');
   
   return `${baseUrl}/auth/magic?token=${token}`;
 }
