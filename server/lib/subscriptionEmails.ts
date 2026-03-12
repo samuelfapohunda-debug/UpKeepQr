@@ -207,10 +207,6 @@ export async function sendSubscriptionWelcomeEmail(
       <p style="margin: 0;"><strong>Amount:</strong> $${amountPaid}</p>
     </div>
     ${qrSection}
-    <p>Your 30-day free trial has started. You can access your dashboard anytime:</p>
-    <div style="text-align: center; margin: 24px 0;">
-      <a href="${APP_URL}/my-home" style="display: inline-block; background: #10b981; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600;">Go to Dashboard</a>
-    </div>
     <p style="font-size: 14px; color: #6b7280;">Questions? Reply to this email and we will help you get started.</p>
   `);
 
