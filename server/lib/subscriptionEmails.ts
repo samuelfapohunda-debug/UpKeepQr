@@ -46,9 +46,6 @@ export async function sendTrialWelcomeEmail(email: string, name: string, trialEn
       <li>Log your first maintenance task</li>
       <li>Enable SMS reminders</li>
     </ul>
-    <div style="text-align: center; margin: 24px 0;">
-      <a href="${APP_URL}/my-home" style="display: inline-block; background: #10b981; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600;">Go to Your Dashboard</a>
-    </div>
   `);
 
   return sendEmail({
