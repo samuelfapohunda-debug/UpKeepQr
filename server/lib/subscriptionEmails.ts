@@ -26,7 +26,7 @@ function emailWrapper(title: string, content: string): string {
   </div>
   <div style="background: #f9fafb; padding: 20px; text-align: center; border-radius: 0 0 8px 8px; font-size: 13px; color: #6b7280; border: 1px solid #e5e7eb; border-top: none;">
     <p style="margin: 0;">&copy; ${new Date().getFullYear()} MaintCue. All rights reserved.</p>
-    <p style="margin: 4px 0 0 0;"><a href="${APP_URL}/terms" style="color: #6b7280;">Terms</a> | <a href="${APP_URL}/privacy" style="color: #6b7280;">Privacy</a></p>
+    <p style="margin: 4px 0 0 0;"><a href="https://maintcue.com/terms-of-service" style="color: #6b7280;">Terms</a> | <a href="https://maintcue.com/privacy-policy" style="color: #6b7280;">Privacy</a></p>
   </div>
 </body>
 </html>`;

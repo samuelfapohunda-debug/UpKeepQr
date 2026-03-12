@@ -74,6 +74,7 @@ export async function sendUserConfirmationEmail(
           <p style="margin: 0 0 8px 0;"><span style="font-size: 18px; font-weight: 700; letter-spacing: -0.5px;"><span style="color: #10B981;">Maint</span><span style="color: #1E3A5F;">Cue</span></span></p>
           <p style="margin: 0;">&copy; ${new Date().getFullYear()} MaintCue. All rights reserved.</p>
           <p style="margin: 8px 0 0 0;"><a href="https://maintcue.com" style="color: #10B981; text-decoration: none;">maintcue.com</a> | <a href="mailto:support@maintcue.com" style="color: #10B981; text-decoration: none;">support@maintcue.com</a></p>
+          <p style="margin: 4px 0 0 0;"><a href="https://maintcue.com/terms-of-service" style="color: #6b7280; text-decoration: none;">Terms</a> | <a href="https://maintcue.com/privacy-policy" style="color: #6b7280; text-decoration: none;">Privacy</a></p>
         </div>
       </div>
     </body>
@@ -135,6 +136,7 @@ export async function sendAdminNotificationEmail(
         <div class="footer">
           <p style="margin: 0 0 8px 0;"><span style="font-size: 18px; font-weight: 700; letter-spacing: -0.5px;"><span style="color: #10B981;">Maint</span><span style="color: #1E3A5F;">Cue</span></span></p>
           <p style="margin: 0;">&copy; ${new Date().getFullYear()} MaintCue. All rights reserved.</p>
+          <p style="margin: 4px 0 0 0;"><a href="https://maintcue.com/terms-of-service" style="color: #6b7280; text-decoration: none;">Terms</a> | <a href="https://maintcue.com/privacy-policy" style="color: #6b7280; text-decoration: none;">Privacy</a></p>
         </div>
       </div>
     </body>
@@ -200,6 +202,7 @@ export async function sendPaymentConfirmationEmail(
           <p style="margin: 0 0 8px 0;"><span style="font-size: 18px; font-weight: 700; letter-spacing: -0.5px;"><span style="color: #10B981;">Maint</span><span style="color: #1E3A5F;">Cue</span></span></p>
           <p style="margin: 0;">© ${new Date().getFullYear()} MaintCue. All rights reserved.</p>
           <p style="margin: 8px 0 0 0;"><a href="https://maintcue.com" style="color: #10B981; text-decoration: none;">maintcue.com</a> | <a href="mailto:support@maintcue.com" style="color: #10B981; text-decoration: none;">support@maintcue.com</a></p>
+          <p style="margin: 4px 0 0 0;"><a href="https://maintcue.com/terms-of-service" style="color: #6b7280; text-decoration: none;">Terms</a> | <a href="https://maintcue.com/privacy-policy" style="color: #6b7280; text-decoration: none;">Privacy</a></p>
         </div>
       </div>
     </body>
@@ -451,6 +454,7 @@ export async function sendWelcomeEmailWithQR(params: {
           <p style="margin: 0 0 8px 0;"><span style="font-size: 18px; font-weight: 700; letter-spacing: -0.5px;"><span style="color: #10B981;">Maint</span><span style="color: #1E3A5F;">Cue</span></span></p>
           <p style="margin: 0;">© ${new Date().getFullYear()} MaintCue. All rights reserved.</p>
           <p style="margin: 8px 0 0 0;"><a href="https://maintcue.com" style="color: #10B981; text-decoration: none;">maintcue.com</a> | <a href="mailto:support@maintcue.com" style="color: #10B981; text-decoration: none;">support@maintcue.com</a></p>
+          <p style="margin: 4px 0 0 0;"><a href="https://maintcue.com/terms-of-service" style="color: #6b7280; text-decoration: none;">Terms</a> | <a href="https://maintcue.com/privacy-policy" style="color: #6b7280; text-decoration: none;">Privacy</a></p>
         </div>
       </div>
     </body>
@@ -514,6 +518,7 @@ export async function sendAdminOrderNotification(
           <p style="margin: 0 0 8px 0;"><span style="font-size: 18px; font-weight: 700; letter-spacing: -0.5px;"><span style="color: #10B981;">Maint</span><span style="color: #1E3A5F;">Cue</span></span></p>
           <p style="margin: 0;">© ${new Date().getFullYear()} MaintCue. All rights reserved.</p>
           <p style="margin: 8px 0 0 0;"><a href="https://maintcue.com" style="color: #10B981; text-decoration: none;">maintcue.com</a> | <a href="mailto:support@maintcue.com" style="color: #10B981; text-decoration: none;">support@maintcue.com</a></p>
+          <p style="margin: 4px 0 0 0;"><a href="https://maintcue.com/terms-of-service" style="color: #6b7280; text-decoration: none;">Terms</a> | <a href="https://maintcue.com/privacy-policy" style="color: #6b7280; text-decoration: none;">Privacy</a></p>
         </div>
       </div>
     </body>
@@ -574,6 +579,7 @@ export async function sendAdminErrorAlert(
           <p style="margin: 0 0 8px 0;"><span style="font-size: 18px; font-weight: 700; letter-spacing: -0.5px;"><span style="color: #10B981;">Maint</span><span style="color: #1E3A5F;">Cue</span></span></p>
           <p style="margin: 0;">© ${new Date().getFullYear()} MaintCue. All rights reserved.</p>
           <p style="margin: 8px 0 0 0;"><a href="https://maintcue.com" style="color: #10B981; text-decoration: none;">maintcue.com</a> | <a href="mailto:support@maintcue.com" style="color: #10B981; text-decoration: none;">support@maintcue.com</a></p>
+          <p style="margin: 4px 0 0 0;"><a href="https://maintcue.com/terms-of-service" style="color: #6b7280; text-decoration: none;">Terms</a> | <a href="https://maintcue.com/privacy-policy" style="color: #6b7280; text-decoration: none;">Privacy</a></p>
         </div>
       </div>
     </body>
@@ -741,6 +747,7 @@ The MaintCue Team
               <p style="margin: 0 0 8px 0;"><span style="font-size: 18px; font-weight: 700; letter-spacing: -0.5px;"><span style="color: #10B981;">Maint</span><span style="color: #1E3A5F;">Cue</span></span></p>
               <p style="margin: 0;">© ${new Date().getFullYear()} MaintCue. All rights reserved.</p>
               <p style="margin: 8px 0 0 0;"><a href="https://maintcue.com" style="color: #10B981; text-decoration: none;">maintcue.com</a> | <a href="mailto:support@maintcue.com" style="color: #10B981; text-decoration: none;">support@maintcue.com</a></p>
+              <p style="margin: 4px 0 0 0;"><a href="https://maintcue.com/terms-of-service" style="color: #6b7280; text-decoration: none;">Terms</a> | <a href="https://maintcue.com/privacy-policy" style="color: #6b7280; text-decoration: none;">Privacy</a></p>
             </td>
           </tr>
           
@@ -993,6 +1000,7 @@ Setup completed at: ${new Date().toLocaleString()}
               <p style="margin: 0 0 8px 0;"><span style="font-size: 18px; font-weight: 700; letter-spacing: -0.5px;"><span style="color: #10B981;">Maint</span><span style="color: #1E3A5F;">Cue</span></span></p>
               <p style="margin: 0;">© ${new Date().getFullYear()} MaintCue. All rights reserved.</p>
               <p style="margin: 8px 0 0 0;"><a href="https://maintcue.com" style="color: #10B981; text-decoration: none;">maintcue.com</a> | <a href="mailto:support@maintcue.com" style="color: #10B981; text-decoration: none;">support@maintcue.com</a></p>
+              <p style="margin: 4px 0 0 0;"><a href="https://maintcue.com/terms-of-service" style="color: #6b7280; text-decoration: none;">Terms</a> | <a href="https://maintcue.com/privacy-policy" style="color: #6b7280; text-decoration: none;">Privacy</a></p>
             </td>
           </tr>
           
@@ -1201,6 +1209,7 @@ Quick Setup:
           <p style="margin: 0 0 8px 0;"><span style="font-size: 18px; font-weight: 700; letter-spacing: -0.5px;"><span style="color: #10B981;">Maint</span><span style="color: #1E3A5F;">Cue</span></span></p>
           <p style="margin: 0;">© ${new Date().getFullYear()} MaintCue. All rights reserved.</p>
           <p style="margin: 8px 0 0 0;"><a href="https://maintcue.com" style="color: #10B981; text-decoration: none;">maintcue.com</a> | <a href="mailto:support@maintcue.com" style="color: #10B981; text-decoration: none;">support@maintcue.com</a></p>
+          <p style="margin: 4px 0 0 0;"><a href="https://maintcue.com/terms-of-service" style="color: #6b7280; text-decoration: none;">Terms</a> | <a href="https://maintcue.com/privacy-policy" style="color: #6b7280; text-decoration: none;">Privacy</a></p>
         </div>
       </div>
     </body>
@@ -1225,6 +1234,9 @@ Plan: ${planName}
 Amount: $${amountPaid}/year${qrCodes && qrCodes.length > 0 ? `\nQR Codes: ${qrCodes.length}` : ''}
 
 Questions? Contact us at support@maintcue.com
+
+Terms: https://maintcue.com/terms-of-service
+Privacy: https://maintcue.com/privacy-policy
 
 © ${new Date().getFullYear()} MaintCue. All rights reserved.
 `;
@@ -1287,6 +1299,7 @@ export async function sendAdminSubscriptionNotification(
           <p style="margin: 0 0 8px 0;"><span style="font-size: 18px; font-weight: 700; letter-spacing: -0.5px;"><span style="color: #10B981;">Maint</span><span style="color: #1E3A5F;">Cue</span></span></p>
           <p style="margin: 0;">© ${new Date().getFullYear()} MaintCue. All rights reserved.</p>
           <p style="margin: 8px 0 0 0;"><a href="https://maintcue.com" style="color: #10B981; text-decoration: none;">maintcue.com</a> | <a href="mailto:support@maintcue.com" style="color: #10B981; text-decoration: none;">support@maintcue.com</a></p>
+          <p style="margin: 4px 0 0 0;"><a href="https://maintcue.com/terms-of-service" style="color: #6b7280; text-decoration: none;">Terms</a> | <a href="https://maintcue.com/privacy-policy" style="color: #6b7280; text-decoration: none;">Privacy</a></p>
         </div>
       </div>
     </body>
@@ -1367,6 +1380,7 @@ export async function sendMagicLinkEmail(
           <p style="margin: 0 0 8px 0;"><span style="font-size: 18px; font-weight: 700; letter-spacing: -0.5px;"><span style="color: #10B981;">Maint</span><span style="color: #1E3A5F;">Cue</span></span></p>
           <p style="margin: 0;">© ${new Date().getFullYear()} MaintCue. All rights reserved.</p>
           <p style="margin: 8px 0 0 0;"><a href="https://maintcue.com" style="color: #10B981; text-decoration: none;">maintcue.com</a> | <a href="mailto:support@maintcue.com" style="color: #10B981; text-decoration: none;">support@maintcue.com</a></p>
+          <p style="margin: 4px 0 0 0;"><a href="https://maintcue.com/terms-of-service" style="color: #6b7280; text-decoration: none;">Terms</a> | <a href="https://maintcue.com/privacy-policy" style="color: #6b7280; text-decoration: none;">Privacy</a></p>
         </div>
       </div>
     </body>
