@@ -190,7 +190,9 @@ export async function sendSubscriptionWelcomeEmail(
       ${qrCodes.length <= 5 ? qrCodes.map((qr, i) => `
         <div style="background: #fff; border-radius: 4px; padding: 12px; margin: 8px 0; border: 1px solid #d1fae5;">
           <p style="margin: 0; font-size: 13px;"><strong>Code ${i + 1}:</strong> ${qr.code}</p>
-          <p style="margin: 4px 0 0 0; font-size: 12px; color: #6b7280;">Setup: <a href="${qr.setupUrl}" style="color: #10b981;">${qr.setupUrl}</a></p>
+          <div style="margin: 8px 0 0 0;">
+            <a href="${qr.setupUrl}" style="display: inline-block; background: #10b981; color: white; padding: 8px 20px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 13px;">Activate</a>
+          </div>
         </div>
       `).join('') : `
         <p style="margin: 0; font-size: 13px;">Your ${qrCodes.length} QR codes are attached to your order${orderId ? ` (${orderId})` : ''} and ready for activation.</p>
