@@ -731,8 +731,8 @@ The MaintCue Team
               <table width="100%" cellpadding="0" cellspacing="0" border="0">
                 <tr>
                   <td align="center" style="padding: 20px 0;">
-                    <a href="https://maintcue.com" style="display: inline-block; background: #10b981; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 6px; font-size: 16px; font-weight: 600;">
-                      Learn More About MaintCue
+                    <a href="https://maintcue.com/my-home" style="display: inline-block; background: #10b981; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 6px; font-size: 16px; font-weight: 600;">
+                      Go to Dashboard
                     </a>
                   </td>
                 </tr>
