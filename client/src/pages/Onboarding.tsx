@@ -226,6 +226,7 @@ const Onboarding: React.FC<OnboardingProps> = ({ adminMode = false }) => {
         single_family: 'Single Family',
         condo: 'Condo',
         townhouse: 'Townhouse',
+        mobile: 'mobile',
       };
       const hvacTypeMap: Record<string, string> = {
         central_air: 'Central AC',
@@ -629,6 +630,7 @@ const Onboarding: React.FC<OnboardingProps> = ({ adminMode = false }) => {
                     required
                     value={formData.streetAddress}
                     onChange={handleInputChange}
+                    onBlur={lookupPropertyData}
                     className={validationErrors.streetAddress ? "border-red-500" : ""}
                   />
                   {validationErrors.streetAddress && (
@@ -752,6 +754,7 @@ const Onboarding: React.FC<OnboardingProps> = ({ adminMode = false }) => {
                         <SelectItem value="Single Family">Single Family</SelectItem>
                         <SelectItem value="Condo">Condo</SelectItem>
                         <SelectItem value="Townhouse">Townhouse</SelectItem>
+                        <SelectItem value="mobile">Mobile Home</SelectItem>
                         <SelectItem value="Apartment">Apartment</SelectItem>
                       </SelectContent>
                     </Select>
