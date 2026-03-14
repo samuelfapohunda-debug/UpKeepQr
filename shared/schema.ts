@@ -210,7 +210,9 @@ export const setupActivateSchema = z.object({
   waterHeater: z.string().optional(),
   roofAgeYears: z.number().min(0).max(100).optional(),
   isOwner: z.boolean().optional(),
-  
+  hasPool: z.boolean().optional().default(false),
+  garage: z.boolean().optional().default(false),
+
   // Interest Details
   interestType: z.enum(['sales', 'rent', 'lease', 'maintenance']).optional(),
   needConsultation: z.boolean().optional(),

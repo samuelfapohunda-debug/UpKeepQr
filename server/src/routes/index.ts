@@ -23,6 +23,7 @@ import { registerSubscriptionRoutes, registerSubscriptionWebhookHandler } from '
 import dashboardRoutes from './dashboard.js';
 import customerRoutes from './customer.js';
 import maintenanceRoutes from './maintenance.js';
+import propertyRoutes from './property.js';
 
 export function registerRoutes(app: Express) {
   app.use('/health', healthRoutes);
@@ -38,6 +39,7 @@ export function registerRoutes(app: Express) {
   app.use('/api/leads', leadsRoutes);
   app.use('/api/setup', setupRoutes);
   app.use('/api/maintenance', maintenanceRoutes);
+  app.use('/api/property', propertyRoutes);
   app.use('/api/pro-requests', proRequestsRoutes);  // Public professional service requests
   app.use('/api', contactRoutes);  // Contact form
   app.use('/api', publicRoutes);  // Customer data lookup and QR code download

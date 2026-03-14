@@ -352,7 +352,10 @@ router.post("/activate", async (req: Request, res: Response) => {
           homeType: data.homeType || undefined,
           roofType: undefined,
           hvacType: data.hvacType || undefined,
-          appliances: [],
+          appliances: [
+            ...(data.hasPool ? ['pool'] : []),
+            ...(data.garage ? ['garage'] : []),
+          ],
         });
         console.log(`✅ AI generated ${aiTasks.length} maintenance tasks for household ${result.id}`);
       } catch (aiError) {

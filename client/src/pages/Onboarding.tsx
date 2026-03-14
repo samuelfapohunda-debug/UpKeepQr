@@ -62,10 +62,16 @@ const Onboarding: React.FC<OnboardingProps> = ({ adminMode = false }) => {
     budgetRange: '',
     timelineToProceed: '',
     notes: '',
+
+    // Property features (from ATTOM or user input)
+    hasPool: false,
+    garage: false,
   });
 
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
+  const [propertyLookupLoading, setPropertyLookupLoading] = useState(false);
+  const [attomBannerVisible, setAttomBannerVisible] = useState(false);
   const [error, setError] = useState('');
   const [token, setToken] = useState<string | null>(params?.token || null);
   const [showHomeDetails, setShowHomeDetails] = useState(true);
@@ -202,6 +208,52 @@ const Onboarding: React.FC<OnboardingProps> = ({ adminMode = false }) => {
     setFormData(prev => ({ ...prev, [name]: checked }));
   };
 
+  const lookupPropertyData = async () => {
+    if (!formData.streetAddress.trim() || !formData.zip.trim()) return;
+    setPropertyLookupLoading(true);
+    try {
+      const params = new URLSearchParams({
+        streetAddress: formData.streetAddress.trim(),
+        city: formData.city.trim(),
+        state: formData.state.trim(),
+        zip: formData.zip.trim(),
+      });
+      const res = await fetch(`${API_BASE_URL}/api/property/lookup?${params}`);
+      const attomData = await res.json();
+      if (!attomData.found) return;
+
+      const homeTypeMap: Record<string, string> = {
+        single_family: 'Single Family',
+        condo: 'Condo',
+        townhouse: 'Townhouse',
+      };
+      const hvacTypeMap: Record<string, string> = {
+        central_air: 'Central AC',
+        heat_pump: 'Heat Pump',
+        window_unit: 'Window Units',
+        none: 'None',
+      };
+
+      setFormData(prev => ({
+        ...prev,
+        ...(attomData.homeType && homeTypeMap[attomData.homeType] ? { home_type: homeTypeMap[attomData.homeType] } : {}),
+        ...(attomData.squareFootage ? { sqft: String(attomData.squareFootage) } : {}),
+        ...(attomData.yearBuilt ? { yearBuilt: String(attomData.yearBuilt) } : {}),
+        ...(attomData.bedrooms ? { bedrooms: String(attomData.bedrooms) } : {}),
+        ...(attomData.bathrooms ? { bathrooms: String(attomData.bathrooms) } : {}),
+        ...(attomData.hvacType && hvacTypeMap[attomData.hvacType] ? { hvac_type: hvacTypeMap[attomData.hvacType] } : {}),
+        hasPool: attomData.hasPool ?? prev.hasPool,
+        garage: attomData.garage ?? prev.garage,
+      }));
+      setAttomBannerVisible(true);
+      setShowHomeDetails(true);
+    } catch {
+      // Fail silently — user can fill manually
+    } finally {
+      setPropertyLookupLoading(false);
+    }
+  };
+
   const validateRequiredFields = () => {
     const errors: Record<string, string> = {};
 
@@ -266,6 +318,8 @@ const Onboarding: React.FC<OnboardingProps> = ({ adminMode = false }) => {
         if (formData.water_heater) adminData.waterHeater = formData.water_heater;
         if (formData.roof_age_years) adminData.roofAgeYears = parseInt(formData.roof_age_years);
         if (formData.isOwner !== undefined) adminData.isOwner = formData.isOwner;
+        if (formData.hasPool) adminData.hasPool = formData.hasPool;
+        if (formData.garage) adminData.garage = formData.garage;
         if (formData.notes) adminData.notes = formData.notes;
 
         const response = await apiRequest("POST", "/api/setup/activate", adminData);
@@ -313,6 +367,8 @@ const Onboarding: React.FC<OnboardingProps> = ({ adminMode = false }) => {
         if (formData.water_heater) onboardingData.waterHeater = formData.water_heater;
         if (formData.roof_age_years) onboardingData.roofAgeYears = parseInt(formData.roof_age_years);
         if (formData.isOwner !== undefined) onboardingData.isOwner = formData.isOwner;
+        if (formData.hasPool) onboardingData.hasPool = formData.hasPool;
+        if (formData.garage) onboardingData.garage = formData.garage;
         if (formData.notes) onboardingData.notes = formData.notes;
 
         const setupResponse = await fetch(`${API_BASE_URL}/api/setup/activate`, {
@@ -620,10 +676,14 @@ const Onboarding: React.FC<OnboardingProps> = ({ adminMode = false }) => {
                     required
                     value={formData.zip}
                     onChange={handleInputChange}
+                    onBlur={lookupPropertyData}
                     className={validationErrors.zip ? "border-red-500" : ""}
                   />
                   {validationErrors.zip && (
                     <p className="text-red-500 text-sm mt-1">{validationErrors.zip}</p>
+                  )}
+                  {propertyLookupLoading && (
+                    <p className="text-xs text-muted-foreground mt-1">Looking up property data...</p>
                   )}
                 </div>
 
@@ -660,6 +720,21 @@ const Onboarding: React.FC<OnboardingProps> = ({ adminMode = false }) => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </button>
+
+              {attomBannerVisible && (
+                <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-start justify-between gap-2">
+                  <p className="text-sm text-blue-800">
+                    ✅ We found your home in public records and pre-filled some details. Please review and adjust as needed.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setAttomBannerVisible(false)}
+                    className="text-blue-500 hover:text-blue-700 text-xs shrink-0"
+                  >
+                    Dismiss
+                  </button>
+                </div>
+              )}
 
               {showHomeDetails && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
