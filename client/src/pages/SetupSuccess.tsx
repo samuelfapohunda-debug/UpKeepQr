@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Link, useLocation } from "wouter";
 import { CheckCircle, Calendar, Bell, Home, Download, Package, Wrench, Mail } from "lucide-react";
 import HomeProfileExtraForm from "@/components/HomeProfileExtraForm";
@@ -160,17 +160,22 @@ interface Household {
   climateZone: string;
 }
 
-interface Schedule {
-  taskName: string;
-  description: string;
-  frequencyMonths: number;
-  priority: number;
+interface MaintenanceTask {
+  id: number;
+  title: string;
+  description: string | null;
+  month: number;
+  frequency: string;
+  category: string;
+  priority: string;
+  estimatedCostMin: number | null;
+  estimatedCostMax: number | null;
+  isCompleted: boolean;
 }
 
 interface SetupResult {
   success: boolean;
   household: Household;
-  schedules: Schedule[];
   firstTaskDue: string;
 }
 
@@ -179,11 +184,18 @@ interface SessionData {
   sessionId: string | null;
 }
 
+const POLL_INTERVAL_MS = 4000;
+const POLL_MAX_ATTEMPTS = 8;
+
 export default function SetupSuccess() {
   useLocation(); // Hook required for routing
   const [result, setResult] = useState<SetupResult | null>(null);
   const [sessionData, setSessionData] = useState<SessionData | null>(null);
   const [loading, setLoading] = useState(false);
+  const [tasks, setTasks] = useState<MaintenanceTask[]>([]);
+  const [tasksLoading, setTasksLoading] = useState(false);
+  const pollAttemptsRef = useRef(0);
+  const pollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Check if this is a payment success page
   const urlParams = new URLSearchParams(window.location.search);
@@ -192,11 +204,14 @@ export default function SetupSuccess() {
   useEffect(() => {
     // Check for setup result from sessionStorage
     const storedResult = sessionStorage.getItem('setupResult');
+    let householdId: string | null = null;
     if (storedResult) {
       try {
         const parsed = JSON.parse(storedResult);
         setResult(parsed);
+        householdId = parsed?.household?.id ?? null;
         sessionStorage.removeItem('setupResult');
+        if (householdId) localStorage.setItem('upkeepqr_household_id', householdId);
       } catch (error) {
         console.error('Failed to parse setup result:', error);
       }
@@ -206,6 +221,40 @@ export default function SetupSuccess() {
     if (sessionId) {
       setSessionData({ isPayment: true, sessionId });
     }
+
+    // Fetch tasks from API (with polling — AI generation runs async after setup)
+    if (householdId) {
+      setTasksLoading(true);
+
+      const fetchTasks = async () => {
+        try {
+          const res = await fetch(`/api/maintenance/tasks?householdId=${householdId}`);
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const data = await res.json();
+          const fetched: MaintenanceTask[] = data.tasks ?? [];
+
+          if (fetched.length > 0) {
+            setTasks(fetched);
+            setTasksLoading(false);
+          } else if (pollAttemptsRef.current < POLL_MAX_ATTEMPTS) {
+            // Tasks not ready yet — AI is still generating, poll again
+            pollAttemptsRef.current += 1;
+            pollTimerRef.current = setTimeout(fetchTasks, POLL_INTERVAL_MS);
+          } else {
+            setTasksLoading(false);
+          }
+        } catch (err) {
+          console.error('Failed to fetch maintenance tasks:', err);
+          setTasksLoading(false);
+        }
+      };
+
+      fetchTasks();
+    }
+
+    return () => {
+      if (pollTimerRef.current) clearTimeout(pollTimerRef.current);
+    };
   }, [sessionId]);
 
   const handleDownloadCSV = async (batchId: string) => {
@@ -296,7 +345,7 @@ export default function SetupSuccess() {
   }
 
   // Show detailed setup result if available
-  const { household, schedules, firstTaskDue } = result;
+  const { household, firstTaskDue } = result;
   const dueDate = new Date(firstTaskDue);
 
   return (
@@ -327,64 +376,76 @@ export default function SetupSuccess() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-4">
-              {schedules
-                .sort((a, b) => a.priority - b.priority)
-                .map((schedule, index) => (
-                  <div 
-                    key={index}
-                    className="flex items-start space-x-4 p-4 bg-gray-50 rounded-lg"
-                    data-testid={`task-${index}`}
-                  >
-                    <div className="flex-shrink-0">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${
-                        schedule.priority === 1 
-                          ? 'bg-red-100 text-red-600' 
-                          : schedule.priority === 2 
-                          ? 'bg-yellow-100 text-yellow-600'
-                          : 'bg-blue-100 text-blue-600'
-                      }`}>
-                        {schedule.priority}
-                      </div>
-                    </div>
-                    <div className="flex-grow">
-                      <h3 className="font-semibold text-lg mb-1" data-testid={`task-name-${index}`}>
-                        {schedule.taskName}
-                      </h3>
-                      <p className="text-gray-600 mb-2" data-testid={`task-description-${index}`}>
-                        {schedule.description}
-                      </p>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-4 text-sm">
-                          <Badge variant="secondary">
-                            Every {schedule.frequencyMonths} month{schedule.frequencyMonths > 1 ? 's' : ''}
-                          </Badge>
-                          <span className="text-gray-500">
-                            Priority {schedule.priority}
-                          </span>
-                        </div>
-                        <div className="flex gap-2">
-                          <Link 
-                            href={`/task/${household.token}/${schedule.taskName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z-]/g, '')}`}
-                          >
-                            <Button variant="outline" size="sm" data-testid={`button-view-details-${index}`}>
-                              View Details
-                            </Button>
-                          </Link>
-                          <Link 
-                            href={`/task/${household.token}/${schedule.taskName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z-]/g, '')}`}
-                          >
-                            <Button variant="outline" size="sm" className="text-blue-600" data-testid={`button-book-pro-${index}`}>
-                              <Wrench className="mr-1 h-3 w-3" />
-                              Book a Pro
-                            </Button>
-                          </Link>
+            {tasksLoading ? (
+              <div className="text-center py-8 text-gray-500">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                <p>Generating your AI-powered schedule...</p>
+              </div>
+            ) : tasks.length === 0 ? (
+              <p className="text-center py-8 text-gray-500">
+                No tasks generated yet. Your schedule will appear here shortly.
+              </p>
+            ) : (
+              <div className="grid gap-4">
+                {tasks.map((task, index) => {
+                  const priorityNum = task.priority === 'high' ? 1 : task.priority === 'medium' ? 2 : 3;
+                  return (
+                    <div
+                      key={task.id}
+                      className="flex items-start space-x-4 p-4 bg-gray-50 rounded-lg"
+                      data-testid={`task-${index}`}
+                    >
+                      <div className="flex-shrink-0">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${
+                          priorityNum === 1
+                            ? 'bg-red-100 text-red-600'
+                            : priorityNum === 2
+                            ? 'bg-yellow-100 text-yellow-600'
+                            : 'bg-blue-100 text-blue-600'
+                        }`}>
+                          {priorityNum}
                         </div>
                       </div>
+                      <div className="flex-grow">
+                        <h3 className="font-semibold text-lg mb-1" data-testid={`task-name-${index}`}>
+                          {task.title}
+                        </h3>
+                        <p className="text-gray-600 mb-2" data-testid={`task-description-${index}`}>
+                          {task.description}
+                        </p>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-4 text-sm">
+                            <Badge variant="secondary" className="capitalize">
+                              {task.frequency}
+                            </Badge>
+                            <span className="text-gray-500 capitalize">
+                              {task.priority} priority
+                            </span>
+                          </div>
+                          <div className="flex gap-2">
+                            <Link
+                              href={`/task/${household.token}/${task.id}`}
+                            >
+                              <Button variant="outline" size="sm" data-testid={`button-view-details-${index}`}>
+                                View Details
+                              </Button>
+                            </Link>
+                            <Link
+                              href={`/task/${household.token}/${task.id}`}
+                            >
+                              <Button variant="outline" size="sm" className="text-blue-600" data-testid={`button-book-pro-${index}`}>
+                                <Wrench className="mr-1 h-3 w-3" />
+                                Book a Pro
+                              </Button>
+                            </Link>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                ))}
-            </div>
+                  );
+                })}
+              </div>
+            )}
           </CardContent>
         </Card>
 

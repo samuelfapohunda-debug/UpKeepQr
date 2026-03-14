@@ -22,6 +22,7 @@ import checkoutRoutes from './checkout.js';
 import { registerSubscriptionRoutes, registerSubscriptionWebhookHandler } from '../../routes/subscription.js';
 import dashboardRoutes from './dashboard.js';
 import customerRoutes from './customer.js';
+import maintenanceRoutes from './maintenance.js';
 
 export function registerRoutes(app: Express) {
   app.use('/health', healthRoutes);
@@ -36,6 +37,7 @@ export function registerRoutes(app: Express) {
   app.use('/api/webhook', webhookRoutes);
   app.use('/api/leads', leadsRoutes);
   app.use('/api/setup', setupRoutes);
+  app.use('/api/maintenance', maintenanceRoutes);
   app.use('/api/pro-requests', proRequestsRoutes);  // Public professional service requests
   app.use('/api', contactRoutes);  // Contact form
   app.use('/api', publicRoutes);  // Customer data lookup and QR code download
@@ -66,6 +68,7 @@ export function registerRoutes(app: Express) {
   console.log('✅ Webhook routes registered at /api/webhook');
   console.log('✅ Leads routes registered at /api/leads');
   console.log('✅ Setup routes registered at /api/setup');
+  console.log('✅ Maintenance routes registered at /api/maintenance');
   console.log('✅ Pro requests routes registered at /api/pro-requests');
   console.log('✅ Contact routes registered at /api/contact');
   console.log('✅ Appliance routes registered at /api');

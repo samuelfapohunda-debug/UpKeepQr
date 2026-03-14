@@ -1,28 +1,51 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Calendar, Clock, CheckCircle, QrCode, UserPlus } from 'lucide-react';
 
 import { API_BASE_URL } from '../lib/api-config';
 
-interface AgentStats {
-  totalEvents: number;
-  upcomingEvents: number;
-  completedTasks: number;
-  qrCodesGenerated: number;
+interface MaintenanceSummary {
+  total_tasks: number;
+  completed_this_month: number;
+  upcoming_this_month: number;
+  annual_maintenance_budget: number;
 }
 
 export default function Dashboard() {
-  const [stats] = useState<AgentStats>({
-    totalEvents: 0,
-    upcomingEvents: 0,
-    completedTasks: 0,
-    qrCodesGenerated: 0,
+  const [summary, setSummary] = useState<MaintenanceSummary>({
+    total_tasks: 0,
+    completed_this_month: 0,
+    upcoming_this_month: 0,
+    annual_maintenance_budget: 0,
   });
   const [qrCode, setQrCode] = useState<string>('');
   const [qrData, setQrData] = useState('');
 
+  useEffect(() => {
+    // Get householdId — from sessionStorage on first visit, localStorage on return visits
+    let householdId = localStorage.getItem('upkeepqr_household_id');
+    if (!householdId) {
+      const stored = sessionStorage.getItem('setupResult');
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          householdId = parsed?.household?.id ?? null;
+          if (householdId) localStorage.setItem('upkeepqr_household_id', householdId);
+        } catch {
+          // ignore parse errors
+        }
+      }
+    }
+    if (!householdId) return;
+
+    fetch(`${API_BASE_URL}/api/maintenance/summary?householdId=${householdId}`)
+      .then(r => r.json())
+      .then(data => setSummary(data))
+      .catch(err => console.error('Failed to fetch maintenance summary:', err));
+  }, []);
+
   const generateQR = async () => {
     if (!qrData.trim()) return;
-    
+
     try {
       const response = await fetch(`${API_BASE_URL}/api/qr/generate`, {
         method: 'POST',
@@ -31,7 +54,7 @@ export default function Dashboard() {
         },
         body: JSON.stringify({ data: qrData }),
       });
-      
+
       const result = await response.json();
       if (result.success) {
         setQrCode(result.qrCode);
@@ -56,38 +79,40 @@ export default function Dashboard() {
           <div className="bg-card p-6 rounded-xl border border-border" data-testid="stat-total-events">
             <div className="flex items-center justify-between gap-2">
               <div>
-                <p className="text-sm text-muted-foreground">Total Events</p>
-                <p className="text-2xl font-bold" data-testid="text-total-events">{stats.totalEvents}</p>
+                <p className="text-sm text-muted-foreground">Total Tasks</p>
+                <p className="text-2xl font-bold" data-testid="text-total-events">{summary.total_tasks}</p>
               </div>
               <Calendar className="h-5 w-5 text-primary" />
             </div>
           </div>
-          
+
           <div className="bg-card p-6 rounded-xl border border-border" data-testid="stat-upcoming-events">
             <div className="flex items-center justify-between gap-2">
               <div>
-                <p className="text-sm text-muted-foreground">Upcoming Events</p>
-                <p className="text-2xl font-bold" data-testid="text-upcoming-events">{stats.upcomingEvents}</p>
+                <p className="text-sm text-muted-foreground">Upcoming This Month</p>
+                <p className="text-2xl font-bold" data-testid="text-upcoming-events">{summary.upcoming_this_month}</p>
               </div>
               <Clock className="h-5 w-5 text-blue-500" />
             </div>
           </div>
-          
+
           <div className="bg-card p-6 rounded-xl border border-border" data-testid="stat-completed-tasks">
             <div className="flex items-center justify-between gap-2">
               <div>
-                <p className="text-sm text-muted-foreground">Completed Tasks</p>
-                <p className="text-2xl font-bold" data-testid="text-completed-tasks">{stats.completedTasks}</p>
+                <p className="text-sm text-muted-foreground">Completed This Month</p>
+                <p className="text-2xl font-bold" data-testid="text-completed-tasks">{summary.completed_this_month}</p>
               </div>
               <CheckCircle className="h-5 w-5 text-green-500" />
             </div>
           </div>
-          
+
           <div className="bg-card p-6 rounded-xl border border-border" data-testid="stat-qr-generated">
             <div className="flex items-center justify-between gap-2">
               <div>
-                <p className="text-sm text-muted-foreground">QR Codes Generated</p>
-                <p className="text-2xl font-bold" data-testid="text-qr-generated">{stats.qrCodesGenerated}</p>
+                <p className="text-sm text-muted-foreground">Annual Budget</p>
+                <p className="text-2xl font-bold" data-testid="text-qr-generated">
+                  ${summary.annual_maintenance_budget.toLocaleString()}
+                </p>
               </div>
               <QrCode className="h-5 w-5 text-purple-500" />
             </div>
@@ -101,8 +126,8 @@ export default function Dashboard() {
             <div className="space-y-4">
               <div>
                 <label htmlFor="qrData" className="block text-sm font-medium mb-2">Data to encode</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   id="qrData"
                   value={qrData}
                   onChange={(e) => setQrData(e.target.value)}
@@ -111,7 +136,7 @@ export default function Dashboard() {
                   data-testid="input-qr-data"
                 />
               </div>
-              <button 
+              <button
                 onClick={generateQR}
                 className="w-full bg-primary text-primary-foreground py-2 rounded-md font-medium hover:bg-primary/90 transition-colors"
                 data-testid="button-generate-qr"
@@ -120,9 +145,9 @@ export default function Dashboard() {
               </button>
               {qrCode && (
                 <div className="text-center">
-                  <img 
-                    src={qrCode} 
-                    alt="Generated QR Code" 
+                  <img
+                    src={qrCode}
+                    alt="Generated QR Code"
                     className="mx-auto border border-border rounded"
                     data-testid="img-qr-code"
                   />

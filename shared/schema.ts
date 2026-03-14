@@ -1573,3 +1573,95 @@ export type CancelSubscriptionRequest = z.infer<typeof cancelSubscriptionSchema>
 
 // Lead Capture
 export * from "./lead-schema";
+
+// =====================================================
+// HOME RESEARCH AI AGENT SCHEMAS
+// =====================================================
+
+// Home Profiles Table
+export const homeProfilesTable = pgTable("home_profiles", {
+  id: serial("id").primaryKey(),
+  householdId: varchar("household_id", { length: 255 }).notNull(),
+  address: varchar("address", { length: 255 }),
+  city: varchar("city", { length: 100 }),
+  state: varchar("state", { length: 50 }),
+  zip: varchar("zip", { length: 10 }),
+  yearBuilt: integer("year_built"),
+  squareFootage: integer("square_footage"),
+  homeType: varchar("home_type", { length: 50 }), // single_family, condo, townhouse, mobile
+  roofType: varchar("roof_type", { length: 50 }), // asphalt_shingle, metal, tile, flat
+  hvacType: varchar("hvac_type", { length: 50 }), // central_air, heat_pump, window_unit, none
+  climateZone: varchar("climate_zone", { length: 100 }),
+  climateZoneSource: varchar("climate_zone_source", { length: 50 }).default("state_heuristic"),
+  appliances: json("appliances").$type<string[]>().default([]),
+  scheduleGeneratedAt: timestamp("schedule_generated_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertHomeProfileSchema = createInsertSchema(homeProfilesTable).omit({ id: true, createdAt: true, updatedAt: true });
+export type HomeProfile = typeof homeProfilesTable.$inferSelect;
+export type InsertHomeProfile = z.infer<typeof insertHomeProfileSchema>;
+
+// Maintenance Tasks Table
+export const maintenanceTasksTable = pgTable("maintenance_tasks", {
+  id: serial("id").primaryKey(),
+  householdId: varchar("household_id", { length: 255 }).notNull(),
+  homeProfileId: integer("home_profile_id").notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+  month: integer("month").notNull(), // 1-12
+  frequency: varchar("frequency", { length: 50 }).notNull(), // monthly, quarterly, biannual, annual
+  category: varchar("category", { length: 100 }).notNull(), // hvac, plumbing, electrical, exterior, interior, appliances, seasonal
+  priority: varchar("priority", { length: 20 }).notNull().default("medium"), // high, medium, low
+  estimatedCostMin: integer("estimated_cost_min"),
+  estimatedCostMax: integer("estimated_cost_max"),
+  estimatedDiyCost: integer("estimated_diy_cost"),
+  estimatedProCost: integer("estimated_pro_cost"),
+  isCompleted: boolean("is_completed").notNull().default(false),
+  completedAt: timestamp("completed_at"),
+  dueDate: timestamp("due_date"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertMaintenanceTaskSchema = createInsertSchema(maintenanceTasksTable).omit({ id: true, createdAt: true, updatedAt: true });
+export type MaintenanceTask = typeof maintenanceTasksTable.$inferSelect;
+export type InsertMaintenanceTask = z.infer<typeof insertMaintenanceTaskSchema>;
+
+// Maintenance Task Templates Table
+export const maintenanceTaskTemplatesTable = pgTable("maintenance_task_templates", {
+  id: serial("id").primaryKey(),
+  title: varchar("title", { length: 255 }).notNull(),
+  category: varchar("category", { length: 100 }).notNull(), // hvac, plumbing, electrical, exterior, interior, appliances, seasonal
+  frequency: varchar("frequency", { length: 50 }).notNull(), // monthly, quarterly, biannual, annual
+  typicalCostMin: integer("typical_cost_min"),
+  typicalCostMax: integer("typical_cost_max"),
+  appliesTo: varchar("applies_to", { length: 100 }), // hvac, roof, appliance, plumbing, etc.
+  climateZones: json("climate_zones").$type<string[]>().default([]),
+  minHomeAge: integer("min_home_age"),
+  maxHomeAge: integer("max_home_age"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertMaintenanceTaskTemplateSchema = createInsertSchema(maintenanceTaskTemplatesTable).omit({ id: true, createdAt: true });
+export type MaintenanceTaskTemplate = typeof maintenanceTaskTemplatesTable.$inferSelect;
+export type InsertMaintenanceTaskTemplate = z.infer<typeof insertMaintenanceTaskTemplateSchema>;
+
+// AI Generation Logs Table
+export const aiGenerationLogsTable = pgTable("ai_generation_logs", {
+  id: serial("id").primaryKey(),
+  householdId: varchar("household_id", { length: 255 }).notNull(),
+  homeProfileId: integer("home_profile_id").notNull(),
+  model: varchar("model", { length: 100 }).notNull(),
+  prompt: text("prompt").notNull(),
+  response: text("response"),
+  tokensUsed: integer("tokens_used"),
+  success: boolean("success").notNull().default(false),
+  errorMessage: text("error_message"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertAiGenerationLogSchema = createInsertSchema(aiGenerationLogsTable).omit({ id: true, createdAt: true });
+export type AiGenerationLog = typeof aiGenerationLogsTable.$inferSelect;
+export type InsertAiGenerationLog = z.infer<typeof insertAiGenerationLogSchema>;

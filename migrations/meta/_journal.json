@@ -12,22 +12,8 @@
     {
       "idx": 1,
       "version": "7",
-      "when": 1765384483628,
-      "tag": "0001_secret_pete_wisdom",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1766290019537,
-      "tag": "0002_bouncy_zombie",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1773250019056,
-      "tag": "0003_tired_deathbird",
+      "when": 1773460594970,
+      "tag": "0001_confused_nuke",
       "breakpoints": true
     }
   ]

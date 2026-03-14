@@ -13,6 +13,7 @@ import {
 } from '../../lib/email.js';
 import { generateMaintenanceTasks } from '../../lib/tasks.js';
 import { generateMagicLink } from '../../lib/magicLink.js';
+import { generateMaintenanceSchedule } from '../../services/homeResearchAgent.js';
 
 const router = Router();
 
@@ -335,6 +336,29 @@ router.post("/activate", async (req: Request, res: Response) => {
       householdId: result.id,
       setupStatus: result.setupStatus
     });
+
+    // STEP 5.5: GENERATE AI MAINTENANCE SCHEDULE (non-critical, fire-and-forget after transaction commits)
+    void (async () => {
+      try {
+        console.log("🤖 Starting AI maintenance schedule generation...");
+        const aiTasks = await generateMaintenanceSchedule({
+          householdId: result.id,
+          address: result.addressLine1 || '',
+          city: result.city || '',
+          state: result.state || '',
+          zip: result.zipcode || '',
+          yearBuilt: data.yearBuilt || undefined,
+          squareFootage: data.sqft || undefined,
+          homeType: data.homeType || undefined,
+          roofType: undefined,
+          hvacType: data.hvacType || undefined,
+          appliances: [],
+        });
+        console.log(`✅ AI generated ${aiTasks.length} maintenance tasks for household ${result.id}`);
+      } catch (aiError) {
+        console.error('⚠️ AI schedule generation failed (non-critical):', aiError);
+      }
+    })();
 
     // Query home profile data for emails (non-blocking)
     const homeProfile = await db
