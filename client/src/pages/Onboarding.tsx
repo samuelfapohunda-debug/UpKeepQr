@@ -370,7 +370,8 @@ const Onboarding: React.FC<OnboardingProps> = ({ adminMode = false, onComplete }
     }
 
     if (!token && !adminMode) {
-      setError('Invalid setup token');
+      // Accessed at /onboarding directly (no QR token) — direct to paid signup
+      setLocation('/pricing');
       return;
     }
 
