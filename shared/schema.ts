@@ -1667,3 +1667,45 @@ export const aiGenerationLogsTable = pgTable("ai_generation_logs", {
 export const insertAiGenerationLogSchema = createInsertSchema(aiGenerationLogsTable).omit({ id: true, createdAt: true });
 export type AiGenerationLog = typeof aiGenerationLogsTable.$inferSelect;
 export type InsertAiGenerationLog = z.infer<typeof insertAiGenerationLogSchema>;
+
+// =====================================================
+// AGENT 3 — PREVENTIVE ALERT AGENT SCHEMAS
+// =====================================================
+
+// Push Subscriptions Table
+export const pushSubscriptionsTable = pgTable("push_subscriptions", {
+  id: serial("id").primaryKey(),
+  householdId: varchar("household_id", { length: 255 }).notNull().references(() => householdsTable.id, { onDelete: 'cascade' }),
+  endpoint: text("endpoint").notNull(),
+  p256dh: text("p256dh").notNull(),
+  auth: text("auth").notNull(),
+  userAgent: varchar("user_agent", { length: 500 }),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  householdIdx: index("idx_push_subscriptions_household").on(table.householdId),
+  endpointIdx: uniqueIndex("idx_push_subscriptions_endpoint").on(table.endpoint),
+}));
+
+export type PushSubscription = typeof pushSubscriptionsTable.$inferSelect;
+export type InsertPushSubscription = typeof pushSubscriptionsTable.$inferInsert;
+
+// Alerts Sent Table
+export const alertsSentTable = pgTable("alerts_sent", {
+  id: serial("id").primaryKey(),
+  householdId: varchar("household_id", { length: 255 }).notNull(),
+  alertTitle: varchar("alert_title", { length: 255 }).notNull(),
+  alertBody: text("alert_body"),
+  urgency: varchar("urgency", { length: 20 }),        // critical | high | medium
+  category: varchar("category", { length: 100 }),
+  wasDelivered: boolean("was_delivered").notNull().default(false),
+  deliveredAt: timestamp("delivered_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  householdIdx: index("idx_alerts_sent_household").on(table.householdId),
+  createdIdx: index("idx_alerts_sent_created").on(table.createdAt),
+}));
+
+export type AlertSent = typeof alertsSentTable.$inferSelect;
+export type InsertAlertSent = typeof alertsSentTable.$inferInsert;

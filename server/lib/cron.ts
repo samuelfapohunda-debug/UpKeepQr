@@ -1,8 +1,9 @@
 import cron from 'node-cron';
 import { storage } from '../storage.js';
 import { db } from '../db.js';
-import { householdTaskAssignmentsTable, type ReminderQueue, type Household } from '../../shared/schema.js';
-import { eq, and, lt } from 'drizzle-orm';
+import { householdTaskAssignmentsTable, householdsTable, pushSubscriptionsTable, homeProfilesTable, type ReminderQueue, type Household } from '../../shared/schema.js';
+import { eq, and, lt, inArray } from 'drizzle-orm';
+import { runPreventiveAlertAgent } from '../services/preventiveAlertAgent.js';
 import { sendReminderEmail } from './mail.js';
 import { createMaintenanceReminderEvent } from './ics.js';
 import { processWarrantyExpirationNotifications } from './warrantyNotifications.js';
@@ -12,6 +13,7 @@ let isReminderJobRunning = false;
 let isOverdueJobRunning = false;
 let isWarrantyJobRunning = false;
 let isSubscriptionJobRunning = false;
+let isAlertJobRunning = false;
 
 export function startCronJobs(): void {
   cron.schedule('0 8 * * *', async () => {
@@ -57,10 +59,11 @@ export function startCronJobs(): void {
 
   cron.schedule('0 9 * * *', async () => {
     console.log('Running daily maintenance job at 09:00 EST');
-    
+
     try {
       await updateOverdueTasks();
       await processReminderQueue();
+      await runPreventiveAlerts();
     } catch (error) {
       console.error('Daily job failed:', error);
     }
@@ -241,4 +244,63 @@ export async function triggerReminderProcessing(): Promise<void> {
 export async function triggerOverdueUpdate(): Promise<void> {
   console.log('Manually triggering overdue task update');
   await updateOverdueTasks();
+}
+
+async function runPreventiveAlerts(): Promise<void> {
+  if (isAlertJobRunning) {
+    console.log('Preventive alert job already running, skipping');
+    return;
+  }
+
+  isAlertJobRunning = true;
+
+  try {
+    // Find all households that have at least one active push subscription
+    const activeSubs = await db
+      .selectDistinct({ householdId: pushSubscriptionsTable.householdId })
+      .from(pushSubscriptionsTable)
+      .where(eq(pushSubscriptionsTable.isActive, true));
+
+    if (activeSubs.length === 0) {
+      console.log('[PreventiveAlerts] No households with active push subscriptions');
+      return;
+    }
+
+    const householdIds = activeSubs.map(s => s.householdId);
+
+    // Fetch home profiles for context
+    const profiles = await db
+      .select()
+      .from(homeProfilesTable)
+      .where(inArray(homeProfilesTable.householdId, householdIds));
+
+    const profileMap = new Map(profiles.map(p => [p.householdId, p]));
+
+    let totalDelivered = 0;
+
+    for (const { householdId } of activeSubs) {
+      try {
+        const profile = profileMap.get(householdId);
+        const delivered = await runPreventiveAlertAgent({
+          householdId,
+          homeProfile: {
+            city: profile?.city ?? undefined,
+            state: profile?.state ?? undefined,
+            climateZone: profile?.climateZone ?? undefined,
+            yearBuilt: profile?.yearBuilt ?? undefined,
+            homeType: profile?.homeType ?? undefined,
+          },
+        });
+        totalDelivered += delivered;
+      } catch (err) {
+        console.error(`[PreventiveAlerts] Failed for household ${householdId}:`, err);
+      }
+    }
+
+    console.log(`[PreventiveAlerts] Done — ${activeSubs.length} households checked, ${totalDelivered} notifications delivered`);
+  } catch (error) {
+    console.error('[PreventiveAlerts] Job failed:', error);
+  } finally {
+    isAlertJobRunning = false;
+  }
 }
