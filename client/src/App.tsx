@@ -38,6 +38,7 @@ import CookiePolicy from "@/pages/legal/CookiePolicy";
 import HomeownerDashboard from "@/features/homeowner/Dashboard";
 import SubscriptionSuccess from "@/pages/SubscriptionSuccess";
 import BillingSettings from "@/pages/BillingSettings";
+import Onboarding from "@/pages/Onboarding";
 
 function Router() {
   return (
@@ -59,6 +60,7 @@ function Router() {
         <Route path="/auth/error" component={AuthError} />
         <Route path="/auth/error" component={AuthError} />
         <Route path="/my-home" component={CustomerDashboard} />
+        <Route path="/onboarding">{() => <Onboarding />}</Route>
         <Route path="/new-setup" component={SetupForm} />
         <Route path="/new-setup/:token" component={SetupForm} />
         <Route path="/setup/:token" component={SetupForm} />

@@ -322,23 +322,8 @@ export default function CustomerDashboard() {
   }
 
   if (householdError || !household) {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <Card className="max-w-md w-full">
-          <CardHeader>
-            <CardTitle>Dashboard Not Found</CardTitle>
-            <CardDescription>
-              Unable to load your household dashboard. Please check your link or contact support.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button onClick={() => navigate("/")} className="w-full" data-testid="button-go-home">
-              Go to Homepage
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
+    navigate('/onboarding');
+    return null;
   }
 
   return (
