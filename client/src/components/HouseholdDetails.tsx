@@ -88,11 +88,20 @@ export default function HouseholdDetails({ household, onEdit }: HouseholdDetails
                      'Standard'}
                   </Badge>
                 </div>
-                <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                  <MapPin className="h-3 w-3" />
-                  <span data-testid="text-location">
-                    {household.city}, {household.state} {household.zip}
-                  </span>
+                <div className="flex flex-col gap-0.5 text-sm text-muted-foreground">
+                  {household.streetAddress && (
+                    <div className="flex items-center gap-1">
+                      <MapPin className="h-3 w-3 shrink-0" />
+                      <span data-testid="text-street-address">{household.streetAddress}</span>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-1">
+                    {!household.streetAddress && <MapPin className="h-3 w-3 shrink-0" />}
+                    {household.streetAddress && <span className="w-3 shrink-0" />}
+                    <span data-testid="text-location">
+                      {household.city}, {household.state} {household.zip}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>

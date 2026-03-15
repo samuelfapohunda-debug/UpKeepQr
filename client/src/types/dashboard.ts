@@ -19,6 +19,7 @@ export interface Household {
   lastName: string;
   email: string;
   homeType: string;
+  streetAddress: string;
   city: string;
   state: string;
   zip: string;

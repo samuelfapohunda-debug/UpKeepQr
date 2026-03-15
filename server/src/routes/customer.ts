@@ -50,6 +50,7 @@ router.get('/household', requireSessionAuth, async (req: SessionAuthRequest, res
       lastName,
       email: household.email,
       homeType: homeProfile?.homeType || 'Single Family',
+      streetAddress: household.addressLine1 || '',
       city: household.city || '',
       state: household.state || '',
       zip: household.zipcode || ''
