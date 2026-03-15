@@ -564,9 +564,32 @@ const Onboarding: React.FC<OnboardingProps> = ({ adminMode = false, onComplete }
     return null;
   };
 
+  // Per-step card title and description
+  const stepTitle = step === 1 ? 'Your Address' : step === 2 ? 'Confirm Your Home' : 'Account Setup';
+  const stepDesc =
+    step === 1
+      ? 'Start with your property address'
+      : step === 2
+      ? attomFound === true
+        ? 'Review the details we found — update anything that looks off'
+        : 'Tell us a bit about your home for a better schedule'
+      : 'Almost done — just a few details';
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-3xl mx-auto">
+    <div className="min-h-screen bg-background pt-16 sm:pt-20">
+      <div className="max-w-4xl mx-auto px-4 py-8">
+
+        {/* Page title — outside the card */}
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-4">
+            {adminMode ? 'Create New Household' : 'Set Up Your Home'}
+          </h1>
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+            {adminMode
+              ? 'Admin mode — manual household creation without QR code activation.'
+              : "Tell us about your property and we'll build a personalized maintenance schedule."}
+          </p>
+        </div>
 
         {/* Admin Mode Badge */}
         {adminMode && (
@@ -583,438 +606,425 @@ const Onboarding: React.FC<OnboardingProps> = ({ adminMode = false, onComplete }
           </Card>
         )}
 
-        <div className="bg-white rounded-lg shadow-xl p-8">
+        <Card>
+          <CardHeader>
+            <ProgressIndicator
+              currentStep={step}
+              totalSteps={3}
+              stepLabels={['Your Address', 'Your Home', 'Account Setup']}
+            />
+            <CardTitle>{stepTitle}</CardTitle>
+            <CardDescription>{stepDesc}</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
 
-          <ProgressIndicator
-            currentStep={step}
-            totalSteps={3}
-            stepLabels={['Your Address', 'Your Home', 'Account Setup']}
-          />
-
-          {/* QR already activated warning */}
-          {qrAlreadyActivated && (
-            <div className="mb-6 p-6 bg-destructive/10 border-2 border-destructive rounded-lg">
-              <div className="flex items-start gap-3">
-                <div className="text-3xl">🔒</div>
-                <div className="flex-1">
-                  <h2 className="text-xl font-bold text-destructive mb-2">QR Code Already Activated</h2>
-                  <p className="text-muted-foreground mb-4">{customerDataError}</p>
-                  <p className="text-sm text-muted-foreground">
-                    Each QR code can only be activated once for security reasons. Contact{' '}
-                    <a href="mailto:support@maintcue.com" className="text-primary underline">
-                      support@maintcue.com
-                    </a>
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {error && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-red-800 text-sm">{error}</p>
-            </div>
-          )}
-
-          <div className={qrAlreadyActivated ? 'opacity-50 pointer-events-none' : ''}>
-
-            {/* ========== STEP 1: YOUR ADDRESS ========== */}
-            {step === 1 && (
-              <div className="space-y-6">
-                <div className="text-center mb-6">
-                  <h1 className="text-2xl font-bold text-gray-900">
-                    {adminMode ? 'Create New Household' : 'Complete Your Home Setup'}
-                  </h1>
-                  <p className="mt-1 text-gray-600">Start with your property address</p>
-                </div>
-
-                {/* Street Address with Places autocomplete */}
-                <div className="relative">
-                  <Label htmlFor="streetAddress">Street Address *</Label>
-                  <Input
-                    id="streetAddress"
-                    name="streetAddress"
-                    value={formData.streetAddress}
-                    onChange={(e) => handleAddressChange(e.target.value)}
-                    onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
-                    onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                    placeholder="123 Main St"
-                    className={`mt-1 ${validationErrors.streetAddress ? 'border-red-500' : ''}`}
-                    data-testid="input-street-address"
-                  />
-                  {showSuggestions && suggestions.length > 0 && (
-                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
-                      {suggestions.map((suggestion, index) => (
-                        <div
-                          key={suggestion.placeId}
-                          className="px-4 py-2 hover:bg-gray-100 cursor-pointer border-b last:border-b-0"
-                          onMouseDown={() => handleSelectSuggestion(suggestion)}
-                          data-testid={`suggestion-${index}`}
-                        >
-                          <div className="text-sm font-medium">{suggestion.mainText}</div>
-                          <div className="text-xs text-gray-500">{suggestion.secondaryText}</div>
-                        </div>
-                      ))}
-                      <div className="px-4 py-2 text-xs text-gray-400 border-t bg-gray-50">
-                        Powered by Google
-                      </div>
-                    </div>
-                  )}
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Start typing for suggestions (US &amp; Canada)
-                  </p>
-                  {validationErrors.streetAddress && (
-                    <p className="text-red-500 text-sm mt-1">{validationErrors.streetAddress}</p>
-                  )}
-                </div>
-
-                {/* City + State */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="city">City *</Label>
-                    <Input
-                      id="city"
-                      name="city"
-                      value={formData.city}
-                      onChange={handleInputChange}
-                      placeholder="Auto-fills from address"
-                      className={`mt-1 ${validationErrors.city ? 'border-red-500' : ''}`}
-                      data-testid="input-city"
-                    />
-                    {validationErrors.city && (
-                      <p className="text-red-500 text-sm mt-1">{validationErrors.city}</p>
-                    )}
-                  </div>
-                  <div>
-                    <Label htmlFor="state">State / Province *</Label>
-                    <Input
-                      id="state"
-                      name="state"
-                      value={formData.state}
-                      onChange={handleInputChange}
-                      placeholder="Auto-fills from address"
-                      maxLength={3}
-                      className={`mt-1 ${validationErrors.state ? 'border-red-500' : ''}`}
-                      data-testid="input-state"
-                    />
-                    {validationErrors.state && (
-                      <p className="text-red-500 text-sm mt-1">{validationErrors.state}</p>
-                    )}
-                  </div>
-                </div>
-
-                {/* ZIP */}
-                <div>
-                  <Label htmlFor="zip" className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4" />
-                    ZIP / Postal Code *
-                  </Label>
-                  <Input
-                    id="zip"
-                    name="zip"
-                    value={formData.zip}
-                    onChange={handleInputChange}
-                    maxLength={10}
-                    className={`mt-1 ${validationErrors.zip ? 'border-red-500' : ''}`}
-                    data-testid="input-zip"
-                  />
-                  {validationErrors.zip && (
-                    <p className="text-red-500 text-sm mt-1">{validationErrors.zip}</p>
-                  )}
-                  <p className="text-xs text-muted-foreground mt-1">
-                    For weather-based reminders and local service matching
-                  </p>
-                </div>
-
-                {/* ATTOM result */}
-                {renderAttomCard()}
-
-                {/* Continue — hidden while loading or when ATTOM found (card has its own CTAs) */}
-                {!attomLoading && attomFound !== true && (
-                  <Button
-                    type="button"
-                    className="w-full"
-                    onClick={handleStep1Continue}
-                    data-testid="button-step1-continue"
-                  >
-                    Continue
-                  </Button>
-                )}
-              </div>
-            )}
-
-            {/* ========== STEP 2: CONFIRM YOUR HOME ========== */}
-            {step === 2 && (
-              <div className="space-y-6">
-                <div className="text-center mb-6">
-                  <h1 className="text-2xl font-bold text-gray-900">Confirm Your Home</h1>
-                  <p className="mt-1 text-gray-600">
-                    {attomFound === true
-                      ? 'Review the details we found — update anything that looks off'
-                      : 'Tell us a bit about your home for a better schedule'}
-                  </p>
-                </div>
-
-                {attomFound === true && (
-                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                    <p className="text-sm text-blue-800">
-                      We pre-filled your home details from public records. Please confirm or update below.
+            {/* QR already activated warning */}
+            {qrAlreadyActivated && (
+              <div className="p-6 bg-destructive/10 border-2 border-destructive rounded-lg">
+                <div className="flex items-start gap-3">
+                  <div className="text-3xl">🔒</div>
+                  <div className="flex-1">
+                    <h2 className="text-xl font-bold text-destructive mb-2">QR Code Already Activated</h2>
+                    <p className="text-muted-foreground mb-4">{customerDataError}</p>
+                    <p className="text-sm text-muted-foreground">
+                      Each QR code can only be activated once for security reasons. Contact{' '}
+                      <a href="mailto:support@maintcue.com" className="text-primary underline">
+                        support@maintcue.com
+                      </a>
                     </p>
                   </div>
-                )}
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <Label htmlFor="home_type">Home Type</Label>
-                    <Select
-                      name="home_type"
-                      value={formData.home_type}
-                      onValueChange={(value) => handleSelectChange('home_type', value)}
-                    >
-                      <SelectTrigger className="mt-1">
-                        <SelectValue placeholder="Select..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Single Family">Single Family</SelectItem>
-                        <SelectItem value="Condo">Condo</SelectItem>
-                        <SelectItem value="Townhouse">Townhouse</SelectItem>
-                        <SelectItem value="mobile">Mobile Home</SelectItem>
-                        <SelectItem value="Apartment">Apartment</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="sqft">Square Footage</Label>
-                    <Input
-                      id="sqft"
-                      name="sqft"
-                      type="number"
-                      value={formData.sqft}
-                      onChange={handleInputChange}
-                      className="mt-1"
-                      data-testid="input-sqft"
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="yearBuilt">Year Built</Label>
-                    <Input
-                      id="yearBuilt"
-                      name="yearBuilt"
-                      type="number"
-                      placeholder="e.g., 1995"
-                      min="1800"
-                      max={new Date().getFullYear()}
-                      value={formData.yearBuilt}
-                      onChange={handleInputChange}
-                      className="mt-1"
-                      data-testid="input-year-built"
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="hvac_type">HVAC Type</Label>
-                    <Select
-                      name="hvac_type"
-                      value={formData.hvac_type}
-                      onValueChange={(value) => handleSelectChange('hvac_type', value)}
-                    >
-                      <SelectTrigger className="mt-1">
-                        <SelectValue placeholder="Select..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Central AC">Central AC</SelectItem>
-                        <SelectItem value="Heat Pump">Heat Pump</SelectItem>
-                        <SelectItem value="Window Units">Window Units</SelectItem>
-                        <SelectItem value="None">None</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="water_heater">Water Heater Type</Label>
-                    <Select
-                      name="water_heater"
-                      value={formData.water_heater}
-                      onValueChange={(value) => handleSelectChange('water_heater', value)}
-                    >
-                      <SelectTrigger className="mt-1" data-testid="select-water-heater">
-                        <SelectValue placeholder="Select..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Tank">Tank</SelectItem>
-                        <SelectItem value="Tankless">Tankless</SelectItem>
-                        <SelectItem value="Heat Pump">Heat Pump</SelectItem>
-                        <SelectItem value="Unknown">Unknown</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="roof_age_years">Roof Age (Years)</Label>
-                    <Input
-                      id="roof_age_years"
-                      name="roof_age_years"
-                      type="number"
-                      value={formData.roof_age_years}
-                      onChange={handleInputChange}
-                      className="mt-1"
-                    />
-                  </div>
-
-                  <div className="flex items-center gap-3 pt-2">
-                    <Checkbox
-                      id="hasPool"
-                      checked={formData.hasPool}
-                      onCheckedChange={(checked) =>
-                        setFormData(prev => ({ ...prev, hasPool: checked as boolean }))
-                      }
-                    />
-                    <Label htmlFor="hasPool" className="font-normal cursor-pointer">
-                      Has a pool
-                    </Label>
-                  </div>
-
-                  <div className="flex items-center gap-3 pt-2">
-                    <Checkbox
-                      id="garage"
-                      checked={formData.garage}
-                      onCheckedChange={(checked) =>
-                        setFormData(prev => ({ ...prev, garage: checked as boolean }))
-                      }
-                    />
-                    <Label htmlFor="garage" className="font-normal cursor-pointer">
-                      Has a garage
-                    </Label>
-                  </div>
-                </div>
-
-                <div className="flex gap-4 pt-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="flex-1"
-                    onClick={() => setStep(1)}
-                    data-testid="button-step2-back"
-                  >
-                    Back
-                  </Button>
-                  <Button
-                    type="button"
-                    className="flex-1"
-                    onClick={() => setStep(3)}
-                    data-testid="button-step2-continue"
-                  >
-                    Continue
-                  </Button>
                 </div>
               </div>
             )}
 
-            {/* ========== STEP 3: ACCOUNT SETUP ========== */}
-            {step === 3 && (
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="text-center mb-6">
-                  <h1 className="text-2xl font-bold text-gray-900">Account Setup</h1>
-                  <p className="mt-1 text-gray-600">Almost done — just a few details</p>
-                </div>
-
-                <div>
-                  <Label htmlFor="fullName">Full Name *</Label>
-                  <Input
-                    id="fullName"
-                    name="fullName"
-                    required
-                    value={formData.fullName}
-                    onChange={handleInputChange}
-                    className={`mt-1 ${validationErrors.fullName ? 'border-red-500' : ''}`}
-                  />
-                  {validationErrors.fullName && (
-                    <p className="text-red-500 text-sm mt-1">{validationErrors.fullName}</p>
-                  )}
-                </div>
-
-                <div>
-                  <Label htmlFor="email">Email *</Label>
-                  <Input
-                    id="email"
-                    name="email"
-                    type="email"
-                    required
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    className={`mt-1 ${validationErrors.email ? 'border-red-500' : ''}`}
-                  />
-                  {validationErrors.email && (
-                    <p className="text-red-500 text-sm mt-1">{validationErrors.email}</p>
-                  )}
-                </div>
-
-                <div>
-                  <Label htmlFor="phone">Phone Number *</Label>
-                  <Input
-                    id="phone"
-                    name="phone"
-                    type="tel"
-                    required
-                    placeholder="+1 (555) 123-4567"
-                    value={formData.phone}
-                    onChange={handleInputChange}
-                    className={`mt-1 ${validationErrors.phone ? 'border-red-500' : ''}`}
-                    data-testid="input-phone"
-                  />
-                  {validationErrors.phone && (
-                    <p className="text-red-500 text-sm mt-1">{validationErrors.phone}</p>
-                  )}
-                </div>
-
-                <div className="flex items-start space-x-3">
-                  <Checkbox
-                    id="smsOptIn"
-                    checked={formData.smsOptIn}
-                    onCheckedChange={(checked) =>
-                      setFormData(prev => ({ ...prev, smsOptIn: checked as boolean }))
-                    }
-                    data-testid="checkbox-sms-opt-in"
-                  />
-                  <Label htmlFor="smsOptIn" className="flex items-center gap-2 font-normal cursor-pointer">
-                    <Smartphone className="w-4 h-4" />
-                    <span className="text-sm text-muted-foreground">
-                      I consent to receive maintenance reminders and updates via SMS. Standard message
-                      and data rates may apply. Reply STOP to opt out.
-                    </span>
-                  </Label>
-                </div>
-
-                <div className="flex gap-4 pt-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="flex-1"
-                    onClick={() => setStep(2)}
-                    data-testid="button-step3-back"
-                  >
-                    Back
-                  </Button>
-                  <Button
-                    type="submit"
-                    className="flex-1"
-                    disabled={loading || qrAlreadyActivated}
-                    data-testid="button-submit-setup"
-                  >
-                    {qrAlreadyActivated
-                      ? '🔒 Already Activated'
-                      : loading
-                      ? 'Submitting...'
-                      : 'Complete Setup'}
-                  </Button>
-                </div>
-              </form>
+            {error && (
+              <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-red-800 text-sm">{error}</p>
+              </div>
             )}
 
-          </div>
-        </div>
+            <div className={qrAlreadyActivated ? 'opacity-50 pointer-events-none' : ''}>
+
+              {/* ========== STEP 1: YOUR ADDRESS ========== */}
+              {step === 1 && (
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Your Address</h3>
+
+                  {/* Street Address with Places autocomplete */}
+                  <div className="relative">
+                    <Label htmlFor="streetAddress">Street Address *</Label>
+                    <Input
+                      id="streetAddress"
+                      name="streetAddress"
+                      value={formData.streetAddress}
+                      onChange={(e) => handleAddressChange(e.target.value)}
+                      onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+                      onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                      placeholder="123 Main St"
+                      className={validationErrors.streetAddress ? 'border-red-500' : ''}
+                      data-testid="input-street-address"
+                    />
+                    {showSuggestions && suggestions.length > 0 && (
+                      <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg max-h-60 overflow-auto">
+                        {suggestions.map((suggestion, index) => (
+                          <div
+                            key={suggestion.placeId}
+                            className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer border-b last:border-b-0"
+                            onMouseDown={() => handleSelectSuggestion(suggestion)}
+                            data-testid={`suggestion-${index}`}
+                          >
+                            <div className="text-sm font-medium">{suggestion.mainText}</div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400">{suggestion.secondaryText}</div>
+                          </div>
+                        ))}
+                        <div className="px-4 py-2 text-xs text-gray-400 border-t bg-gray-50 dark:bg-gray-900">
+                          Powered by Google
+                        </div>
+                      </div>
+                    )}
+                    <p className="text-sm text-gray-600 mt-1">
+                      Start typing for suggestions (US &amp; Canada)
+                    </p>
+                    {validationErrors.streetAddress && (
+                      <p className="text-red-500 text-sm mt-1">{validationErrors.streetAddress}</p>
+                    )}
+                  </div>
+
+                  {/* City + State */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="city">City *</Label>
+                      <Input
+                        id="city"
+                        name="city"
+                        value={formData.city}
+                        onChange={handleInputChange}
+                        placeholder="Auto-fills from address"
+                        className={validationErrors.city ? 'border-red-500' : ''}
+                        data-testid="input-city"
+                      />
+                      {validationErrors.city && (
+                        <p className="text-red-500 text-sm mt-1">{validationErrors.city}</p>
+                      )}
+                    </div>
+                    <div>
+                      <Label htmlFor="state">State / Province *</Label>
+                      <Input
+                        id="state"
+                        name="state"
+                        value={formData.state}
+                        onChange={handleInputChange}
+                        placeholder="Auto-fills from address"
+                        maxLength={3}
+                        className={validationErrors.state ? 'border-red-500' : ''}
+                        data-testid="input-state"
+                      />
+                      {validationErrors.state && (
+                        <p className="text-red-500 text-sm mt-1">{validationErrors.state}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* ZIP */}
+                  <div>
+                    <Label htmlFor="zip" className="flex items-center gap-2">
+                      <MapPin className="h-4 w-4" />
+                      ZIP / Postal Code *
+                    </Label>
+                    <Input
+                      id="zip"
+                      name="zip"
+                      value={formData.zip}
+                      onChange={handleInputChange}
+                      maxLength={10}
+                      className={validationErrors.zip ? 'border-red-500' : ''}
+                      data-testid="input-zip"
+                    />
+                    {validationErrors.zip && (
+                      <p className="text-red-500 text-sm mt-1">{validationErrors.zip}</p>
+                    )}
+                    <p className="text-sm text-gray-600 mt-1">
+                      For weather-based reminders and local service matching
+                    </p>
+                  </div>
+
+                  {/* ATTOM result */}
+                  {renderAttomCard()}
+
+                  {/* Continue — hidden while loading or when ATTOM found (card has its own CTAs) */}
+                  {!attomLoading && attomFound !== true && (
+                    <Button
+                      type="button"
+                      className="min-w-[200px]"
+                      onClick={handleStep1Continue}
+                      data-testid="button-step1-continue"
+                    >
+                      Continue
+                    </Button>
+                  )}
+                </div>
+              )}
+
+              {/* ========== STEP 2: CONFIRM YOUR HOME ========== */}
+              {step === 2 && (
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Home Details</h3>
+
+                  {attomFound === true && (
+                    <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <p className="text-sm text-blue-800">
+                        We pre-filled your home details from public records. Please confirm or update below.
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="home_type">Home Type</Label>
+                      <Select
+                        name="home_type"
+                        value={formData.home_type}
+                        onValueChange={(value) => handleSelectChange('home_type', value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Single Family">Single Family</SelectItem>
+                          <SelectItem value="Condo">Condo</SelectItem>
+                          <SelectItem value="Townhouse">Townhouse</SelectItem>
+                          <SelectItem value="mobile">Mobile Home</SelectItem>
+                          <SelectItem value="Apartment">Apartment</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="sqft">Square Footage</Label>
+                      <Input
+                        id="sqft"
+                        name="sqft"
+                        type="number"
+                        value={formData.sqft}
+                        onChange={handleInputChange}
+                        data-testid="input-sqft"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="yearBuilt">Year Built</Label>
+                      <Input
+                        id="yearBuilt"
+                        name="yearBuilt"
+                        type="number"
+                        placeholder="e.g., 1995"
+                        min="1800"
+                        max={new Date().getFullYear()}
+                        value={formData.yearBuilt}
+                        onChange={handleInputChange}
+                        data-testid="input-year-built"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="hvac_type">HVAC Type</Label>
+                      <Select
+                        name="hvac_type"
+                        value={formData.hvac_type}
+                        onValueChange={(value) => handleSelectChange('hvac_type', value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Central AC">Central AC</SelectItem>
+                          <SelectItem value="Heat Pump">Heat Pump</SelectItem>
+                          <SelectItem value="Window Units">Window Units</SelectItem>
+                          <SelectItem value="None">None</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="water_heater">Water Heater Type</Label>
+                      <Select
+                        name="water_heater"
+                        value={formData.water_heater}
+                        onValueChange={(value) => handleSelectChange('water_heater', value)}
+                      >
+                        <SelectTrigger data-testid="select-water-heater">
+                          <SelectValue placeholder="Select..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Tank">Tank</SelectItem>
+                          <SelectItem value="Tankless">Tankless</SelectItem>
+                          <SelectItem value="Heat Pump">Heat Pump</SelectItem>
+                          <SelectItem value="Unknown">Unknown</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="roof_age_years">Roof Age (Years)</Label>
+                      <Input
+                        id="roof_age_years"
+                        name="roof_age_years"
+                        type="number"
+                        value={formData.roof_age_years}
+                        onChange={handleInputChange}
+                      />
+                    </div>
+
+                    <div className="flex items-center gap-3 pt-2">
+                      <Checkbox
+                        id="hasPool"
+                        checked={formData.hasPool}
+                        onCheckedChange={(checked) =>
+                          setFormData(prev => ({ ...prev, hasPool: checked as boolean }))
+                        }
+                      />
+                      <Label htmlFor="hasPool" className="font-normal cursor-pointer">
+                        Has a pool
+                      </Label>
+                    </div>
+
+                    <div className="flex items-center gap-3 pt-2">
+                      <Checkbox
+                        id="garage"
+                        checked={formData.garage}
+                        onCheckedChange={(checked) =>
+                          setFormData(prev => ({ ...prev, garage: checked as boolean }))
+                        }
+                      />
+                      <Label htmlFor="garage" className="font-normal cursor-pointer">
+                        Has a garage
+                      </Label>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-4 pt-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="flex-1"
+                      onClick={() => setStep(1)}
+                      data-testid="button-step2-back"
+                    >
+                      Back
+                    </Button>
+                    <Button
+                      type="button"
+                      className="flex-1"
+                      onClick={() => setStep(3)}
+                      data-testid="button-step2-continue"
+                    >
+                      Continue
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* ========== STEP 3: ACCOUNT SETUP ========== */}
+              {step === 3 && (
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <h3 className="text-lg font-semibold">Contact Information</h3>
+
+                  <div>
+                    <Label htmlFor="fullName">Full Name *</Label>
+                    <Input
+                      id="fullName"
+                      name="fullName"
+                      required
+                      value={formData.fullName}
+                      onChange={handleInputChange}
+                      className={validationErrors.fullName ? 'border-red-500' : ''}
+                    />
+                    {validationErrors.fullName && (
+                      <p className="text-red-500 text-sm mt-1">{validationErrors.fullName}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <Label htmlFor="email">Email *</Label>
+                    <Input
+                      id="email"
+                      name="email"
+                      type="email"
+                      required
+                      value={formData.email}
+                      onChange={handleInputChange}
+                      className={validationErrors.email ? 'border-red-500' : ''}
+                    />
+                    {validationErrors.email && (
+                      <p className="text-red-500 text-sm mt-1">{validationErrors.email}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <Label htmlFor="phone">Phone Number *</Label>
+                    <Input
+                      id="phone"
+                      name="phone"
+                      type="tel"
+                      required
+                      placeholder="+1 (555) 123-4567"
+                      value={formData.phone}
+                      onChange={handleInputChange}
+                      className={validationErrors.phone ? 'border-red-500' : ''}
+                      data-testid="input-phone"
+                    />
+                    {validationErrors.phone && (
+                      <p className="text-red-500 text-sm mt-1">{validationErrors.phone}</p>
+                    )}
+                  </div>
+
+                  <div className="flex items-start space-x-3">
+                    <Checkbox
+                      id="smsOptIn"
+                      checked={formData.smsOptIn}
+                      onCheckedChange={(checked) =>
+                        setFormData(prev => ({ ...prev, smsOptIn: checked as boolean }))
+                      }
+                      data-testid="checkbox-sms-opt-in"
+                    />
+                    <Label htmlFor="smsOptIn" className="flex items-center gap-2 font-normal cursor-pointer">
+                      <Smartphone className="w-4 h-4" />
+                      <span className="text-sm text-muted-foreground">
+                        I consent to receive maintenance reminders and updates via SMS. Standard message
+                        and data rates may apply. Reply STOP to opt out.
+                      </span>
+                    </Label>
+                  </div>
+
+                  <div className="flex gap-4 pt-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="flex-1"
+                      onClick={() => setStep(2)}
+                      data-testid="button-step3-back"
+                    >
+                      Back
+                    </Button>
+                    <Button
+                      type="submit"
+                      className="flex-1"
+                      disabled={loading || qrAlreadyActivated}
+                      data-testid="button-submit-setup"
+                    >
+                      {qrAlreadyActivated
+                        ? '🔒 Already Activated'
+                        : loading
+                        ? 'Submitting...'
+                        : 'Complete Setup'}
+                    </Button>
+                  </div>
+                </form>
+              )}
+
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
