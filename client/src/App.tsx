@@ -63,7 +63,7 @@ function Router() {
         <Route path="/onboarding">{() => <Onboarding />}</Route>
         <Route path="/new-setup" component={SetupForm} />
         <Route path="/new-setup/:token" component={SetupForm} />
-        <Route path="/setup/:token" component={SetupForm} />
+        <Route path="/setup/:token">{() => <Onboarding />}</Route>
         <Route path="/task/:token/:taskId" component={TaskDetail} />
         <Route path="/request-pro" component={RequestPro} />
         <Route path="/subscription/success" component={SubscriptionSuccess} />
