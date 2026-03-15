@@ -132,18 +132,17 @@ const Onboarding: React.FC<OnboardingProps> = ({ adminMode = false, onComplete }
     }
   }, [placesLoaded, placesApiKey]);
 
-  // Token init — fixed: uses useParams (replaces pre-existing broken `params` reference)
+  // Token init — only validate if a token is present in the URL
   useEffect(() => {
     if (adminMode) {
       setToken('admin-setup');
       return;
     }
     const setupToken = params?.token;
-    if (!setupToken) {
-      setError('Invalid setup link');
-    } else {
+    if (setupToken) {
       setToken(setupToken);
     }
+    // No token = direct /onboarding access — skip validation entirely
   }, [params?.token, adminMode]);
 
   // Pre-fill from QR purchase customer data
