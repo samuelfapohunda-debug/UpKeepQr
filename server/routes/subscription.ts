@@ -351,13 +351,16 @@ export function registerSubscriptionRoutes(app: Express) {
     try {
       const { planId, billingInterval, email, name } = req.body;
 
-      if (!billingInterval) {
+      if (!billingInterval || !email) {
         return res.status(400).json({ error: "Missing required fields" });
       }
 
       if (!stripe) {
         return res.status(500).json({ error: "Payment system not configured" });
       }
+
+      console.log(`[Subscription Checkout] Request: plan=${planId}, interval=${billingInterval}, email=${email}`);
+      console.log(`[Subscription Checkout] Env price IDs: HOMEOWNER_BASIC_MONTHLY=${process.env.STRIPE_PRICE_HOMEOWNER_BASIC_MONTHLY}, HOMEOWNER_PLUS_MONTHLY=${process.env.STRIPE_PRICE_HOMEOWNER_PLUS_MONTHLY}, REALTOR_MONTHLY=${process.env.STRIPE_PRICE_REALTOR_MONTHLY}, PROPERTY_MANAGER_MONTHLY=${process.env.STRIPE_PRICE_PROPERTY_MANAGER_MONTHLY}`);
 
       const priceId = resolvePriceId(planId, billingInterval);
 
