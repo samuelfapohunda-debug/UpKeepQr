@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +10,7 @@ import ScrollingAnnouncement from "@/components/ScrollingAnnouncement";
 import AnimatedBackground from "@/components/AnimatedBackground";
 
 export default function Home() {
+  const [, navigate] = useLocation();
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const [billingInterval, setBillingInterval] = useState<'monthly' | 'annual'>('annual');
   const { toast } = useToast();
@@ -43,7 +44,7 @@ export default function Home() {
                   <Button 
                     size="lg" 
                     className="bg-emerald-500 hover:bg-emerald-600 text-white px-8 py-6 text-lg font-semibold"
-                    onClick={() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })}
+                    onClick={() => navigate('/pricing')}
                     data-testid="button-get-started"
                   >
                     Start Free (30 Days Free)
@@ -431,7 +432,7 @@ export default function Home() {
                   </ul>
                   <Button 
                     className="w-full bg-emerald-500 hover:bg-emerald-600 text-white"
-                    onClick={() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })}
+                    onClick={() => navigate('/pricing')}
                     data-testid="button-audience-homeowners"
                   >
                     Start Free
@@ -466,7 +467,7 @@ export default function Home() {
                   <Button 
                     variant="outline"
                     className="w-full border-emerald-500 text-emerald-600 hover:bg-emerald-50"
-                    onClick={() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })}
+                    onClick={() => navigate('/pricing')}
                     data-testid="button-audience-multi-property"
                   >
                     View Plus Plan
@@ -501,7 +502,7 @@ export default function Home() {
                   <Button 
                     variant="outline"
                     className="w-full border-emerald-500 text-emerald-600 hover:bg-emerald-50"
-                    onClick={() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })}
+                    onClick={() => navigate('/pricing')}
                     data-testid="button-audience-realtor"
                   >
                     View Realtor Plan
@@ -536,7 +537,7 @@ export default function Home() {
                   <Button 
                     variant="outline"
                     className="w-full border-emerald-500 text-emerald-600 hover:bg-emerald-50"
-                    onClick={() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })}
+                    onClick={() => navigate('/pricing')}
                     data-testid="button-audience-property-manager"
                   >
                     View Manager Plan
@@ -925,7 +926,7 @@ export default function Home() {
             <Button 
               size="lg"
               className="bg-white text-emerald-600 hover:bg-emerald-50 px-8 py-6 text-lg font-semibold"
-              onClick={() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })}
+              onClick={() => navigate('/pricing')}
               data-testid="button-final-cta"
             >
               Get Started Free
