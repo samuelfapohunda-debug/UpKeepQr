@@ -125,7 +125,7 @@ export default function SubscriptionSuccess() {
             <ul className="text-sm text-emerald-600 dark:text-emerald-400 text-left mt-2 space-y-1">
               <li>1. Check your email for a welcome message</li>
               <li>2. Explore your maintenance dashboard</li>
-              <li>3. Scan your QR magnet when it arrives</li>
+              <li>3. Activate your service</li>
             </ul>
           </div>
 
