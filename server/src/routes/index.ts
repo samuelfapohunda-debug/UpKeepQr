@@ -25,6 +25,7 @@ import customerRoutes from './customer.js';
 import maintenanceRoutes from './maintenance.js';
 import propertyRoutes from './property.js';
 import pushRoutes from './push.js';
+import portfolioRoutes from './portfolio.js';
 
 export function registerRoutes(app: Express) {
   app.use('/health', healthRoutes);
@@ -52,6 +53,7 @@ export function registerRoutes(app: Express) {
   app.use('/api', dashboardRoutes);  // Homeowner dashboard
   app.use('/api/customer', customerRoutes);  // Customer authenticated routes
   app.use('/api/push', pushRoutes);          // PWA push notification subscriptions
+  app.use('/api/portfolio', portfolioRoutes); // Property Manager portfolio routes
   app.use('/api/appliances', applianceRoutes);  // Appliance management routes
   app.use('/api/households', householdsRoutes);  // Households routes
   registerSubscriptionRoutes(app);
@@ -80,5 +82,6 @@ export function registerRoutes(app: Express) {
   console.log('✅ Report routes registered at /api');
   console.log('✅ Households routes registered at /api');
   console.log('✅ Push notification routes registered at /api/push');
+  console.log('✅ Portfolio routes registered at /api/portfolio');
   console.log('🚀 All routes setup complete');
 }

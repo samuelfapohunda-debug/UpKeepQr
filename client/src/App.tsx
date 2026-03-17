@@ -39,6 +39,7 @@ import HomeownerDashboard from "@/features/homeowner/Dashboard";
 import SubscriptionSuccess from "@/pages/SubscriptionSuccess";
 import BillingSettings from "@/pages/BillingSettings";
 import Onboarding from "@/pages/Onboarding";
+import PropertyManagerDashboard from "@/pages/PropertyManagerDashboard";
 
 function Router() {
   return (
@@ -60,6 +61,7 @@ function Router() {
         <Route path="/auth/error" component={AuthError} />
         <Route path="/auth/error" component={AuthError} />
         <Route path="/my-home" component={CustomerDashboard} />
+        <Route path="/property-manager" component={PropertyManagerDashboard} />
         <Route path="/onboarding">{() => <Onboarding />}</Route>
         <Route path="/new-setup" component={SetupForm} />
         <Route path="/new-setup/:token" component={SetupForm} />

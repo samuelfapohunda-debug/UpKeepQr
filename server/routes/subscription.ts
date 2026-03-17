@@ -467,7 +467,7 @@ export function registerSubscriptionRoutes(app: Express) {
       });
 
       console.log("[Activate Session] Session created successfully for household:", household.id);
-      res.json({ success: true, householdId: household.id });
+      res.json({ success: true, householdId: household.id, subscriptionTier: household.subscriptionTier ?? null });
     } catch (error: any) {
       console.error("[Activate Session] Error:", error?.message || error, error?.stack);
       res.status(500).json({ error: "Failed to activate session. Please try again." });

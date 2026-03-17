@@ -1709,3 +1709,54 @@ export const alertsSentTable = pgTable("alerts_sent", {
 
 export type AlertSent = typeof alertsSentTable.$inferSelect;
 export type InsertAlertSent = typeof alertsSentTable.$inferInsert;
+
+// ─── Property Manager: managed_properties ──────────────────────────────────
+export const managedPropertiesTable = pgTable("managed_properties", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  portfolioHouseholdId: varchar("portfolio_household_id").notNull().references(() => householdsTable.id),
+  propertyName: varchar("property_name", { length: 255 }).notNull(),
+  address: varchar("address", { length: 255 }).notNull(),
+  city: varchar("city", { length: 100 }).notNull(),
+  state: varchar("state", { length: 50 }).notNull(),
+  zip: varchar("zip", { length: 20 }).notNull(),
+  unitNumber: varchar("unit_number", { length: 50 }),
+  propertyType: varchar("property_type", { length: 50 }).notNull().default('single_family'),
+  // enum values: single_family | condo | townhouse | apartment | commercial
+  yearBuilt: integer("year_built"),
+  squareFootage: integer("square_footage"),
+  hvacType: varchar("hvac_type", { length: 50 }),
+  qrCodeId: varchar("qr_code_id"),
+  activationStatus: varchar("activation_status", { length: 20 }).notNull().default('pending'),
+  // enum values: pending | active | inactive
+  homeProfileId: varchar("home_profile_id"),
+  scheduleGenerated: boolean("schedule_generated").notNull().default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  portfolioIdx: index("idx_managed_properties_portfolio").on(table.portfolioHouseholdId),
+  statusIdx: index("idx_managed_properties_status").on(table.activationStatus),
+}));
+
+export type ManagedProperty = typeof managedPropertiesTable.$inferSelect;
+export type InsertManagedProperty = typeof managedPropertiesTable.$inferInsert;
+
+// ─── Property Manager: bulk_upload_jobs ────────────────────────────────────
+export const bulkUploadJobsTable = pgTable("bulk_upload_jobs", {
+  id: serial("id").primaryKey(),
+  portfolioHouseholdId: varchar("portfolio_household_id").notNull(),
+  totalProperties: integer("total_properties").notNull(),
+  processed: integer("processed").notNull().default(0),
+  successful: integer("successful").notNull().default(0),
+  failed: integer("failed").notNull().default(0),
+  status: varchar("status", { length: 20 }).notNull().default('pending'),
+  // enum values: pending | processing | completed | failed
+  errorLog: text("error_log"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  completedAt: timestamp("completed_at"),
+}, (table) => ({
+  portfolioIdx: index("idx_bulk_upload_jobs_portfolio").on(table.portfolioHouseholdId),
+  statusIdx: index("idx_bulk_upload_jobs_status").on(table.status),
+}));
+
+export type BulkUploadJob = typeof bulkUploadJobsTable.$inferSelect;
+export type InsertBulkUploadJob = typeof bulkUploadJobsTable.$inferInsert;

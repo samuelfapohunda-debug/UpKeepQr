@@ -39,6 +39,8 @@ export default function SubscriptionSuccess() {
         });
 
         if (res.ok) {
+          const data = await res.json().catch(() => ({}));
+          setSubscriptionTier(data.subscriptionTier ?? null);
           setActivated(true);
           setActivating(false);
           return;
@@ -68,8 +70,10 @@ export default function SubscriptionSuccess() {
     activate(0);
   }, []);
 
+  const [subscriptionTier, setSubscriptionTier] = useState<string | null>(null);
+
   const handleGoToDashboard = () => {
-    navigate("/my-home");
+    navigate(subscriptionTier === "property_manager" ? "/property-manager" : "/my-home");
   };
 
   const handleManualRetry = async () => {
@@ -90,6 +94,8 @@ export default function SubscriptionSuccess() {
       });
 
       if (res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setSubscriptionTier(data.subscriptionTier ?? null);
         setActivated(true);
       } else {
         const data = await res.json().catch(() => ({ error: "Server error" }));
