@@ -16,6 +16,7 @@ import {
   sendCancellationConfirmedEmail,
   sendAccountSuspendedEmail,
   sendSubscriptionWelcomeEmail,
+  sendPropertyManagerWelcomeEmail,
   sendAdminSubscriptionNotification,
 } from "../lib/subscriptionEmails";
 import {
@@ -872,14 +873,16 @@ export function registerSubscriptionWebhookHandler(app: Express) {
               }
 
               try {
-                const welcomeResult = await sendSubscriptionWelcomeEmail(
-                  email,
-                  name,
-                  planDisplayName,
-                  amountPaid,
-                  orderId,
-                  generatedQrCodes
-                );
+                const welcomeResult = planDisplayName === 'Property Manager'
+                  ? await sendPropertyManagerWelcomeEmail(email, name, amountPaid, orderId)
+                  : await sendSubscriptionWelcomeEmail(
+                      email,
+                      name,
+                      planDisplayName,
+                      amountPaid,
+                      orderId,
+                      generatedQrCodes
+                    );
                 if (welcomeResult) {
                   console.log('[Subscription Webhook] Subscription welcome email with QR codes sent to:', email);
                   await db.insert(emailEventsTable).values({

@@ -218,6 +218,58 @@ export async function sendSubscriptionWelcomeEmail(
   });
 }
 
+export async function sendPropertyManagerWelcomeEmail(
+  email: string,
+  name: string,
+  amountPaid: string,
+  orderId: string | undefined
+) {
+  const html = emailWrapper('Your Property Manager Portfolio is Ready', `
+    <h2 style="margin-top: 0;">Hi ${name},</h2>
+    <p>Welcome to MaintCue! Your <strong>Property Manager</strong> portfolio is set up and ready to activate.</p>
+
+    <div style="background: #f8fafc; border-radius: 6px; padding: 16px; margin: 16px 0; border: 1px solid #e2e8f0;">
+      <p style="margin: 0 0 8px 0;"><strong>Plan:</strong> Property Manager</p>
+      <p style="margin: 0 0 8px 0;"><strong>Portfolio capacity:</strong> 200 properties</p>
+      ${orderId ? `<p style="margin: 0 0 8px 0;"><strong>Order:</strong> ${orderId}</p>` : ''}
+      <p style="margin: 0;"><strong>Billing:</strong> $1,788/year</p>
+    </div>
+
+    <div style="background: #f0fdf4; border-radius: 6px; padding: 20px; margin: 20px 0; border: 1px solid #10b981;">
+      <p style="margin: 0 0 12px 0; color: #059669; font-size: 15px; font-weight: 600;">What's included in your plan:</p>
+      <ul style="margin: 0; padding-left: 20px; color: #374151;">
+        <li style="margin-bottom: 8px;">AI-generated maintenance schedules per property</li>
+        <li style="margin-bottom: 8px;">Climate-specific seasonal task recommendations</li>
+        <li style="margin-bottom: 8px;">Cost estimates for upcoming maintenance tasks</li>
+        <li style="margin-bottom: 0;">Preventive alerts before issues escalate</li>
+      </ul>
+    </div>
+
+    <div style="text-align: center; margin: 28px 0;">
+      <a href="${APP_URL}/property-manager" style="display: inline-block; background: #10b981; color: white; padding: 14px 36px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">Activate Your Portfolio</a>
+    </div>
+
+    <div style="background: #f8fafc; border-radius: 6px; padding: 16px; margin: 20px 0; border: 1px solid #e2e8f0;">
+      <p style="margin: 0 0 10px 0; font-weight: 600;">Getting started:</p>
+      <ol style="margin: 0; padding-left: 20px; color: #374151;">
+        <li style="margin-bottom: 8px;">Click <strong>Activate Your Portfolio</strong> above</li>
+        <li style="margin-bottom: 8px;">Add a property manually or bulk upload your units</li>
+        <li style="margin-bottom: 0;">Your AI maintenance schedule generates automatically</li>
+      </ol>
+    </div>
+
+    <p style="font-size: 14px; color: #6b7280;">Questions? Reply to this email and we will help you get set up.</p>
+  `);
+
+  return sendEmail({
+    to: email,
+    from: FROM_EMAIL,
+    subject: 'Welcome to MaintCue — Your Property Manager Portfolio is Ready',
+    html,
+    text: `Hi ${name}, welcome to MaintCue! Your Property Manager portfolio (200 properties) is ready. Billing: $1,788/year. Activate at ${APP_URL}/property-manager`
+  });
+}
+
 export async function sendAdminSubscriptionNotification(
   customerEmail: string,
   customerName: string,
