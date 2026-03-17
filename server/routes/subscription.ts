@@ -33,22 +33,22 @@ const activatedCheckoutSessions = new Set<string>();
 const MONTHLY_PRICE_ID = process.env.STRIPE_MONTHLY_PRICE_ID || '';
 const ANNUAL_PRICE_ID = process.env.STRIPE_ANNUAL_PRICE_ID || '';
 
-const PLAN_PRICE_MAP: Record<string, Record<string, string>> = {
+const PLAN_PRICE_MAP: Record<string, Record<string, string | undefined>> = {
   homeowner_basic: {
-    monthly: 'price_1So4rLDCF1d9RFesuB6nZF9I',
-    annual: 'price_1T0u3DDCF1d9RFesAlvXvBKT',
+    monthly: process.env.STRIPE_PRICE_HOMEOWNER_BASIC_MONTHLY,
+    annual: process.env.STRIPE_PRICE_HOMEOWNER_BASIC_ANNUAL,
   },
   homeowner_plus: {
-    monthly: 'price_1So4vODCF1d9RFeshJuQovFg',
-    annual: 'price_1So4xEDCF1d9RFes6jwKc1P0',
+    monthly: process.env.STRIPE_PRICE_HOMEOWNER_PLUS_MONTHLY,
+    annual: process.env.STRIPE_PRICE_HOMEOWNER_PLUS_ANNUAL,
   },
   realtor: {
-    monthly: 'price_1So525DCF1d9RFesBxOYhY2X',
-    annual: 'price_1So53DDCF1d9RFes2KzS4g26',
+    monthly: process.env.STRIPE_PRICE_REALTOR_MONTHLY,
+    annual: process.env.STRIPE_PRICE_REALTOR_ANNUAL,
   },
   property_manager: {
-    monthly: 'price_1So54hDCF1d9RFesWIaqD2hC',
-    annual: 'price_1So55cDCF1d9RFesFG8Yg5I6',
+    monthly: process.env.STRIPE_PRICE_PROPERTY_MANAGER_MONTHLY,
+    annual: process.env.STRIPE_PRICE_PROPERTY_MANAGER_ANNUAL,
   },
 };
 
