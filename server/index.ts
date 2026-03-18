@@ -82,7 +82,15 @@ app.use((req, res, next) => {
     }
   };
   await ensureOrderIdSequence();
-  
+
+  // Bootstrap: Ensure portfolio tables exist (managed_properties, bulk_upload_jobs)
+  const { createPortfolioTables } = await import("./migrations/create_portfolio_tables.js");
+  try {
+    await createPortfolioTables();
+  } catch (error) {
+    console.error('[Bootstrap] Portfolio migration failed (non-fatal):', error);
+  }
+
   // Bootstrap: Ensure system agent exists for order-based QR codes
   const { storage, SYSTEM_AGENT_ID } = await import("./storage.js");
   const ensureSystemAgent = async () => {
