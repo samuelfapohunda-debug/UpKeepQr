@@ -1,7 +1,7 @@
 import { sendEmail } from './email.js';
 
 const FROM_EMAIL = process.env.FROM_EMAIL || 'noreply@maintcue.com';
-const APP_URL = process.env.FRONTEND_URL || 'https://maintcue.com';
+const APP_URL = process.env.PUBLIC_BASE_URL || process.env.FRONTEND_URL || 'https://maintcue.com';
 
 function formatDate(date: Date): string {
   return date.toLocaleDateString('en-US', { 
