@@ -1,7 +1,7 @@
 import { Router, Response } from 'express';
 import Papa from 'papaparse';
 import { db } from '../../db.js';
-import { managedPropertiesTable, bulkUploadJobsTable } from '@shared/schema';
+import { managedPropertiesTable, bulkUploadJobsTable, maintenanceTasksTable } from '@shared/schema';
 import { eq, and, count } from 'drizzle-orm';
 import { requireSessionAuth, SessionAuthRequest } from '../../middleware/sessionAuth.js';
 import { lookupProperty } from '../../services/attomService.js';
@@ -209,6 +209,67 @@ router.delete('/properties/:id', requireSessionAuth, async (req: SessionAuthRequ
   } catch (err: unknown) {
     console.error('[Portfolio] DELETE /properties/:id error:', err);
     return res.status(500).json({ error: 'Failed to delete property' });
+  }
+});
+
+// ── GET /properties/:id/tasks ────────────────────────────────────────────────
+router.get('/properties/:id/tasks', requireSessionAuth, async (req: SessionAuthRequest, res: Response) => {
+  try {
+    const householdId = assertHouseholdId(req, res);
+    if (!householdId) return;
+
+    const [property] = await db
+      .select()
+      .from(managedPropertiesTable)
+      .where(and(
+        eq(managedPropertiesTable.id, req.params.id as string),
+        eq(managedPropertiesTable.portfolioHouseholdId, householdId),
+      ));
+
+    if (!property) return res.status(404).json({ error: 'Property not found' });
+
+    if (!property.homeProfileId) {
+      return res.json({ tasks: [], scheduleGenerated: property.scheduleGenerated });
+    }
+
+    const tasks = await db
+      .select()
+      .from(maintenanceTasksTable)
+      .where(eq(maintenanceTasksTable.homeProfileId, parseInt(property.homeProfileId, 10)))
+      .orderBy(maintenanceTasksTable.month, maintenanceTasksTable.priority);
+
+    return res.json({ tasks, scheduleGenerated: property.scheduleGenerated });
+  } catch (err: unknown) {
+    console.error('[Portfolio] GET /properties/:id/tasks error:', err);
+    return res.status(500).json({ error: 'Failed to fetch tasks' });
+  }
+});
+
+// ── POST /regenerate/:id ─────────────────────────────────────────────────────
+router.post('/regenerate/:id', requireSessionAuth, async (req: SessionAuthRequest, res: Response) => {
+  try {
+    const householdId = assertHouseholdId(req, res);
+    if (!householdId) return;
+
+    const [property] = await db
+      .select()
+      .from(managedPropertiesTable)
+      .where(and(
+        eq(managedPropertiesTable.id, req.params.id as string),
+        eq(managedPropertiesTable.portfolioHouseholdId, householdId),
+      ));
+
+    if (!property) return res.status(404).json({ error: 'Property not found' });
+
+    await db.update(managedPropertiesTable)
+      .set({ scheduleGenerated: false, updatedAt: new Date() })
+      .where(eq(managedPropertiesTable.id, property.id));
+
+    enrichAndSchedule(property.id, householdId, property).catch(() => {});
+    return res.status(202).json({ message: 'Schedule regeneration started' });
+  } catch (err: unknown) {
+    console.error('[Portfolio] POST /regenerate/:id error:', err);
+    return res.status(500).json({ error: 'Failed to start schedule regeneration' });
   }
 });
 

@@ -30,6 +30,7 @@ import {
   Download,
   X,
   MapPin,
+  ChevronRight,
 } from "lucide-react";
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -850,7 +851,8 @@ export default function PropertyManagerDashboard() {
                 {properties.map((p) => (
                   <div
                     key={p.id}
-                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 border rounded-lg hover:bg-muted/30 transition-colors"
+                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 border rounded-lg hover:bg-muted/30 transition-colors cursor-pointer"
+                    onClick={() => navigate(`/property-manager/${p.id}`)}
                     data-testid={`property-${p.id}`}
                   >
                     <div className="flex-1 min-w-0">
@@ -887,8 +889,20 @@ export default function PropertyManagerDashboard() {
                       <Button
                         variant="outline"
                         size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/property-manager/${p.id}`);
+                        }}
+                        data-testid={`button-view-${p.id}`}
+                      >
+                        View <ChevronRight className="h-4 w-4 ml-1" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
                         className="text-destructive hover:text-destructive hover:bg-destructive/10 border-destructive/30"
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation();
                           if (confirm(`Remove "${p.propertyName}"?`)) {
                             deleteMutation.mutate(p.id);
                           }
