@@ -1,9 +1,9 @@
 import { Router, Response } from 'express';
 import Papa from 'papaparse';
-import { db } from '../../db';
+import { db } from '../../db.js';
 import { managedPropertiesTable, bulkUploadJobsTable } from '@shared/schema';
 import { eq, and, count } from 'drizzle-orm';
-import { requireSessionAuth, SessionAuthRequest } from '../../middleware/sessionAuth';
+import { requireSessionAuth, SessionAuthRequest } from '../../middleware/sessionAuth.js';
 import { lookupProperty } from '../../services/attomService.js';
 import { generateMaintenanceSchedule } from '../../services/homeResearchAgent.js';
 
