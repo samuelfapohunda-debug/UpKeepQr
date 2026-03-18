@@ -12,6 +12,15 @@ const MAX_PROPERTIES = 200;
 
 // ── helpers ────────────────────────────────────────────────────────────────
 
+function assertHouseholdId(req: SessionAuthRequest, res: Response): string | null {
+  const id = req.sessionHouseholdId;
+  if (!id) {
+    res.status(401).json({ error: 'Session has no associated household' });
+    return null;
+  }
+  return id;
+}
+
 async function getPortfolioCount(householdId: string): Promise<number> {
   const [row] = await db
     .select({ value: count() })
@@ -67,109 +76,140 @@ async function enrichAndSchedule(
 
 // ── POST /properties ────────────────────────────────────────────────────────
 router.post('/properties', requireSessionAuth, async (req: SessionAuthRequest, res: Response) => {
-  const householdId = req.sessionHouseholdId!;
-  const { propertyName, address, city, state, zip, unitNumber, propertyType,
-          yearBuilt, squareFootage, hvacType } = req.body;
+  try {
+    const householdId = assertHouseholdId(req, res);
+    if (!householdId) return;
 
-  if (!propertyName || !address || !city || !state || !zip) {
-    return res.status(400).json({ error: 'propertyName, address, city, state, zip are required' });
+    const { propertyName, address, city, state, zip, unitNumber, propertyType,
+            yearBuilt, squareFootage, hvacType } = req.body;
+
+    if (!propertyName || !address || !city || !state || !zip) {
+      return res.status(400).json({ error: 'propertyName, address, city, state, zip are required' });
+    }
+
+    const currentCount = await getPortfolioCount(householdId);
+    if (currentCount >= MAX_PROPERTIES) {
+      return res.status(403).json({ error: `Portfolio limit of ${MAX_PROPERTIES} properties reached` });
+    }
+
+    const [property] = await db.insert(managedPropertiesTable).values({
+      portfolioHouseholdId: householdId,
+      propertyName,
+      address,
+      city,
+      state,
+      zip,
+      unitNumber:        unitNumber    ?? null,
+      propertyType:      propertyType  ?? 'single_family',
+      yearBuilt:         yearBuilt     ?? null,
+      squareFootage:     squareFootage ?? null,
+      hvacType:          hvacType      ?? null,
+      activationStatus:  'pending',
+      scheduleGenerated: false,
+    }).returning();
+
+    // Fire-and-forget — does not block response
+    enrichAndSchedule(property.id, householdId, property).catch(() => {});
+
+    return res.status(201).json(property);
+  } catch (err: unknown) {
+    console.error('[Portfolio] POST /properties error:', err);
+    return res.status(500).json({ error: 'Failed to create property' });
   }
-
-  const currentCount = await getPortfolioCount(householdId);
-  if (currentCount >= MAX_PROPERTIES) {
-    return res.status(403).json({ error: `Portfolio limit of ${MAX_PROPERTIES} properties reached` });
-  }
-
-  const [property] = await db.insert(managedPropertiesTable).values({
-    portfolioHouseholdId: householdId,
-    propertyName,
-    address,
-    city,
-    state,
-    zip,
-    unitNumber:       unitNumber       ?? null,
-    propertyType:     propertyType     ?? 'single_family',
-    yearBuilt:        yearBuilt        ?? null,
-    squareFootage:    squareFootage    ?? null,
-    hvacType:         hvacType         ?? null,
-    activationStatus: 'pending',
-    scheduleGenerated: false,
-  }).returning();
-
-  // Fire-and-forget — does not block response
-  enrichAndSchedule(property.id, householdId, property).catch(() => {});
-
-  res.status(201).json(property);
 });
 
 // ── GET /properties ─────────────────────────────────────────────────────────
 router.get('/properties', requireSessionAuth, async (req: SessionAuthRequest, res: Response) => {
-  const householdId = req.sessionHouseholdId!;
+  try {
+    const householdId = assertHouseholdId(req, res);
+    if (!householdId) return;
 
-  const properties = await db
-    .select()
-    .from(managedPropertiesTable)
-    .where(eq(managedPropertiesTable.portfolioHouseholdId, householdId))
-    .orderBy(managedPropertiesTable.createdAt);
+    const properties = await db
+      .select()
+      .from(managedPropertiesTable)
+      .where(eq(managedPropertiesTable.portfolioHouseholdId, householdId))
+      .orderBy(managedPropertiesTable.createdAt);
 
-  res.json(properties);
+    return res.json(properties);
+  } catch (err: unknown) {
+    console.error('[Portfolio] GET /properties error:', err);
+    return res.status(500).json({ error: 'Failed to fetch properties' });
+  }
 });
 
 // ── GET /properties/:id ─────────────────────────────────────────────────────
 router.get('/properties/:id', requireSessionAuth, async (req: SessionAuthRequest, res: Response) => {
-  const householdId = req.sessionHouseholdId!;
+  try {
+    const householdId = assertHouseholdId(req, res);
+    if (!householdId) return;
 
-  const [property] = await db
-    .select()
-    .from(managedPropertiesTable)
-    .where(and(
-      eq(managedPropertiesTable.id, req.params.id as string),
-      eq(managedPropertiesTable.portfolioHouseholdId, householdId),
-    ));
+    const [property] = await db
+      .select()
+      .from(managedPropertiesTable)
+      .where(and(
+        eq(managedPropertiesTable.id, req.params.id as string),
+        eq(managedPropertiesTable.portfolioHouseholdId, householdId),
+      ));
 
-  if (!property) return res.status(404).json({ error: 'Property not found' });
-  res.json(property);
+    if (!property) return res.status(404).json({ error: 'Property not found' });
+    return res.json(property);
+  } catch (err: unknown) {
+    console.error('[Portfolio] GET /properties/:id error:', err);
+    return res.status(500).json({ error: 'Failed to fetch property' });
+  }
 });
 
 // ── PATCH /properties/:id ───────────────────────────────────────────────────
 router.patch('/properties/:id', requireSessionAuth, async (req: SessionAuthRequest, res: Response) => {
-  const householdId = req.sessionHouseholdId!;
+  try {
+    const householdId = assertHouseholdId(req, res);
+    if (!householdId) return;
 
-  const allowed = ['propertyName', 'address', 'city', 'state', 'zip', 'unitNumber',
-                   'propertyType', 'yearBuilt', 'squareFootage', 'hvacType', 'activationStatus'] as const;
-  const updates: Record<string, unknown> = { updatedAt: new Date() };
-  for (const key of allowed) {
-    if (req.body[key] !== undefined) updates[key] = req.body[key];
+    const allowed = ['propertyName', 'address', 'city', 'state', 'zip', 'unitNumber',
+                     'propertyType', 'yearBuilt', 'squareFootage', 'hvacType', 'activationStatus'] as const;
+    const updates: Record<string, unknown> = { updatedAt: new Date() };
+    for (const key of allowed) {
+      if (req.body[key] !== undefined) updates[key] = req.body[key];
+    }
+
+    const [updated] = await db
+      .update(managedPropertiesTable)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .set(updates as any)
+      .where(and(
+        eq(managedPropertiesTable.id, req.params.id as string),
+        eq(managedPropertiesTable.portfolioHouseholdId, householdId),
+      ))
+      .returning();
+
+    if (!updated) return res.status(404).json({ error: 'Property not found' });
+    return res.json(updated);
+  } catch (err: unknown) {
+    console.error('[Portfolio] PATCH /properties/:id error:', err);
+    return res.status(500).json({ error: 'Failed to update property' });
   }
-
-  const [updated] = await db
-    .update(managedPropertiesTable)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    .set(updates as any)
-    .where(and(
-      eq(managedPropertiesTable.id, req.params.id as string),
-      eq(managedPropertiesTable.portfolioHouseholdId, householdId),
-    ))
-    .returning();
-
-  if (!updated) return res.status(404).json({ error: 'Property not found' });
-  res.json(updated);
 });
 
 // ── DELETE /properties/:id ──────────────────────────────────────────────────
 router.delete('/properties/:id', requireSessionAuth, async (req: SessionAuthRequest, res: Response) => {
-  const householdId = req.sessionHouseholdId!;
+  try {
+    const householdId = assertHouseholdId(req, res);
+    if (!householdId) return;
 
-  const [deleted] = await db
-    .delete(managedPropertiesTable)
-    .where(and(
-      eq(managedPropertiesTable.id, req.params.id as string),
-      eq(managedPropertiesTable.portfolioHouseholdId, householdId),
-    ))
-    .returning();
+    const [deleted] = await db
+      .delete(managedPropertiesTable)
+      .where(and(
+        eq(managedPropertiesTable.id, req.params.id as string),
+        eq(managedPropertiesTable.portfolioHouseholdId, householdId),
+      ))
+      .returning();
 
-  if (!deleted) return res.status(404).json({ error: 'Property not found' });
-  res.status(204).send();
+    if (!deleted) return res.status(404).json({ error: 'Property not found' });
+    return res.status(204).send();
+  } catch (err: unknown) {
+    console.error('[Portfolio] DELETE /properties/:id error:', err);
+    return res.status(500).json({ error: 'Failed to delete property' });
+  }
 });
 
 // ── POST /bulk-upload ───────────────────────────────────────────────────────
@@ -177,135 +217,149 @@ router.delete('/properties/:id', requireSessionAuth, async (req: SessionAuthRequ
 // Required columns: property_name, address, city, state, zip
 // Optional columns: unit_number, property_type
 router.post('/bulk-upload', requireSessionAuth, async (req: SessionAuthRequest, res: Response) => {
-  const householdId = req.sessionHouseholdId!;
-  const { csv } = req.body;
+  try {
+    const householdId = assertHouseholdId(req, res);
+    if (!householdId) return;
 
-  if (!csv || typeof csv !== 'string') {
-    return res.status(400).json({ error: 'csv field (string) is required' });
-  }
+    const { csv } = req.body;
 
-  const parsed = Papa.parse<Record<string, string>>(csv.trim(), {
-    header: true,
-    skipEmptyLines: true,
-    transformHeader: (h) => h.trim().toLowerCase().replace(/\s+/g, '_'),
-  });
-
-  const rows = parsed.data;
-  if (rows.length === 0) {
-    return res.status(400).json({ error: 'CSV contains no data rows' });
-  }
-
-  const currentCount = await getPortfolioCount(householdId);
-  if (currentCount + rows.length > MAX_PROPERTIES) {
-    return res.status(403).json({
-      error: `Upload would exceed the ${MAX_PROPERTIES} property limit. Current: ${currentCount}, uploading: ${rows.length}`,
-    });
-  }
-
-  const [job] = await db.insert(bulkUploadJobsTable).values({
-    portfolioHouseholdId: householdId,
-    totalProperties: rows.length,
-    processed: 0,
-    successful: 0,
-    failed: 0,
-    status: 'processing',
-  }).returning();
-
-  // Process in background — response returns immediately with jobId
-  (async () => {
-    const BATCH_SIZE = 5;
-    const BATCH_DELAY_MS = 1000;
-    let successful = 0;
-    let failed = 0;
-    const errors: string[] = [];
-
-    for (let i = 0; i < rows.length; i += BATCH_SIZE) {
-      const batch = rows.slice(i, i + BATCH_SIZE);
-
-      await Promise.all(batch.map(async (row, batchIdx) => {
-        const rowNum = i + batchIdx + 1;
-        const propertyName = row.property_name?.trim();
-        const address      = row.address?.trim();
-        const city         = row.city?.trim();
-        const state        = row.state?.trim();
-        const zip          = row.zip?.trim();
-
-        if (!propertyName || !address || !city || !state || !zip) {
-          errors.push(`Row ${rowNum}: missing required field(s) (property_name, address, city, state, zip)`);
-          failed++;
-          return;
-        }
-
-        try {
-          const [property] = await db.insert(managedPropertiesTable).values({
-            portfolioHouseholdId: householdId,
-            propertyName,
-            address,
-            city,
-            state,
-            zip,
-            unitNumber:       row.unit_number?.trim()   || null,
-            propertyType:     row.property_type?.trim() || 'single_family',
-            activationStatus: 'pending',
-            scheduleGenerated: false,
-          }).returning();
-
-          enrichAndSchedule(property.id, householdId, property).catch(() => {});
-          successful++;
-        } catch (err: unknown) {
-          const msg = err instanceof Error ? err.message : String(err);
-          errors.push(`Row ${rowNum}: ${msg}`);
-          failed++;
-        }
-      }));
-
-      await db.update(bulkUploadJobsTable)
-        .set({ processed: i + batch.length, successful, failed })
-        .where(eq(bulkUploadJobsTable.id, job.id));
-
-      // Rate-limit delay between batches (skip after final batch)
-      if (i + BATCH_SIZE < rows.length) {
-        await new Promise(r => setTimeout(r, BATCH_DELAY_MS));
-      }
+    if (!csv || typeof csv !== 'string') {
+      return res.status(400).json({ error: 'csv field (string) is required' });
     }
 
-    await db.update(bulkUploadJobsTable).set({
-      status:      failed === rows.length ? 'failed' : 'completed',
-      processed:   rows.length,
-      successful,
-      failed,
-      errorLog:    errors.length > 0 ? errors.join('\n') : null,
-      completedAt: new Date(),
-    }).where(eq(bulkUploadJobsTable.id, job.id));
+    const parsed = Papa.parse<Record<string, string>>(csv.trim(), {
+      header: true,
+      skipEmptyLines: true,
+      transformHeader: (h) => h.trim().toLowerCase().replace(/\s+/g, '_'),
+    });
 
-    console.log(`[Portfolio] Bulk upload job ${job.id} complete: ${successful} ok, ${failed} failed`);
-  })().catch(async (err: unknown) => {
-    const msg = err instanceof Error ? err.message : String(err);
-    console.error(`[Portfolio] Bulk upload job ${job.id} crashed:`, err);
-    await db.update(bulkUploadJobsTable)
-      .set({ status: 'failed', errorLog: msg, completedAt: new Date() })
-      .where(eq(bulkUploadJobsTable.id, job.id));
-  });
+    const rows = parsed.data;
+    if (rows.length === 0) {
+      return res.status(400).json({ error: 'CSV contains no data rows' });
+    }
 
-  res.status(202).json({ jobId: job.id, totalProperties: rows.length, status: 'processing' });
+    const currentCount = await getPortfolioCount(householdId);
+    if (currentCount + rows.length > MAX_PROPERTIES) {
+      return res.status(403).json({
+        error: `Upload would exceed the ${MAX_PROPERTIES} property limit. Current: ${currentCount}, uploading: ${rows.length}`,
+      });
+    }
+
+    const [job] = await db.insert(bulkUploadJobsTable).values({
+      portfolioHouseholdId: householdId,
+      totalProperties: rows.length,
+      processed: 0,
+      successful: 0,
+      failed: 0,
+      status: 'processing',
+    }).returning();
+
+    // Process in background — response returns immediately with jobId
+    (async () => {
+      const BATCH_SIZE = 5;
+      const BATCH_DELAY_MS = 1000;
+      let successful = 0;
+      let failed = 0;
+      const errors: string[] = [];
+
+      for (let i = 0; i < rows.length; i += BATCH_SIZE) {
+        const batch = rows.slice(i, i + BATCH_SIZE);
+
+        await Promise.all(batch.map(async (row, batchIdx) => {
+          const rowNum = i + batchIdx + 1;
+          const propertyName = row.property_name?.trim();
+          const address      = row.address?.trim();
+          const city         = row.city?.trim();
+          const state        = row.state?.trim();
+          const zip          = row.zip?.trim();
+
+          if (!propertyName || !address || !city || !state || !zip) {
+            errors.push(`Row ${rowNum}: missing required field(s) (property_name, address, city, state, zip)`);
+            failed++;
+            return;
+          }
+
+          try {
+            const [property] = await db.insert(managedPropertiesTable).values({
+              portfolioHouseholdId: householdId,
+              propertyName,
+              address,
+              city,
+              state,
+              zip,
+              unitNumber:        row.unit_number?.trim()   || null,
+              propertyType:      row.property_type?.trim() || 'single_family',
+              activationStatus:  'pending',
+              scheduleGenerated: false,
+            }).returning();
+
+            enrichAndSchedule(property.id, householdId, property).catch(() => {});
+            successful++;
+          } catch (err: unknown) {
+            const msg = err instanceof Error ? err.message : String(err);
+            errors.push(`Row ${rowNum}: ${msg}`);
+            failed++;
+          }
+        }));
+
+        await db.update(bulkUploadJobsTable)
+          .set({ processed: i + batch.length, successful, failed })
+          .where(eq(bulkUploadJobsTable.id, job.id));
+
+        // Rate-limit delay between batches (skip after final batch)
+        if (i + BATCH_SIZE < rows.length) {
+          await new Promise(r => setTimeout(r, BATCH_DELAY_MS));
+        }
+      }
+
+      await db.update(bulkUploadJobsTable).set({
+        status:      failed === rows.length ? 'failed' : 'completed',
+        processed:   rows.length,
+        successful,
+        failed,
+        errorLog:    errors.length > 0 ? errors.join('\n') : null,
+        completedAt: new Date(),
+      }).where(eq(bulkUploadJobsTable.id, job.id));
+
+      console.log(`[Portfolio] Bulk upload job ${job.id} complete: ${successful} ok, ${failed} failed`);
+    })().catch(async (err: unknown) => {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`[Portfolio] Bulk upload job ${job.id} crashed:`, err);
+      await db.update(bulkUploadJobsTable)
+        .set({ status: 'failed', errorLog: msg, completedAt: new Date() })
+        .where(eq(bulkUploadJobsTable.id, job.id));
+    });
+
+    return res.status(202).json({ jobId: job.id, totalProperties: rows.length, status: 'processing' });
+  } catch (err: unknown) {
+    console.error('[Portfolio] POST /bulk-upload error:', err);
+    return res.status(500).json({ error: 'Failed to start bulk upload' });
+  }
 });
 
 // ── GET /bulk-upload/:jobId ─────────────────────────────────────────────────
 router.get('/bulk-upload/:jobId', requireSessionAuth, async (req: SessionAuthRequest, res: Response) => {
-  const householdId = req.sessionHouseholdId!;
-  const jobId = parseInt(req.params.jobId as string, 10);
-  if (isNaN(jobId)) return res.status(400).json({ error: 'Invalid job ID' });
+  try {
+    const householdId = assertHouseholdId(req, res);
+    if (!householdId) return;
 
-  const [job] = await db
-    .select()
-    .from(bulkUploadJobsTable)
-    .where(and(
-      eq(bulkUploadJobsTable.id, jobId),
-      eq(bulkUploadJobsTable.portfolioHouseholdId, householdId),
-    ));
+    const jobId = parseInt(req.params.jobId as string, 10);
+    if (isNaN(jobId)) return res.status(400).json({ error: 'Invalid job ID' });
 
-  if (!job) return res.status(404).json({ error: 'Job not found' });
-  res.json(job);
+    const [job] = await db
+      .select()
+      .from(bulkUploadJobsTable)
+      .where(and(
+        eq(bulkUploadJobsTable.id, jobId),
+        eq(bulkUploadJobsTable.portfolioHouseholdId, householdId),
+      ));
+
+    if (!job) return res.status(404).json({ error: 'Job not found' });
+    return res.json(job);
+  } catch (err: unknown) {
+    console.error('[Portfolio] GET /bulk-upload/:jobId error:', err);
+    return res.status(500).json({ error: 'Failed to fetch job status' });
+  }
 });
 
 export default router;
