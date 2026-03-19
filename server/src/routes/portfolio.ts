@@ -64,11 +64,16 @@ async function enrichAndSchedule(
       appliances: [],
     });
 
+    // Link the home_profile_id so the tasks endpoint can find these tasks
+    const homeProfileId = tasks.length > 0
+      ? String((tasks[0] as any).home_profile_id ?? '')
+      : null;
+
     await db.update(managedPropertiesTable)
-      .set({ scheduleGenerated: true, updatedAt: new Date() })
+      .set({ homeProfileId, scheduleGenerated: true, updatedAt: new Date() })
       .where(eq(managedPropertiesTable.id, propertyId));
 
-    console.log(`[Portfolio] Enriched + scheduled property ${propertyId}: ${tasks.length} tasks`);
+    console.log(`[Portfolio] Enriched + scheduled property ${propertyId}: ${tasks.length} tasks, home_profile_id=${homeProfileId}`);
   } catch (err) {
     console.error(`[Portfolio] enrichAndSchedule failed for ${propertyId}:`, err);
   }
