@@ -239,6 +239,8 @@ router.post('/magic/complete', async (req, res) => {
         .limit(1);
       if (household?.subscriptionTier === 'property_manager') {
         redirectPath = '/property-manager';
+      } else if (household?.subscriptionTier === 'realtor') {
+        redirectPath = '/realtor';
       }
     } catch (tierErr) {
       console.warn('⚠️ Could not look up subscription tier for redirect, defaulting to /my-home:', tierErr);

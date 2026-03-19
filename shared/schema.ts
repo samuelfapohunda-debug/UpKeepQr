@@ -1760,3 +1760,32 @@ export const bulkUploadJobsTable = pgTable("bulk_upload_jobs", {
 
 export type BulkUploadJob = typeof bulkUploadJobsTable.$inferSelect;
 export type InsertBulkUploadJob = typeof bulkUploadJobsTable.$inferInsert;
+
+// ─── Realtor/Agent: realtor_clients ────────────────────────────────────────
+export const realtorClientsTable = pgTable("realtor_clients", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  realtorHouseholdId: varchar("realtor_household_id").notNull().references(() => householdsTable.id),
+  clientName: varchar("client_name", { length: 255 }).notNull(),
+  clientEmail: varchar("client_email", { length: 255 }).notNull(),
+  clientPhone: varchar("client_phone", { length: 50 }),
+  propertyAddress: varchar("property_address", { length: 255 }).notNull(),
+  propertyCity: varchar("property_city", { length: 100 }).notNull(),
+  propertyState: varchar("property_state", { length: 50 }).notNull(),
+  propertyZip: varchar("property_zip", { length: 20 }).notNull(),
+  propertyType: varchar("property_type", { length: 50 }).notNull().default('single_family'),
+  clientHouseholdId: varchar("client_household_id"),
+  qrCodeId: varchar("qr_code_id"),
+  activationStatus: varchar("activation_status", { length: 20 }).notNull().default('pending'),
+  // enum values: pending | email_sent | activated | inactive
+  activationEmailSentAt: timestamp("activation_email_sent_at"),
+  activatedAt: timestamp("activated_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  realtorIdx: index("idx_realtor_clients_realtor").on(table.realtorHouseholdId),
+  statusIdx:  index("idx_realtor_clients_status").on(table.activationStatus),
+  emailIdx:   index("idx_realtor_clients_email").on(table.clientEmail),
+}));
+
+export type RealtorClient = typeof realtorClientsTable.$inferSelect;
+export type InsertRealtorClient = typeof realtorClientsTable.$inferInsert;

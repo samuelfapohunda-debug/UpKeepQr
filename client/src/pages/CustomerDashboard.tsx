@@ -166,6 +166,19 @@ export default function CustomerDashboard() {
     }
   });
 
+  const { data: realtorInfo } = useQuery<{ realtorName: string | null }>({
+    queryKey: ['/api/realtor/provided-by'],
+    enabled: sessionValid,
+    queryFn: async () => {
+      const response = await fetch(`${API_BASE_URL}/api/realtor/provided-by`, {
+        credentials: 'include'
+      });
+      if (!response.ok) return { realtorName: null };
+      return response.json();
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
   const { data: tasksData, isLoading: tasksLoading } = useQuery<TasksResponse>({
     queryKey: ['/api/customer/tasks'],
     enabled: sessionValid,
@@ -341,6 +354,11 @@ export default function CustomerDashboard() {
                 <p className="text-blue-100 text-sm" data-testid="text-home-info">
                   {household.homeType} in {household.city}, {household.state}
                 </p>
+                {realtorInfo?.realtorName && (
+                  <p className="text-blue-200 text-xs mt-0.5">
+                    Provided by {realtorInfo.realtorName}
+                  </p>
+                )}
               </div>
             </div>
             <div className="flex items-center gap-2">

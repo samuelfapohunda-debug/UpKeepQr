@@ -41,6 +41,7 @@ import BillingSettings from "@/pages/BillingSettings";
 import Onboarding from "@/pages/Onboarding";
 import PropertyManagerDashboard from "@/pages/PropertyManagerDashboard";
 import PropertyManagerDetail from "@/pages/PropertyManagerDetail";
+import RealtorDashboard from "@/pages/RealtorDashboard";
 
 function Router() {
   return (
@@ -64,6 +65,7 @@ function Router() {
         <Route path="/my-home" component={CustomerDashboard} />
         <Route path="/property-manager" component={PropertyManagerDashboard} />
         <Route path="/property-manager/:id" component={PropertyManagerDetail} />
+        <Route path="/realtor" component={RealtorDashboard} />
         <Route path="/onboarding">{() => <Onboarding />}</Route>
         <Route path="/new-setup" component={SetupForm} />
         <Route path="/new-setup/:token" component={SetupForm} />

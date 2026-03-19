@@ -299,3 +299,81 @@ export async function sendAdminSubscriptionNotification(
     text: `New subscription: ${customerName} (${customerEmail}), plan: ${planName}, amount: $${amountPaid}, QR codes: ${qrCodeCount}, subscription: ${subscriptionId}`
   });
 }
+
+// ── Realtor: client invitation email ────────────────────────────────────────
+export async function sendRealtorClientActivationEmail(
+  clientEmail: string,
+  clientName: string,
+  realtorName: string,
+  propertyAddress: string,
+  activationUrl: string,
+) {
+  const html = emailWrapper(`Your Home Maintenance Schedule — from ${realtorName}`, `
+    <h2 style="margin-top: 0;">Hi ${clientName},</h2>
+    <p><strong>${realtorName}</strong> has set up a personalized home maintenance schedule for your property at <strong>${propertyAddress}</strong>.</p>
+
+    <div style="text-align: center; margin: 28px 0;">
+      <a href="${activationUrl}" style="background: #2563eb; color: #fff; padding: 14px 28px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 15px; display: inline-block;">
+        Set Up Your Account →
+      </a>
+    </div>
+
+    <div style="background: #f0fdf4; border-radius: 6px; padding: 20px; margin: 20px 0; border: 1px solid #10b981;">
+      <p style="margin: 0 0 10px 0; color: #059669; font-weight: 600;">Your schedule includes:</p>
+      <ul style="margin: 0; padding-left: 20px; color: #374151;">
+        <li style="margin-bottom: 6px;">✅ AI-generated 12-month maintenance plan</li>
+        <li style="margin-bottom: 6px;">✅ Climate-specific task recommendations</li>
+        <li style="margin-bottom: 6px;">✅ Cost estimates for every task</li>
+        <li style="margin-bottom: 0;">✅ Preventive maintenance alerts</li>
+      </ul>
+    </div>
+
+    <p style="font-size: 13px; color: #6b7280; margin-top: 24px;">
+      Powered by MaintCue · Provided by ${realtorName}
+    </p>
+  `);
+
+  return sendEmail({
+    to: clientEmail,
+    from: FROM_EMAIL,
+    subject: `Your Home Maintenance Schedule is Ready — from ${realtorName}`,
+    html,
+    text: `Hi ${clientName}, ${realtorName} has set up a home maintenance schedule for ${propertyAddress}. Set up your account: ${activationUrl}`,
+  });
+}
+
+// ── Realtor: client welcome + magic link email ───────────────────────────────
+export async function sendRealtorClientWelcomeEmail(
+  clientEmail: string,
+  clientName: string,
+  realtorName: string,
+  propertyAddress: string,
+  magicLink: string,
+) {
+  const html = emailWrapper('Your MaintCue Account is Ready', `
+    <h2 style="margin-top: 0;">Hi ${clientName},</h2>
+    <p>Your home maintenance account has been created! Your personalised schedule for <strong>${propertyAddress}</strong> is now generating.</p>
+
+    <div style="text-align: center; margin: 28px 0;">
+      <a href="${magicLink}" style="background: #10b981; color: #fff; padding: 14px 28px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 15px; display: inline-block;">
+        Go to My Dashboard →
+      </a>
+    </div>
+
+    <div style="background: #f8fafc; border-radius: 6px; padding: 16px; margin: 16px 0; border: 1px solid #e2e8f0;">
+      <p style="margin: 0 0 6px 0; font-size: 13px; color: #6b7280;"><strong>Note:</strong> This link expires in 24 hours. Use it to log in and access your dashboard.</p>
+    </div>
+
+    <p style="font-size: 13px; color: #6b7280; margin-top: 24px;">
+      Powered by MaintCue · Provided by ${realtorName}
+    </p>
+  `);
+
+  return sendEmail({
+    to: clientEmail,
+    from: FROM_EMAIL,
+    subject: 'Your MaintCue account is ready — access your maintenance dashboard',
+    html,
+    text: `Hi ${clientName}, your MaintCue account is ready. Access your dashboard: ${magicLink}. Provided by ${realtorName}.`,
+  });
+}

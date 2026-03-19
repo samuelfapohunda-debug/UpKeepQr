@@ -101,6 +101,10 @@ const Onboarding: React.FC<OnboardingProps> = ({ adminMode = false, onComplete }
   const [customerDataError, setCustomerDataError] = useState('');
   const [qrAlreadyActivated, setQrAlreadyActivated] = useState(false);
 
+  // --- Realtor client flow ---
+  const [realtorClientId, setRealtorClientId] = useState<string | null>(null);
+  const [realtorName, setRealtorName] = useState<string | null>(null);
+
   // --- ATTOM ---
   const [attomLoading, setAttomLoading] = useState(false);
   const [attomFound, setAttomFound] = useState<boolean | null>(null);
@@ -141,9 +145,49 @@ const Onboarding: React.FC<OnboardingProps> = ({ adminMode = false, onComplete }
     const setupToken = params?.token;
     if (setupToken) {
       setToken(setupToken);
+      return;
+    }
+    // Check for realtor client invitation
+    const urlParams = new URLSearchParams(window.location.search);
+    const rcId = urlParams.get('realtorClient');
+    if (rcId) {
+      setRealtorClientId(rcId);
     }
     // No token = direct /onboarding access — skip validation entirely
   }, [params?.token, adminMode]);
+
+  // Pre-fill from realtor client invitation
+  useEffect(() => {
+    if (!realtorClientId) return;
+    (async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/realtor/activate/${realtorClientId}`);
+        if (!res.ok) {
+          if (res.status === 409) {
+            setQrAlreadyActivated(true);
+            setCustomerDataError('This invitation has already been used.');
+            return;
+          }
+          throw new Error('Failed to fetch invitation');
+        }
+        const data = await res.json();
+        setRealtorName(data.realtorName ?? null);
+        setFormData(prev => ({
+          ...prev,
+          fullName:      data.clientName    || prev.fullName,
+          email:         data.clientEmail   || prev.email,
+          phone:         data.clientPhone   || prev.phone,
+          streetAddress: data.propertyAddress || prev.streetAddress,
+          city:          data.propertyCity   || prev.city,
+          state:         data.propertyState  || prev.state,
+          zip:           data.propertyZip    || prev.zip,
+        }));
+        toast({ title: `Invitation from ${data.realtorName}`, description: "We've pre-filled your property details. Complete setup to activate your schedule." });
+      } catch {
+        setCustomerDataError('Could not load invitation. Please fill in the form manually.');
+      }
+    })();
+  }, [realtorClientId, toast]);
 
   // Pre-fill from QR purchase customer data
   useEffect(() => {
@@ -369,8 +413,8 @@ const Onboarding: React.FC<OnboardingProps> = ({ adminMode = false, onComplete }
       return;
     }
 
-    if (!token && !adminMode) {
-      // Accessed at /onboarding directly (no QR token) — direct to paid signup
+    if (!token && !adminMode && !realtorClientId) {
+      // Accessed at /onboarding directly (no QR token, no realtor invite) — direct to paid signup
       setLocation('/pricing');
       return;
     }
@@ -419,6 +463,33 @@ const Onboarding: React.FC<OnboardingProps> = ({ adminMode = false, onComplete }
         toast({ title: 'Success!', description: 'Household created successfully.' });
         onComplete?.();
         setLocation('/admin/setup-forms');
+      } else if (realtorClientId) {
+        // Realtor client activation flow — no QR token needed
+        const realtorPayload = {
+          fullName:      formData.fullName.trim(),
+          email:         formData.email.trim().toLowerCase(),
+          phone:         formData.phone,
+          streetAddress: formData.streetAddress.trim(),
+          city:          formData.city.trim(),
+          state:         formData.state.trim().toUpperCase(),
+          zip:           formData.zip.trim(),
+        };
+
+        const realtorRes = await fetch(`${API_BASE_URL}/api/realtor/activate/${realtorClientId}/complete`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(realtorPayload),
+        });
+        const realtorResult = await realtorRes.json();
+
+        if (!realtorRes.ok || !realtorResult.success) {
+          setError(realtorResult.error || 'Setup failed');
+          setLoading(false);
+          return;
+        }
+
+        toast({ title: 'Account created!', description: 'Check your email for a link to access your dashboard.' });
+        setLocation('/check-email');
       } else {
         const onboardingData: Record<string, string | boolean | number | undefined> = {
           token: token ?? undefined,
@@ -591,6 +662,23 @@ const Onboarding: React.FC<OnboardingProps> = ({ adminMode = false, onComplete }
               : "Tell us about your property and we'll build a personalized maintenance schedule."}
           </p>
         </div>
+
+        {/* Realtor invitation banner */}
+        {realtorClientId && realtorName && (
+          <Card className="mb-6 border-blue-400 bg-blue-50 dark:bg-blue-950">
+            <CardHeader className="py-4">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="h-5 w-5 text-blue-600" />
+                <CardTitle className="text-blue-900 dark:text-blue-100 text-base">
+                  Invitation from {realtorName}
+                </CardTitle>
+              </div>
+              <CardDescription className="text-blue-700 dark:text-blue-300">
+                Your property details have been pre-filled. Complete the form to activate your personalized maintenance schedule.
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        )}
 
         {/* Admin Mode Badge */}
         {adminMode && (
