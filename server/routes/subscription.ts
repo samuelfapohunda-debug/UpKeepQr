@@ -17,6 +17,7 @@ import {
   sendAccountSuspendedEmail,
   sendSubscriptionWelcomeEmail,
   sendPropertyManagerWelcomeEmail,
+  sendRealtorWelcomeEmail,
   sendAdminSubscriptionNotification,
 } from "../lib/subscriptionEmails";
 import {
@@ -869,7 +870,7 @@ export function registerSubscriptionWebhookHandler(app: Express) {
               }
 
               try {
-                const trialResult = await sendTrialWelcomeEmail(email, name, trialEnd);
+                const trialResult = await sendTrialWelcomeEmail(email, name, trialEnd, planDisplayName);
                 if (trialResult) {
                   await db.insert(emailEventsTable).values({
                     householdId: household.id,
@@ -885,6 +886,8 @@ export function registerSubscriptionWebhookHandler(app: Express) {
               try {
                 const welcomeResult = planDisplayName === 'Property Manager'
                   ? await sendPropertyManagerWelcomeEmail(email, name, amountPaid, orderId)
+                  : planDisplayName === 'Realtor / Agent'
+                  ? await sendRealtorWelcomeEmail(email, name, orderId, amountPaid, household.id)
                   : await sendSubscriptionWelcomeEmail(
                       email,
                       name,

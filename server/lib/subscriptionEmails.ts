@@ -1,4 +1,5 @@
 import { sendEmail } from './email.js';
+import { generateMagicLink } from './magicLink.js';
 
 const FROM_EMAIL = process.env.FROM_EMAIL || 'noreply@maintcue.com';
 const APP_URL = process.env.PUBLIC_BASE_URL || process.env.FRONTEND_URL || 'https://maintcue.com';
@@ -32,7 +33,12 @@ function emailWrapper(title: string, content: string): string {
 </html>`;
 }
 
-export async function sendTrialWelcomeEmail(email: string, name: string, trialEndsAt: Date) {
+export async function sendTrialWelcomeEmail(email: string, name: string, trialEndsAt: Date, planDisplayName?: string) {
+  const isRealtor = planDisplayName === 'Realtor / Agent';
+  const gettingStartedItems = isRealtor
+    ? ['Add your first client', 'Set up your agent dashboard', 'Invite your first homeowner']
+    : ['Scan your first QR code', 'Log your first maintenance task', 'Enable SMS reminders'];
+
   const html = emailWrapper('Welcome to Your Free Trial', `
     <h2 style="margin-top: 0;">Hi ${name},</h2>
     <p>Welcome to MaintCue! Your <strong>30-day free trial</strong> has started.</p>
@@ -42,9 +48,7 @@ export async function sendTrialWelcomeEmail(email: string, name: string, trialEn
     </div>
     <p><strong>Get the most from your trial:</strong></p>
     <ul style="padding-left: 20px;">
-      <li>Scan your first QR code</li>
-      <li>Log your first maintenance task</li>
-      <li>Enable SMS reminders</li>
+      ${gettingStartedItems.map(item => `<li>${item}</li>`).join('\n      ')}
     </ul>
   `);
 
@@ -267,6 +271,57 @@ export async function sendPropertyManagerWelcomeEmail(
     subject: 'Welcome to MaintCue — Your Property Manager Portfolio is Ready',
     html,
     text: `Hi ${name}, welcome to MaintCue! Your Property Manager portfolio (200 properties) is ready. Billing: $1,788/year. Activate at ${APP_URL}/property-manager`
+  });
+}
+
+// ── Realtor: subscription welcome email with magic link ──────────────────────
+export async function sendRealtorWelcomeEmail(
+  email: string,
+  name: string,
+  orderId: string | undefined,
+  amountPaid: string,
+  householdId: string,
+) {
+  const magicLink = await generateMagicLink(email, householdId);
+
+  const html = emailWrapper('Your Realtor Dashboard is Ready', `
+    <h2 style="margin-top: 0;">Hi ${name},</h2>
+    <p>Thank you for subscribing to the <strong>Realtor / Agent</strong> plan!</p>
+
+    <div style="background: #f8fafc; border-radius: 6px; padding: 16px; margin: 16px 0; border: 1px solid #e2e8f0;">
+      <p style="margin: 0 0 8px 0;"><strong>Plan:</strong> Realtor / Agent</p>
+      ${orderId ? `<p style="margin: 0 0 8px 0;"><strong>Order:</strong> ${orderId}</p>` : ''}
+      <p style="margin: 0 0 8px 0;"><strong>Client Slots:</strong> 25 homeowners</p>
+      <p style="margin: 0;"><strong>Billing:</strong> $468/year</p>
+    </div>
+
+    <div style="background: #f0fdf4; border-radius: 6px; padding: 20px; margin: 20px 0; border: 1px solid #10b981;">
+      <p style="margin: 0 0 10px 0; color: #059669; font-size: 15px; font-weight: 600;">🏠 Start Adding Your Clients</p>
+      <p style="margin: 0; color: #374151;">You can now add up to 25 homeowner clients. Each client gets their own AI-generated maintenance schedule and personalized task reminders.</p>
+    </div>
+
+    <div style="text-align: center; margin: 28px 0;">
+      <a href="${magicLink}" style="display: inline-block; background: #10b981; color: white; padding: 14px 36px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px;">Access Your Dashboard →</a>
+    </div>
+
+    <div style="background: #f8fafc; border-radius: 6px; padding: 16px; margin: 20px 0; border: 1px solid #e2e8f0;">
+      <p style="margin: 0 0 10px 0; font-weight: 600;">Getting started:</p>
+      <ol style="margin: 0; padding-left: 20px; color: #374151;">
+        <li style="margin-bottom: 8px;">Click <strong>Access Your Dashboard</strong> above</li>
+        <li style="margin-bottom: 8px;">Add your first client (name, email, property address)</li>
+        <li style="margin-bottom: 0;">Client receives their personalized maintenance schedule</li>
+      </ol>
+    </div>
+
+    <p style="font-size: 13px; color: #6b7280;">This link expires in 24 hours. Questions? Reply to this email and we will help you get started.</p>
+  `);
+
+  return sendEmail({
+    to: email,
+    from: FROM_EMAIL,
+    subject: 'Welcome to MaintCue — Your Realtor Dashboard is Ready',
+    html,
+    text: `Hi ${name}, welcome to MaintCue! Your Realtor / Agent plan is active (25 client slots, $468/year). Access your dashboard: ${magicLink}`,
   });
 }
 
