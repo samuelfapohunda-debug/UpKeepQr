@@ -787,19 +787,29 @@ export function registerSubscriptionWebhookHandler(app: Express) {
               const planLower = planId.toLowerCase().replace(/[_-]/g, ' ');
               let qrCodeCount = 1;
               let planDisplayName = 'Homeowner Basic';
+              let subscriptionTierValue = 'basic';
               if (planLower.includes('property') || planLower.includes('manager')) {
                 qrCodeCount = 200;
                 planDisplayName = 'Property Manager';
+                subscriptionTierValue = 'property_manager';
               } else if (planLower.includes('realtor') || planLower.includes('agent')) {
                 qrCodeCount = 25;
                 planDisplayName = 'Realtor / Agent';
+                subscriptionTierValue = 'realtor';
               } else if (planLower.includes('plus')) {
                 qrCodeCount = 10;
                 planDisplayName = 'Homeowner Plus';
+                subscriptionTierValue = 'plus';
               } else {
                 qrCodeCount = 1;
                 planDisplayName = 'Homeowner Basic';
+                subscriptionTierValue = 'basic';
               }
+
+              // Update subscriptionTier now that we know the plan (initial insert defaults to 'basic')
+              await db.update(householdsTable)
+                .set({ subscriptionTier: subscriptionTierValue, updatedAt: new Date() })
+                .where(eq(householdsTable.id, household.id));
 
               const amountPaid = String((session.amount_total || 0) / 100);
               const baseUrl = process.env.PUBLIC_BASE_URL || 'https://maintcue.com';

@@ -154,10 +154,10 @@ export default function SubscriptionSuccess() {
           ) : (
             <Button
               className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
-              onClick={() => navigate("/")}
-              data-testid="button-go-to-home"
+              onClick={handleGoToDashboard}
+              data-testid="button-go-to-dashboard"
             >
-              Go to Home Page <ArrowRight className="w-4 h-4 ml-2" />
+              Go to My Dashboard <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
           )}
         </Card>

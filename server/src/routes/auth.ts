@@ -4,6 +4,9 @@ import { nanoid } from 'nanoid';
 import jwt from 'jsonwebtoken';
 import rateLimit from 'express-rate-limit';
 import { verifyMagicLink, createSession } from '../../lib/magicLink.js';
+import { db } from '../../db.js';
+import { householdsTable } from '@shared/schema';
+import { eq } from 'drizzle-orm';
 
 const router = Router();
 
@@ -216,7 +219,7 @@ router.post('/magic/complete', async (req, res) => {
   try {
     const sessionToken = await createSession(pending.email, pending.householdId);
     console.log("✅ Session created for household:", pending.householdId);
-    
+
     const isProduction = process.env.NODE_ENV === 'production';
     res.cookie('maintcue_session', sessionToken, {
       httpOnly: true,
@@ -225,8 +228,23 @@ router.post('/magic/complete', async (req, res) => {
       maxAge: 30 * 24 * 60 * 60 * 1000,
       path: '/'
     });
-    
-    return res.redirect('/my-home');
+
+    // Redirect PM subscribers to their portfolio dashboard
+    let redirectPath = '/my-home';
+    try {
+      const [household] = await db
+        .select({ subscriptionTier: householdsTable.subscriptionTier })
+        .from(householdsTable)
+        .where(eq(householdsTable.id, pending.householdId))
+        .limit(1);
+      if (household?.subscriptionTier === 'property_manager') {
+        redirectPath = '/property-manager';
+      }
+    } catch (tierErr) {
+      console.warn('⚠️ Could not look up subscription tier for redirect, defaulting to /my-home:', tierErr);
+    }
+
+    return res.redirect(redirectPath);
   } catch (error) {
     console.error("❌ Failed to create session:", error);
     return res.redirect('/auth/error?message=invalid-link');
