@@ -2,7 +2,7 @@ import { Router, Response } from 'express';
 import Papa from 'papaparse';
 import { db } from '../../db.js';
 import { managedPropertiesTable, bulkUploadJobsTable, maintenanceTasksTable } from '@shared/schema';
-import { eq, and, count } from 'drizzle-orm';
+import { eq, and, count, sql } from 'drizzle-orm';
 import { requireSessionAuth, SessionAuthRequest } from '../../middleware/sessionAuth.js';
 import { lookupProperty } from '../../services/attomService.js';
 import { generateMaintenanceSchedule } from '../../services/homeResearchAgent.js';
@@ -425,6 +425,37 @@ router.get('/bulk-upload/:jobId', requireSessionAuth, async (req: SessionAuthReq
   } catch (err: unknown) {
     console.error('[Portfolio] GET /bulk-upload/:jobId error:', err);
     return res.status(500).json({ error: 'Failed to fetch job status' });
+  }
+});
+
+// ── GET /summary ─────────────────────────────────────────────────────────────
+router.get('/summary', requireSessionAuth, async (req: SessionAuthRequest, res: Response) => {
+  try {
+    const householdId = assertHouseholdId(req, res);
+    if (!householdId) return;
+
+    const [row] = await db
+      .select({
+        total:              count(),
+        active:             sql<number>`cast(sum(case when ${managedPropertiesTable.activationStatus} = 'active' then 1 else 0 end) as int)`,
+        pending:            sql<number>`cast(sum(case when ${managedPropertiesTable.activationStatus} = 'pending' then 1 else 0 end) as int)`,
+        schedule_generated: sql<number>`cast(sum(case when ${managedPropertiesTable.scheduleGenerated} = true then 1 else 0 end) as int)`,
+      })
+      .from(managedPropertiesTable)
+      .where(eq(managedPropertiesTable.portfolioHouseholdId, householdId));
+
+    const total = Number(row?.total ?? 0);
+
+    return res.json({
+      total_properties:   total,
+      active:             Number(row?.active ?? 0),
+      pending:            Number(row?.pending ?? 0),
+      schedule_generated: Number(row?.schedule_generated ?? 0),
+      remaining_slots:    MAX_PROPERTIES - total,
+    });
+  } catch (err: unknown) {
+    console.error('[Portfolio] GET /summary error:', err);
+    return res.status(500).json({ error: 'Failed to fetch portfolio summary' });
   }
 });
 
