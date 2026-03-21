@@ -31,7 +31,7 @@ export default function Home() {
               
               {/* Left: Content */}
               <div className="text-center lg:text-left">
-                <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-slate-900 mb-6 leading-tight">
+                <h1 className="text-2xl sm:text-4xl lg:text-5xl font-bold text-slate-900 mb-6 leading-tight">
                   Never Miss Home Maintenance Again
                 </h1>
                 <p className="text-lg sm:text-xl text-slate-600 mb-8 max-w-xl mx-auto lg:mx-0">
@@ -59,7 +59,7 @@ export default function Home() {
               
               {/* Right: Video Demo */}
               <div className="relative" data-testid="section-video-demo">
-                <div className="bg-white rounded-xl p-6 shadow-lg max-w-[600px] mx-auto">
+                <div className="bg-white rounded-xl p-6 shadow-lg w-full max-w-[600px] mx-auto">
                   <h3 className="text-lg font-semibold text-slate-900 mb-1">See MaintCue in Action</h3>
                   <p className="text-sm text-slate-500 mb-4 leading-relaxed">
                     See how MaintCue tracks your home's maintenance automatically.
@@ -106,7 +106,7 @@ export default function Home() {
         <section className="py-20 bg-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-16">
-              <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">
+              <h2 className="text-xl sm:text-3xl lg:text-4xl font-bold text-slate-900 mb-4">
                 Maintenance Is Easy to Forget — Until It's Expensive
               </h2>
               <p className="text-lg text-slate-600 max-w-2xl mx-auto">
@@ -184,7 +184,7 @@ export default function Home() {
           <div className="relative z-[1] max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             
             <div className="text-center mb-16">
-              <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">
+              <h2 className="text-xl sm:text-3xl lg:text-4xl font-bold text-slate-900 mb-4">
                 How MaintCue Works
               </h2>
               <p className="text-lg sm:text-xl text-slate-600 max-w-2xl mx-auto">
@@ -257,7 +257,7 @@ export default function Home() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             
             <div className="text-center mb-16">
-              <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">
+              <h2 className="text-xl sm:text-3xl lg:text-4xl font-bold text-slate-900 mb-4">
                 What Happens When You Never Miss Maintenance Again
               </h2>
               <p className="text-lg sm:text-xl text-slate-600">
@@ -396,7 +396,7 @@ export default function Home() {
         <section className="py-20 bg-slate-50">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-12">
-              <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">
+              <h2 className="text-xl sm:text-3xl lg:text-4xl font-bold text-slate-900 mb-4">
                 Built for Homeowners — Powerful Enough for Professionals
               </h2>
               <p className="text-lg text-slate-600 max-w-2xl mx-auto">

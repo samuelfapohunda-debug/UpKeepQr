@@ -215,7 +215,7 @@ function AddClientModal({ onClose, onSaved }: AddClientModalProps) {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-2 col-span-2">
                 <Label htmlFor="rc-name">Client Name *</Label>
                 <Input id="rc-name" required value={form.client_name} onChange={set("client_name")} placeholder="Jane Smith" />
@@ -262,8 +262,8 @@ function AddClientModal({ onClose, onSaved }: AddClientModalProps) {
               )}
             </div>
 
-            <div className="grid grid-cols-3 gap-3">
-              <div className="col-span-2 space-y-2">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="col-span-1 sm:col-span-2 space-y-2">
                 <Label htmlFor="rc-city">City *</Label>
                 <Input id="rc-city" required value={form.property_city} onChange={set("property_city")} />
               </div>
@@ -273,7 +273,7 @@ function AddClientModal({ onClose, onSaved }: AddClientModalProps) {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-2">
                 <Label htmlFor="rc-zip">ZIP *</Label>
                 <Input id="rc-zip" required value={form.property_zip} onChange={set("property_zip")} />
@@ -477,7 +477,7 @@ export default function RealtorDashboard() {
       <div className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8 space-y-6">
 
         {/* Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
           <Card>
             <CardContent className="p-3 sm:p-4">
               <div className="flex items-center justify-between gap-1">

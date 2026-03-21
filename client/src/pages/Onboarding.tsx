@@ -844,7 +844,7 @@ const Onboarding: React.FC<OnboardingProps> = ({ adminMode = false, onComplete }
                   {!attomLoading && attomFound !== true && (
                     <Button
                       type="button"
-                      className="min-w-[200px]"
+                      className="w-full sm:min-w-[200px] sm:w-auto"
                       onClick={handleStep1Continue}
                       data-testid="button-step1-continue"
                     >

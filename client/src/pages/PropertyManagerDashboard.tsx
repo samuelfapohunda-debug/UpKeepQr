@@ -306,7 +306,7 @@ function AddPropertyModal({ onClose, onSaved }: AddPropertyModalProps) {
             </div>
 
             {/* City / State */}
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="col-span-2 space-y-2">
                 <Label htmlFor="pm-city">City *</Label>
                 <Input
@@ -330,7 +330,7 @@ function AddPropertyModal({ onClose, onSaved }: AddPropertyModalProps) {
             </div>
 
             {/* ZIP / Unit */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-2">
                 <Label htmlFor="pm-zip">ZIP *</Label>
                 <Input
