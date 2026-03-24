@@ -47,18 +47,19 @@ export default function SubscriptionSuccess() {
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
               Preparing your account...
             </Button>
-          ) : setupUrl ? (
-            <Button
-              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-base py-6"
-              onClick={() => window.location.href = setupUrl}
-              data-testid="button-set-up-account"
-            >
-              Set Up My Account <ArrowRight className="w-4 h-4 ml-2" />
-            </Button>
           ) : (
-            <p className="text-sm text-slate-500 dark:text-slate-400" data-testid="text-email-fallback">
-              Check your email for your setup link.
-            </p>
+            <>
+              <Button
+                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-base py-6"
+                onClick={() => window.location.href = setupUrl ?? '/customer-login'}
+                data-testid="button-set-up-account"
+              >
+                Set Up My Account <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+              <p className="text-sm text-slate-400 dark:text-slate-500 mt-4" data-testid="text-email-fallback">
+                A setup link has also been sent to your email.
+              </p>
+            </>
           )}
         </Card>
       </main>

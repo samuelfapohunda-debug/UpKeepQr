@@ -949,6 +949,55 @@ export function registerSubscriptionWebhookHandler(app: Express) {
                 'trialing',
                 { sessionId: session.id, subscriptionId, qrCodeCount, orderId }
               );
+            } else {
+              // Household already exists — still write a fresh setup token and send welcome email
+              console.log(`[Subscription Webhook] Household already exists for customer ${customerId} (${existing.email}), writing setup token`);
+
+              const email = existing.email;
+              const name = existing.name || 'Subscriber';
+              const planId = session.metadata?.plan_id || session.metadata?.plan || '';
+              const planLower = planId.toLowerCase().replace(/[_-]/g, ' ');
+              let planDisplayName = 'Homeowner Basic';
+              if (planLower.includes('property') || planLower.includes('manager')) planDisplayName = 'Property Manager';
+              else if (planLower.includes('realtor') || planLower.includes('agent')) planDisplayName = 'Realtor / Agent';
+              else if (planLower.includes('plus')) planDisplayName = 'Homeowner Plus';
+
+              const amountPaid = String((session.amount_total || 0) / 100);
+              const baseUrl = process.env.PUBLIC_BASE_URL || 'https://maintcue.com';
+
+              let setupUrl: string | undefined;
+              if (!existing.passwordHash) {
+                try {
+                  const setupToken = crypto.randomBytes(32).toString('hex');
+                  const setupExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+                  await db
+                    .update(householdsTable)
+                    .set({ resetToken: setupToken, resetTokenExpires: setupExpires, updatedAt: new Date() })
+                    .where(eq(householdsTable.id, existing.id));
+                  setupUrl = `${baseUrl}/set-password?token=${setupToken}`;
+                  console.log(`[Subscription Webhook] Setup token written for existing household ${email}`);
+                } catch (tokenErr: any) {
+                  console.error('[Subscription Webhook] Failed to write setup token for existing household:', tokenErr?.message);
+                }
+              }
+
+              try {
+                const trialEnd = existing.trialEndsAt || new Date(Date.now() + TRIAL_DAYS * 24 * 60 * 60 * 1000);
+                await sendTrialWelcomeEmail(email, name, trialEnd, planDisplayName);
+              } catch (emailErr) {
+                console.error('[Subscription Webhook] Failed to send trial email to existing household:', emailErr);
+              }
+
+              try {
+                const welcomeResult = planDisplayName === 'Property Manager'
+                  ? await sendPropertyManagerWelcomeEmail(email, name, amountPaid, undefined)
+                  : planDisplayName === 'Realtor / Agent'
+                  ? await sendRealtorWelcomeEmail(email, name, undefined, amountPaid, existing.id)
+                  : await sendSubscriptionWelcomeEmail(email, name, planDisplayName, amountPaid, undefined, [], setupUrl);
+                console.log(`[Subscription Webhook] Welcome email for existing household ${welcomeResult ? 'sent' : 'failed'}`);
+              } catch (emailErr) {
+                console.error('[Subscription Webhook] Failed to send welcome email to existing household:', emailErr);
+              }
             }
           }
           break;
