@@ -5,6 +5,7 @@ import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import bcrypt from 'bcrypt';
 import rateLimit from 'express-rate-limit';
+import { google } from 'googleapis';
 import { verifyMagicLink, createSession } from '../../lib/magicLink.js';
 import { db } from '../../db.js';
 import { householdsTable } from '@shared/schema';
@@ -594,6 +595,92 @@ router.get('/session/verify', async (req, res) => {
 router.post('/session/logout', async (_req, res) => {
   res.clearCookie('maintcue_session', { path: '/' });
   return res.json({ success: true });
+});
+
+// ---------------------------------------------------------------------------
+// Google OAuth – sign in / sign up
+// ---------------------------------------------------------------------------
+function getGoogleOAuthClient() {
+  const backendUrl = process.env.BACKEND_URL || 'https://maintcue-backend.onrender.com';
+  return new google.auth.OAuth2(
+    process.env.GOOGLE_CLIENT_ID,
+    process.env.GOOGLE_CLIENT_SECRET,
+    `${backendUrl}/api/auth/google/callback`,
+  );
+}
+
+// GET /api/auth/google  →  redirect to Google consent
+router.get('/google', (_req, res) => {
+  const oauth2Client = getGoogleOAuthClient();
+  const url = oauth2Client.generateAuthUrl({
+    access_type: 'online',
+    scope: ['https://www.googleapis.com/auth/userinfo.email', 'https://www.googleapis.com/auth/userinfo.profile'],
+    prompt: 'select_account',
+  });
+  return res.redirect(url);
+});
+
+// GET /api/auth/google/callback  →  exchange code, find/create household, set session
+router.get('/google/callback', async (req, res) => {
+  const frontendUrl = BASE_URL;
+  const { code, error } = req.query as { code?: string; error?: string };
+
+  if (error || !code) {
+    console.warn('[Google OAuth] Error from Google:', error);
+    return res.redirect(`${frontendUrl}/auth/error?message=invalid-link`);
+  }
+
+  try {
+    const oauth2Client = getGoogleOAuthClient();
+    const { tokens } = await oauth2Client.getToken(code);
+    oauth2Client.setCredentials(tokens);
+
+    const oauth2 = google.oauth2({ version: 'v2', auth: oauth2Client });
+    const { data: profile } = await oauth2.userinfo.get();
+
+    const email = profile.email?.toLowerCase();
+    if (!email) {
+      return res.redirect(`${frontendUrl}/auth/error?message=invalid-link`);
+    }
+
+    // Find or create household
+    let [household] = await db
+      .select()
+      .from(householdsTable)
+      .where(eq(householdsTable.email, email))
+      .limit(1);
+
+    if (!household) {
+      const firstName = profile.given_name || '';
+      const lastName = profile.family_name || '';
+      const fullName = `${firstName} ${lastName}`.trim() || email;
+      const [created] = await db
+        .insert(householdsTable)
+        .values({
+          id: nanoid(),
+          email,
+          name: fullName,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .returning();
+      household = created;
+      console.log('[Google OAuth] New household created for', email);
+    } else {
+      console.log('[Google OAuth] Existing household found for', email);
+    }
+
+    await issueSession(res, household.id, email);
+
+    let redirectPath = '/my-home';
+    if (household.subscriptionTier === 'property_manager') redirectPath = '/property-manager';
+    else if (household.subscriptionTier === 'realtor') redirectPath = '/realtor';
+
+    return res.redirect(`${frontendUrl}${redirectPath}`);
+  } catch (err: any) {
+    console.error('[Google OAuth] Callback error:', err?.message);
+    return res.redirect(`${frontendUrl}/auth/error?message=invalid-link`);
+  }
 });
 
 export default router;
