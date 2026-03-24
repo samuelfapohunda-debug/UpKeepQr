@@ -31,6 +31,7 @@ import SetupForm from "@/pages/SetupForm";
 import PaymentSuccess from "@/pages/PaymentSuccess";
 import CheckEmail from "@/pages/CheckEmail";
 import AuthError from "@/pages/AuthError";
+import GoogleAuthComplete from "@/pages/GoogleAuthComplete";
 import MagicLink from "@/pages/MagicLink";
 import TermsOfService from "@/pages/legal/TermsOfService";
 import PrivacyPolicy from "@/pages/legal/PrivacyPolicy";
@@ -70,7 +71,7 @@ function Router() {
         <Route path="/payment-success" component={PaymentSuccess} />
         <Route path="/check-email" component={CheckEmail} />
         <Route path="/auth/magic" component={MagicLink} />
-        <Route path="/auth/error" component={AuthError} />
+        <Route path="/auth/google/complete" component={GoogleAuthComplete} />
         <Route path="/auth/error" component={AuthError} />
         <Route path="/my-home" component={CustomerDashboard} />
         <Route path="/property-manager" component={PropertyManagerDashboard} />

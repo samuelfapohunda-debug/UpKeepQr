@@ -599,7 +599,14 @@ router.post('/session/logout', async (_req, res) => {
 
 // ---------------------------------------------------------------------------
 // Google OAuth – sign in / sign up
+// Exchange-token pattern: callback creates a short-lived code, redirects to
+// frontend, frontend POSTs the code back (credentialed) so the session cookie
+// is set on the correct domain.
 // ---------------------------------------------------------------------------
+
+// In-memory store for short-lived Google OAuth exchange codes (30 seconds)
+const pendingGoogleCodes = new Map<string, { householdId: string; email: string; expiresAt: Date }>();
+
 function getGoogleOAuthClient() {
   const backendUrl = process.env.BACKEND_URL || 'https://upkeepqr-backend.onrender.com';
   return new google.auth.OAuth2(
@@ -620,7 +627,7 @@ router.get('/google', (_req, res) => {
   return res.redirect(url);
 });
 
-// GET /api/auth/google/callback  →  exchange code, find/create household, set session
+// GET /api/auth/google/callback  →  exchange code, find/create household, issue exchange code
 router.get('/google/callback', async (req, res) => {
   const frontendUrl = BASE_URL;
   const { code, error } = req.query as { code?: string; error?: string };
@@ -631,24 +638,20 @@ router.get('/google/callback', async (req, res) => {
   }
 
   try {
-    console.log('[Google OAuth] Step 1: exchanging code for tokens');
     const oauth2Client = getGoogleOAuthClient();
     const { tokens } = await oauth2Client.getToken(code);
     oauth2Client.setCredentials(tokens);
-    console.log('[Google OAuth] Step 2: tokens received, fetching profile');
 
     const oauth2 = google.oauth2({ version: 'v2', auth: oauth2Client });
     const { data: profile } = await oauth2.userinfo.get();
-    console.log('[Google OAuth] Step 3: profile email =', profile.email);
+    console.log('[Google OAuth] Profile email:', profile.email);
 
     const email = profile.email?.toLowerCase();
     if (!email) {
-      console.warn('[Google OAuth] No email in profile');
       return res.redirect(`${frontendUrl}/auth/error?message=invalid-link`);
     }
 
     // Find or create household
-    console.log('[Google OAuth] Step 4: looking up household for', email);
     let [household] = await db
       .select()
       .from(householdsTable)
@@ -659,36 +662,58 @@ router.get('/google/callback', async (req, res) => {
       const firstName = profile.given_name || '';
       const lastName = profile.family_name || '';
       const fullName = `${firstName} ${lastName}`.trim() || email;
-      console.log('[Google OAuth] Step 5: creating new household for', email);
       const [created] = await db
         .insert(householdsTable)
-        .values({
-          id: nanoid(),
-          email,
-          name: fullName,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        })
+        .values({ id: nanoid(), email, name: fullName, createdAt: new Date(), updatedAt: new Date() })
         .returning();
       household = created;
       console.log('[Google OAuth] New household created for', email);
     } else {
-      console.log('[Google OAuth] Existing household found for', email, 'tier:', household.subscriptionTier);
+      console.log('[Google OAuth] Existing household for', email, 'tier:', household.subscriptionTier);
     }
 
-    console.log('[Google OAuth] Step 6: issuing session for household', household.id);
-    await issueSession(res, household.id, email);
+    // Issue a short-lived exchange code; frontend will POST it back with credentials: 'include'
+    const exchangeCode = crypto.randomBytes(24).toString('hex');
+    pendingGoogleCodes.set(exchangeCode, {
+      householdId: household.id,
+      email,
+      expiresAt: new Date(Date.now() + 30_000), // 30 seconds
+    });
 
-    let redirectPath = '/my-home';
-    if (household.subscriptionTier === 'property_manager') redirectPath = '/property-manager';
-    else if (household.subscriptionTier === 'realtor') redirectPath = '/realtor';
-
-    console.log('[Google OAuth] Step 7: redirecting to', redirectPath);
-    return res.redirect(`${frontendUrl}${redirectPath}`);
+    return res.redirect(`${frontendUrl}/auth/google/complete?code=${exchangeCode}`);
   } catch (err: any) {
-    console.error('[Google OAuth] Callback error at step above:', err?.message, err?.stack);
+    console.error('[Google OAuth] Callback error:', err?.message, err?.stack);
     return res.redirect(`${frontendUrl}/auth/error?message=invalid-link`);
   }
+});
+
+// POST /api/auth/google/complete  →  exchange code for session cookie (called by frontend with credentials: 'include')
+router.post('/google/complete', async (req, res) => {
+  const { code } = req.body as { code?: string };
+  if (!code) return res.status(400).json({ error: 'Missing code' });
+
+  const pending = pendingGoogleCodes.get(code);
+  if (!pending || new Date() > pending.expiresAt) {
+    pendingGoogleCodes.delete(code);
+    return res.status(400).json({ error: 'Invalid or expired code' });
+  }
+  pendingGoogleCodes.delete(code);
+
+  await issueSession(res, pending.householdId, pending.email);
+
+  // Look up tier for redirect hint
+  const [household] = await db
+    .select({ subscriptionTier: householdsTable.subscriptionTier })
+    .from(householdsTable)
+    .where(eq(householdsTable.id, pending.householdId))
+    .limit(1);
+
+  let redirectPath = '/my-home';
+  if (household?.subscriptionTier === 'property_manager') redirectPath = '/property-manager';
+  else if (household?.subscriptionTier === 'realtor') redirectPath = '/realtor';
+
+  console.log('[Google OAuth] Session issued for', pending.email, '→', redirectPath);
+  return res.json({ success: true, redirectPath });
 });
 
 export default router;
