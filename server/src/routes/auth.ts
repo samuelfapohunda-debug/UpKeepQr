@@ -10,6 +10,7 @@ import { db } from '../../db.js';
 import { householdsTable } from '@shared/schema';
 import { eq, and, gt } from 'drizzle-orm';
 import { sendResendEmail } from '../../lib/resend.js';
+import { stripe } from '../lib/stripe.js';
 
 const router = Router();
 
@@ -345,6 +346,47 @@ router.get('/setup-info', async (req, res) => {
 });
 
 // ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// GET /api/auth/setup-token?session_id=SESSION_ID
+// Called by SubscriptionSuccess page to get the setup token for the CTA button.
+// Looks up the Stripe checkout session → finds the household by customer email →
+// returns the reset_token if it is still valid (not expired).
+// ---------------------------------------------------------------------------
+router.get('/setup-token', async (req, res) => {
+  const sessionId = typeof req.query.session_id === 'string' ? req.query.session_id : null;
+  if (!sessionId) {
+    return res.status(400).json({ error: 'Missing session_id' });
+  }
+
+  if (!stripe) {
+    return res.status(503).json({ error: 'Payment service unavailable' });
+  }
+
+  try {
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+    const email = session.customer_details?.email || session.customer_email;
+    if (!email) {
+      return res.status(404).json({ error: 'No email on session' });
+    }
+
+    const now = new Date();
+    const [household] = await db
+      .select({ resetToken: householdsTable.resetToken, resetTokenExpires: householdsTable.resetTokenExpires })
+      .from(householdsTable)
+      .where(eq(householdsTable.email, email.toLowerCase()))
+      .limit(1);
+
+    if (!household || !household.resetToken || !household.resetTokenExpires || household.resetTokenExpires <= now) {
+      return res.status(404).json({ error: 'Setup token not found or expired' });
+    }
+
+    return res.json({ token: household.resetToken });
+  } catch (err: any) {
+    console.error('[auth/setup-token]', err?.message);
+    return res.status(500).json({ error: 'Failed to retrieve setup token' });
+  }
+});
+
 // Admin/Agent JWT login (unchanged)
 // ---------------------------------------------------------------------------
 const agentLoginSchema = z.object({
