@@ -354,27 +354,44 @@ router.get('/setup-info', async (req, res) => {
 // ---------------------------------------------------------------------------
 router.get('/setup-token', async (req, res) => {
   const sessionId = typeof req.query.session_id === 'string' ? req.query.session_id : null;
+  console.log('[auth/setup-token] hit — session_id:', sessionId);
+
   if (!sessionId) {
     return res.status(400).json({ error: 'Missing session_id' });
   }
 
   if (!stripe) {
+    console.error('[auth/setup-token] Stripe not initialised — check STRIPE_SECRET_KEY');
     return res.status(503).json({ error: 'Payment service unavailable' });
   }
 
   try {
     const session = await stripe.checkout.sessions.retrieve(sessionId);
-    const email = session.customer_details?.email || session.customer_email;
-    if (!email) {
+    const rawEmail = session.customer_details?.email || (session as any).customer_email;
+    console.log('[auth/setup-token] Stripe session email:', rawEmail);
+
+    if (!rawEmail) {
       return res.status(404).json({ error: 'No email on session' });
     }
 
+    const email = rawEmail.toLowerCase();
     const now = new Date();
+
     const [household] = await db
-      .select({ resetToken: householdsTable.resetToken, resetTokenExpires: householdsTable.resetTokenExpires })
+      .select({
+        resetToken: householdsTable.resetToken,
+        resetTokenExpires: householdsTable.resetTokenExpires,
+      })
       .from(householdsTable)
-      .where(eq(householdsTable.email, email.toLowerCase()))
+      .where(eq(householdsTable.email, email))
       .limit(1);
+
+    console.log('[auth/setup-token] household lookup:', {
+      found: !!household,
+      hasToken: !!household?.resetToken,
+      expires: household?.resetTokenExpires,
+      now,
+    });
 
     if (!household || !household.resetToken || !household.resetTokenExpires || household.resetTokenExpires <= now) {
       return res.status(404).json({ error: 'Setup token not found or expired' });
@@ -382,7 +399,7 @@ router.get('/setup-token', async (req, res) => {
 
     return res.json({ token: household.resetToken });
   } catch (err: any) {
-    console.error('[auth/setup-token]', err?.message);
+    console.error('[auth/setup-token] error:', err?.message);
     return res.status(500).json({ error: 'Failed to retrieve setup token' });
   }
 });

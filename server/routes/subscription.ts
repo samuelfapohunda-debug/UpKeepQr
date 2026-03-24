@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import type { Express, Request, Response, NextFunction } from "express";
 import express from "express";
 import { db } from "../db";
@@ -869,6 +870,22 @@ export function registerSubscriptionWebhookHandler(app: Express) {
                 ).catch(e => console.error('Failed to send error alert:', e));
               }
 
+              // Generate password setup token (24-hour expiry) for the set-password CTA
+              let setupUrl: string | undefined;
+              try {
+                const setupToken = crypto.randomBytes(32).toString('hex');
+                const setupExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+                await db
+                  .update(householdsTable)
+                  .set({ resetToken: setupToken, resetTokenExpires: setupExpires, updatedAt: new Date() })
+                  .where(eq(householdsTable.id, household.id));
+                const baseUrl = process.env.PUBLIC_BASE_URL || 'https://maintcue.com';
+                setupUrl = `${baseUrl}/set-password?token=${setupToken}`;
+                console.log(`[Subscription Webhook] Setup token written for ${email}`);
+              } catch (tokenErr: any) {
+                console.error('[Subscription Webhook] Failed to write setup token (non-fatal):', tokenErr?.message);
+              }
+
               try {
                 const trialResult = await sendTrialWelcomeEmail(email, name, trialEnd, planDisplayName);
                 if (trialResult) {
@@ -894,7 +911,8 @@ export function registerSubscriptionWebhookHandler(app: Express) {
                       planDisplayName,
                       amountPaid,
                       orderId,
-                      generatedQrCodes
+                      generatedQrCodes,
+                      setupUrl
                     );
                 if (welcomeResult) {
                   console.log('[Subscription Webhook] Subscription welcome email with QR codes sent to:', email);
