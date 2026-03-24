@@ -13,6 +13,8 @@ interface AuthState {
 
 interface AuthContextType extends AuthState {
   login: (email: string, password: string, rememberMe?: boolean) => Promise<{ success: boolean; error?: string }>;
+  customerLogin: (email: string, password: string) => Promise<{ success: boolean; error?: string; subscriptionTier?: string }>;
+  customerRegister: (email: string, password: string, firstName: string, lastName: string) => Promise<{ success: boolean; error?: string; subscriptionTier?: string }>;
   logout: () => void;
   customerLogout: () => Promise<void>;
   checkAuth: () => boolean;
@@ -208,6 +210,52 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setError(null);
   };
 
+  const customerLogin = async (
+    email: string,
+    password: string
+  ): Promise<{ success: boolean; error?: string; subscriptionTier?: string }> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        return { success: false, error: data.error || 'Login failed.' };
+      }
+      setAuthState(prev => ({ ...prev, isCustomer: true, customerLoading: false }));
+      return { success: true, subscriptionTier: data.user?.subscriptionTier };
+    } catch {
+      return { success: false, error: 'Network error. Please check your connection.' };
+    }
+  };
+
+  const customerRegister = async (
+    email: string,
+    password: string,
+    firstName: string,
+    lastName: string
+  ): Promise<{ success: boolean; error?: string; subscriptionTier?: string }> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ email, password, firstName, lastName }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        return { success: false, error: data.error || 'Registration failed.' };
+      }
+      setAuthState(prev => ({ ...prev, isCustomer: true, customerLoading: false }));
+      return { success: true, subscriptionTier: data.user?.subscriptionTier };
+    } catch {
+      return { success: false, error: 'Network error. Please check your connection.' };
+    }
+  };
+
   const customerLogout = async () => {
     try {
       await fetch(`${API_BASE_URL}/api/auth/session/logout`, {
@@ -235,6 +283,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const contextValue: AuthContextType = {
     ...authState,
     login,
+    customerLogin,
+    customerRegister,
     logout,
     customerLogout,
     checkAuth,

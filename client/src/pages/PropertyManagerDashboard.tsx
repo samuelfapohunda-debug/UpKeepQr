@@ -677,15 +677,14 @@ export default function PropertyManagerDashboard() {
       <div className="min-h-screen flex items-center justify-center p-4">
         <Card className="max-w-md w-full">
           <CardHeader>
-            <CardTitle>Dashboard Access Required</CardTitle>
+            <CardTitle>You're not signed in</CardTitle>
             <CardDescription>
-              Please use the link from your email to access your dashboard.
+              Sign in to access your property management dashboard.
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <Button onClick={() => navigate("/")} className="w-full">
-              Go to Homepage
-            </Button>
+          <CardContent className="flex flex-col sm:flex-row gap-3">
+            <Button onClick={() => navigate("/customer-login")} className="w-full">Sign In</Button>
+            <Button variant="outline" onClick={() => navigate("/pricing")} className="w-full">View Plans</Button>
           </CardContent>
         </Card>
       </div>

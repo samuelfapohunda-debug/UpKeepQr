@@ -136,13 +136,18 @@ export default function HomeownerDashboard() {
         <Card className="max-w-md w-full">
           <CardContent className="pt-6 text-center">
             <AlertCircle className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-            <h1 className="text-xl font-semibold mb-2" data-testid="text-access-required">Access Required</h1>
+            <h1 className="text-xl font-semibold mb-2" data-testid="text-access-required">You're not signed in</h1>
             <p className="text-muted-foreground mb-6">
-              Please use the link from your email or scan your QR code to access your dashboard.
+              Sign in to access your home maintenance dashboard.
             </p>
-            <Button asChild className="min-h-[48px]">
-              <a href="/" data-testid="link-homepage">Go to Homepage</a>
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Button asChild className="min-h-[48px]">
+                <a href="/customer-login" data-testid="link-signin">Sign In</a>
+              </Button>
+              <Button asChild variant="outline" className="min-h-[48px]">
+                <a href="/pricing" data-testid="link-plans">View Plans</a>
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>

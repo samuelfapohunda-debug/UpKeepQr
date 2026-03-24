@@ -42,6 +42,11 @@ import Onboarding from "@/pages/Onboarding";
 import PropertyManagerDashboard from "@/pages/PropertyManagerDashboard";
 import PropertyManagerDetail from "@/pages/PropertyManagerDetail";
 import RealtorDashboard from "@/pages/RealtorDashboard";
+import CustomerLogin from "@/pages/CustomerLogin";
+import Register from "@/pages/Register";
+import SetPassword from "@/pages/SetPassword";
+import ForgotPassword from "@/pages/ForgotPassword";
+import ResetPassword from "@/pages/ResetPassword";
 
 function Router() {
   return (
@@ -55,6 +60,11 @@ function Router() {
         <Route path="/pricing" component={Pricing} />
         <Route path="/contact" component={Contact} />
         <Route path="/login" component={Login} />
+        <Route path="/customer-login" component={CustomerLogin} />
+        <Route path="/register" component={Register} />
+        <Route path="/set-password" component={SetPassword} />
+        <Route path="/forgot-password" component={ForgotPassword} />
+        <Route path="/reset-password" component={ResetPassword} />
         <Route path="/setup/success" component={SetupSuccess} />
         <Route path="/registration/success" component={RegistrationSuccess} />
         <Route path="/payment-success" component={PaymentSuccess} />

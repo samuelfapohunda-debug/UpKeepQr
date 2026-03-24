@@ -13,20 +13,20 @@ export default function AuthError() {
       case 'link-expired':
         return {
           title: 'Link Expired',
-          description: 'This login link has expired. Please scan your QR code again to get a new link.',
+          description: 'This login link has expired. Please sign in with your email and password, or request a new link.',
           icon: RefreshCw
         };
       case 'link-already-used':
         return {
           title: 'Link Already Used',
-          description: 'This login link has already been used. Each link can only be used once. Please scan your QR code again to get a new link.',
+          description: 'This login link has already been used. Please sign in with your email and password.',
           icon: RefreshCw
         };
       case 'invalid-link':
       default:
         return {
           title: 'Invalid Link',
-          description: 'This login link is not valid. Please scan your QR code again to get a new link.',
+          description: 'This login link is not valid. Please sign in with your email and password.',
           icon: XCircle
         };
     }
@@ -53,14 +53,22 @@ export default function AuthError() {
             <p className="text-sm text-muted-foreground">
               Need help? Contact support at support@maintcue.com
             </p>
-            <Button
-              variant="outline"
-              onClick={() => navigate('/')}
-              data-testid="button-back-home"
-            >
-              Back to Home
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-2 justify-center">
+              <Button
+                onClick={() => navigate('/customer-login')}
+                data-testid="button-signin"
+              >
+                Sign In
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => navigate('/')}
+                data-testid="button-back-home"
+              >
+                Back to Home
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>

@@ -734,6 +734,11 @@ export const householdsTable = pgTable("households", {
   firstMaintenanceTaskAt: timestamp("first_maintenance_task_at"),
   smsEnabledAt: timestamp("sms_enabled_at"),
   
+  // Password auth
+  passwordHash: text('password_hash'),
+  resetToken: text('reset_token'),
+  resetTokenExpires: timestamp('reset_token_expires', { withTimezone: true }),
+
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => ({

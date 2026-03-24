@@ -1,12 +1,14 @@
 import { Router, Request, Response } from "express";
 import express from "express";
 import { nanoid } from "nanoid";
+import crypto from "crypto";
 import { db } from "../../db.js";
 import { authenticateAgent } from "../../middleware/auth.js";
 import {
   orderMagnetOrdersTable,
   orderMagnetItemsTable,
   stripeEventsTable,
+  householdsTable,
 } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import { createRequire } from "module";
@@ -202,7 +204,55 @@ router.post('/stripe', async (req: Request, res: Response) => {
         console.log(`[WEBHOOK] Skipping order creation (already exists), proceeding to send email`);
       }
 
-      // Step 2: Send emails (never fail the webhook for email errors)
+      // Step 2b: Find or create household and generate password setup token
+      let setupUrl: string | undefined;
+      if (customerEmail) {
+        try {
+          const [existing] = await db
+            .select({ id: householdsTable.id, passwordHash: householdsTable.passwordHash })
+            .from(householdsTable)
+            .where(eq(householdsTable.email, customerEmail.toLowerCase()))
+            .limit(1);
+
+          let householdId: string;
+          if (existing) {
+            householdId = existing.id;
+          } else {
+            const [created] = await db
+              .insert(householdsTable)
+              .values({
+                name: customerName || 'Subscriber',
+                email: customerEmail.toLowerCase(),
+                subscriptionStatus: 'active',
+                subscriptionTier: planName.toLowerCase().includes('property') ? 'property_manager'
+                  : planName.toLowerCase().includes('realtor') || planName.toLowerCase().includes('agent') ? 'realtor'
+                  : planName.toLowerCase().includes('plus') ? 'homeowner_plus'
+                  : 'homeowner_basic',
+              })
+              .returning({ id: householdsTable.id });
+            householdId = created.id;
+            console.log(`[WEBHOOK] Created new household for ${customerEmail}: ${householdId}`);
+          }
+
+          // Generate setup token (24-hour expiry) if no password set yet
+          const noPassword = !existing?.passwordHash;
+          if (noPassword) {
+            const token = crypto.randomBytes(32).toString('hex');
+            const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+            await db
+              .update(householdsTable)
+              .set({ resetToken: token, resetTokenExpires: expires, updatedAt: new Date() })
+              .where(eq(householdsTable.id, householdId));
+            const baseUrl = process.env.PUBLIC_BASE_URL || 'https://maintcue.com';
+            setupUrl = `${baseUrl}/set-password?token=${token}`;
+            console.log(`[WEBHOOK] Setup token generated for ${customerEmail}`);
+          }
+        } catch (setupErr: any) {
+          console.error('[WEBHOOK] Setup token generation failed (non-fatal):', setupErr?.message);
+        }
+      }
+
+      // Step 3: Send emails (never fail the webhook for email errors)
       try {
         console.log('[WEBHOOK] Sending subscription welcome email to:', customerEmail);
         const emailResult = await sendSubscriptionWelcomeEmail(
@@ -211,7 +261,8 @@ router.post('/stripe', async (req: Request, res: Response) => {
           planName,
           amountPaid,
           resultOrderId,
-          generatedQrCodes
+          generatedQrCodes,
+          setupUrl
         );
         if (emailResult) {
           console.log('[WEBHOOK] Subscription welcome email sent successfully');

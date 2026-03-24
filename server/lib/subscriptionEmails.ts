@@ -182,7 +182,8 @@ export async function sendSubscriptionWelcomeEmail(
   planName: string,
   amountPaid: string,
   orderId: string | undefined,
-  qrCodes: Array<{ code: string; qrUrl: string; setupUrl: string }>
+  qrCodes: Array<{ code: string; qrUrl: string; setupUrl: string }>,
+  setupUrl?: string
 ) {
   const qrSection = qrCodes.length > 0 ? `
     <div style="background: #f0fdf4; border-radius: 6px; padding: 20px; margin: 20px 0; border: 1px solid #10b981;">
@@ -201,6 +202,17 @@ export async function sendSubscriptionWelcomeEmail(
     </div>
   ` : '';
 
+  const setupSection = setupUrl ? `
+    <div style="background: #f0fdf4; border-radius: 8px; padding: 20px; margin: 20px 0; border: 1px solid #10b981;">
+      <p style="margin: 0 0 8px 0; color: #059669; font-size: 16px; font-weight: 600;">Create your password to access your dashboard</p>
+      <p style="margin: 0 0 16px 0; font-size: 14px; color: #374151;">Your account is ready. Set a password to log in anytime.</p>
+      <div style="text-align: center;">
+        <a href="${setupUrl}" style="display: inline-block; background: #10b981; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 15px;">Set Up My Account →</a>
+      </div>
+      <p style="margin: 12px 0 0 0; font-size: 12px; color: #6b7280; text-align: center;">This link expires in 24 hours.</p>
+    </div>
+  ` : '';
+
   const html = emailWrapper('Welcome to MaintCue', `
     <h2 style="margin-top: 0;">Hi ${name},</h2>
     <p>Thank you for subscribing to the <strong>${planName}</strong> plan!</p>
@@ -209,6 +221,7 @@ export async function sendSubscriptionWelcomeEmail(
       ${orderId ? `<p style="margin: 0 0 8px 0;"><strong>Order:</strong> ${orderId}</p>` : ''}
       <p style="margin: 0;"><strong>Amount:</strong> $${amountPaid}</p>
     </div>
+    ${setupSection}
     ${qrSection}
     <p style="font-size: 14px; color: #6b7280;">Questions? Reply to this email and we will help you get started.</p>
   `);

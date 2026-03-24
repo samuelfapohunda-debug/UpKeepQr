@@ -309,14 +309,17 @@ export default function CustomerDashboard() {
       <div className="min-h-screen flex items-center justify-center p-4">
         <Card className="max-w-md w-full">
           <CardHeader>
-            <CardTitle>Dashboard Access Required</CardTitle>
+            <CardTitle>You're not signed in</CardTitle>
             <CardDescription>
-              Please use the link from your email or QR code to access your dashboard.
+              Sign in to access your home maintenance dashboard.
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <Button onClick={() => navigate("/")} className="w-full" data-testid="button-go-home">
-              Go to Homepage
+          <CardContent className="flex flex-col sm:flex-row gap-3">
+            <Button onClick={() => navigate("/customer-login")} className="w-full" data-testid="button-signin">
+              Sign In
+            </Button>
+            <Button variant="outline" onClick={() => navigate("/pricing")} className="w-full" data-testid="button-plans">
+              View Plans
             </Button>
           </CardContent>
         </Card>

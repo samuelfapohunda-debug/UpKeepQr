@@ -1031,7 +1031,8 @@ export async function sendSubscriptionWelcomeEmail(
   planName: string,
   amountPaid: string,
   orderId?: string,
-  qrCodes?: Array<{ code: string; qrUrl: string; setupUrl: string }>
+  qrCodes?: Array<{ code: string; qrUrl: string; setupUrl: string }>,
+  passwordSetupUrl?: string
 ): Promise<boolean> {
   const subject = `Welcome to MaintCue - ${planName} Subscription Activated`;
   const baseUrl = process.env.PUBLIC_BASE_URL || 'https://maintcue.com';
@@ -1182,8 +1183,17 @@ Quick Setup:
             </ul>
           </div>
           
+          ${passwordSetupUrl ? `
+            <div style="background: #f0fdf4; border-radius: 8px; padding: 24px; margin: 24px 0; border: 1px solid #10b981; text-align: center;">
+              <h3 style="margin: 0 0 8px 0; color: #059669;">Create your password to access your dashboard</h3>
+              <p style="margin: 0 0 16px 0; font-size: 14px; color: #374151;">Your account is ready. Set a password to sign in anytime.</p>
+              <a href="${passwordSetupUrl}" style="display: inline-block; background: #10b981; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 15px;">Set Up My Account →</a>
+              <p style="margin: 12px 0 0 0; font-size: 12px; color: #6b7280;">This link expires in 24 hours.</p>
+            </div>
+          ` : ''}
+
           ${qrCodesHtml}
-          
+
           ${!qrCodes || qrCodes.length === 0 ? `
             <h3>Next Steps:</h3>
             <ol>
