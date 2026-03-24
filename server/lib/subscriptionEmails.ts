@@ -37,7 +37,7 @@ export async function sendTrialWelcomeEmail(email: string, name: string, trialEn
   const isRealtor = planDisplayName === 'Realtor / Agent';
   const gettingStartedItems = isRealtor
     ? ['Add your first client', 'Set up your agent dashboard', 'Invite your first homeowner']
-    : ['Scan your first QR code', 'Log your first maintenance task', 'Enable SMS reminders'];
+    : ['Activate Your Service', 'Explore your maintenance dashboard', 'Enable maintenance alerts'];
 
   const html = emailWrapper('Welcome to Your Free Trial', `
     <h2 style="margin-top: 0;">Hi ${name},</h2>
