@@ -601,7 +601,7 @@ router.post('/session/logout', async (_req, res) => {
 // Google OAuth – sign in / sign up
 // ---------------------------------------------------------------------------
 function getGoogleOAuthClient() {
-  const backendUrl = process.env.BACKEND_URL || 'https://maintcue-backend.onrender.com';
+  const backendUrl = process.env.BACKEND_URL || 'https://upkeepqr-backend.onrender.com';
   return new google.auth.OAuth2(
     process.env.GOOGLE_CLIENT_ID,
     process.env.GOOGLE_CLIENT_SECRET,
