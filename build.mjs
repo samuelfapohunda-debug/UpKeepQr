@@ -1,7 +1,7 @@
 /* eslint-disable no-undef */
 /* eslint-disable no-console */
 import * as esbuild from 'esbuild';
-import { copyFile, mkdir, cp } from 'fs/promises';
+import { copyFile, mkdir, cp, readFile, writeFile } from 'fs/promises';
 
 async function build() {
   try {
@@ -61,6 +61,17 @@ async function build() {
       packages: 'external'
     });
     
+    // Inject today's date into sw.js so the cache name changes on every deploy
+    const today = new Date().toISOString().split('T')[0];
+    const swPath = './client/public/sw.js';
+    const swContent = await readFile(swPath, 'utf8');
+    const updatedSw = swContent.replace(
+      /const BUILD_VERSION = self\.__BUILD_VERSION__ \|\| '[^']+';/,
+      `const BUILD_VERSION = self.__BUILD_VERSION__ || '${today}';`
+    );
+    await writeFile(swPath, updatedSw, 'utf8');
+    console.log(`✅ Service Worker version set to ${today}`);
+
     console.log('✅ Server build complete');
   } catch (error) {
     console.error('❌ Build failed:', error);

@@ -1,4 +1,4 @@
-const BUILD_VERSION = self.__BUILD_VERSION__ || '2026-03-10';
+const BUILD_VERSION = self.__BUILD_VERSION__ || '2026-03-24';
 const CACHE_NAME = `maintcue-static-${BUILD_VERSION}`;
 const RUNTIME_CACHE = `maintcue-runtime-${BUILD_VERSION}`;
 
