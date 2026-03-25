@@ -185,23 +185,6 @@ export async function sendSubscriptionWelcomeEmail(
   qrCodes: Array<{ code: string; qrUrl: string; setupUrl: string }>,
   setupUrl?: string
 ) {
-  const qrSection = qrCodes.length > 0 ? `
-    <div style="background: #f0fdf4; border-radius: 6px; padding: 20px; margin: 20px 0; border: 1px solid #10b981;">
-      <p style="margin: 0 0 8px 0; color: #059669; font-size: 16px; font-weight: 600;">[i] Your QR Code${qrCodes.length > 1 ? 's' : ''}</p>
-      <p style="margin: 0 0 12px 0;">You have <strong>${qrCodes.length} QR code${qrCodes.length > 1 ? 's' : ''}</strong> ready to use with your ${planName} plan.</p>
-      ${qrCodes.length <= 5 ? qrCodes.map((qr, i) => `
-        <div style="background: #fff; border-radius: 4px; padding: 12px; margin: 8px 0; border: 1px solid #d1fae5;">
-          <p style="margin: 0; font-size: 13px;"><strong>Code ${i + 1}:</strong> ${qr.code}</p>
-          <div style="margin: 8px 0 0 0;">
-            <a href="${qr.setupUrl}" style="display: inline-block; background: #10b981; color: white; padding: 8px 20px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 13px;">Activate</a>
-          </div>
-        </div>
-      `).join('') : `
-        <p style="margin: 0; font-size: 13px;">Your ${qrCodes.length} QR codes are attached to your order${orderId ? ` (${orderId})` : ''} and ready for activation.</p>
-      `}
-    </div>
-  ` : '';
-
   const setupSection = setupUrl ? `
     <div style="background: #f0fdf4; border-radius: 8px; padding: 20px; margin: 20px 0; border: 1px solid #10b981;">
       <p style="margin: 0 0 8px 0; color: #059669; font-size: 16px; font-weight: 600;">Create your password to access your dashboard</p>
@@ -222,7 +205,23 @@ export async function sendSubscriptionWelcomeEmail(
       <p style="margin: 0;"><strong>Amount:</strong> $${amountPaid}</p>
     </div>
     ${setupSection}
-    ${qrSection}
+    <div style="background: #f8fafc; border-radius: 6px; padding: 20px; margin: 20px 0; border: 1px solid #e2e8f0;">
+      <p style="margin: 0 0 12px 0; font-weight: 600; color: #374151;">Get started in 3 simple steps:</p>
+      <ol style="margin: 0; padding-left: 20px; color: #374151;">
+        <li style="margin-bottom: 12px;">
+          <strong>Set up your account</strong><br>
+          <span style="font-size: 13px; color: #6b7280;">Click the button above to create your password and access your dashboard.</span>
+        </li>
+        <li style="margin-bottom: 12px;">
+          <strong>Add your first property</strong><br>
+          <span style="font-size: 13px; color: #6b7280;">From your dashboard, click <em>Add Property</em> and enter your home address and details.</span>
+        </li>
+        <li style="margin-bottom: 0;">
+          <strong>Get your maintenance schedule</strong><br>
+          <span style="font-size: 13px; color: #6b7280;">MaintCue will automatically generate a personalised 12-month maintenance plan for your property.</span>
+        </li>
+      </ol>
+    </div>
     <p style="font-size: 14px; color: #6b7280;">Questions? Reply to this email and we will help you get started.</p>
   `);
 
@@ -231,7 +230,7 @@ export async function sendSubscriptionWelcomeEmail(
     from: FROM_EMAIL,
     subject: `Welcome to MaintCue - ${planName} Plan`,
     html,
-    text: `Hi ${name}, welcome to MaintCue! Your ${planName} plan is active. You have ${qrCodes.length} QR code(s). Visit ${APP_URL}/my-home to get started.`
+    text: `Hi ${name}, welcome to MaintCue! Your ${planName} plan is active.\n\nGet started:\n1. Set up your account using the link in this email\n2. Add your first property from your dashboard\n3. Get your AI-generated maintenance schedule\n\nVisit ${APP_URL}/my-home to get started.`
   });
 }
 
