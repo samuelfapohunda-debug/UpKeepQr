@@ -26,7 +26,7 @@ export default function AuthError() {
       default:
         return {
           title: 'Invalid Link',
-          description: 'This login link is not valid. Please sign in with your email and password.',
+          description: 'Something went wrong. Please sign in to continue.',
           icon: XCircle
         };
     }

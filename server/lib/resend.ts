@@ -51,6 +51,7 @@ export async function sendResendEmail(params: ResendEmailParams): Promise<boolea
     });
 
     if (error) {
+      console.error('[Resend] Send failed:', JSON.stringify(error));
       console.error('❌ Resend email error:', {
         message: error.message,
         name: error.name,

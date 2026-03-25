@@ -901,6 +901,7 @@ export function registerSubscriptionWebhookHandler(app: Express) {
               }
 
               try {
+                console.log('[Webhook] Sending welcome email to:', email, 'setupUrl:', setupUrl);
                 const welcomeResult = planDisplayName === 'Property Manager'
                   ? await sendPropertyManagerWelcomeEmail(email, name, amountPaid, orderId)
                   : planDisplayName === 'Realtor / Agent'
@@ -989,6 +990,7 @@ export function registerSubscriptionWebhookHandler(app: Express) {
               }
 
               try {
+                console.log('[Webhook] Sending welcome email to:', email, 'setupUrl:', setupUrl);
                 const welcomeResult = planDisplayName === 'Property Manager'
                   ? await sendPropertyManagerWelcomeEmail(email, name, amountPaid, undefined)
                   : planDisplayName === 'Realtor / Agent'

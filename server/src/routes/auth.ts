@@ -222,6 +222,7 @@ router.post('/forgot-password', forgotPasswordLimiter, async (req, res) => {
 
       const resetUrl = `${BASE_URL}/reset-password?token=${token}`;
 
+      console.log('[ForgotPassword] Sending reset email to:', email.toLowerCase());
       await sendResendEmail({
         to: email.toLowerCase(),
         from: FROM_EMAIL,
@@ -606,13 +607,12 @@ router.post('/session/logout', async (_req, res) => {
 // In-memory store for short-lived Google OAuth exchange codes (30 seconds)
 const pendingGoogleCodes = new Map<string, { householdId: string; email: string; expiresAt: Date }>();
 
-const GOOGLE_CALLBACK_URL = `${process.env.BACKEND_URL || 'https://upkeepqr-backend.onrender.com'}/api/auth/google/callback`;
-
 // GET /api/auth/google  →  redirect to Google consent (plain URL build, no googleapis)
 router.get('/google', (_req, res) => {
+  const googleCallbackUrl = `${process.env.BACKEND_URL || 'https://upkeepqr-backend.onrender.com'}/api/auth/google/callback`;
   const params = new URLSearchParams({
     client_id: process.env.GOOGLE_CLIENT_ID || '',
-    redirect_uri: GOOGLE_CALLBACK_URL,
+    redirect_uri: googleCallbackUrl,
     response_type: 'code',
     scope: 'openid email profile',
     prompt: 'select_account',
@@ -624,6 +624,7 @@ router.get('/google', (_req, res) => {
 // GET /api/auth/google/callback  →  exchange code, find/create household, issue exchange code
 router.get('/google/callback', async (req, res) => {
   const frontendUrl = BASE_URL;
+  const googleCallbackUrl = `${process.env.BACKEND_URL || 'https://upkeepqr-backend.onrender.com'}/api/auth/google/callback`;
   const { code, error } = req.query as { code?: string; error?: string };
 
   if (error || !code) {
@@ -641,11 +642,13 @@ router.get('/google/callback', async (req, res) => {
         code,
         client_id: process.env.GOOGLE_CLIENT_ID || '',
         client_secret: process.env.GOOGLE_CLIENT_SECRET || '',
-        redirect_uri: GOOGLE_CALLBACK_URL,
+        redirect_uri: googleCallbackUrl,
         grant_type: 'authorization_code',
       }).toString(),
     });
-    const tokenData = await tokenRes.json() as { access_token?: string; error?: string };
+    console.log('[Google OAuth] Token response status:', tokenRes.status);
+    const tokenData = await tokenRes.json() as { access_token?: string; error?: string; error_description?: string };
+    console.log('[Google OAuth] Token data:', JSON.stringify(tokenData));
     if (!tokenData.access_token) {
       console.error('[Google OAuth] Token exchange failed:', tokenData);
       return res.redirect(`${frontendUrl}/auth/error?message=invalid-link`);
