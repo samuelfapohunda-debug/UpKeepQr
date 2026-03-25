@@ -5,7 +5,6 @@ import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import bcrypt from 'bcrypt';
 import rateLimit from 'express-rate-limit';
-import { google } from 'googleapis';
 import { verifyMagicLink, createSession } from '../../lib/magicLink.js';
 import { db } from '../../db.js';
 import { householdsTable } from '@shared/schema';
@@ -607,24 +606,19 @@ router.post('/session/logout', async (_req, res) => {
 // In-memory store for short-lived Google OAuth exchange codes (30 seconds)
 const pendingGoogleCodes = new Map<string, { householdId: string; email: string; expiresAt: Date }>();
 
-function getGoogleOAuthClient() {
-  const backendUrl = process.env.BACKEND_URL || 'https://upkeepqr-backend.onrender.com';
-  return new google.auth.OAuth2(
-    process.env.GOOGLE_CLIENT_ID,
-    process.env.GOOGLE_CLIENT_SECRET,
-    `${backendUrl}/api/auth/google/callback`,
-  );
-}
+const GOOGLE_CALLBACK_URL = `${process.env.BACKEND_URL || 'https://upkeepqr-backend.onrender.com'}/api/auth/google/callback`;
 
-// GET /api/auth/google  →  redirect to Google consent
+// GET /api/auth/google  →  redirect to Google consent (plain URL build, no googleapis)
 router.get('/google', (_req, res) => {
-  const oauth2Client = getGoogleOAuthClient();
-  const url = oauth2Client.generateAuthUrl({
-    access_type: 'online',
-    scope: ['https://www.googleapis.com/auth/userinfo.email', 'https://www.googleapis.com/auth/userinfo.profile'],
+  const params = new URLSearchParams({
+    client_id: process.env.GOOGLE_CLIENT_ID || '',
+    redirect_uri: GOOGLE_CALLBACK_URL,
+    response_type: 'code',
+    scope: 'openid email profile',
     prompt: 'select_account',
+    access_type: 'online',
   });
-  return res.redirect(url);
+  return res.redirect(`https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`);
 });
 
 // GET /api/auth/google/callback  →  exchange code, find/create household, issue exchange code
@@ -638,20 +632,40 @@ router.get('/google/callback', async (req, res) => {
   }
 
   try {
-    const oauth2Client = getGoogleOAuthClient();
-    const { tokens } = await oauth2Client.getToken(code);
-    oauth2Client.setCredentials(tokens);
+    // Step 1: exchange auth code for tokens
+    console.log('[Google OAuth] Exchanging code for tokens');
+    const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        code,
+        client_id: process.env.GOOGLE_CLIENT_ID || '',
+        client_secret: process.env.GOOGLE_CLIENT_SECRET || '',
+        redirect_uri: GOOGLE_CALLBACK_URL,
+        grant_type: 'authorization_code',
+      }).toString(),
+    });
+    const tokenData = await tokenRes.json() as { access_token?: string; error?: string };
+    if (!tokenData.access_token) {
+      console.error('[Google OAuth] Token exchange failed:', tokenData);
+      return res.redirect(`${frontendUrl}/auth/error?message=invalid-link`);
+    }
 
-    const oauth2 = google.oauth2({ version: 'v2', auth: oauth2Client });
-    const { data: profile } = await oauth2.userinfo.get();
+    // Step 2: get user profile
+    console.log('[Google OAuth] Fetching user profile');
+    const profileRes = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+      headers: { Authorization: `Bearer ${tokenData.access_token}` },
+    });
+    const profile = await profileRes.json() as { email?: string; given_name?: string; family_name?: string };
     console.log('[Google OAuth] Profile email:', profile.email);
 
     const email = profile.email?.toLowerCase();
     if (!email) {
+      console.warn('[Google OAuth] No email in profile');
       return res.redirect(`${frontendUrl}/auth/error?message=invalid-link`);
     }
 
-    // Find or create household
+    // Step 3: find or create household
     let [household] = await db
       .select()
       .from(householdsTable)
@@ -659,9 +673,7 @@ router.get('/google/callback', async (req, res) => {
       .limit(1);
 
     if (!household) {
-      const firstName = profile.given_name || '';
-      const lastName = profile.family_name || '';
-      const fullName = `${firstName} ${lastName}`.trim() || email;
+      const fullName = `${profile.given_name || ''} ${profile.family_name || ''}`.trim() || email;
       const [created] = await db
         .insert(householdsTable)
         .values({ id: nanoid(), email, name: fullName, createdAt: new Date(), updatedAt: new Date() })
@@ -672,13 +684,14 @@ router.get('/google/callback', async (req, res) => {
       console.log('[Google OAuth] Existing household for', email, 'tier:', household.subscriptionTier);
     }
 
-    // Issue a short-lived exchange code; frontend will POST it back with credentials: 'include'
+    // Step 4: issue short-lived exchange code; frontend POSTs it back with credentials:'include'
     const exchangeCode = crypto.randomBytes(24).toString('hex');
     pendingGoogleCodes.set(exchangeCode, {
       householdId: household.id,
       email,
-      expiresAt: new Date(Date.now() + 30_000), // 30 seconds
+      expiresAt: new Date(Date.now() + 60_000), // 60 seconds
     });
+    console.log('[Google OAuth] Exchange code created, redirecting to frontend');
 
     return res.redirect(`${frontendUrl}/auth/google/complete?code=${exchangeCode}`);
   } catch (err: any) {
