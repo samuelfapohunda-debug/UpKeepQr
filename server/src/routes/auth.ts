@@ -607,19 +607,6 @@ router.post('/session/logout', async (_req, res) => {
 // In-memory store for short-lived Google OAuth exchange codes (30 seconds)
 const pendingGoogleCodes = new Map<string, { householdId: string; email: string; expiresAt: Date }>();
 
-// GET /api/auth/debug  →  temporary: confirm env vars loaded (remove after debugging)
-router.get('/debug-oauth', (_req, res) => {
-  const clientId = process.env.GOOGLE_CLIENT_ID || '';
-  const secret = process.env.GOOGLE_CLIENT_SECRET || '';
-  const backendUrl = process.env.BACKEND_URL || '';
-  res.json({
-    GOOGLE_CLIENT_ID: clientId ? `${clientId.slice(0, 20)}...${clientId.slice(-6)}` : 'NOT SET',
-    GOOGLE_CLIENT_SECRET: secret ? `${secret.slice(0, 6)}...${secret.slice(-4)}` : 'NOT SET',
-    BACKEND_URL: backendUrl || 'NOT SET (using fallback)',
-    computed_callback: `${backendUrl || 'https://upkeepqr-backend.onrender.com'}/api/auth/google/callback`,
-  });
-});
-
 // GET /api/auth/google  →  redirect to Google consent (plain URL build, no googleapis)
 router.get('/google', (_req, res) => {
   const googleCallbackUrl = `${process.env.BACKEND_URL || 'https://upkeepqr-backend.onrender.com'}/api/auth/google/callback`;
@@ -665,8 +652,8 @@ router.get('/google/callback', async (req, res) => {
     const tokenData = await tokenRes.json() as { access_token?: string; error?: string; error_description?: string };
     console.log('[Google OAuth] Token data:', JSON.stringify(tokenData));
     if (!tokenData.access_token) {
-      console.error('[Google OAuth] Token exchange failed — error:', tokenData.error, '| description:', tokenData.error_description, '| client_id used:', process.env.GOOGLE_CLIENT_ID?.slice(-10), '| secret_set:', !!process.env.GOOGLE_CLIENT_SECRET, '| redirect_uri:', googleCallbackUrl);
-      return res.redirect(`${frontendUrl}/auth/error?message=invalid-link&reason=${encodeURIComponent(tokenData.error || 'unknown')}`);
+      console.error('[Google OAuth] Token exchange failed:', tokenData);
+      return res.redirect(`${frontendUrl}/auth/error?message=invalid-link`);
     }
 
     // Step 2: get user profile
