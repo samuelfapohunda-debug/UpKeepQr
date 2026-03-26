@@ -154,7 +154,7 @@ export default function CustomerDashboard() {
     navigate('/');
   };
 
-  const { data: household, isLoading: householdLoading, error: householdError } = useQuery<Household>({
+  const { data: household, isLoading: householdLoading, isFetching: householdFetching, error: householdError } = useQuery<Household>({
     queryKey: ['/api/customer/household'],
     enabled: sessionValid,
     queryFn: async () => {
@@ -192,7 +192,10 @@ export default function CustomerDashboard() {
   });
 
   const tasks = tasksData?.tasks || [];
-  const isLoading = householdLoading || tasksLoading;
+  // Also treat as loading if we have stale no-address data and a refetch is in progress —
+  // prevents the redirect-to-onboarding guard from firing on stale cache after setup completes
+  const noAddress = !household?.streetAddress && !household?.city;
+  const isLoading = householdLoading || tasksLoading || (householdFetching && noAddress);
 
   const handleRefresh = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ['/api/customer/household'] });
@@ -339,12 +342,25 @@ export default function CustomerDashboard() {
   }
 
   if (householdError || !household) {
-    navigate('/onboarding');
-    return null;
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <Card className="max-w-md w-full">
+          <CardHeader>
+            <CardTitle>Unable to load your dashboard</CardTitle>
+            <CardDescription>Please try refreshing the page.</CardDescription>
+          </CardHeader>
+          <CardContent className="flex gap-3">
+            <Button onClick={() => window.location.reload()} className="w-full">Refresh</Button>
+            <Button variant="outline" onClick={handleLogout} className="w-full">Sign Out</Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
-  // No home profile yet — send to onboarding so AI can generate tasks
-  if (!household.streetAddress && !household.city) {
+  // No address yet — home profile setup hasn't been saved. Redirect to onboarding only
+  // when we're NOT in the middle of a refetch (avoids loop on stale React Query cache).
+  if (!household.streetAddress && !household.city && !householdFetching) {
     navigate('/onboarding');
     return null;
   }
@@ -517,8 +533,22 @@ export default function CustomerDashboard() {
 
                 {filteredTasks.length === 0 ? (
                   <div className="text-center py-12 text-muted-foreground">
-                    <ListTodo className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>No tasks found in this category.</p>
+                    {tasks.length === 0 ? (
+                      <>
+                        <Loader2 className="h-12 w-12 mx-auto mb-4 animate-spin opacity-50" />
+                        <p className="font-medium text-foreground">Your maintenance schedule is being prepared...</p>
+                        <p className="text-sm mt-1">This usually takes under a minute. Refresh to check for updates.</p>
+                        <Button variant="outline" size="sm" className="mt-4" onClick={handleRefresh}>
+                          <RefreshCw className="h-4 w-4 mr-2" />
+                          Refresh
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <ListTodo className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                        <p>No tasks found in this category.</p>
+                      </>
+                    )}
                   </div>
                 ) : (
                   <div className="space-y-3">
