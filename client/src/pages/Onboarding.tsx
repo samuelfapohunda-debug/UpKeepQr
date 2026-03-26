@@ -462,7 +462,9 @@ const Onboarding: React.FC<OnboardingProps> = ({ adminMode = false, onComplete }
 
         toast({ title: 'Home profile saved!', description: 'Your maintenance schedule is being generated.' });
         onComplete?.();
-        setLocation('/my-home');
+        // Hard redirect — forces a full page reload so React Query cache is cleared
+        // and CustomerDashboard fetches fresh household data with the saved address.
+        window.location.href = '/my-home';
         return;
       } else if (adminMode) {
         const adminData: Record<string, string | boolean | number | undefined> = {

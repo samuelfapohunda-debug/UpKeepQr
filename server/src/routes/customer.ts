@@ -212,7 +212,25 @@ router.post('/setup-home', requireSessionAuth, async (req: SessionAuthRequest, r
         updatedAt: now,
       })
       .where(eq(householdsTable.id, householdId));
-    console.log(`✅ [setup-home] Address saved for household ${householdId}`);
+
+    // Verify the save actually landed — UPDATE silently matches 0 rows if householdId is wrong
+    const [saved] = await db
+      .select({ addressLine1: householdsTable.addressLine1, city: householdsTable.city })
+      .from(householdsTable)
+      .where(eq(householdsTable.id, householdId))
+      .limit(1);
+
+    if (!saved) {
+      console.error(`❌ [setup-home] Household ${householdId} not found in DB — UPDATE matched 0 rows`);
+      return res.status(404).json({ error: 'Household not found. Please contact support.' });
+    }
+
+    if (!saved.addressLine1) {
+      console.error(`❌ [setup-home] Address not saved for household ${householdId} — saved row shows empty address_line_1`);
+      return res.status(500).json({ error: 'Address did not save correctly. Please try again.' });
+    }
+
+    console.log(`✅ [setup-home] Address verified for household ${householdId}: ${saved.addressLine1}, ${saved.city}`);
   } catch (addressError) {
     console.error('❌ [setup-home] Failed to save address:', addressError);
     return res.status(500).json({ error: 'Failed to save address. Please try again.' });
