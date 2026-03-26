@@ -181,27 +181,27 @@ router.patch('/tasks/:taskId', requireSessionAuth, async (req: SessionAuthReques
  * and trigger AI maintenance task generation.
  */
 router.post('/setup-home', requireSessionAuth, async (req: SessionAuthRequest, res: Response) => {
+  const householdId = req.sessionHouseholdId;
+  if (!householdId) {
+    return res.status(401).json({ error: 'Session not authenticated' });
+  }
+
+  const {
+    streetAddress, city, state, zip,
+    homeType, sqft, yearBuilt, bedrooms, bathrooms,
+    hvacType, waterHeater, roofAgeYears,
+    isOwner, hasPool, garage,
+  } = req.body;
+
+  if (!streetAddress || !city || !state || !zip) {
+    return res.status(400).json({ error: 'Address fields are required' });
+  }
+
+  const now = new Date();
+
+  // STEP 1: Update core address fields — only columns guaranteed to exist in all DB versions.
+  // Do NOT include optional columns (smsOptIn, phone, etc.) that may be missing in older schemas.
   try {
-    const householdId = req.sessionHouseholdId;
-    if (!householdId) {
-      return res.status(401).json({ error: 'Session not authenticated' });
-    }
-
-    const {
-      streetAddress, city, state, zip,
-      fullName, phone, smsOptIn,
-      homeType, sqft, yearBuilt, bedrooms, bathrooms,
-      hvacType, waterHeater, roofAgeYears,
-      isOwner, hasPool, garage, notes,
-    } = req.body;
-
-    if (!streetAddress || !city || !state || !zip) {
-      return res.status(400).json({ error: 'Address fields are required' });
-    }
-
-    const now = new Date();
-
-    // Update household with address and contact info
     await db
       .update(householdsTable)
       .set({
@@ -209,14 +209,17 @@ router.post('/setup-home', requireSessionAuth, async (req: SessionAuthRequest, r
         city,
         state: state.toUpperCase(),
         zipcode: zip,
-        ...(fullName ? { name: fullName } : {}),
-        ...(phone ? { phone } : {}),
-        ...(smsOptIn !== undefined ? { smsOptIn } : {}),
         updatedAt: now,
       })
       .where(eq(householdsTable.id, householdId));
+    console.log(`✅ [setup-home] Address saved for household ${householdId}`);
+  } catch (addressError) {
+    console.error('❌ [setup-home] Failed to save address:', addressError);
+    return res.status(500).json({ error: 'Failed to save address. Please try again.' });
+  }
 
-    // Upsert home_profile_extras
+  // STEP 2: Upsert home_profile_extras (non-critical — don't fail the whole request if this errors)
+  try {
     const existing = await db
       .select({ id: homeProfileExtras.id })
       .from(homeProfileExtras)
@@ -246,33 +249,35 @@ router.post('/setup-home', requireSessionAuth, async (req: SessionAuthRequest, r
         .insert(homeProfileExtras)
         .values({ householdId, ...profileData, createdAt: now });
     }
-
-    // Trigger AI maintenance schedule generation (non-blocking on failure)
-    try {
-      await generateMaintenanceSchedule({
-        householdId,
-        address: streetAddress,
-        city,
-        state: state.toUpperCase(),
-        zip,
-        yearBuilt: yearBuilt || undefined,
-        squareFootage: sqft || undefined,
-        homeType: homeType || undefined,
-        hvacType: hvacType || undefined,
-        appliances: [
-          ...(hasPool ? ['pool'] : []),
-          ...(garage ? ['garage'] : []),
-        ],
-      });
-    } catch (aiError) {
-      console.error('⚠️ AI schedule generation failed (non-critical):', aiError);
-    }
-
-    return res.json({ success: true });
-  } catch (error) {
-    console.error('Error in setup-home:', error);
-    return res.status(500).json({ error: 'Failed to save home profile' });
+    console.log(`✅ [setup-home] Home profile saved for household ${householdId}`);
+  } catch (profileError) {
+    console.error('⚠️ [setup-home] Home profile extras failed (non-critical):', profileError);
+    // Continue — address is already saved, AI can still generate from address alone
   }
+
+  // STEP 3: Trigger AI maintenance schedule generation (non-critical)
+  try {
+    await generateMaintenanceSchedule({
+      householdId,
+      address: streetAddress,
+      city,
+      state: state.toUpperCase(),
+      zip,
+      yearBuilt: yearBuilt || undefined,
+      squareFootage: sqft || undefined,
+      homeType: homeType || undefined,
+      hvacType: hvacType || undefined,
+      appliances: [
+        ...(hasPool ? ['pool'] : []),
+        ...(garage ? ['garage'] : []),
+      ],
+    });
+    console.log(`✅ [setup-home] AI schedule generation triggered for household ${householdId}`);
+  } catch (aiError) {
+    console.error('⚠️ [setup-home] AI schedule generation failed (non-critical):', aiError);
+  }
+
+  return res.json({ success: true });
 });
 
 export default router;
