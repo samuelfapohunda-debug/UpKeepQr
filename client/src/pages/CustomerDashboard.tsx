@@ -343,6 +343,12 @@ export default function CustomerDashboard() {
     return null;
   }
 
+  // No home profile yet — send to onboarding so AI can generate tasks
+  if (!household.streetAddress && !household.city) {
+    navigate('/onboarding');
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white">

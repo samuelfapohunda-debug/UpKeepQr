@@ -3,6 +3,7 @@ import { db } from '../../db';
 import { householdsTable, homeProfileExtras, maintenanceTasksTable, householdTaskAssignmentsTable } from '@shared/schema';
 import { eq, and } from 'drizzle-orm';
 import { requireSessionAuth, validateHouseholdAccess, SessionAuthRequest } from '../../middleware/sessionAuth';
+import { generateMaintenanceSchedule } from '../../services/homeResearchAgent.js';
 
 const router = Router();
 
@@ -171,6 +172,106 @@ router.patch('/tasks/:taskId', requireSessionAuth, async (req: SessionAuthReques
   } catch (error) {
     console.error('Error updating task:', error);
     return res.status(500).json({ error: 'Failed to update task' });
+  }
+});
+
+/**
+ * POST /api/customer/setup-home
+ * Session-authenticated endpoint for new subscribers to save their home profile
+ * and trigger AI maintenance task generation.
+ */
+router.post('/setup-home', requireSessionAuth, async (req: SessionAuthRequest, res: Response) => {
+  try {
+    const householdId = req.sessionHouseholdId;
+    if (!householdId) {
+      return res.status(401).json({ error: 'Session not authenticated' });
+    }
+
+    const {
+      streetAddress, city, state, zip,
+      fullName, phone, smsOptIn,
+      homeType, sqft, yearBuilt, bedrooms, bathrooms,
+      hvacType, waterHeater, roofAgeYears,
+      isOwner, hasPool, garage, notes,
+    } = req.body;
+
+    if (!streetAddress || !city || !state || !zip) {
+      return res.status(400).json({ error: 'Address fields are required' });
+    }
+
+    const now = new Date();
+
+    // Update household with address and contact info
+    await db
+      .update(householdsTable)
+      .set({
+        addressLine1: streetAddress,
+        city,
+        state: state.toUpperCase(),
+        zipcode: zip,
+        ...(fullName ? { name: fullName } : {}),
+        ...(phone ? { phone } : {}),
+        ...(smsOptIn !== undefined ? { smsOptIn } : {}),
+        updatedAt: now,
+      })
+      .where(eq(householdsTable.id, householdId));
+
+    // Upsert home_profile_extras
+    const existing = await db
+      .select({ id: homeProfileExtras.id })
+      .from(homeProfileExtras)
+      .where(eq(homeProfileExtras.householdId, householdId))
+      .limit(1);
+
+    const profileData = {
+      homeType: homeType || null,
+      yearBuilt: yearBuilt || null,
+      squareFootage: sqft || null,
+      bedrooms: bedrooms || null,
+      bathrooms: bathrooms || null,
+      hvacType: hvacType || null,
+      waterHeaterType: waterHeater || null,
+      roofAgeYears: roofAgeYears || null,
+      ownerType: isOwner === true ? 'owner' : null,
+      updatedAt: now,
+    };
+
+    if (existing.length > 0) {
+      await db
+        .update(homeProfileExtras)
+        .set(profileData)
+        .where(eq(homeProfileExtras.householdId, householdId));
+    } else {
+      await db
+        .insert(homeProfileExtras)
+        .values({ householdId, ...profileData, createdAt: now });
+    }
+
+    // Trigger AI maintenance schedule generation (non-blocking on failure)
+    try {
+      await generateMaintenanceSchedule({
+        householdId,
+        address: streetAddress,
+        city,
+        state: state.toUpperCase(),
+        zip,
+        yearBuilt: yearBuilt || undefined,
+        squareFootage: sqft || undefined,
+        homeType: homeType || undefined,
+        hvacType: hvacType || undefined,
+        appliances: [
+          ...(hasPool ? ['pool'] : []),
+          ...(garage ? ['garage'] : []),
+        ],
+      });
+    } catch (aiError) {
+      console.error('⚠️ AI schedule generation failed (non-critical):', aiError);
+    }
+
+    return res.json({ success: true });
+  } catch (error) {
+    console.error('Error in setup-home:', error);
+    return res.status(500).json({ error: 'Failed to save home profile' });
   }
 });
 

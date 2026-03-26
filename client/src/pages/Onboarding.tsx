@@ -48,7 +48,7 @@ const HOME_TYPE_DISPLAY: Record<string, string> = {
 const Onboarding: React.FC<OnboardingProps> = ({ adminMode = false, onComplete }) => {
   const [, setLocation] = useLocation();
   const params = useParams<{ token: string }>();
-  useAuth();
+  const { isCustomer } = useAuth();
 
   const { toast } = useToast();
 
@@ -413,8 +413,8 @@ const Onboarding: React.FC<OnboardingProps> = ({ adminMode = false, onComplete }
       return;
     }
 
-    if (!token && !adminMode && !realtorClientId) {
-      // Accessed at /onboarding directly (no QR token, no realtor invite) — direct to paid signup
+    if (!token && !adminMode && !realtorClientId && !isCustomer) {
+      // Not logged in, no QR token, no realtor invite — direct to paid signup
       setLocation('/pricing');
       return;
     }
@@ -423,7 +423,48 @@ const Onboarding: React.FC<OnboardingProps> = ({ adminMode = false, onComplete }
     setError('');
 
     try {
-      if (adminMode) {
+      if (!token && !adminMode && !realtorClientId && isCustomer) {
+        // Logged-in subscriber setting up their home profile for the first time
+        const payload: Record<string, string | boolean | number | undefined> = {
+          streetAddress: formData.streetAddress.trim(),
+          city: formData.city.trim(),
+          state: formData.state.trim().toUpperCase(),
+          zip: formData.zip.trim(),
+          fullName: formData.fullName.trim(),
+          phone: formData.phone,
+          smsOptIn: formData.smsOptIn,
+        };
+        if (formData.home_type) payload.homeType = formData.home_type;
+        if (formData.sqft) payload.sqft = parseInt(formData.sqft);
+        if (formData.yearBuilt) payload.yearBuilt = parseInt(formData.yearBuilt);
+        if (formData.bedrooms) payload.bedrooms = parseInt(formData.bedrooms);
+        if (formData.bathrooms) payload.bathrooms = parseFloat(formData.bathrooms);
+        if (formData.hvac_type) payload.hvacType = formData.hvac_type;
+        if (formData.water_heater) payload.waterHeater = formData.water_heater;
+        if (formData.roof_age_years) payload.roofAgeYears = parseInt(formData.roof_age_years);
+        if (formData.isOwner !== undefined) payload.isOwner = formData.isOwner;
+        if (formData.hasPool) payload.hasPool = formData.hasPool;
+        if (formData.garage) payload.garage = formData.garage;
+
+        const res = await fetch(`${API_BASE_URL}/api/customer/setup-home`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(payload),
+        });
+        const result = await res.json();
+
+        if (!res.ok || !result.success) {
+          setError(result.error || 'Failed to save home profile');
+          setLoading(false);
+          return;
+        }
+
+        toast({ title: 'Home profile saved!', description: 'Your maintenance schedule is being generated.' });
+        onComplete?.();
+        setLocation('/my-home');
+        return;
+      } else if (adminMode) {
         const adminData: Record<string, string | boolean | number | undefined> = {
           skipWelcomeEmail: true,
           fullName: formData.fullName.trim(),
