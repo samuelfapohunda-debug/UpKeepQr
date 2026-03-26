@@ -23,6 +23,25 @@ export interface Household {
   city: string;
   state: string;
   zip: string;
+  subscriptionTier: string;
+}
+
+export interface ManagedProperty {
+  id: string;
+  portfolioHouseholdId: string;
+  propertyName: string;
+  address: string;
+  city: string;
+  state: string;
+  zip: string;
+  unitNumber?: string | null;
+  propertyType: string;
+  yearBuilt?: number | null;
+  squareFootage?: number | null;
+  activationStatus: string;
+  scheduleGenerated: boolean;
+  homeProfileId?: string | null;
+  createdAt: string;
 }
 
 export interface TasksResponse {

@@ -54,7 +54,8 @@ router.get('/household', requireSessionAuth, async (req: SessionAuthRequest, res
       streetAddress: household.addressLine1 || '',
       city: household.city || '',
       state: household.state || '',
-      zip: household.zipcode || ''
+      zip: household.zipcode || '',
+      subscriptionTier: household.subscriptionTier || 'basic',
     });
   } catch (error) {
     console.error('Error fetching customer household:', error);

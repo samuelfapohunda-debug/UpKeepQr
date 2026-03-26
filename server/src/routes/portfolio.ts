@@ -1,7 +1,7 @@
 import { Router, Response } from 'express';
 import Papa from 'papaparse';
 import { db } from '../../db.js';
-import { managedPropertiesTable, bulkUploadJobsTable, maintenanceTasksTable } from '@shared/schema';
+import { managedPropertiesTable, bulkUploadJobsTable, maintenanceTasksTable, householdsTable } from '@shared/schema';
 import { eq, and, count, sql } from 'drizzle-orm';
 import { requireSessionAuth, SessionAuthRequest } from '../../middleware/sessionAuth.js';
 import { lookupProperty } from '../../services/attomService.js';
@@ -9,6 +9,12 @@ import { generateMaintenanceSchedule } from '../../services/homeResearchAgent.js
 
 const router = Router();
 const MAX_PROPERTIES = 200;
+
+// Tier-based limits for managed_properties count (excludes primary home in households table)
+const TIER_LIMITS: Record<string, number> = {
+  homeowner_plus: 2,       // 2 additional = 3 total (primary + 2)
+  property_manager: 200,
+};
 
 // ── helpers ────────────────────────────────────────────────────────────────
 
@@ -92,7 +98,30 @@ router.post('/properties', requireSessionAuth, async (req: SessionAuthRequest, r
       return res.status(400).json({ error: 'propertyName, address, city, state, zip are required' });
     }
 
+    // Determine tier-based limit
+    const [household] = await db
+      .select({ subscriptionTier: householdsTable.subscriptionTier })
+      .from(householdsTable)
+      .where(eq(householdsTable.id, householdId))
+      .limit(1);
+
+    const tier = household?.subscriptionTier ?? 'basic';
+    const tierLimit = TIER_LIMITS[tier] ?? 0;
+
+    if (tierLimit === 0) {
+      return res.status(403).json({
+        error: 'upgrade_required',
+        message: 'Your current plan does not support additional properties. Upgrade to Homeowner Plus to manage up to 3 properties.',
+      });
+    }
+
     const currentCount = await getPortfolioCount(householdId);
+    if (currentCount >= tierLimit && tier !== 'property_manager') {
+      return res.status(403).json({
+        error: 'property_limit_reached',
+        message: `You've reached the ${tierLimit} additional propert${tierLimit === 1 ? 'y' : 'ies'} limit for your plan.`,
+      });
+    }
     if (currentCount >= MAX_PROPERTIES) {
       return res.status(403).json({ error: `Portfolio limit of ${MAX_PROPERTIES} properties reached` });
     }

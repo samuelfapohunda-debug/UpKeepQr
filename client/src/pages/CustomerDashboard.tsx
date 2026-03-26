@@ -22,13 +22,16 @@ import {
   CheckCircle,
   Settings,
   User,
-  Download
+  Download,
+  Plus,
+  Building2,
 } from "lucide-react";
 import HouseholdDetails from "@/components/HouseholdDetails";
 import PushNotificationSetup from "@/components/PushNotificationSetup";
 import ApplianceManager from "@/components/ApplianceManager";
 import SubscriptionBanner from "@/components/SubscriptionBanner";
-import type { Task, Household, TasksResponse, TaskStats, DashboardTab } from "@/types/dashboard";
+import AddPropertyModal from "@/components/AddPropertyModal";
+import type { Task, Household, TasksResponse, TaskStats, DashboardTab, ManagedProperty } from "@/types/dashboard";
 import { useTabState } from "@/hooks/useTabState";
 
 const formatDate = (dateStr?: string): string => {
@@ -71,6 +74,10 @@ export default function CustomerDashboard() {
   const [showCompleteDialog, setShowCompleteDialog] = useState(false);
   const [taskToComplete, setTaskToComplete] = useState<Task | null>(null);
   const [isDownloadingCalendar, setIsDownloadingCalendar] = useState(false);
+  // Multi-property: null = primary home, string = managed property id
+  const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
+  const [showAddPropertyModal, setShowAddPropertyModal] = useState(false);
+  const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
 
   // Download .ics calendar file for tasks
   const handleDownloadCalendar = useCallback(async (householdId: string) => {
@@ -191,20 +198,73 @@ export default function CustomerDashboard() {
     }
   });
 
-  const tasks = tasksData?.tasks || [];
+  const isHomeonerPlus = household?.subscriptionTier === 'homeowner_plus';
+
+  const { data: managedProperties = [] } = useQuery<ManagedProperty[]>({
+    queryKey: ['/api/portfolio/properties'],
+    enabled: sessionValid && isHomeonerPlus,
+    queryFn: async () => {
+      const response = await fetch(`${API_BASE_URL}/api/portfolio/properties`, {
+        credentials: 'include'
+      });
+      if (!response.ok) return [];
+      return response.json();
+    },
+    staleTime: 60 * 1000,
+  });
+
+  // Tasks for the currently selected secondary property
+  const { data: propertyTasksData, isLoading: propertyTasksLoading } = useQuery<TasksResponse>({
+    queryKey: ['/api/portfolio/properties', selectedPropertyId, 'tasks'],
+    enabled: !!selectedPropertyId,
+    queryFn: async () => {
+      const response = await fetch(`${API_BASE_URL}/api/portfolio/properties/${selectedPropertyId}/tasks`, {
+        credentials: 'include'
+      });
+      if (!response.ok) return { tasks: [], summary: { total: 0, completed: 0, pending: 0, overdue: 0 } };
+      const data = await response.json();
+      const now = new Date();
+      // Map raw DB rows to Task shape
+      const tasks: Task[] = (data.tasks || []).map((t: any) => ({
+        id: t.id,
+        taskName: t.title ?? t.taskName,
+        description: t.description,
+        category: t.category,
+        priority: t.priority,
+        status: t.isCompleted ? 'completed' : (t.dueDate && new Date(t.dueDate) < now ? 'overdue' : 'pending'),
+        dueDate: t.dueDate,
+        frequencyMonths: t.frequency === 'monthly' ? 1 : t.frequency === 'quarterly' ? 3 : t.frequency === 'biannual' ? 6 : 12,
+        completedAt: t.completedAt,
+      }));
+      const total = tasks.length;
+      const completed = tasks.filter(t => t.status === 'completed').length;
+      const overdue = tasks.filter(t => t.status === 'overdue').length;
+      return { tasks, summary: { total, completed, pending: total - completed - overdue, overdue } };
+    }
+  });
+
+  // Active tasks data: primary home or selected managed property
+  const activeTasks = selectedPropertyId
+    ? (propertyTasksData?.tasks || [])
+    : (tasksData?.tasks || []);
+  const tasks = activeTasks;
   // Also treat as loading if we have stale no-address data and a refetch is in progress —
   // prevents the redirect-to-onboarding guard from firing on stale cache after setup completes
   const noAddress = !household?.streetAddress && !household?.city;
-  const isLoading = householdLoading || tasksLoading || (householdFetching && noAddress);
+  const isLoading = householdLoading || tasksLoading || (householdFetching && noAddress) || (!!selectedPropertyId && propertyTasksLoading);
 
   const handleRefresh = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ['/api/customer/household'] });
     queryClient.invalidateQueries({ queryKey: ['/api/customer/tasks'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/portfolio/properties'] });
+    if (selectedPropertyId) {
+      queryClient.invalidateQueries({ queryKey: ['/api/portfolio/properties', selectedPropertyId, 'tasks'] });
+    }
     toast({
       title: "Refreshed",
       description: "Dashboard data has been refreshed",
     });
-  }, [queryClient, toast]);
+  }, [queryClient, toast, selectedPropertyId]);
 
   const stats = useMemo((): TaskStats => {
     const total = tasks.length;
@@ -413,6 +473,63 @@ export default function CustomerDashboard() {
 
       <div className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
         <SubscriptionBanner />
+
+        {/* Property Switcher — visible for homeowner_plus */}
+        {isHomeonerPlus && (
+          <div className="flex items-center gap-2 flex-wrap mb-5">
+            <button
+              onClick={() => setSelectedPropertyId(null)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
+                selectedPropertyId === null
+                  ? 'bg-blue-600 text-white border-blue-600'
+                  : 'bg-background border-border text-muted-foreground hover:border-blue-400'
+              }`}
+            >
+              <Home className="h-3.5 w-3.5" />
+              {household.city || 'Primary Home'}
+            </button>
+
+            {managedProperties.map((prop) => (
+              <button
+                key={prop.id}
+                onClick={() => setSelectedPropertyId(prop.id)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
+                  selectedPropertyId === prop.id
+                    ? 'bg-blue-600 text-white border-blue-600'
+                    : 'bg-background border-border text-muted-foreground hover:border-blue-400'
+                }`}
+              >
+                <Building2 className="h-3.5 w-3.5" />
+                {prop.propertyName}
+              </button>
+            ))}
+
+            {managedProperties.length < 2 && (
+              <button
+                onClick={() => setShowAddPropertyModal(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border border-dashed border-border text-muted-foreground hover:border-blue-400 hover:text-blue-600 transition-colors"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Add Property
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Upgrade prompt for basic users */}
+        {!isHomeonerPlus && showUpgradePrompt && (
+          <div className="mb-5 p-4 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30 border border-indigo-200 dark:border-indigo-800 rounded-xl flex items-center justify-between gap-4">
+            <div>
+              <p className="font-medium text-sm">Manage up to 3 properties</p>
+              <p className="text-xs text-muted-foreground">Upgrade to Homeowner Plus to track maintenance across multiple homes.</p>
+            </div>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <Button size="sm" onClick={() => navigate('/pricing')}>Upgrade</Button>
+              <button onClick={() => setShowUpgradePrompt(false)} className="text-xs text-muted-foreground hover:text-foreground">Dismiss</button>
+            </div>
+          </div>
+        )}
+
         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as DashboardTab)} className="w-full">
           <TabsList className="grid w-full grid-cols-3 mb-6">
             <TabsTrigger value="tasks" data-testid="tab-tasks">
@@ -486,10 +603,14 @@ export default function CustomerDashboard() {
                   <div>
                     <CardTitle className="flex items-center gap-2">
                       <Calendar className="h-5 w-5" />
-                      Your Maintenance Tasks
+                      {selectedPropertyId
+                        ? (managedProperties.find(p => p.id === selectedPropertyId)?.propertyName ?? 'Property') + ' — Tasks'
+                        : 'Your Maintenance Tasks'}
                     </CardTitle>
                     <CardDescription>
-                      Track and complete your personalized home maintenance schedule
+                      {selectedPropertyId
+                        ? 'Maintenance tasks for this property'
+                        : 'Track and complete your personalized home maintenance schedule'}
                     </CardDescription>
                   </div>
                   <div className="flex items-center gap-2 flex-wrap">
@@ -536,7 +657,9 @@ export default function CustomerDashboard() {
                     {tasks.length === 0 ? (
                       <>
                         <Loader2 className="h-12 w-12 mx-auto mb-4 animate-spin opacity-50" />
-                        <p className="font-medium text-foreground">Your maintenance schedule is being prepared...</p>
+                        <p className="font-medium text-foreground">
+                          {selectedPropertyId ? 'Maintenance schedule is being generated...' : 'Your maintenance schedule is being prepared...'}
+                        </p>
                         <p className="text-sm mt-1">This usually takes under a minute. Refresh to check for updates.</p>
                         <Button variant="outline" size="sm" className="mt-4" onClick={handleRefresh}>
                           <RefreshCw className="h-4 w-4 mr-2" />
@@ -659,6 +782,15 @@ export default function CustomerDashboard() {
         }}
         onComplete={handleConfirmComplete}
         isSubmitting={completeTaskMutation.isPending}
+      />
+
+      <AddPropertyModal
+        open={showAddPropertyModal}
+        onClose={() => setShowAddPropertyModal(false)}
+        onAdded={(property) => {
+          queryClient.invalidateQueries({ queryKey: ['/api/portfolio/properties'] });
+          setSelectedPropertyId(property.id);
+        }}
       />
     </div>
   );
