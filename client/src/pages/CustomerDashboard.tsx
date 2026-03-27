@@ -77,7 +77,6 @@ export default function CustomerDashboard() {
   // Multi-property: null = primary home, string = managed property id
   const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
   const [showAddPropertyModal, setShowAddPropertyModal] = useState(false);
-  const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
 
   // Download .ics calendar file for tasks
   const handleDownloadCalendar = useCallback(async (householdId: string) => {
@@ -198,11 +197,14 @@ export default function CustomerDashboard() {
     }
   });
 
-  const isHomeonerPlus = household?.subscriptionTier === 'homeowner_plus';
+  // Tiers that can manage multiple properties
+  const MULTI_PROPERTY_TIERS = ['homeowner_plus', 'realtor', 'property_manager'];
+  const canAddProperties = MULTI_PROPERTY_TIERS.includes(household?.subscriptionTier ?? '');
+  const isBasicPlan = household?.subscriptionTier === 'homeowner_basic' || (!household?.subscriptionTier);
 
   const { data: managedProperties = [] } = useQuery<ManagedProperty[]>({
     queryKey: ['/api/portfolio/properties'],
-    enabled: sessionValid && isHomeonerPlus,
+    enabled: sessionValid && canAddProperties,
     queryFn: async () => {
       const response = await fetch(`${API_BASE_URL}/api/portfolio/properties`, {
         credentials: 'include'
@@ -474,9 +476,10 @@ export default function CustomerDashboard() {
       <div className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
         <SubscriptionBanner />
 
-        {/* Property Switcher — visible for homeowner_plus */}
-        {isHomeonerPlus && (
+        {/* Property bar — always visible once household is loaded */}
+        {household && (
           <div className="flex items-center gap-2 flex-wrap mb-5">
+            {/* Primary home pill */}
             <button
               onClick={() => setSelectedPropertyId(null)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
@@ -489,7 +492,8 @@ export default function CustomerDashboard() {
               {household.city || 'Primary Home'}
             </button>
 
-            {managedProperties.map((prop) => (
+            {/* Managed property pills (only for eligible tiers) */}
+            {canAddProperties && managedProperties.map((prop) => (
               <button
                 key={prop.id}
                 onClick={() => setSelectedPropertyId(prop.id)}
@@ -504,29 +508,38 @@ export default function CustomerDashboard() {
               </button>
             ))}
 
-            {managedProperties.length < 2 && (
+            {/* Add Property button */}
+            {canAddProperties && managedProperties.length < 2 ? (
               <button
                 onClick={() => setShowAddPropertyModal(true)}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border border-dashed border-border text-muted-foreground hover:border-blue-400 hover:text-blue-600 transition-colors"
+                data-testid="button-add-property"
               >
                 <Plus className="h-3.5 w-3.5" />
                 Add Property
               </button>
-            )}
-          </div>
-        )}
-
-        {/* Upgrade prompt for basic users */}
-        {!isHomeonerPlus && showUpgradePrompt && (
-          <div className="mb-5 p-4 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30 border border-indigo-200 dark:border-indigo-800 rounded-xl flex items-center justify-between gap-4">
-            <div>
-              <p className="font-medium text-sm">Manage up to 3 properties</p>
-              <p className="text-xs text-muted-foreground">Upgrade to Homeowner Plus to track maintenance across multiple homes.</p>
-            </div>
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <Button size="sm" onClick={() => navigate('/pricing')}>Upgrade</Button>
-              <button onClick={() => setShowUpgradePrompt(false)} className="text-xs text-muted-foreground hover:text-foreground">Dismiss</button>
-            </div>
+            ) : isBasicPlan ? (
+              <div className="flex items-center gap-2">
+                <button
+                  disabled
+                  title="Upgrade to Homeowner Plus to add multiple properties"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border border-dashed border-border text-muted-foreground opacity-50 cursor-not-allowed"
+                  data-testid="button-add-property-locked"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  Add Property
+                </button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="text-xs h-7 border-indigo-300 text-indigo-600 hover:bg-indigo-50"
+                  onClick={() => navigate('/pricing')}
+                  data-testid="button-upgrade-plus"
+                >
+                  Upgrade to Plus
+                </Button>
+              </div>
+            ) : null}
           </div>
         )}
 

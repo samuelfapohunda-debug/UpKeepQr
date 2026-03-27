@@ -13,6 +13,7 @@ const MAX_PROPERTIES = 200;
 // Tier-based limits for managed_properties count (excludes primary home in households table)
 const TIER_LIMITS: Record<string, number> = {
   homeowner_plus: 2,       // 2 additional = 3 total (primary + 2)
+  realtor: 10,             // realtors can track multiple client properties
   property_manager: 200,
 };
 
@@ -116,14 +117,11 @@ router.post('/properties', requireSessionAuth, async (req: SessionAuthRequest, r
     }
 
     const currentCount = await getPortfolioCount(householdId);
-    if (currentCount >= tierLimit && tier !== 'property_manager') {
+    if (currentCount >= tierLimit) {
       return res.status(403).json({
         error: 'property_limit_reached',
         message: `You've reached the ${tierLimit} additional propert${tierLimit === 1 ? 'y' : 'ies'} limit for your plan.`,
       });
-    }
-    if (currentCount >= MAX_PROPERTIES) {
-      return res.status(403).json({ error: `Portfolio limit of ${MAX_PROPERTIES} properties reached` });
     }
 
     const [property] = await db.insert(managedPropertiesTable).values({
