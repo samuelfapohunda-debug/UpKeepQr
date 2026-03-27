@@ -200,7 +200,8 @@ export default function CustomerDashboard() {
   // Tiers that can manage multiple properties
   const MULTI_PROPERTY_TIERS = ['homeowner_plus', 'realtor', 'property_manager'];
   const canAddProperties = MULTI_PROPERTY_TIERS.includes(household?.subscriptionTier ?? '');
-  const isBasicPlan = household?.subscriptionTier === 'homeowner_basic' || (!household?.subscriptionTier);
+  // Any tier NOT in MULTI_PROPERTY_TIERS is treated as basic (includes 'basic', 'homeowner_basic', null, etc.)
+  const isBasicPlan = !canAddProperties;
 
   const { data: managedProperties = [] } = useQuery<ManagedProperty[]>({
     queryKey: ['/api/portfolio/properties'],
@@ -508,38 +509,40 @@ export default function CustomerDashboard() {
               </button>
             ))}
 
-            {/* Add Property button */}
-            {canAddProperties && managedProperties.length < 2 ? (
-              <button
-                onClick={() => setShowAddPropertyModal(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border border-dashed border-border text-muted-foreground hover:border-blue-400 hover:text-blue-600 transition-colors"
-                data-testid="button-add-property"
-              >
-                <Plus className="h-3.5 w-3.5" />
-                Add Property
-              </button>
-            ) : isBasicPlan ? (
-              <div className="flex items-center gap-2">
+            {/* Add Property button — always shown; disabled for non-eligible tiers */}
+            {canAddProperties && managedProperties.length >= 2 ? null : (
+              canAddProperties ? (
                 <button
-                  disabled
-                  title="Upgrade to Homeowner Plus to add multiple properties"
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border border-dashed border-border text-muted-foreground opacity-50 cursor-not-allowed"
-                  data-testid="button-add-property-locked"
+                  onClick={() => setShowAddPropertyModal(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border border-dashed border-border text-muted-foreground hover:border-blue-400 hover:text-blue-600 transition-colors"
+                  data-testid="button-add-property"
                 >
                   <Plus className="h-3.5 w-3.5" />
-                  Add Property
+                  + Add Property
                 </button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="text-xs h-7 border-indigo-300 text-indigo-600 hover:bg-indigo-50"
-                  onClick={() => navigate('/pricing')}
-                  data-testid="button-upgrade-plus"
-                >
-                  Upgrade to Plus
-                </Button>
-              </div>
-            ) : null}
+              ) : (
+                <div className="flex items-center gap-2">
+                  <button
+                    disabled
+                    title="Available on Homeowner Plus"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border border-dashed border-border text-muted-foreground opacity-50 cursor-not-allowed"
+                    data-testid="button-add-property-locked"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    + Add Property
+                  </button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-xs h-7 border-indigo-300 text-indigo-600 hover:bg-indigo-50 dark:border-indigo-700 dark:text-indigo-400"
+                    onClick={() => navigate('/pricing')}
+                    data-testid="button-upgrade-plus"
+                  >
+                    Upgrade to Plus
+                  </Button>
+                </div>
+              )
+            )}
           </div>
         )}
 
