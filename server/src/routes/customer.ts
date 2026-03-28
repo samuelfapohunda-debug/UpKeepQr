@@ -1,4 +1,4 @@
-import { Router, Response } from 'express';
+import { Router, Request, Response } from 'express';
 import { db } from '../../db';
 import { householdsTable, homeProfileExtras, maintenanceTasksTable, householdTaskAssignmentsTable } from '@shared/schema';
 import { eq, and } from 'drizzle-orm';
@@ -297,6 +297,45 @@ router.post('/setup-home', requireSessionAuth, async (req: SessionAuthRequest, r
   }
 
   return res.json({ success: true });
+});
+
+/**
+ * POST /api/customer/admin/fix-tier
+ * Admin-only: force-set a household's subscription_tier by email.
+ * Protected by ADMIN_SECRET header.
+ *
+ * Body: { email: string, tier: 'homeowner_basic'|'homeowner_plus'|'realtor'|'property_manager' }
+ */
+const VALID_TIERS = ['homeowner_basic', 'homeowner_plus', 'realtor', 'property_manager'] as const;
+router.post('/admin/fix-tier', async (req: Request, res: Response) => {
+  const adminSecret = process.env.ADMIN_SECRET;
+  const provided = req.headers['x-admin-secret'];
+  if (!adminSecret || provided !== adminSecret) {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+
+  const { email, tier } = req.body;
+  if (!email || !VALID_TIERS.includes(tier)) {
+    return res.status(400).json({ error: `tier must be one of: ${VALID_TIERS.join(', ')}` });
+  }
+
+  try {
+    const [updated] = await db
+      .update(householdsTable)
+      .set({ subscriptionTier: tier, updatedAt: new Date() })
+      .where(eq(householdsTable.email, String(email).toLowerCase()))
+      .returning({ id: householdsTable.id, email: householdsTable.email, subscriptionTier: householdsTable.subscriptionTier });
+
+    if (!updated) {
+      return res.status(404).json({ error: `No household found for email: ${email}` });
+    }
+
+    console.log(`[ADMIN] fix-tier: ${email} → ${tier}`);
+    return res.json({ success: true, household: updated });
+  } catch (err) {
+    console.error('[ADMIN] fix-tier error:', err);
+    return res.status(500).json({ error: 'Failed to update tier' });
+  }
 });
 
 export default router;

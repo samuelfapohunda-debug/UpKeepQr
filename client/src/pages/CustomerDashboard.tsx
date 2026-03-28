@@ -30,7 +30,6 @@ import HouseholdDetails from "@/components/HouseholdDetails";
 import PushNotificationSetup from "@/components/PushNotificationSetup";
 import ApplianceManager from "@/components/ApplianceManager";
 import SubscriptionBanner from "@/components/SubscriptionBanner";
-import AddPropertyModal from "@/components/AddPropertyModal";
 import type { Task, Household, TasksResponse, TaskStats, DashboardTab, ManagedProperty } from "@/types/dashboard";
 import { useTabState } from "@/hooks/useTabState";
 
@@ -76,7 +75,6 @@ export default function CustomerDashboard() {
   const [isDownloadingCalendar, setIsDownloadingCalendar] = useState(false);
   // Multi-property: null = primary home, string = managed property id
   const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
-  const [showAddPropertyModal, setShowAddPropertyModal] = useState(false);
 
   // Download .ics calendar file for tasks
   const handleDownloadCalendar = useCallback(async (householdId: string) => {
@@ -513,7 +511,7 @@ export default function CustomerDashboard() {
             {canAddProperties && managedProperties.length >= 2 ? null : (
               canAddProperties ? (
                 <button
-                  onClick={() => setShowAddPropertyModal(true)}
+                  onClick={() => navigate('/onboarding?mode=add-property')}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border border-dashed border-border text-muted-foreground hover:border-blue-400 hover:text-blue-600 transition-colors"
                   data-testid="button-add-property"
                 >
@@ -800,14 +798,6 @@ export default function CustomerDashboard() {
         isSubmitting={completeTaskMutation.isPending}
       />
 
-      <AddPropertyModal
-        open={showAddPropertyModal}
-        onClose={() => setShowAddPropertyModal(false)}
-        onAdded={(property) => {
-          queryClient.invalidateQueries({ queryKey: ['/api/portfolio/properties'] });
-          setSelectedPropertyId(property.id);
-        }}
-      />
     </div>
   );
 }

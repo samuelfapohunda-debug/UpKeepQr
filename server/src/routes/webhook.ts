@@ -214,9 +214,20 @@ router.post('/stripe', async (req: Request, res: Response) => {
             .where(eq(householdsTable.email, customerEmail.toLowerCase()))
             .limit(1);
 
+          const resolvedTier = planName.toLowerCase().includes('property') ? 'property_manager'
+            : planName.toLowerCase().includes('realtor') || planName.toLowerCase().includes('agent') ? 'realtor'
+            : planName.toLowerCase().includes('plus') ? 'homeowner_plus'
+            : 'homeowner_basic';
+
           let householdId: string;
           if (existing) {
             householdId = existing.id;
+            // Always update tier + status for existing households so upgrades/downgrades take effect
+            await db
+              .update(householdsTable)
+              .set({ subscriptionTier: resolvedTier, subscriptionStatus: 'active', updatedAt: new Date() })
+              .where(eq(householdsTable.id, householdId));
+            console.log(`[WEBHOOK] Updated existing household ${customerEmail} → tier=${resolvedTier}`);
           } else {
             const [created] = await db
               .insert(householdsTable)
@@ -224,14 +235,11 @@ router.post('/stripe', async (req: Request, res: Response) => {
                 name: customerName || 'Subscriber',
                 email: customerEmail.toLowerCase(),
                 subscriptionStatus: 'active',
-                subscriptionTier: planName.toLowerCase().includes('property') ? 'property_manager'
-                  : planName.toLowerCase().includes('realtor') || planName.toLowerCase().includes('agent') ? 'realtor'
-                  : planName.toLowerCase().includes('plus') ? 'homeowner_plus'
-                  : 'homeowner_basic',
+                subscriptionTier: resolvedTier,
               })
               .returning({ id: householdsTable.id });
             householdId = created.id;
-            console.log(`[WEBHOOK] Created new household for ${customerEmail}: ${householdId}`);
+            console.log(`[WEBHOOK] Created new household for ${customerEmail}: ${householdId} tier=${resolvedTier}`);
           }
 
           // Generate setup token (24-hour expiry) if no password set yet

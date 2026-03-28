@@ -52,6 +52,11 @@ const Onboarding: React.FC<OnboardingProps> = ({ adminMode = false, onComplete }
 
   const { toast } = useToast();
 
+  // When ?mode=add-property is in the URL (logged-in Plus user adding a 2nd/3rd property),
+  // we show only steps 1+2, skip account setup, and POST to /api/portfolio/properties.
+  const addPropertyMode = new URLSearchParams(window.location.search).get('mode') === 'add-property';
+  const [propertyNickname, setPropertyNickname] = useState('');
+
   // --- Step navigation ---
   const [step, setStep] = useState<1 | 2 | 3>(1);
 
@@ -405,6 +410,49 @@ const Onboarding: React.FC<OnboardingProps> = ({ adminMode = false, onComplete }
     if (validateStep1()) setStep(2);
   };
 
+  // ── Add-property mode submit (steps 1+2 only, POSTs to portfolio endpoint) ──
+  const handleAddPropertySubmit = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const name = propertyNickname.trim() || formData.city || formData.streetAddress;
+      const res = await fetch(`${API_BASE_URL}/api/portfolio/properties`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          propertyName: name,
+          address: formData.streetAddress.trim(),
+          city: formData.city.trim(),
+          state: formData.state.trim().toUpperCase(),
+          zip: formData.zip.trim(),
+          propertyType: formData.home_type || 'single_family',
+          yearBuilt: formData.yearBuilt ? parseInt(formData.yearBuilt) : undefined,
+          squareFootage: formData.sqft ? parseInt(formData.sqft) : undefined,
+          hvacType: formData.hvac_type || undefined,
+        }),
+      });
+      const result = await res.json();
+      if (!res.ok) {
+        if (result.error === 'upgrade_required') {
+          setError("Your plan doesn't support additional properties. Upgrade to Homeowner Plus.");
+        } else if (result.error === 'property_limit_reached') {
+          setError(result.message || "You've reached the property limit for your plan.");
+        } else {
+          setError(result.error || result.message || 'Failed to add property');
+        }
+        setLoading(false);
+        return;
+      }
+      toast({ title: 'Property added!', description: 'Your maintenance schedule is being generated.' });
+      window.location.href = '/my-home';
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to add property');
+      toast({ title: 'Error', description: 'Failed to add property. Please try again.', variant: 'destructive' });
+      setLoading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -680,15 +728,18 @@ const Onboarding: React.FC<OnboardingProps> = ({ adminMode = false, onComplete }
   };
 
   // Per-step card title and description
-  const stepTitle = step === 1 ? 'Your Address' : step === 2 ? 'Confirm Your Home' : 'Account Setup';
-  const stepDesc =
-    step === 1
-      ? 'Start with your property address'
-      : step === 2
-      ? attomFound === true
-        ? 'Review the details we found — update anything that looks off'
-        : 'Tell us a bit about your home for a better schedule'
-      : 'Almost done — just a few details';
+  const stepTitle = addPropertyMode
+    ? (step === 1 ? 'Property Address' : 'Property Details')
+    : (step === 1 ? 'Your Address' : step === 2 ? 'Confirm Your Home' : 'Account Setup');
+  const stepDesc = addPropertyMode
+    ? (step === 1 ? 'Enter the address of the property you want to add' : 'Tell us a bit about this property')
+    : (step === 1
+        ? 'Start with your property address'
+        : step === 2
+        ? attomFound === true
+          ? 'Review the details we found — update anything that looks off'
+          : 'Tell us a bit about your home for a better schedule'
+        : 'Almost done — just a few details');
 
   return (
     <div className="min-h-screen bg-background pt-16 sm:pt-20">
@@ -697,11 +748,13 @@ const Onboarding: React.FC<OnboardingProps> = ({ adminMode = false, onComplete }
         {/* Page title — outside the card */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-4">
-            {adminMode ? 'Create New Household' : 'Set Up Your Home'}
+            {adminMode ? 'Create New Household' : addPropertyMode ? 'Add a Property' : 'Set Up Your Home'}
           </h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
             {adminMode
               ? 'Admin mode — manual household creation without QR code activation.'
+              : addPropertyMode
+              ? "Enter the address and details for your additional property. A maintenance schedule will be generated automatically."
               : "Tell us about your property and we'll build a personalized maintenance schedule."}
           </p>
         </div>
@@ -742,8 +795,10 @@ const Onboarding: React.FC<OnboardingProps> = ({ adminMode = false, onComplete }
           <CardHeader>
             <ProgressIndicator
               currentStep={step}
-              totalSteps={3}
-              stepLabels={['Your Address', 'Your Home', 'Account Setup']}
+              totalSteps={addPropertyMode ? 2 : 3}
+              stepLabels={addPropertyMode
+                ? ['Property Address', 'Property Details']
+                : ['Your Address', 'Your Home', 'Account Setup']}
             />
             <CardTitle>{stepTitle}</CardTitle>
             <CardDescription>{stepDesc}</CardDescription>
@@ -780,7 +835,23 @@ const Onboarding: React.FC<OnboardingProps> = ({ adminMode = false, onComplete }
               {/* ========== STEP 1: YOUR ADDRESS ========== */}
               {step === 1 && (
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Your Address</h3>
+                  <h3 className="text-lg font-semibold">{addPropertyMode ? 'Property Address' : 'Your Address'}</h3>
+
+                  {/* Property nickname — only in add-property mode */}
+                  {addPropertyMode && (
+                    <div>
+                      <Label htmlFor="propertyNickname">Property Nickname <span className="text-muted-foreground text-xs">(optional)</span></Label>
+                      <input
+                        id="propertyNickname"
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                        placeholder="e.g. Beach House, Rental Unit"
+                        value={propertyNickname}
+                        onChange={e => setPropertyNickname(e.target.value)}
+                        data-testid="input-property-nickname"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">Defaults to the city name if left blank</p>
+                    </div>
+                  )}
 
                   {/* Street Address with Places autocomplete */}
                   <div className="relative">
@@ -1044,14 +1115,26 @@ const Onboarding: React.FC<OnboardingProps> = ({ adminMode = false, onComplete }
                     >
                       Back
                     </Button>
-                    <Button
-                      type="button"
-                      className="flex-1"
-                      onClick={() => setStep(3)}
-                      data-testid="button-step2-continue"
-                    >
-                      Continue
-                    </Button>
+                    {addPropertyMode ? (
+                      <Button
+                        type="button"
+                        className="flex-1"
+                        onClick={handleAddPropertySubmit}
+                        disabled={loading}
+                        data-testid="button-add-property-submit"
+                      >
+                        {loading ? 'Adding Property...' : 'Add Property'}
+                      </Button>
+                    ) : (
+                      <Button
+                        type="button"
+                        className="flex-1"
+                        onClick={() => setStep(3)}
+                        data-testid="button-step2-continue"
+                      >
+                        Continue
+                      </Button>
+                    )}
                   </div>
                 </div>
               )}
