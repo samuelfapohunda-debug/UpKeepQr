@@ -299,20 +299,52 @@ router.post('/setup-home', requireSessionAuth, async (req: SessionAuthRequest, r
   return res.json({ success: true });
 });
 
+// ── Admin helpers (protected by ADMIN_PASSWORD env var) ─────────────────────
+function checkAdminAuth(req: Request, res: Response): boolean {
+  const adminPassword = process.env.ADMIN_PASSWORD;
+  const provided = req.headers['x-admin-secret'];
+  if (!adminPassword || provided !== adminPassword) {
+    res.status(403).json({ error: 'Forbidden' });
+    return false;
+  }
+  return true;
+}
+
+const VALID_TIERS = ['homeowner_basic', 'homeowner_plus', 'realtor', 'property_manager'] as const;
+
+/**
+ * GET /api/customer/admin/lookup?q=<name_or_email>
+ * Admin-only: search households by name or email (case-insensitive partial match).
+ */
+import { ilike, or } from 'drizzle-orm';
+router.get('/admin/lookup', async (req: Request, res: Response) => {
+  if (!checkAdminAuth(req, res)) return;
+  const q = String(req.query.q || '').trim();
+  if (!q || q.length < 2) {
+    return res.status(400).json({ error: 'q must be at least 2 characters' });
+  }
+  try {
+    const rows = await db
+      .select({ id: householdsTable.id, email: householdsTable.email, name: householdsTable.name, subscriptionTier: householdsTable.subscriptionTier, createdAt: householdsTable.createdAt })
+      .from(householdsTable)
+      .where(or(ilike(householdsTable.email, `%${q}%`), ilike(householdsTable.name, `%${q}%`)))
+      .limit(20);
+    return res.json(rows);
+  } catch (err) {
+    console.error('[ADMIN] lookup error:', err);
+    return res.status(500).json({ error: 'Lookup failed' });
+  }
+});
+
 /**
  * POST /api/customer/admin/fix-tier
  * Admin-only: force-set a household's subscription_tier by email.
- * Protected by ADMIN_SECRET header.
+ * Protected by ADMIN_PASSWORD header (x-admin-secret).
  *
  * Body: { email: string, tier: 'homeowner_basic'|'homeowner_plus'|'realtor'|'property_manager' }
  */
-const VALID_TIERS = ['homeowner_basic', 'homeowner_plus', 'realtor', 'property_manager'] as const;
 router.post('/admin/fix-tier', async (req: Request, res: Response) => {
-  const adminSecret = process.env.ADMIN_SECRET;
-  const provided = req.headers['x-admin-secret'];
-  if (!adminSecret || provided !== adminSecret) {
-    return res.status(403).json({ error: 'Forbidden' });
-  }
+  if (!checkAdminAuth(req, res)) return;
 
   const { email, tier } = req.body;
   if (!email || !VALID_TIERS.includes(tier)) {
