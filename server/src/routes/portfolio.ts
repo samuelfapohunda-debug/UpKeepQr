@@ -12,7 +12,7 @@ const MAX_PROPERTIES = 200;
 
 // Tier-based limits for managed_properties count (excludes primary home in households table)
 const TIER_LIMITS: Record<string, number> = {
-  homeowner_plus: 2,       // 2 additional = 3 total (primary + 2)
+  homeowner_plus: 3,       // 3 additional properties
   realtor: 10,             // realtors can track multiple client properties
   property_manager: 200,
 };

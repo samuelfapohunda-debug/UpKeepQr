@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import CompleteTaskModal from "@/components/CompleteTaskModal";
+import AddPropertyModal from "@/components/AddPropertyModal";
 import { API_BASE_URL } from "@/lib/api-config";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -75,6 +76,7 @@ export default function CustomerDashboard() {
   const [isDownloadingCalendar, setIsDownloadingCalendar] = useState(false);
   // Multi-property: null = primary home, string = managed property id
   const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
+  const [showAddPropertyModal, setShowAddPropertyModal] = useState(false);
 
   // Download .ics calendar file for tasks
   const handleDownloadCalendar = useCallback(async (householdId: string) => {
@@ -507,39 +509,49 @@ export default function CustomerDashboard() {
               </button>
             ))}
 
-            {/* Add Property button — always shown; disabled for non-eligible tiers */}
-            {canAddProperties && managedProperties.length >= 2 ? null : (
-              canAddProperties ? (
+            {/* Add Property button */}
+            {canAddProperties ? (
+              managedProperties.length >= 3 ? (
                 <button
-                  onClick={() => navigate('/onboarding?mode=add-property')}
+                  disabled
+                  title="Maximum of 3 properties reached"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border border-dashed border-border text-muted-foreground opacity-50 cursor-not-allowed"
+                  data-testid="button-add-property-limit"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  + Add Property
+                </button>
+              ) : (
+                <button
+                  onClick={() => setShowAddPropertyModal(true)}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border border-dashed border-border text-muted-foreground hover:border-blue-400 hover:text-blue-600 transition-colors"
                   data-testid="button-add-property"
                 >
                   <Plus className="h-3.5 w-3.5" />
                   + Add Property
                 </button>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <button
-                    disabled
-                    title="Available on Homeowner Plus"
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border border-dashed border-border text-muted-foreground opacity-50 cursor-not-allowed"
-                    data-testid="button-add-property-locked"
-                  >
-                    <Plus className="h-3.5 w-3.5" />
-                    + Add Property
-                  </button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="text-xs h-7 border-indigo-300 text-indigo-600 hover:bg-indigo-50 dark:border-indigo-700 dark:text-indigo-400"
-                    onClick={() => navigate('/pricing')}
-                    data-testid="button-upgrade-plus"
-                  >
-                    Upgrade to Plus
-                  </Button>
-                </div>
               )
+            ) : (
+              <div className="flex items-center gap-2">
+                <button
+                  disabled
+                  title="Available on Homeowner Plus"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border border-dashed border-border text-muted-foreground opacity-50 cursor-not-allowed"
+                  data-testid="button-add-property-locked"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  + Add Property
+                </button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="text-xs h-7 border-indigo-300 text-indigo-600 hover:bg-indigo-50 dark:border-indigo-700 dark:text-indigo-400"
+                  onClick={() => navigate('/pricing')}
+                  data-testid="button-upgrade-plus"
+                >
+                  Upgrade to Plus
+                </Button>
+              </div>
             )}
           </div>
         )}
@@ -797,6 +809,17 @@ export default function CustomerDashboard() {
         onComplete={handleConfirmComplete}
         isSubmitting={completeTaskMutation.isPending}
       />
+
+      {showAddPropertyModal && (
+        <AddPropertyModal
+          onClose={() => setShowAddPropertyModal(false)}
+          onAdded={(property) => {
+            queryClient.invalidateQueries({ queryKey: ['/api/portfolio/properties'] });
+            setSelectedPropertyId(property.id);
+            setShowAddPropertyModal(false);
+          }}
+        />
+      )}
 
     </div>
   );
