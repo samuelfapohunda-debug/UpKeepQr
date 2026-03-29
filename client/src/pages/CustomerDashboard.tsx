@@ -197,8 +197,9 @@ export default function CustomerDashboard() {
     }
   });
 
-  // Tiers that can manage multiple properties
-  const MULTI_PROPERTY_TIERS = ['homeowner_plus', 'realtor', 'property_manager'];
+  // Tiers that can manage multiple properties.
+  // Also include legacy 'plus' in case any existing rows were stored with the old incorrect value.
+  const MULTI_PROPERTY_TIERS = ['homeowner_plus', 'plus', 'realtor', 'property_manager'];
   const canAddProperties = MULTI_PROPERTY_TIERS.includes(household?.subscriptionTier ?? '');
   // Any tier NOT in MULTI_PROPERTY_TIERS is treated as basic (includes 'basic', 'homeowner_basic', null, etc.)
   const isBasicPlan = !canAddProperties;

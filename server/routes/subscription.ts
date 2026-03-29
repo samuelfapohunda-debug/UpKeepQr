@@ -801,16 +801,16 @@ export function registerSubscriptionWebhookHandler(app: Express) {
               } else if (planLower.includes('plus')) {
                 qrCodeCount = 10;
                 planDisplayName = 'Homeowner Plus';
-                subscriptionTierValue = 'plus';
+                subscriptionTierValue = 'homeowner_plus';
               } else {
                 qrCodeCount = 1;
                 planDisplayName = 'Homeowner Basic';
-                subscriptionTierValue = 'basic';
+                subscriptionTierValue = 'homeowner_basic';
               }
 
               // Update subscriptionTier now that we know the plan (initial insert defaults to 'basic')
               await db.update(householdsTable)
-                .set({ subscriptionTier: subscriptionTierValue, updatedAt: new Date() })
+                .set({ subscriptionTier: subscriptionTierValue, subscriptionStatus: 'active', updatedAt: new Date() })
                 .where(eq(householdsTable.id, household.id));
 
               const amountPaid = String((session.amount_total || 0) / 100);
@@ -959,9 +959,23 @@ export function registerSubscriptionWebhookHandler(app: Express) {
               const planId = session.metadata?.plan_id || session.metadata?.plan || '';
               const planLower = planId.toLowerCase().replace(/[_-]/g, ' ');
               let planDisplayName = 'Homeowner Basic';
-              if (planLower.includes('property') || planLower.includes('manager')) planDisplayName = 'Property Manager';
-              else if (planLower.includes('realtor') || planLower.includes('agent')) planDisplayName = 'Realtor / Agent';
-              else if (planLower.includes('plus')) planDisplayName = 'Homeowner Plus';
+              let existingTierValue = 'homeowner_basic';
+              if (planLower.includes('property') || planLower.includes('manager')) {
+                planDisplayName = 'Property Manager';
+                existingTierValue = 'property_manager';
+              } else if (planLower.includes('realtor') || planLower.includes('agent')) {
+                planDisplayName = 'Realtor / Agent';
+                existingTierValue = 'realtor';
+              } else if (planLower.includes('plus')) {
+                planDisplayName = 'Homeowner Plus';
+                existingTierValue = 'homeowner_plus';
+              }
+
+              // Always update tier + status for existing households — upgrades/downgrades must take effect
+              await db.update(householdsTable)
+                .set({ subscriptionTier: existingTierValue, subscriptionStatus: 'active', updatedAt: new Date() })
+                .where(eq(householdsTable.id, existing.id));
+              console.log(`[Subscription Webhook] Updated existing household ${email} → tier=${existingTierValue}`);
 
               const amountPaid = String((session.amount_total || 0) / 100);
               const baseUrl = process.env.PUBLIC_BASE_URL || 'https://maintcue.com';
