@@ -33,6 +33,7 @@ import ApplianceManager from "@/components/ApplianceManager";
 import SubscriptionBanner from "@/components/SubscriptionBanner";
 import type { Task, Household, TasksResponse, TaskStats, DashboardTab, ManagedProperty } from "@/types/dashboard";
 import { useTabState } from "@/hooks/useTabState";
+import RealtorDashboard from "./RealtorDashboard";
 
 const formatDate = (dateStr?: string): string => {
   if (!dateStr) return "Not scheduled";
@@ -427,6 +428,11 @@ export default function CustomerDashboard() {
   if (!household.streetAddress && !household.city && !householdFetching) {
     navigate('/onboarding');
     return null;
+  }
+
+  // Realtor / Agent tier — delegate to the dedicated realtor dashboard
+  if (household.subscriptionTier === 'realtor') {
+    return <RealtorDashboard />;
   }
 
   return (

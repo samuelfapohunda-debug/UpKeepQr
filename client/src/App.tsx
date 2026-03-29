@@ -85,7 +85,7 @@ function Router() {
         <Route path="/my-home" component={CustomerDashboard} />
         <Route path="/property-manager" component={PropertyManagerDashboard} />
         <Route path="/property-manager/:id" component={PropertyManagerDetail} />
-        <Route path="/realtor" component={RealtorDashboard} />
+        <Route path="/realtor">{() => <RedirectTo to="/my-home" />}</Route>
         <Route path="/onboarding">{() => <Onboarding />}</Route>
         <Route path="/new-setup" component={SetupForm} />
         <Route path="/new-setup/:token" component={SetupForm} />

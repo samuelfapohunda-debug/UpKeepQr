@@ -8,7 +8,7 @@ const maintcueLogo = '/images/maintcue-logo.svg';
 
 function tierRedirect(tier?: string | null): string {
   if (tier === 'property_manager') return '/property-manager';
-  if (tier === 'realtor') return '/realtor';
+  if (tier === 'realtor') return '/my-home';
   if (tier === 'homeowner_basic' || tier === 'homeowner_plus') return '/my-home';
   return '/my-home';
 }
