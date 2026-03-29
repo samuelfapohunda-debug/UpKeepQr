@@ -423,16 +423,16 @@ export default function CustomerDashboard() {
     );
   }
 
+  // Realtor / Agent tier — bypass address/onboarding checks entirely
+  if (household.subscriptionTier === 'realtor') {
+    return <RealtorDashboard />;
+  }
+
   // No address yet — home profile setup hasn't been saved. Redirect to onboarding only
   // when we're NOT in the middle of a refetch (avoids loop on stale React Query cache).
   if (!household.streetAddress && !household.city && !householdFetching) {
     navigate('/onboarding');
     return null;
-  }
-
-  // Realtor / Agent tier — delegate to the dedicated realtor dashboard
-  if (household.subscriptionTier === 'realtor') {
-    return <RealtorDashboard />;
   }
 
   return (

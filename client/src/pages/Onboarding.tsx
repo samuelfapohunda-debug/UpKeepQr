@@ -141,6 +141,17 @@ const Onboarding: React.FC<OnboardingProps> = ({ adminMode = false, onComplete }
     }
   }, [placesLoaded, placesApiKey]);
 
+  // Safety net: if a Realtor/Agent lands on /onboarding, redirect them to /my-home
+  useEffect(() => {
+    if (!isCustomer) return;
+    fetch(`${API_BASE_URL}/api/customer/household`, { credentials: 'include' })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data?.subscriptionTier === 'realtor') setLocation('/my-home');
+      })
+      .catch(() => {});
+  }, [isCustomer, setLocation]);
+
   // Token init — only validate if a token is present in the URL
   useEffect(() => {
     if (adminMode) {
