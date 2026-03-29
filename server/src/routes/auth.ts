@@ -155,8 +155,16 @@ router.post('/login', authApiLimiter, async (req, res) => {
       .where(eq(householdsTable.email, email.toLowerCase()))
       .limit(1);
 
-    if (!household || !household.passwordHash) {
+    if (!household) {
       return res.status(401).json({ error: GENERIC_ERROR });
+    }
+
+    if (!household.passwordHash) {
+      // Account exists but was created via Google OAuth — no password set
+      return res.status(401).json({
+        error: "This account was created with Google. Please use \"Continue with Google\" to sign in, or use \"Forgot password\" to set a password.",
+        code: 'oauth_no_password',
+      });
     }
 
     const match = await bcrypt.compare(password, household.passwordHash);
@@ -222,25 +230,37 @@ router.post('/forgot-password', forgotPasswordLimiter, async (req, res) => {
 
       const resetUrl = `${BASE_URL}/reset-password?token=${token}`;
 
-      console.log('[ForgotPassword] Sending reset email to:', email.toLowerCase());
+      // Tailor the email for OAuth users who are setting a password for the first time
+      const isFirstTimePassword = !household.passwordHash;
+      const subject = isFirstTimePassword ? 'Set your MaintCue password' : 'Reset your MaintCue password';
+      const heading = isFirstTimePassword ? 'Set your password' : 'Reset your password';
+      const bodyText = isFirstTimePassword
+        ? 'Your MaintCue account was created with Google. Use the button below to set a password — after that you can sign in with either Google or your email and password.'
+        : 'We received a request to reset your MaintCue password. Click the button below to set a new password.';
+      const buttonText = isFirstTimePassword ? 'Set Password' : 'Reset Password';
+      const footerNote = isFirstTimePassword
+        ? 'This link expires in 1 hour. If you did not request this, you can safely ignore this email — your Google sign-in will continue to work.'
+        : 'This link expires in 1 hour. If you did not request a password reset, you can safely ignore this email.';
+
+      console.log('[ForgotPassword] Sending', isFirstTimePassword ? 'set-password' : 'reset-password', 'email to:', email.toLowerCase());
       await sendResendEmail({
         to: email.toLowerCase(),
         from: FROM_EMAIL,
-        subject: 'Reset your MaintCue password',
+        subject,
         html: `
           <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 520px; margin: 0 auto; padding: 24px; color: #333;">
             <div style="text-align: center; margin-bottom: 24px;">
               <span style="font-size: 28px; font-weight: 700; color: #10b981;">Maint</span><span style="font-size: 28px; font-weight: 700; color: #1E3A5F;">Cue</span>
             </div>
-            <h2 style="margin-top: 0;">Reset your password</h2>
-            <p>We received a request to reset your MaintCue password. Click the button below to set a new password.</p>
+            <h2 style="margin-top: 0;">${heading}</h2>
+            <p>${bodyText}</p>
             <div style="text-align: center; margin: 28px 0;">
-              <a href="${resetUrl}" style="display: inline-block; background: #10b981; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 15px;">Reset Password</a>
+              <a href="${resetUrl}" style="display: inline-block; background: #10b981; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 15px;">${buttonText}</a>
             </div>
-            <p style="font-size: 13px; color: #6b7280;">This link expires in 1 hour. If you did not request a password reset, you can safely ignore this email.</p>
+            <p style="font-size: 13px; color: #6b7280;">${footerNote}</p>
           </div>
         `,
-        text: `Reset your MaintCue password: ${resetUrl} (expires in 1 hour)`,
+        text: `${heading}: ${resetUrl} (expires in 1 hour)`,
       });
     }
   } catch (err: any) {

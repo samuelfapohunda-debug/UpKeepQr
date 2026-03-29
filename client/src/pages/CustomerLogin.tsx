@@ -20,6 +20,7 @@ export default function CustomerLogin() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [errorCode, setErrorCode] = useState('');
   const [loading, setLoading] = useState(false);
 
   const urlParams = new URLSearchParams(window.location.search);
@@ -45,6 +46,7 @@ export default function CustomerLogin() {
         setLocation(redirectTo || tierRedirect(result.subscriptionTier));
       } else {
         setError(result.error || 'Login failed. Please try again.');
+        setErrorCode(result.code || '');
       }
     } finally {
       setLoading(false);
@@ -69,7 +71,15 @@ export default function CustomerLogin() {
         <div className="bg-card border border-border rounded-xl shadow-xl p-6 sm:p-8">
           {error && (
             <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-lg text-sm mb-4">
-              {error}
+              <p>{error}</p>
+              {errorCode === 'oauth_no_password' && (
+                <a
+                  href="/forgot-password"
+                  className="block mt-2 font-medium underline text-destructive hover:opacity-80"
+                >
+                  Set a password →
+                </a>
+              )}
             </div>
           )}
 
@@ -82,7 +92,7 @@ export default function CustomerLogin() {
                 autoComplete="email"
                 required
                 value={email}
-                onChange={e => { setEmail(e.target.value); setError(''); }}
+                onChange={e => { setEmail(e.target.value); setError(''); setErrorCode(''); }}
                 disabled={loading}
                 className="w-full px-4 py-3 border border-input rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all disabled:opacity-50"
                 placeholder="you@example.com"
@@ -100,7 +110,7 @@ export default function CustomerLogin() {
                 autoComplete="current-password"
                 required
                 value={password}
-                onChange={e => { setPassword(e.target.value); setError(''); }}
+                onChange={e => { setPassword(e.target.value); setError(''); setErrorCode(''); }}
                 disabled={loading}
                 className="w-full px-4 py-3 border border-input rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all disabled:opacity-50"
                 placeholder="••••••••"
