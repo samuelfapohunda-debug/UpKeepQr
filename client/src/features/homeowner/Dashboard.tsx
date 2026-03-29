@@ -142,7 +142,7 @@ export default function HomeownerDashboard() {
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Button asChild className="min-h-[48px]">
-                <a href="/customer-login" data-testid="link-signin">Sign In</a>
+                <a href="/login" data-testid="link-signin">Sign In</a>
               </Button>
               <Button asChild variant="outline" className="min-h-[48px]">
                 <a href="/pricing" data-testid="link-plans">View Plans</a>

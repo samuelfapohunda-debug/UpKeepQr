@@ -15,7 +15,7 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
 
     if (!isAuthenticated) {
       const attemptedPath = location;
-      const redirectUrl = `/login?redirect=${encodeURIComponent(attemptedPath)}`;
+      const redirectUrl = `/admin/login?redirect=${encodeURIComponent(attemptedPath)}`;
       console.log(`Not authenticated, redirecting to: ${redirectUrl}`);
       setLocation(redirectUrl);
     }

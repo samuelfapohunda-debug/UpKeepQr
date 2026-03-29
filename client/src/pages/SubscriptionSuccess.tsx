@@ -51,7 +51,7 @@ export default function SubscriptionSuccess() {
             <>
               <Button
                 className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-base py-6"
-                onClick={() => window.location.href = setupUrl ?? '/customer-login'}
+                onClick={() => window.location.href = setupUrl ?? '/login'}
                 data-testid="button-set-up-account"
               >
                 Set Up My Account <ArrowRight className="w-4 h-4 ml-2" />

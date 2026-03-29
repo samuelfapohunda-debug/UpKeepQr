@@ -1,4 +1,5 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, useLocation } from "wouter";
+import { useEffect } from "react";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -49,6 +50,12 @@ import SetPassword from "@/pages/SetPassword";
 import ForgotPassword from "@/pages/ForgotPassword";
 import ResetPassword from "@/pages/ResetPassword";
 
+function RedirectTo({ to }: { to: string }) {
+  const [, setLocation] = useLocation();
+  useEffect(() => { setLocation(to, { replace: true }); }, [to, setLocation]);
+  return null;
+}
+
 function Router() {
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
@@ -60,8 +67,10 @@ function Router() {
         <Route path="/dashboard" component={HomeownerDashboard} />
         <Route path="/pricing" component={Pricing} />
         <Route path="/contact" component={Contact} />
-        <Route path="/login" component={Login} />
-        <Route path="/customer-login" component={CustomerLogin} />
+        <Route path="/login" component={CustomerLogin} />
+        <Route path="/signin">{() => <RedirectTo to="/login" />}</Route>
+        <Route path="/customer-login">{() => <RedirectTo to="/login" />}</Route>
+        <Route path="/admin/login" component={Login} />
         <Route path="/register" component={Register} />
         <Route path="/set-password" component={SetPassword} />
         <Route path="/forgot-password" component={ForgotPassword} />

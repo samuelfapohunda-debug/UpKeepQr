@@ -55,7 +55,7 @@ export default function AuthError() {
             </p>
             <div className="flex flex-col sm:flex-row gap-2 justify-center">
               <Button
-                onClick={() => navigate('/customer-login')}
+                onClick={() => navigate('/login')}
                 data-testid="button-signin"
               >
                 Sign In

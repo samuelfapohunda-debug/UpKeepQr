@@ -54,7 +54,7 @@ export default function ForgotPassword() {
               <p className="text-sm text-muted-foreground">
                 If that email is registered, you'll receive a reset link shortly.
               </p>
-              <a href="/customer-login" className="block text-sm text-primary hover:text-primary/80 font-medium mt-4">
+              <a href="/login" className="block text-sm text-primary hover:text-primary/80 font-medium mt-4">
                 ← Back to sign in
               </a>
             </div>
@@ -85,7 +85,7 @@ export default function ForgotPassword() {
                 </Button>
               </form>
               <p className="text-center text-sm text-muted-foreground mt-5">
-                <a href="/customer-login" className="text-primary hover:text-primary/80 font-medium">← Back to sign in</a>
+                <a href="/login" className="text-primary hover:text-primary/80 font-medium">← Back to sign in</a>
               </p>
             </>
           )}

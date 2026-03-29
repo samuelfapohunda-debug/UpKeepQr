@@ -46,7 +46,7 @@ export default function ResetPassword() {
         return;
       }
       setSuccess(true);
-      setTimeout(() => setLocation('/customer-login'), 2000);
+      setTimeout(() => setLocation('/login'), 2000);
     } catch {
       setError('Something went wrong. Please try again.');
     } finally {

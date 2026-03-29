@@ -36,7 +36,7 @@ export default function GoogleAuthComplete() {
       <div className="min-h-screen flex items-center justify-center px-4">
         <div className="text-center">
           <p className="text-destructive mb-4">{error}</p>
-          <a href="/customer-login" className="text-primary underline">Back to sign in</a>
+          <a href="/login" className="text-primary underline">Back to sign in</a>
         </div>
       </div>
     );

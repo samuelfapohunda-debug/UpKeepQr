@@ -100,7 +100,7 @@ export default function SetPassword() {
             </CardDescription>
           </CardHeader>
           <CardContent className="text-center">
-            <Button variant="outline" onClick={() => setLocation('/customer-login')}>Go to Sign In</Button>
+            <Button variant="outline" onClick={() => setLocation('/login')}>Go to Sign In</Button>
           </CardContent>
         </Card>
       </div>

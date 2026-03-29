@@ -683,7 +683,7 @@ export default function PropertyManagerDashboard() {
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col sm:flex-row gap-3">
-            <Button onClick={() => navigate("/customer-login")} className="w-full">Sign In</Button>
+            <Button onClick={() => navigate("/login")} className="w-full">Sign In</Button>
             <Button variant="outline" onClick={() => navigate("/pricing")} className="w-full">View Plans</Button>
           </CardContent>
         </Card>

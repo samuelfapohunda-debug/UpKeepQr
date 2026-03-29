@@ -381,7 +381,7 @@ export default function CustomerDashboard() {
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col sm:flex-row gap-3">
-            <Button onClick={() => navigate("/customer-login")} className="w-full" data-testid="button-signin">
+            <Button onClick={() => navigate("/login")} className="w-full" data-testid="button-signin">
               Sign In
             </Button>
             <Button variant="outline" onClick={() => navigate("/pricing")} className="w-full" data-testid="button-plans">

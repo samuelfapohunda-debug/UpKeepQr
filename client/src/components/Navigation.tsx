@@ -275,7 +275,7 @@ export default function Navigation() {
               </Button>
             ) : (
               <Link href="/login">
-                <Button variant="outline" size="sm" className="text-xs sm:text-sm ml-2" data-testid="button-admin-login">
+                <Button variant="outline" size="sm" className="text-xs sm:text-sm ml-2" data-testid="button-login">
                   Log in
                 </Button>
               </Link>
@@ -353,7 +353,7 @@ export default function Navigation() {
                 </Button>
               ) : (
                 <Link href="/login">
-                  <Button variant="outline" className="w-full text-sm min-h-[44px]" data-testid="button-admin-login-mobile">
+                  <Button variant="outline" className="w-full text-sm min-h-[44px]" data-testid="button-login-mobile">
                     Log in
                   </Button>
                 </Link>
