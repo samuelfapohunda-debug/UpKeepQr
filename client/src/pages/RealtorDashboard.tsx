@@ -6,9 +6,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
 import { API_BASE_URL } from "@/lib/api-config";
 import { useToast } from "@/hooks/use-toast";
 import { useLoadScript } from "@react-google-maps/api";
@@ -83,7 +87,8 @@ function AddClientModal({ onClose, onSaved }: AddClientModalProps) {
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
-    client_name: "",
+    client_first_name: "",
+    client_last_name: "",
     client_email: "",
     client_phone: "",
     property_address: "",
@@ -91,6 +96,10 @@ function AddClientModal({ onClose, onSaved }: AddClientModalProps) {
     property_state: "",
     property_zip: "",
     property_type: "single_family",
+    transaction_type: "buying",
+    estimated_value: "",
+    expected_close_date: "",
+    notes: "",
   });
 
   const placesApiKey = import.meta.env.VITE_GOOGLE_PLACES_API_KEY || "";
@@ -172,18 +181,33 @@ function AddClientModal({ onClose, onSaved }: AddClientModalProps) {
     }
   }, []);
 
-  const set = (field: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
-    setForm(f => ({ ...f, [field]: e.target.value }));
+  const set = (field: keyof typeof form) =>
+    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+      setForm(f => ({ ...f, [field]: e.target.value }));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
     try {
+      const client_name = `${form.client_first_name} ${form.client_last_name}`.trim();
       const res = await fetch(`${API_BASE_URL}/api/realtor/clients`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ ...form, client_phone: form.client_phone || null }),
+        body: JSON.stringify({
+          client_name,
+          client_email: form.client_email,
+          client_phone: form.client_phone || null,
+          property_address: form.property_address,
+          property_city: form.property_city,
+          property_state: form.property_state,
+          property_zip: form.property_zip,
+          property_type: form.property_type,
+          transaction_type: form.transaction_type,
+          estimated_value: form.estimated_value ? parseFloat(form.estimated_value) : null,
+          expected_close_date: form.expected_close_date || null,
+          notes: form.notes || null,
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to add client");
@@ -202,107 +226,234 @@ function AddClientModal({ onClose, onSaved }: AddClientModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-      <Card className="w-full max-w-lg shadow-xl my-4">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-          <div>
-            <CardTitle>Add Client</CardTitle>
-            <CardDescription>An invitation email will be sent automatically.</CardDescription>
-          </div>
-          <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8">
-            <X className="h-4 w-4" />
-          </Button>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="space-y-2 col-span-2">
-                <Label htmlFor="rc-name">Client Name *</Label>
-                <Input id="rc-name" required value={form.client_name} onChange={set("client_name")} placeholder="Jane Smith" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="rc-email">Client Email *</Label>
-                <Input id="rc-email" type="email" required value={form.client_email} onChange={set("client_email")} placeholder="jane@example.com" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="rc-phone">Phone <span className="text-muted-foreground font-normal">(optional)</span></Label>
-                <Input id="rc-phone" value={form.client_phone} onChange={set("client_phone")} placeholder="+1 555 000 0000" />
-              </div>
-            </div>
+    <Dialog open={true} onOpenChange={(open) => { if (!open) onClose(); }}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-0">
+        <DialogHeader className="px-8 pt-8 pb-4">
+          <DialogTitle className="text-2xl">Add Client</DialogTitle>
+          <DialogDescription>
+            An invitation email will be sent automatically to your client.
+          </DialogDescription>
+        </DialogHeader>
 
-            <div className="space-y-2 relative">
-              <Label htmlFor="rc-address">Property Address *</Label>
-              <div className="relative">
-                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <form onSubmit={handleSubmit} className="px-8 pb-8">
+          {/* Section 1: Client Information */}
+          <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-6 mb-6">
+            <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-1">Client Information</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Enter the basic details of your client</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="rc-first-name" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                  First Name <span className="text-red-500 ml-0.5">*</span>
+                </Label>
                 <Input
-                  id="rc-address"
+                  id="rc-first-name"
                   required
-                  value={form.property_address}
-                  onChange={(e) => handleAddressChange(e.target.value)}
-                  onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
-                  onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                  placeholder="123 Oak Street"
-                  className="pl-9"
+                  value={form.client_first_name}
+                  onChange={set("client_first_name")}
+                  placeholder="Jane"
+                  className="bg-white dark:bg-gray-800 h-12"
                 />
               </div>
-              {showSuggestions && suggestions.length > 0 && (
-                <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg max-h-60 overflow-auto">
-                  {suggestions.map((s, i) => (
-                    <div
-                      key={s.placeId}
-                      className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer border-b last:border-b-0"
-                      onMouseDown={() => handleSelectSuggestion(s)}
-                    >
-                      <div className="text-sm font-medium">{s.mainText}</div>
-                      <div className="text-xs text-muted-foreground">{s.secondaryText}</div>
-                    </div>
-                  ))}
-                  <div className="px-4 py-2 text-xs text-muted-foreground border-t bg-muted/50">Powered by Google</div>
+              <div>
+                <Label htmlFor="rc-last-name" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                  Last Name <span className="text-red-500 ml-0.5">*</span>
+                </Label>
+                <Input
+                  id="rc-last-name"
+                  required
+                  value={form.client_last_name}
+                  onChange={set("client_last_name")}
+                  placeholder="Smith"
+                  className="bg-white dark:bg-gray-800 h-12"
+                />
+              </div>
+              <div>
+                <Label htmlFor="rc-email" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                  Email Address <span className="text-red-500 ml-0.5">*</span>
+                </Label>
+                <Input
+                  id="rc-email"
+                  type="email"
+                  required
+                  value={form.client_email}
+                  onChange={set("client_email")}
+                  placeholder="jane@example.com"
+                  className="bg-white dark:bg-gray-800 h-12"
+                />
+              </div>
+              <div>
+                <Label htmlFor="rc-phone" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                  Phone Number
+                </Label>
+                <Input
+                  id="rc-phone"
+                  value={form.client_phone}
+                  onChange={set("client_phone")}
+                  placeholder="+1 555 000 0000"
+                  className="bg-white dark:bg-gray-800 h-12"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Section 2: Property Details */}
+          <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-6 mb-6">
+            <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-1">Property Details</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Details about the property being bought or sold</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Property Address — full width */}
+              <div className="md:col-span-2 relative">
+                <Label htmlFor="rc-address" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                  Property Address <span className="text-red-500 ml-0.5">*</span>
+                </Label>
+                <div className="relative">
+                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="rc-address"
+                    required
+                    value={form.property_address}
+                    onChange={(e) => handleAddressChange(e.target.value)}
+                    onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+                    onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                    placeholder="123 Oak Street"
+                    className="pl-9 bg-white dark:bg-gray-800 h-12"
+                  />
                 </div>
-              )}
-            </div>
+                {showSuggestions && suggestions.length > 0 && (
+                  <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg max-h-60 overflow-auto">
+                    {suggestions.map((s, i) => (
+                      <div
+                        key={s.placeId}
+                        className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer border-b last:border-b-0"
+                        onMouseDown={() => handleSelectSuggestion(s)}
+                        data-testid={`suggestion-${i}`}
+                      >
+                        <div className="text-sm font-medium">{s.mainText}</div>
+                        <div className="text-xs text-muted-foreground">{s.secondaryText}</div>
+                      </div>
+                    ))}
+                    <div className="px-4 py-2 text-xs text-muted-foreground border-t bg-muted/50">
+                      Powered by Google
+                    </div>
+                  </div>
+                )}
+                <p className="text-xs text-muted-foreground mt-1">
+                  Start typing for suggestions (US &amp; Canada)
+                </p>
+              </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div className="col-span-1 sm:col-span-2 space-y-2">
-                <Label htmlFor="rc-city">City *</Label>
-                <Input id="rc-city" required value={form.property_city} onChange={set("property_city")} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="rc-state">State *</Label>
-                <Input id="rc-state" required value={form.property_state} onChange={set("property_state")} maxLength={2} placeholder="TX" />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label htmlFor="rc-zip">ZIP *</Label>
-                <Input id="rc-zip" required value={form.property_zip} onChange={set("property_zip")} />
-              </div>
-              <div className="space-y-2">
-                <Label>Property Type *</Label>
+              <div>
+                <Label htmlFor="rc-property-type" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                  Property Type <span className="text-red-500 ml-0.5">*</span>
+                </Label>
                 <Select value={form.property_type} onValueChange={(v) => setForm(f => ({ ...f, property_type: v }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger id="rc-property-type" className="bg-white dark:bg-gray-800 h-12">
+                    <SelectValue placeholder="Select property type" />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="single_family">Single Family</SelectItem>
-                    <SelectItem value="condo">Condo</SelectItem>
                     <SelectItem value="townhouse">Townhouse</SelectItem>
-                    <SelectItem value="apartment">Apartment</SelectItem>
+                    <SelectItem value="condo">Condo</SelectItem>
+                    <SelectItem value="multi_family">Multi-Family</SelectItem>
                     <SelectItem value="commercial">Commercial</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-            </div>
 
-            <div className="flex gap-3 pt-2">
-              <Button type="button" variant="outline" onClick={onClose} className="flex-1" disabled={saving}>Cancel</Button>
-              <Button type="submit" className="flex-1" disabled={saving}>
-                {saving ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Sending...</> : <><Send className="h-4 w-4 mr-2" />Add Client & Send Invitation</>}
-              </Button>
+              <div>
+                <Label htmlFor="rc-transaction-type" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                  Transaction Type <span className="text-red-500 ml-0.5">*</span>
+                </Label>
+                <Select value={form.transaction_type} onValueChange={(v) => setForm(f => ({ ...f, transaction_type: v }))}>
+                  <SelectTrigger id="rc-transaction-type" className="bg-white dark:bg-gray-800 h-12">
+                    <SelectValue placeholder="Select transaction type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="buying">Buying</SelectItem>
+                    <SelectItem value="selling">Selling</SelectItem>
+                    <SelectItem value="renting">Renting</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="rc-estimated-value" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                  Estimated Value ($)
+                </Label>
+                <Input
+                  id="rc-estimated-value"
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={form.estimated_value}
+                  onChange={set("estimated_value")}
+                  placeholder="e.g. 450000"
+                  className="bg-white dark:bg-gray-800 h-12"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="rc-close-date" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                  Expected Close Date
+                </Label>
+                <Input
+                  id="rc-close-date"
+                  type="date"
+                  value={form.expected_close_date}
+                  onChange={set("expected_close_date")}
+                  className="bg-white dark:bg-gray-800 h-12"
+                />
+              </div>
             </div>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
+          </div>
+
+          {/* Section 3: Additional Notes */}
+          <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-6 mb-6">
+            <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-1">Additional Notes</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Any other relevant information</p>
+            <div className="grid grid-cols-1 gap-4">
+              <div>
+                <Label htmlFor="rc-notes" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
+                  Notes{" "}
+                  <span className="text-gray-400 dark:text-gray-500 font-normal">(optional)</span>
+                </Label>
+                <Textarea
+                  id="rc-notes"
+                  value={form.notes}
+                  onChange={set("notes")}
+                  rows={3}
+                  placeholder="Any additional information about this client or transaction..."
+                  className="bg-white dark:bg-gray-800 min-h-[100px]"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              disabled={saving}
+              className="px-6"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={saving}
+              className="px-6 bg-green-600 hover:bg-green-700 text-white"
+            >
+              {saving
+                ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Sending...</>
+                : <><Send className="h-4 w-4 mr-2" />Add Client & Send Invitation</>
+              }
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
 
