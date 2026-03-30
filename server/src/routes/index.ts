@@ -27,7 +27,6 @@ import propertyRoutes from './property.js';
 import pushRoutes from './push.js';
 import portfolioRoutes from './portfolio.js';
 import realtorRoutes from './realtorAgent.js';
-import wipeTestDataRoutes from './wipeTestData.js'; // ⚠️ ONE-TIME — DELETE AFTER USE
 
 export function registerRoutes(app: Express) {
   app.use('/health', healthRoutes);
@@ -57,7 +56,6 @@ export function registerRoutes(app: Express) {
   app.use('/api/push', pushRoutes);          // PWA push notification subscriptions
   app.use('/api/portfolio', portfolioRoutes); // Property Manager portfolio routes
   app.use('/api/realtor', realtorRoutes);     // Realtor/Agent routes
-  app.use('/api/admin', wipeTestDataRoutes);  // ⚠️ ONE-TIME wipe — DELETE AFTER USE
   app.use('/api/appliances', applianceRoutes);  // Appliance management routes
   app.use('/api/households', householdsRoutes);  // Households routes
   registerSubscriptionRoutes(app);
