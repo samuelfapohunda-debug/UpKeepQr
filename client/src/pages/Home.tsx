@@ -65,18 +65,19 @@ export default function Home() {
                     See how MaintCue tracks your home's maintenance automatically.
                   </p>
 
-                  <div className="relative pb-[56.25%] h-0 overflow-hidden rounded-lg bg-slate-100">
-                    {/* TODO: Replace placeholder YouTube ID with official MaintCue demo video */}
-                    <iframe
-                      className="absolute top-0 left-0 w-full h-full rounded-lg"
-                      src="https://www.youtube.com/embed/dQw4w9WgXcQ"
-                      title="MaintCue Demo - Automated Home Maintenance Tracking"
-                      frameBorder="0"
-                      loading="lazy"
-                      allow="encrypted-media; picture-in-picture"
-                      allowFullScreen
-                      data-testid="video-demo-iframe"
-                    />
+                  <div style={{
+                    width: '100%', aspectRatio: '16/9',
+                    background: '#E1F5EE', borderRadius: '8px',
+                    display: 'flex', flexDirection: 'column',
+                    alignItems: 'center', justifyContent: 'center', gap: '12px'
+                  }}>
+                    <span style={{ fontSize: '40px', color: '#1D9E75' }}>▶</span>
+                    <p style={{ color: '#0F6E56', fontWeight: 500, fontSize: '16px', margin: 0 }}>
+                      Demo video coming soon
+                    </p>
+                    <p style={{ color: '#1D9E75', fontSize: '12px', margin: 0, opacity: 0.65 }}>
+                      See MaintCue in action
+                    </p>
                   </div>
 
                   <ul className="mt-4 space-y-1.5 text-sm text-slate-600">

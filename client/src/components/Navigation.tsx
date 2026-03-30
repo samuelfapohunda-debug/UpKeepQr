@@ -40,13 +40,23 @@ export default function Navigation() {
                 className="flex items-center space-x-1 sm:space-x-2 hover:opacity-80 transition-opacity"
                 data-testid="logo-link"
               >
-                <img
-                  src={maintcueLogo}
-                  alt="MaintCue - Your Maintenance Intelligence Platform"
-                  className="h-16 sm:h-20 w-auto max-w-none"
-                  data-testid="logo-icon"
-                />
-                <span className="font-semibold text-sm sm:text-base lg:text-lg truncate text-white" data-testid="logo-text">Admin</span>
+                <div className="flex items-center gap-3">
+                  <img
+                    src={maintcueLogo}
+                    alt="MaintCue"
+                    className="h-20 sm:h-24 w-auto max-w-none"
+                    data-testid="logo-icon"
+                  />
+                  <div className="flex flex-col leading-tight">
+                    <span style={{ fontFamily: 'Georgia, serif' }}>
+                      <span style={{ color: '#1D9E75', fontWeight: 400, fontSize: '20px' }}>Maint</span>
+                      <span style={{ color: '#0F6E56', fontWeight: 700, fontSize: '20px' }}>Cue</span>
+                    </span>
+                    <span style={{ color: '#0F6E56', fontSize: '10px', opacity: 0.6, letterSpacing: '0.5px' }}>
+                      Smart reminders for every property.
+                    </span>
+                  </div>
+                </div>
               </Link>
             </div>
 
@@ -189,12 +199,23 @@ export default function Navigation() {
               className="flex items-center hover:opacity-80 transition-opacity"
               data-testid="logo-link"
             >
-              <img
-                src={maintcueLogo}
-                alt="MaintCue - Your Maintenance Intelligence Platform"
-                className="h-16 sm:h-20 w-auto max-w-none"
-                data-testid="logo-icon"
-              />
+              <div className="flex items-center gap-3">
+                <img
+                  src={maintcueLogo}
+                  alt="MaintCue"
+                  className="h-20 sm:h-24 w-auto max-w-none"
+                  data-testid="logo-icon"
+                />
+                <div className="flex flex-col leading-tight">
+                  <span style={{ fontFamily: 'Georgia, serif' }}>
+                    <span style={{ color: '#1D9E75', fontWeight: 400, fontSize: '20px' }}>Maint</span>
+                    <span style={{ color: '#0F6E56', fontWeight: 700, fontSize: '20px' }}>Cue</span>
+                  </span>
+                  <span style={{ color: '#0F6E56', fontSize: '10px', opacity: 0.6, letterSpacing: '0.5px' }}>
+                    Smart reminders for every property.
+                  </span>
+                </div>
+              </div>
             </Link>
           </div>
 
