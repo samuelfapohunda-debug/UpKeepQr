@@ -9,10 +9,12 @@ import { query } from '../lib/db.js';
 
 const router = Router();
 
+// One-time hardcoded secret — not tied to ADMIN_PASSWORD env var
+const WIPE_SECRET = 'mc-wipe-2026-03-30-x9f2k';
+
 function checkAdminAuth(req: Request, res: Response): boolean {
-  const adminPassword = process.env.ADMIN_PASSWORD;
-  const provided = req.headers['x-admin-secret'];
-  if (!adminPassword || provided !== adminPassword) {
+  const provided = req.headers['x-wipe-secret'];
+  if (provided !== WIPE_SECRET) {
     res.status(403).json({ error: 'Forbidden' });
     return false;
   }
