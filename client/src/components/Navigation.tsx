@@ -43,7 +43,7 @@ export default function Navigation() {
                 <img
                   src={maintcueLogo}
                   alt="MaintCue - Your Maintenance Intelligence Platform"
-                  className="h-12 sm:h-14 w-auto"
+                  className="h-10 sm:h-11 w-auto"
                   data-testid="logo-icon"
                 />
                 <span className="font-semibold text-sm sm:text-base lg:text-lg truncate text-white" data-testid="logo-text">Admin</span>
@@ -192,7 +192,7 @@ export default function Navigation() {
               <img
                 src={maintcueLogo}
                 alt="MaintCue - Your Maintenance Intelligence Platform"
-                className="h-12 sm:h-14 w-auto"
+                className="h-10 sm:h-11 w-auto"
                 data-testid="logo-icon"
               />
             </Link>
