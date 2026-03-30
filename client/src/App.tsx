@@ -61,7 +61,7 @@ function Router() {
     <div className="min-h-screen bg-background text-foreground flex flex-col">
       <ScrollToTop />
       <Navigation />
-      <div className="pt-20 flex-1">
+      <div className="pt-24 flex-1">
       <Switch>
         <Route path="/" component={Home} />
         <Route path="/dashboard" component={HomeownerDashboard} />

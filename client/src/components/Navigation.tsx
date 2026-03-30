@@ -33,7 +33,7 @@ export default function Navigation() {
     return (
       <nav className="fixed top-0 left-0 right-0 bg-slate-800 border-b border-slate-700 z-50">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
-          <div className="flex justify-between items-center h-14 sm:h-16 gap-2">
+          <div className="flex justify-between items-center h-20 sm:h-24 gap-2">
             <div className="flex items-center space-x-2 min-w-0 flex-shrink-0">
               <Link 
                 href="/" 
@@ -43,7 +43,7 @@ export default function Navigation() {
                 <img
                   src={maintcueLogo}
                   alt="MaintCue - Your Maintenance Intelligence Platform"
-                  className="h-10 sm:h-11 w-auto"
+                  className="h-16 sm:h-20 w-auto max-w-none"
                   data-testid="logo-icon"
                 />
                 <span className="font-semibold text-sm sm:text-base lg:text-lg truncate text-white" data-testid="logo-text">Admin</span>
@@ -192,7 +192,7 @@ export default function Navigation() {
               <img
                 src={maintcueLogo}
                 alt="MaintCue - Your Maintenance Intelligence Platform"
-                className="h-10 sm:h-11 w-auto"
+                className="h-16 sm:h-20 w-auto max-w-none"
                 data-testid="logo-icon"
               />
             </Link>
