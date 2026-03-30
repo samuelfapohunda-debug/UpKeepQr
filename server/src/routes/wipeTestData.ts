@@ -59,20 +59,30 @@ router.post('/wipe-test-data', async (req: Request, res: Response) => {
     const before: Record<string, number> = {};
     for (const row of beforeResult.rows) before[row.tbl] = row.cnt;
 
-    // ── 2. Delete in FK-safe order ────────────────────────────────────────
-    // Most child tables have ON DELETE CASCADE from households, but we
-    // delete explicitly in order to be safe and get accurate counts.
-    await query('DELETE FROM sessions');
-    await query('DELETE FROM magic_links');
-    await query('DELETE FROM maintenance_logs');
-    await query('DELETE FROM household_appliances');
-    await query('DELETE FROM household_task_assignments');
-    await query('DELETE FROM push_subscriptions');
-    await query('DELETE FROM subscription_events');
-    await query('DELETE FROM realtor_clients');
-    await query('DELETE FROM managed_properties');
-    await query('DELETE FROM home_profile_extras');
-    await query('DELETE FROM households');
+    // ── 2. Wipe all user data — TRUNCATE CASCADE handles all FK deps ──────
+    await query(`
+      TRUNCATE
+        sessions,
+        magic_links,
+        reminder_queue,
+        schedules,
+        task_completions,
+        maintenance_logs,
+        household_appliances,
+        warranty_notifications,
+        household_task_assignments,
+        push_subscriptions,
+        subscription_events,
+        email_events,
+        cancellation_feedback,
+        calendar_connections,
+        calendar_sync_events,
+        realtor_clients,
+        managed_properties,
+        home_profile_extras,
+        households
+      CASCADE
+    `);
 
     // ── 3. Add unique constraint on households.email (idempotent) ─────────
     await query(`
