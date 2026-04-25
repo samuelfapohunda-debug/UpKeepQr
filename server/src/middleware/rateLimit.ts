@@ -1,4 +1,4 @@
-import rateLimit from 'express-rate-limit';
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 
 /**
  * Rate limiter for home profile extra data endpoints
@@ -13,8 +13,9 @@ export const homeExtraLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
-  // Use IP + user session for rate limiting
+  // Use IP + user session for rate limiting.
+  // ipKeyGenerator handles IPv6 normalisation to avoid ERR_ERL_KEY_GEN_IPV6.
   keyGenerator: (req) => {
-    return req.ip + (req.session?.userId || "");
+    return ipKeyGenerator(req) + (req.session?.userId || "");
   },
 });
