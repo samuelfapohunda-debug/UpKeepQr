@@ -6,6 +6,7 @@ import { API_BASE_URL } from "@/lib/api-config";
 
 export default function SubscriptionSuccess() {
   const [setupUrl, setSetupUrl] = useState<string | null>(null);
+  const [isUpgrade, setIsUpgrade] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -18,11 +19,17 @@ export default function SubscriptionSuccess() {
     }
 
     fetch(`${API_BASE_URL}/api/auth/setup-token?session_id=${encodeURIComponent(sessionId)}`)
-      .then(r => r.ok ? r.json() : Promise.reject())
-      .then(data => {
-        if (data.token) setSetupUrl(`/set-password?token=${encodeURIComponent(data.token)}`);
+      .then(async r => {
+        if (r.ok) return r.json();
+        // 404 means the account already has a password — this is an upgrade, not a new signup.
+        // Don't treat this as an error; the user should go to their dashboard.
+        if (r.status === 404) { setIsUpgrade(true); return null; }
+        return Promise.reject();
       })
-      .catch(() => { /* fall back to email message */ })
+      .then(data => {
+        if (data?.token) setSetupUrl(`/set-password?token=${encodeURIComponent(data.token)}`);
+      })
+      .catch(() => { /* network error — fall back to email message */ })
       .finally(() => setLoading(false));
   }, []);
 
@@ -35,17 +42,27 @@ export default function SubscriptionSuccess() {
           </div>
 
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-2" data-testid="text-subscription-success-title">
-            Welcome to MaintCue!
+            {isUpgrade ? 'Plan Upgraded!' : 'Welcome to MaintCue!'}
           </h1>
 
           <p className="text-slate-600 dark:text-slate-400 mb-8">
-            Your 30-day free trial has started. You will not be charged today.
+            {isUpgrade
+              ? 'Your plan has been upgraded successfully. Head to your dashboard to continue.'
+              : 'Your 30-day free trial has started. You will not be charged today.'}
           </p>
 
           {loading ? (
             <Button className="w-full bg-emerald-600 text-white" disabled data-testid="button-setup-loading">
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
               Preparing your account...
+            </Button>
+          ) : isUpgrade ? (
+            <Button
+              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-base py-6"
+              onClick={() => window.location.href = '/my-home'}
+              data-testid="button-go-to-dashboard"
+            >
+              Go to Dashboard <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
           ) : (
             <>

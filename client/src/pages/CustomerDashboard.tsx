@@ -26,6 +26,7 @@ import {
   Download,
   Plus,
   Building2,
+  X,
 } from "lucide-react";
 import HouseholdDetails from "@/components/HouseholdDetails";
 import PushNotificationSetup from "@/components/PushNotificationSetup";
@@ -78,6 +79,7 @@ export default function CustomerDashboard() {
   // Multi-property: null = primary home, string = managed property id
   const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
   const [showAddPropertyModal, setShowAddPropertyModal] = useState(false);
+  const [showPropertyLimitModal, setShowPropertyLimitModal] = useState(false);
 
   // Download .ics calendar file for tasks
   const handleDownloadCalendar = useCallback(async (householdId: string) => {
@@ -217,6 +219,31 @@ export default function CustomerDashboard() {
     },
     staleTime: 60 * 1000,
   });
+
+  // Tier-aware property limits (computed after managedProperties is available)
+  const TIER_PROPERTY_LIMITS: Record<string, number> = {
+    homeowner_basic: 1, basic: 1,
+    homeowner_plus: 3,  plus: 3,
+    property_manager: 200, realtor: 200,
+  };
+  const TIER_DISPLAY_NAMES: Record<string, string> = {
+    homeowner_basic: 'Homeowner Basic', basic: 'Homeowner Basic',
+    homeowner_plus: 'Homeowner Plus',  plus: 'Homeowner Plus',
+    property_manager: 'Property Manager', realtor: 'Realtor',
+  };
+  const currentTier = household?.subscriptionTier ?? 'homeowner_basic';
+  const tierLimit = TIER_PROPERTY_LIMITS[currentTier] ?? 1;
+  const tierName = TIER_DISPLAY_NAMES[currentTier] ?? 'your current';
+  // 1 primary home + any additional managed properties
+  const totalPropertyCount = household ? 1 + managedProperties.length : 0;
+
+  const handleAddPropertyClick = () => {
+    if (totalPropertyCount >= tierLimit) {
+      setShowPropertyLimitModal(true);
+    } else {
+      setShowAddPropertyModal(true);
+    }
+  };
 
   // Tasks for the currently selected secondary property
   const { data: propertyTasksData, isLoading: propertyTasksLoading } = useQuery<TasksResponse>({
@@ -516,50 +543,15 @@ export default function CustomerDashboard() {
               </button>
             ))}
 
-            {/* Add Property button */}
-            {canAddProperties ? (
-              managedProperties.length >= 3 ? (
-                <button
-                  disabled
-                  title="Maximum of 3 properties reached"
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border border-dashed border-border text-muted-foreground opacity-50 cursor-not-allowed"
-                  data-testid="button-add-property-limit"
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                  + Add Property
-                </button>
-              ) : (
-                <button
-                  onClick={() => setShowAddPropertyModal(true)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border border-dashed border-border text-muted-foreground hover:border-blue-400 hover:text-blue-600 transition-colors"
-                  data-testid="button-add-property"
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                  + Add Property
-                </button>
-              )
-            ) : (
-              <div className="flex items-center gap-2">
-                <button
-                  disabled
-                  title="Available on Homeowner Plus"
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border border-dashed border-border text-muted-foreground opacity-50 cursor-not-allowed"
-                  data-testid="button-add-property-locked"
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                  + Add Property
-                </button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="text-xs h-7 border-indigo-300 text-indigo-600 hover:bg-indigo-50 dark:border-indigo-700 dark:text-indigo-400"
-                  onClick={() => navigate('/pricing')}
-                  data-testid="button-upgrade-plus"
-                >
-                  Upgrade to Plus
-                </Button>
-              </div>
-            )}
+            {/* Add Property button — always visible; tier limit enforced on click */}
+            <button
+              onClick={handleAddPropertyClick}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border border-dashed border-border text-muted-foreground hover:border-blue-400 hover:text-blue-600 transition-colors"
+              data-testid="button-add-property"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              + Add Property
+            </button>
           </div>
         )}
 
@@ -826,6 +818,45 @@ export default function CustomerDashboard() {
             setShowAddPropertyModal(false);
           }}
         />
+      )}
+
+      {/* Property limit upgrade modal */}
+      {showPropertyLimitModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-md shadow-xl">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-lg">Property Limit Reached</CardTitle>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => setShowPropertyLimitModal(false)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-muted-foreground">
+                You've reached the {tierLimit}-property limit for your{' '}
+                <span className="font-medium text-foreground">{tierName}</span> plan.
+                Upgrade to add more properties.
+              </p>
+              <div className="flex gap-3 justify-end">
+                <Button variant="outline" onClick={() => setShowPropertyLimitModal(false)}>
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => {
+                    setShowPropertyLimitModal(false);
+                    navigate('/pricing');
+                  }}
+                >
+                  View Upgrade Options
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       )}
 
     </div>

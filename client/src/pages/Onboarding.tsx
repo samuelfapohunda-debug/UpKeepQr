@@ -1152,100 +1152,117 @@ const Onboarding: React.FC<OnboardingProps> = ({ adminMode = false, onComplete }
 
               {/* ========== STEP 3: ACCOUNT SETUP ========== */}
               {step === 3 && (
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <h3 className="text-lg font-semibold">Contact Information</h3>
-
-                  <div>
-                    <Label htmlFor="fullName">Full Name *</Label>
-                    <Input
-                      id="fullName"
-                      name="fullName"
-                      required
-                      value={formData.fullName}
-                      onChange={handleInputChange}
-                      className={validationErrors.fullName ? 'border-red-500' : ''}
+                loading ? (
+                  /* Post-submission processing panel */
+                  <div className="flex flex-col items-center justify-center py-16 text-center gap-6">
+                    <div
+                      className="h-16 w-16 rounded-full border-4 border-t-transparent animate-spin"
+                      style={{ borderColor: '#1D9E7540', borderTopColor: '#1D9E75' }}
                     />
-                    {validationErrors.fullName && (
-                      <p className="text-red-500 text-sm mt-1">{validationErrors.fullName}</p>
-                    )}
+                    <div className="space-y-3 max-w-sm">
+                      <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                        Setting up your account…
+                      </h3>
+                      <p className="text-gray-600 dark:text-gray-400">
+                        We're generating your personalized home maintenance profile. This only takes a moment.
+                      </p>
+                      <p className="text-sm text-gray-400 dark:text-gray-500 pt-2">
+                        You'll be redirected automatically when it's ready.
+                      </p>
+                    </div>
                   </div>
+                ) : (
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    <h3 className="text-lg font-semibold">Contact Information</h3>
 
-                  <div>
-                    <Label htmlFor="email">Email *</Label>
-                    <Input
-                      id="email"
-                      name="email"
-                      type="email"
-                      required
-                      value={formData.email}
-                      onChange={handleInputChange}
-                      className={validationErrors.email ? 'border-red-500' : ''}
-                    />
-                    {validationErrors.email && (
-                      <p className="text-red-500 text-sm mt-1">{validationErrors.email}</p>
-                    )}
-                  </div>
+                    <div>
+                      <Label htmlFor="fullName">Full Name *</Label>
+                      <Input
+                        id="fullName"
+                        name="fullName"
+                        required
+                        value={formData.fullName}
+                        onChange={handleInputChange}
+                        className={validationErrors.fullName ? 'border-red-500' : ''}
+                      />
+                      {validationErrors.fullName && (
+                        <p className="text-red-500 text-sm mt-1">{validationErrors.fullName}</p>
+                      )}
+                    </div>
 
-                  <div>
-                    <Label htmlFor="phone">Phone Number *</Label>
-                    <Input
-                      id="phone"
-                      name="phone"
-                      type="tel"
-                      required
-                      placeholder="+1 (555) 123-4567"
-                      value={formData.phone}
-                      onChange={handleInputChange}
-                      className={validationErrors.phone ? 'border-red-500' : ''}
-                      data-testid="input-phone"
-                    />
-                    {validationErrors.phone && (
-                      <p className="text-red-500 text-sm mt-1">{validationErrors.phone}</p>
-                    )}
-                  </div>
+                    <div>
+                      <Label htmlFor="email">Email *</Label>
+                      <Input
+                        id="email"
+                        name="email"
+                        type="email"
+                        required
+                        value={formData.email}
+                        onChange={handleInputChange}
+                        className={validationErrors.email ? 'border-red-500' : ''}
+                      />
+                      {validationErrors.email && (
+                        <p className="text-red-500 text-sm mt-1">{validationErrors.email}</p>
+                      )}
+                    </div>
 
-                  <div className="flex items-start space-x-3">
-                    <Checkbox
-                      id="smsOptIn"
-                      checked={formData.smsOptIn}
-                      onCheckedChange={(checked) =>
-                        setFormData(prev => ({ ...prev, smsOptIn: checked as boolean }))
-                      }
-                      data-testid="checkbox-sms-opt-in"
-                    />
-                    <Label htmlFor="smsOptIn" className="flex items-center gap-2 font-normal cursor-pointer">
-                      <Smartphone className="w-4 h-4" />
-                      <span className="text-sm text-muted-foreground">
-                        I consent to receive maintenance reminders and updates via SMS. Standard message
-                        and data rates may apply. Reply STOP to opt out.
-                      </span>
-                    </Label>
-                  </div>
+                    <div>
+                      <Label htmlFor="phone">Phone Number *</Label>
+                      <Input
+                        id="phone"
+                        name="phone"
+                        type="tel"
+                        required
+                        placeholder="+1 (555) 123-4567"
+                        value={formData.phone}
+                        onChange={handleInputChange}
+                        className={validationErrors.phone ? 'border-red-500' : ''}
+                        data-testid="input-phone"
+                      />
+                      {validationErrors.phone && (
+                        <p className="text-red-500 text-sm mt-1">{validationErrors.phone}</p>
+                      )}
+                    </div>
 
-                  <div className="flex gap-4 pt-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="flex-1"
-                      onClick={() => setStep(2)}
-                      data-testid="button-step3-back"
-                    >
-                      Back
-                    </Button>
-                    <Button
-                      type="submit"
-                      className="flex-1"
-                      disabled={loading || qrAlreadyActivated}
-                      data-testid="button-submit-setup"
-                    >
-                      {qrAlreadyActivated
-                        ? '🔒 Already Activated'
-                        : loading
-                        ? 'Submitting...'
-                        : 'Complete Setup'}
-                    </Button>
-                  </div>
-                </form>
+                    <div className="flex items-start space-x-3">
+                      <Checkbox
+                        id="smsOptIn"
+                        checked={formData.smsOptIn}
+                        onCheckedChange={(checked) =>
+                          setFormData(prev => ({ ...prev, smsOptIn: checked as boolean }))
+                        }
+                        data-testid="checkbox-sms-opt-in"
+                      />
+                      <Label htmlFor="smsOptIn" className="flex items-center gap-2 font-normal cursor-pointer">
+                        <Smartphone className="w-4 h-4" />
+                        <span className="text-sm text-muted-foreground">
+                          I consent to receive maintenance reminders and updates via SMS. Standard message
+                          and data rates may apply. Reply STOP to opt out.
+                        </span>
+                      </Label>
+                    </div>
+
+                    <div className="flex gap-4 pt-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="flex-1"
+                        onClick={() => setStep(2)}
+                        data-testid="button-step3-back"
+                      >
+                        Back
+                      </Button>
+                      <Button
+                        type="submit"
+                        className="flex-1"
+                        disabled={qrAlreadyActivated}
+                        data-testid="button-submit-setup"
+                      >
+                        {qrAlreadyActivated ? '🔒 Already Activated' : 'Complete Setup'}
+                      </Button>
+                    </div>
+                  </form>
+                )
               )}
 
             </div>

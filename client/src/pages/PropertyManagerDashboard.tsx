@@ -564,6 +564,7 @@ export default function PropertyManagerDashboard() {
   const [sessionValid, setSessionValid] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [showPropertyLimitModal, setShowPropertyLimitModal] = useState(false);
   const [activeJobId, setActiveJobId] = useState<number | null>(null);
 
   // Session verification
@@ -654,6 +655,16 @@ export default function PropertyManagerDashboard() {
   const active    = properties.filter(p => p.activationStatus === "active").length;
   const pending   = properties.filter(p => p.activationStatus === "pending").length;
   const scheduled = properties.filter(p => p.scheduleGenerated).length;
+
+  const PM_PROPERTY_LIMIT = 200;
+
+  const handleAddPropertyClick = () => {
+    if (total >= PM_PROPERTY_LIMIT) {
+      setShowPropertyLimitModal(true);
+    } else {
+      setShowAddModal(true);
+    }
+  };
 
   // ── Loading / gate states ────────────────────────────────────────────────
 
@@ -812,8 +823,7 @@ export default function PropertyManagerDashboard() {
                 </Button>
                 <Button
                   size="sm"
-                  onClick={() => setShowAddModal(true)}
-                  disabled={total >= 200}
+                  onClick={handleAddPropertyClick}
                   data-testid="button-add-property"
                 >
                   <Plus className="h-4 w-4 mr-2" />
@@ -839,7 +849,7 @@ export default function PropertyManagerDashboard() {
                     <Upload className="h-4 w-4 mr-2" />
                     Bulk Upload
                   </Button>
-                  <Button size="sm" onClick={() => setShowAddModal(true)}>
+                  <Button size="sm" onClick={handleAddPropertyClick}>
                     <Plus className="h-4 w-4 mr-2" />
                     Add Property
                   </Button>
@@ -938,6 +948,40 @@ export default function PropertyManagerDashboard() {
           onClose={() => setShowUploadModal(false)}
           onJobStarted={(id) => setActiveJobId(id)}
         />
+      )}
+
+      {/* Property limit modal */}
+      {showPropertyLimitModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-md shadow-xl">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-lg">Property Limit Reached</CardTitle>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => setShowPropertyLimitModal(false)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-muted-foreground">
+                You've reached the {PM_PROPERTY_LIMIT}-property limit for your{' '}
+                <span className="font-medium text-foreground">Property Manager</span> plan.
+                Upgrade to add more properties.
+              </p>
+              <div className="flex gap-3 justify-end">
+                <Button variant="outline" onClick={() => setShowPropertyLimitModal(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={() => { setShowPropertyLimitModal(false); navigate('/pricing'); }}>
+                  View Upgrade Options
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       )}
     </div>
   );

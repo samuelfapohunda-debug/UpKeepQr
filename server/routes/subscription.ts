@@ -766,24 +766,47 @@ export function registerSubscriptionWebhookHandler(app: Express) {
               const trialEnd = new Date();
               trialEnd.setDate(trialEnd.getDate() + TRIAL_DAYS);
 
-              const [household] = await db.insert(householdsTable).values({
-                name,
-                email: email.toLowerCase(),
-                canonicalEmail: canonical,
-                subscriptionTier: 'basic',
-                billingInterval,
-                subscriptionStatus: 'trialing',
-                trialStartsAt: trialStart,
-                trialEndsAt: trialEnd,
-                trialUsed: true,
-                stripeCustomerId: customerId,
-                stripeSubscriptionId: subscriptionId,
-                termsAcceptedAt: new Date(),
-                privacyAcceptedAt: new Date(),
-                paymentAddedAt: new Date(),
-                setupStatus: 'not_started',
-                createdBy: 'customer',
-              }).returning();
+              // Pre-check by email to detect upgrades (household exists but had no stripeCustomerId).
+              // Must run before the upsert so we can decide whether to generate a setup token.
+              const [existingByEmail] = await db
+                .select({ id: householdsTable.id, passwordHash: householdsTable.passwordHash })
+                .from(householdsTable)
+                .where(eq(householdsTable.email, email.toLowerCase()))
+                .limit(1);
+              const isUpgrade = !!existingByEmail?.passwordHash;
+
+              // UPSERT: on email conflict (existing user upgrading) only touch Stripe + subscription
+              // fields — never overwrite name, address, phone, or onboarding data.
+              const [household] = await db
+                .insert(householdsTable)
+                .values({
+                  name,
+                  email: email.toLowerCase(),
+                  canonicalEmail: canonical,
+                  subscriptionTier: 'basic',
+                  billingInterval,
+                  subscriptionStatus: 'trialing',
+                  trialStartsAt: trialStart,
+                  trialEndsAt: trialEnd,
+                  trialUsed: true,
+                  stripeCustomerId: customerId,
+                  stripeSubscriptionId: subscriptionId,
+                  termsAcceptedAt: new Date(),
+                  privacyAcceptedAt: new Date(),
+                  paymentAddedAt: new Date(),
+                  setupStatus: 'not_started',
+                  createdBy: 'customer',
+                })
+                .onConflictDoUpdate({
+                  target: householdsTable.email,
+                  set: {
+                    stripeCustomerId: customerId,
+                    stripeSubscriptionId: subscriptionId,
+                    subscriptionStatus: 'trialing',
+                    updatedAt: new Date(),
+                  },
+                })
+                .returning();
 
               const planId = session.metadata?.plan_id || session.metadata?.plan || '';
               const planLower = planId.toLowerCase().replace(/[_-]/g, ' ');
@@ -870,20 +893,25 @@ export function registerSubscriptionWebhookHandler(app: Express) {
                 ).catch(e => console.error('Failed to send error alert:', e));
               }
 
-              // Generate password setup token (24-hour expiry) for the set-password CTA
+              // Generate password setup token only for brand-new accounts.
+              // Skip for upgrades (existing user already has a password).
               let setupUrl: string | undefined;
-              try {
-                const setupToken = crypto.randomBytes(32).toString('hex');
-                const setupExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
-                await db
-                  .update(householdsTable)
-                  .set({ resetToken: setupToken, resetTokenExpires: setupExpires, updatedAt: new Date() })
-                  .where(eq(householdsTable.id, household.id));
-                const baseUrl = process.env.PUBLIC_BASE_URL || 'https://maintcue.com';
-                setupUrl = `${baseUrl}/set-password?token=${setupToken}`;
-                console.log(`[Subscription Webhook] Setup token written for ${email}`);
-              } catch (tokenErr: any) {
-                console.error('[Subscription Webhook] Failed to write setup token (non-fatal):', tokenErr?.message);
+              if (!isUpgrade) {
+                try {
+                  const setupToken = crypto.randomBytes(32).toString('hex');
+                  const setupExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+                  await db
+                    .update(householdsTable)
+                    .set({ resetToken: setupToken, resetTokenExpires: setupExpires, updatedAt: new Date() })
+                    .where(eq(householdsTable.id, household.id));
+                  const baseUrl = process.env.PUBLIC_BASE_URL || 'https://maintcue.com';
+                  setupUrl = `${baseUrl}/set-password?token=${setupToken}`;
+                  console.log(`[Subscription Webhook] Setup token written for ${email}`);
+                } catch (tokenErr: any) {
+                  console.error('[Subscription Webhook] Failed to write setup token (non-fatal):', tokenErr?.message);
+                }
+              } else {
+                console.log(`[Subscription Webhook] Skipping setup token for ${email} — upgrade, account already exists`);
               }
 
               try {

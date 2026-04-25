@@ -229,6 +229,8 @@ router.post('/stripe', async (req: Request, res: Response) => {
               .where(eq(householdsTable.id, householdId));
             console.log(`[WEBHOOK] Updated existing household ${customerEmail} → tier=${resolvedTier}`);
           } else {
+            // UPSERT: guard against concurrent duplicate webhooks. On email conflict only
+            // update Stripe + subscription fields — never overwrite address or onboarding data.
             const [created] = await db
               .insert(householdsTable)
               .values({
@@ -236,10 +238,22 @@ router.post('/stripe', async (req: Request, res: Response) => {
                 email: customerEmail.toLowerCase(),
                 subscriptionStatus: 'active',
                 subscriptionTier: resolvedTier,
+                stripeCustomerId: session.customer as string || undefined,
+                stripeSubscriptionId: subscriptionId || undefined,
+              })
+              .onConflictDoUpdate({
+                target: householdsTable.email,
+                set: {
+                  stripeCustomerId: session.customer as string || undefined,
+                  stripeSubscriptionId: subscriptionId || undefined,
+                  subscriptionTier: resolvedTier,
+                  subscriptionStatus: 'active',
+                  updatedAt: new Date(),
+                },
               })
               .returning({ id: householdsTable.id });
             householdId = created.id;
-            console.log(`[WEBHOOK] Created new household for ${customerEmail}: ${householdId} tier=${resolvedTier}`);
+            console.log(`[WEBHOOK] Upserted household for ${customerEmail}: ${householdId} tier=${resolvedTier}`);
           }
 
           // Generate setup token (24-hour expiry) if no password set yet
