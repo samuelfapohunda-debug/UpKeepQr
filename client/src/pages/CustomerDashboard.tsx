@@ -81,12 +81,18 @@ export default function CustomerDashboard() {
   const [showAddPropertyModal, setShowAddPropertyModal] = useState(false);
   const [showPropertyLimitModal, setShowPropertyLimitModal] = useState(false);
 
-  // Download .ics calendar file for tasks
-  const handleDownloadCalendar = useCallback(async (householdId: string) => {
+  // Download .ics calendar file for tasks.
+  // When propertyId is provided, fetches from the managed-property endpoint;
+  // otherwise falls back to the primary-home household endpoint.
+  const handleDownloadCalendar = useCallback(async (householdId: string, propertyId?: string | null) => {
     try {
       setIsDownloadingCalendar(true);
-      
-      const response = await fetch(`${API_BASE_URL}/api/calendar/household/${householdId}/tasks.ics`, {
+
+      const url = propertyId
+        ? `${API_BASE_URL}/api/calendar/property/${propertyId}/tasks.ics`
+        : `${API_BASE_URL}/api/calendar/household/${householdId}/tasks.ics`;
+
+      const response = await fetch(url, {
         credentials: 'include'
       });
       
@@ -99,14 +105,14 @@ export default function CustomerDashboard() {
       const blob = await response.blob();
       
       // Create download link
-      const url = window.URL.createObjectURL(blob);
+      const objectUrl = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
-      link.href = url;
+      link.href = objectUrl;
       link.download = 'MaintCue_Tasks.ics';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
+      window.URL.revokeObjectURL(objectUrl);
       
       toast({
         title: "Calendar Downloaded!",
@@ -224,7 +230,7 @@ export default function CustomerDashboard() {
   const TIER_PROPERTY_LIMITS: Record<string, number> = {
     homeowner_basic: 1, basic: 1,
     homeowner_plus: 3,  plus: 3,
-    property_manager: 200, realtor: 200,
+    property_manager: 200, realtor: 25,
   };
   const TIER_DISPLAY_NAMES: Record<string, string> = {
     homeowner_basic: 'Homeowner Basic', basic: 'Homeowner Basic',
@@ -352,17 +358,6 @@ export default function CustomerDashboard() {
         title: "Task Completed",
         description: `${updatedTask.taskName} has been marked as complete`,
       });
-      
-      queryClient.setQueryData<TasksResponse>(['/api/customer/tasks'], (old) => {
-        if (!old) return old;
-        return {
-          ...old,
-          tasks: old.tasks.map(task => 
-            task.id === updatedTask.id ? updatedTask : task
-          )
-        };
-      });
-      
       setShowCompleteDialog(false);
       setTaskToComplete(null);
     },
@@ -381,7 +376,23 @@ export default function CustomerDashboard() {
   };
 
   const handleConfirmComplete = (taskId: number, data: CompleteTaskData) => {
-    completeTaskMutation.mutate({ taskId, data });
+    completeTaskMutation.mutate({ taskId, data }, {
+      onSuccess: (updatedTask) => {
+        if (selectedPropertyId) {
+          // Managed property — invalidate so the server re-fetches with the updated task
+          queryClient.invalidateQueries({ queryKey: ['/api/portfolio/properties', selectedPropertyId, 'tasks'] });
+        } else {
+          // Primary home — optimistic cache update to avoid a round-trip
+          queryClient.setQueryData<TasksResponse>(['/api/customer/tasks'], (old) => {
+            if (!old) return old;
+            return {
+              ...old,
+              tasks: old.tasks.map(t => t.id === updatedTask.id ? updatedTask : t),
+            };
+          });
+        }
+      },
+    });
   };
 
   if (isVerifying) {
@@ -474,7 +485,7 @@ export default function CustomerDashboard() {
                   Welcome, {household.firstName}!
                 </h1>
                 <p className="text-blue-100 text-sm" data-testid="text-home-info">
-                  {household.homeType} in {household.city}, {household.state}
+                  {[household.homeType, [household.city, household.state].filter(Boolean).join(', ')].filter(Boolean).join(' in ')}
                 </p>
                 {realtorInfo?.realtorName && (
                   <p className="text-blue-200 text-xs mt-0.5">
@@ -643,8 +654,8 @@ export default function CustomerDashboard() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleDownloadCalendar(household.id)}
-                        disabled={isDownloadingCalendar || stats.pending === 0}
+                        onClick={() => handleDownloadCalendar(household.id, selectedPropertyId)}
+                        disabled={isDownloadingCalendar || stats.total === 0}
                         className="w-full sm:w-auto"
                         data-testid="button-sync-calendar"
                       >

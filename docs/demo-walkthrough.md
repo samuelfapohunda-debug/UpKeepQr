@@ -210,7 +210,7 @@
 - If `totalPropertyCount >= tierLimit` → property limit modal appears
 - Modal text: "You've reached the [N]-property limit for your [Plan Name] plan. Upgrade to add more properties."
 - CTA: "View Upgrade Options" → `/pricing`
-- Limits: Basic=1, Plus=3, Property Manager=200, Realtor=200
+- Limits: Basic=1, Plus=3, Property Manager=200, Realtor=25
 
 ---
 

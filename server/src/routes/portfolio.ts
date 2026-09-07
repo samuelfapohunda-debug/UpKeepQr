@@ -13,7 +13,7 @@ const MAX_PROPERTIES = 200;
 // Tier-based limits for managed_properties count (excludes primary home in households table)
 const TIER_LIMITS: Record<string, number> = {
   homeowner_plus: 3,       // 3 additional properties
-  realtor: 10,             // realtors can track multiple client properties
+  realtor: 25,             // matches the 25 homeowner-activation entitlement on the realtor plan
   property_manager: 200,
 };
 
@@ -93,7 +93,8 @@ router.post('/properties', requireSessionAuth, async (req: SessionAuthRequest, r
     if (!householdId) return;
 
     const { propertyName, address, city, state, zip, unitNumber, propertyType,
-            yearBuilt, squareFootage, hvacType } = req.body;
+            yearBuilt, squareFootage, bedrooms, bathrooms, purchaseDate, purchasePrice,
+            notes, hvacType } = req.body;
 
     if (!propertyName || !address || !city || !state || !zip) {
       return res.status(400).json({ error: 'propertyName, address, city, state, zip are required' });
@@ -124,6 +125,16 @@ router.post('/properties', requireSessionAuth, async (req: SessionAuthRequest, r
       });
     }
 
+    const parsedBathrooms = bathrooms !== undefined && bathrooms !== ''
+      ? parseFloat(String(bathrooms))
+      : NaN;
+    const bathroomsValue = !isNaN(parsedBathrooms) ? String(parsedBathrooms) : null;
+
+    const parsedPrice = purchasePrice !== undefined && purchasePrice !== ''
+      ? parseFloat(String(purchasePrice))
+      : NaN;
+    const purchasePriceValue = !isNaN(parsedPrice) ? String(parsedPrice) : null;
+
     const [property] = await db.insert(managedPropertiesTable).values({
       portfolioHouseholdId: householdId,
       propertyName,
@@ -135,6 +146,11 @@ router.post('/properties', requireSessionAuth, async (req: SessionAuthRequest, r
       propertyType:      propertyType  ?? 'single_family',
       yearBuilt:         yearBuilt     ?? null,
       squareFootage:     squareFootage ?? null,
+      bedrooms:          bedrooms      ?? null,
+      bathrooms:         bathroomsValue,
+      purchaseDate:      purchaseDate  ?? null,
+      purchasePrice:     purchasePriceValue,
+      notes:             notes         ?? null,
       hvacType:          hvacType      ?? null,
       activationStatus:  'pending',
       scheduleGenerated: false,
@@ -198,10 +214,22 @@ router.patch('/properties/:id', requireSessionAuth, async (req: SessionAuthReque
     if (!householdId) return;
 
     const allowed = ['propertyName', 'address', 'city', 'state', 'zip', 'unitNumber',
-                     'propertyType', 'yearBuilt', 'squareFootage', 'hvacType', 'activationStatus'] as const;
+                     'propertyType', 'yearBuilt', 'squareFootage', 'bedrooms',
+                     'purchaseDate', 'notes', 'hvacType', 'activationStatus'] as const;
     const updates: Record<string, unknown> = { updatedAt: new Date() };
     for (const key of allowed) {
       if (req.body[key] !== undefined) updates[key] = req.body[key];
+    }
+
+    // Numeric fields require NaN-guard: a malformed/empty string must become null,
+    // not pass raw into the numeric column.
+    if (req.body.bathrooms !== undefined) {
+      const p = req.body.bathrooms !== '' ? parseFloat(String(req.body.bathrooms)) : NaN;
+      updates.bathrooms = !isNaN(p) ? String(p) : null;
+    }
+    if (req.body.purchasePrice !== undefined) {
+      const p = req.body.purchasePrice !== '' ? parseFloat(String(req.body.purchasePrice)) : NaN;
+      updates.purchasePrice = !isNaN(p) ? String(p) : null;
     }
 
     const [updated] = await db

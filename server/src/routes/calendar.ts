@@ -1,10 +1,11 @@
-import { Router } from 'express';
+import { Router, type Response } from 'express';
 import { google } from 'googleapis';
 import { db } from '../../db.js';
-import { calendarConnectionsTable, householdTaskAssignmentsTable, householdsTable, homeMaintenanceTasksTable } from '../../../shared/schema.js';
+import { calendarConnectionsTable, householdTaskAssignmentsTable, householdsTable, homeMaintenanceTasksTable, managedPropertiesTable, maintenanceTasksTable } from '../../../shared/schema.js';
 import { encryptToken } from '../../lib/encryption.js';
 import { randomUUID } from 'crypto';
 import { eq, and } from 'drizzle-orm';
+import { requireSessionAuth, type SessionAuthRequest } from '../../middleware/sessionAuth.js';
 
 const router = Router();
 
@@ -211,6 +212,69 @@ router.get('/household/:householdId/tasks.ics', async (req, res) => {
       error: 'Failed to generate calendar file',
       details: error.message 
     });
+  }
+});
+
+// GET /api/calendar/property/:propertyId/tasks.ics
+// Session-authenticated: verifies the property belongs to the requesting user's household.
+router.get('/property/:propertyId/tasks.ics', requireSessionAuth, async (req: SessionAuthRequest, res: Response) => {
+  try {
+    const householdId = req.sessionHouseholdId;
+    if (!householdId) {
+      return res.status(401).json({ error: 'Session not authenticated' });
+    }
+
+    const { propertyId } = req.params;
+
+    // Ownership check: property must belong to the session's household.
+    const [property] = await db
+      .select()
+      .from(managedPropertiesTable)
+      .where(and(
+        eq(managedPropertiesTable.id, propertyId as string),
+        eq(managedPropertiesTable.portfolioHouseholdId, householdId),
+      ))
+      .limit(1);
+
+    if (!property) {
+      return res.status(404).json({ error: 'Property not found' });
+    }
+
+    if (!property.homeProfileId) {
+      return res.status(404).json({ error: 'Maintenance schedule not yet generated for this property' });
+    }
+
+    // Fetch tasks from maintenanceTasksTable via homeProfileId
+    const rows = await db
+      .select()
+      .from(maintenanceTasksTable)
+      .where(eq(maintenanceTasksTable.homeProfileId, parseInt(property.homeProfileId, 10)));
+
+    // Map to the shape generateICSFile expects (mirrors the household endpoint's task shape)
+    const now = new Date();
+    const tasks = rows.map(t => ({
+      id:              t.id,
+      dueDate:         t.dueDate,
+      priority:        t.priority,
+      status:          t.isCompleted ? 'completed' : (t.dueDate && new Date(t.dueDate) < now ? 'overdue' : 'pending'),
+      taskTitle:       t.title,
+      taskDescription: t.description,
+      taskCategory:    t.category,
+    }));
+
+    if (tasks.length === 0) {
+      return res.status(404).json({ error: 'No tasks found for this property' });
+    }
+
+    const icsContent = generateICSFile(tasks, property.propertyName);
+    const safeFilename = property.propertyName.replace(/[^a-zA-Z0-9]/g, '_');
+    res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="MaintCue_Tasks_${safeFilename}.ics"`);
+    return res.send(icsContent);
+
+  } catch (error: any) {
+    console.error('Property calendar .ics generation error:', error);
+    return res.status(500).json({ error: 'Failed to generate calendar file', details: error.message });
   }
 });
 

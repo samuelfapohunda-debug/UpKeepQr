@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { db } from '../../db';
-import { householdsTable, homeProfileExtras, maintenanceTasksTable, householdTaskAssignmentsTable } from '@shared/schema';
+import { householdsTable, homeProfileExtras, maintenanceTasksTable } from '@shared/schema';
 import { eq, and } from 'drizzle-orm';
 import { requireSessionAuth, validateHouseholdAccess, SessionAuthRequest } from '../../middleware/sessionAuth';
 import { generateMaintenanceSchedule } from '../../services/homeResearchAgent.js';
@@ -150,11 +150,23 @@ router.patch('/tasks/:taskId', requireSessionAuth, async (req: SessionAuthReques
       });
     }
 
-    const completedAt = new Date();
+    // Use the date the user recorded; fall back to now if missing or unparseable
+    const rawDate = req.body.completedAt;
+    const parsed = rawDate ? new Date(rawDate) : null;
+    const completedAt = parsed && !isNaN(parsed.getTime()) ? parsed : new Date();
+
+    // Persist optional service-record fields sent from the Complete Task modal
+    const rawCost = req.body.cost;
+    const parsedCost = rawCost !== undefined && rawCost !== ''
+      ? parseFloat(String(rawCost)) : NaN;
+    const cost = !isNaN(parsedCost) ? String(parsedCost) : null;
+    const serviceProvider: string | null = req.body.serviceProvider || null;
+    const partsReplaced: string | null = req.body.partsReplaced || null;
+    const notes: string | null = req.body.notes || null;
 
     const [updated] = await db
       .update(maintenanceTasksTable)
-      .set({ isCompleted: true, completedAt, updatedAt: new Date() } as any)
+      .set({ isCompleted: true, completedAt, cost, serviceProvider, partsReplaced, notes, updatedAt: new Date() })
       .where(eq(maintenanceTasksTable.id, taskId))
       .returning();
 
@@ -169,6 +181,10 @@ router.patch('/tasks/:taskId', requireSessionAuth, async (req: SessionAuthReques
       frequency: updated.frequency,
       frequencyMonths: frequencyToMonths(updated.frequency),
       completedAt: updated.completedAt,
+      cost: updated.cost,
+      serviceProvider: updated.serviceProvider,
+      partsReplaced: updated.partsReplaced,
+      notes: updated.notes,
     });
   } catch (error) {
     console.error('Error updating task:', error);

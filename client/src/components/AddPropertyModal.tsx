@@ -154,6 +154,11 @@ export default function AddPropertyModal({ onClose, onAdded }: Props) {
           propertyType: form.propertyType,
           yearBuilt: form.yearBuilt ? parseInt(form.yearBuilt) : null,
           squareFootage: form.squareFootage ? parseInt(form.squareFootage) : null,
+          bedrooms: form.bedrooms || null,
+          bathrooms: form.bathrooms || null,
+          purchaseDate: form.purchaseDate || null,
+          purchasePrice: form.purchasePrice || null,
+          notes: form.notes || null,
         }),
       });
       const data = await res.json();
